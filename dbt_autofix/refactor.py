@@ -1,10 +1,10 @@
 import difflib
 import io
 import json
+import os
 import re
 from copy import deepcopy
 from dataclasses import dataclass
-import os
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -136,6 +136,7 @@ class SQLRuleRefactorResult:
     original_content: str
     refactor_logs: list[str]
     dbt_deprecation_classes: list[str]
+    refactored_file_path: Optional[Path] = None
 
     def to_dict(self) -> dict:
         ret_dict = {
@@ -157,10 +158,11 @@ class SQLRefactorResult:
 
     def update_sql_file(self) -> None:
         """Update the SQL file with the refactored content"""
-        if self.file_path != self.refactored_file_path:
+        new_file_path = self.refactored_file_path or self.file_path
+        if self.file_path != new_file_path:
             os.rename(self.file_path, self.refactored_file_path)
 
-        Path(self.refactored_file_path).write_text(self.refactored_content)
+        Path(new_file_path).write_text(self.refactored_content)
 
     def print_to_console(self, json_output: bool = True):
         if not self.refactored:
@@ -269,15 +271,31 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     for start, end in sorted(to_remove, reverse=True):
         result = result[:start] + result[end:]
 
+    return SQLRuleRefactorResult(
+        rule_name="remove_unmatched_endings",
+        refactored=result != sql_content,
+        refactored_content=result,
+        original_content=sql_content,
+        refactor_logs=logs,
+        dbt_deprecation_classes=["UnexpectedJinjaBlockDeprecation"],
+    )
+
+
+def rename_sql_file_names_with_spaces(sql_content: str, sql_file_path: Path):
+    refactor_logs = []
+    if " " in sql_file_path.name:
+        new_file_path = sql_file_path.with_name(sql_file_path.name.replace(" ", "_"))
+        refactor_logs.append(f"Renamed '{sql_file_path.name}' to '{new_file_path.name}'")
 
     return SQLRuleRefactorResult(
-            rule_name="remove_unmatched_endings",
-            refactored=result != sql_content,
-            refactored_content=result,
-            original_content=sql_content,
-            refactor_logs=logs,
-            dbt_deprecation_classes=["UnexpectedJinjaBlockDeprecation"],
-        )
+        rule_name="rename_sql_files_with_spaces",
+        refactored=sql_file_path != new_file_path,
+        refactored_content=sql_content,
+        original_content=sql_content,
+        refactor_logs=refactor_logs,
+        dbt_deprecation_classes=["ResourceNamesWithSpacesDeprecation"],
+        refactored_file_path=new_file_path,
+    )
 
 
 def restructure_owner_properties(
@@ -487,7 +505,11 @@ def skip_file(file_path: Path, select: Optional[List[str]] = None) -> bool:
 
 
 def process_sql_files(
-    path: Path, sql_paths: Iterable[str], dry_run: bool = False, select: Optional[List[str]] = None, behavior_change: bool = False
+    path: Path,
+    sql_paths: Iterable[str],
+    dry_run: bool = False,
+    select: Optional[List[str]] = None,
+    behavior_change: bool = False,
 ) -> List[SQLRefactorResult]:
     """Process all SQL files in the given paths for unmatched endings.
 
@@ -503,14 +525,9 @@ def process_sql_files(
     results: List[SQLRefactorResult] = []
 
     if behavior_change:
-        process_sql_file_rules = [
-            # TODO
-            (False, False)
-        ]
+        process_sql_file_rules = [(rename_sql_file_names_with_spaces, True)]
     else:
-        process_sql_file_rules = [
-            (remove_unmatched_endings, True)
-        ]
+        process_sql_file_rules = [(remove_unmatched_endings, False)]
 
     for sql_path in sql_paths:
         full_path = (path / sql_path).resolve()
@@ -530,24 +547,15 @@ def process_sql_files(
                 new_content = original_content
 
                 new_file_path = sql_file
-                for (sql_file_rule, requires_content) in process_sql_file_rules:
-                    if requires_content:
-                        sql_file_refactor_result = sql_file_rule(new_content)
-                        new_content = sql_file_refactor_result.refactored_content
+                for sql_file_rule, requires_file_path in process_sql_file_rules:
+                    if requires_file_path:
+                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path)
                     else:
-                        # TODO
-                        if " " in sql_file.name:
-                            new_file_path = sql_file.with_name(sql_file.name.replace(" ", "_"))
-                            file_refactors.append(
-                                SQLRuleRefactorResult(
-                                    rule_name="rename_sql_files_with_spaces",
-                                    refactored=True,
-                                    refactored_content=new_content,
-                                    original_content=new_content,
-                                    refactor_logs=[f"Renamed '{sql_file.name}' to '{new_file_path.name}'"],
-                                    dbt_deprecation_classes=["ResourceNamesWithSpacesDeprecation"],
-                                )
-                            )
+                        sql_file_refactor_result = sql_file_rule(new_content)
+
+                    new_content = sql_file_refactor_result.refactored_content
+                    new_file_path = sql_file_refactor_result.refactored_file_path or sql_file
+                    file_refactors.append(sql_file_refactor_result)
 
                 refactored = (new_content != original_content) or (new_file_path != sql_file)
                 results.append(
@@ -558,7 +566,7 @@ def process_sql_files(
                         refactored_content=new_content,
                         original_content=original_content,
                         refactors=file_refactors,
-                        refactored_file_path=new_file_path
+                        refactored_file_path=new_file_path,
                     )
                 )
             except Exception as e:
@@ -918,7 +926,10 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
         refactor_logs=refactor_logs,
     )
 
-def changeset_replace_spaces_underscores_in_name_values(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
+
+def changeset_replace_spaces_underscores_in_name_values(
+    yml_str: str, schema_specs: SchemaSpecs
+) -> YMLRuleRefactorResult:
     refactored = False
     refactor_logs: List[str] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -955,7 +966,9 @@ def replace_node_name_spaces_with_underscores(node: dict[str, str], node_type: s
         if key == "name" and " " in value:
             new_value = value.replace(" ", "_")
             node_copy[key] = new_value
-            node_refactor_logs.append(f"{pretty_node_type} '{node['name']} - Updated 'name' from '{value}' to '{new_value}'.")
+            node_refactor_logs.append(
+                f"{pretty_node_type} '{node['name']} - Updated 'name' from '{value}' to '{new_value}'."
+            )
 
     refactored = len(node_refactor_logs) != 0
 
@@ -1255,7 +1268,9 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     sql_results = process_sql_files(path, dbt_paths, dry_run, select, behavior_change)
 
     # Process YAML files
-    yaml_results = process_yaml_files_except_dbt_project(path, dbt_paths, schema_specs, dry_run, select, behavior_change)
+    yaml_results = process_yaml_files_except_dbt_project(
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change
+    )
 
     # Process dbt_project.yml
 

@@ -10,12 +10,12 @@ from dbt_autofix.refactor import (
     YMLRuleRefactorResult,
     changeset_all_sql_yml_files,
     changeset_dbt_project_remove_deprecated_config,
-    changeset_replace_spaces_underscores_in_name_values,
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
     changeset_remove_duplicate_keys,
     changeset_remove_extra_tabs,
     changeset_remove_indentation_version,
+    changeset_replace_spaces_underscores_in_name_values,
     dict_to_yaml_str,
     rec_check_yaml_path,
     remove_unmatched_endings,
@@ -356,7 +356,9 @@ class TestUnmatchedEndingsRemoval:
 
         for content in test_cases:
             result = remove_unmatched_endings(content)
-            assert "endmacro" not in result.refactored_content or ("{% if condition %}" in content and "{% endmacro %}" not in result.refactored_content)
+            assert "endmacro" not in result.refactored_content or (
+                "{% if condition %}" in content and "{% endmacro %}" not in result.refactored_content
+            )
             if "endmacro" in content and "if condition" not in content:
                 assert len(result.refactor_logs) == 1
                 assert "Removed unmatched {% endmacro %}" in result.refactor_logs[0]
@@ -1878,7 +1880,7 @@ exposures:
         result = changeset_replace_spaces_underscores_in_name_values(input_yaml, schema_specs)
         assert result.refactored
         refactored_dict = safe_load(result.refactored_yaml)
-        
+
         model_refactored = refactored_dict["models"][0]
         assert model_refactored["name"] == "model_with_spaces"
 
@@ -1887,6 +1889,3 @@ exposures:
 
         exposure_refactored = refactored_dict["exposures"][0]
         assert exposure_refactored["name"] == "exposure_with_spaces"
-
-
-
