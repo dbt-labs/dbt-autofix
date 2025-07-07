@@ -10,6 +10,7 @@ from dbt_autofix.refactor import (
     YMLRuleRefactorResult,
     changeset_all_sql_yml_files,
     changeset_dbt_project_remove_deprecated_config,
+    changeset_replace_spaces_underscores_in_name_values,
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
     changeset_remove_duplicate_keys,
@@ -1858,3 +1859,34 @@ models:
         assert not result.refactored
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
+
+
+class TestReplaceSpacesUnderscoresInNameValues:
+    """Tests for changeset_remove_duplicate_keys function"""
+
+    def test_changeset_replace_spaces_underscores_in_name_values(self, schema_specs: SchemaSpecs):
+        """Test that YAML without duplicate keys is not modified"""
+        input_yaml = """
+version: 2
+models:
+  - name: model with spaces
+  - name: model_with_no_spaces
+
+exposures: 
+  - name: exposure with spaces
+"""
+        result = changeset_replace_spaces_underscores_in_name_values(input_yaml, schema_specs)
+        assert result.refactored
+        refactored_dict = safe_load(result.refactored_yaml)
+        
+        model_refactored = refactored_dict["models"][0]
+        assert model_refactored["name"] == "model_with_spaces"
+
+        model_not_refactored = refactored_dict["models"][1]
+        assert model_not_refactored["name"] == "model_with_no_spaces"
+
+        exposure_refactored = refactored_dict["exposures"][0]
+        assert exposure_refactored["name"] == "exposure_with_spaces"
+
+
+
