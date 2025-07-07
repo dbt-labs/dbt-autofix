@@ -99,7 +99,6 @@ class YMLRuleRefactorResult:
 
     def to_dict(self) -> dict:
         ret_dict = {
-            "rule_name": self.rule_name,
             "deprecation_refactors": [deprecation_refactor.to_dict() for deprecation_refactor in self.deprecation_refactors]
         }
         return ret_dict
@@ -123,10 +122,15 @@ class YMLRefactorResult:
             return
 
         if json_output:
+            flattened_refactors = []
+            for refactor in self.refactors:
+                if refactor.refactored:
+                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
-                "refactors": [refactor.to_dict() for refactor in self.refactors if refactor.refactored],
+                "refactors": flattened_refactors,
             }
             print(json.dumps(to_print))  # noqa: T201
             return
@@ -176,10 +180,15 @@ class SQLRefactorResult:
             return
 
         if json_output:
+            flattened_refactors = []
+            for refactor in self.refactors:
+                if refactor.refactored:
+                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
-                "refactors": [refactor.to_dict() for refactor in self.refactors if refactor.refactored],
+                "refactors": flattened_refactors,
             }
             print(json.dumps(to_print))  # noqa: T201
             return
