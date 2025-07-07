@@ -544,7 +544,7 @@ def process_sql_files(
                                     refactored=True,
                                     refactored_content=new_content,
                                     original_content=new_content,
-                                    refactor_logs=[f"Renamed {sql_file.relative_to(path)} to {new_file_path.relative_to(path)}"],
+                                    refactor_logs=[f"Renamed '{sql_file.name}' to '{new_file_path.name}'"],
                                     dbt_deprecation_classes=["ResourceNamesWithSpacesDeprecation"],
                                 )
                             )
