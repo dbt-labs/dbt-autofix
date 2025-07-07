@@ -148,13 +148,12 @@ class SQLRuleRefactorResult:
     refactored: bool
     refactored_content: str
     original_content: str
-    refactor_logs: list[str]
-    dbt_deprecation_classes: list[str]
+    deprecation_refactors: list[DbtDeprecationRefactor]
 
     def to_dict(self) -> dict:
         ret_dict = {
             "rule_name": self.rule_name,
-            "refactor_logs": self.refactor_logs,
+            "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
         }
         return ret_dict
 
@@ -514,6 +513,13 @@ def process_sql_files(
                 content = sql_file.read_text()
                 new_content, logs = remove_unmatched_endings(content)
 
+                deprecation_refactors = [
+                    DbtDeprecationRefactor(
+                        log=log,
+                        deprecation="UnexpectedJinjaBlockDeprecation"
+                    )
+                    for log in logs
+                ]
                 results.append(
                     SQLRefactorResult(
                         dry_run=dry_run,
@@ -527,8 +533,7 @@ def process_sql_files(
                                 refactored=new_content != content,
                                 refactored_content=new_content,
                                 original_content=content,
-                                refactor_logs=logs,
-                                dbt_deprecation_classes=["UnexpectedJinjaBlockDeprecation"],
+                                deprecation_refactors=deprecation_refactors,
                             )
                         ],
                     )
