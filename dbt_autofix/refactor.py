@@ -74,19 +74,33 @@ def dict_to_yaml_str(content: Dict[str, Any]) -> str:
 
 
 @dataclass
+class DbtDeprecationRefactor:
+    log: str
+    deprecation: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        ret_dict = {
+            "deprecation": self.deprecation,
+            "log": self.log
+        }
+
+        return ret_dict
+
+@dataclass
 class YMLRuleRefactorResult:
     rule_name: str
     refactored: bool
     refactored_yaml: str
     original_yaml: str
-    refactor_logs: list[str]
-    dbt_deprecation_classes: list[str]
+    deprecation_refactors: list[DbtDeprecationRefactor]
+
+    @property
+    def refactor_logs(self):
+        return [refactor.log for refactor in self.deprecation_refactors]
 
     def to_dict(self) -> dict:
         ret_dict = {
-            "rule_name": self.rule_name,
-            "refactor_logs": self.refactor_logs,
-            "dbt_deprecation_classes": self.dbt_deprecation_classes,
+            "deprecation_refactors": [deprecation_refactor.to_dict() for deprecation_refactor in self.deprecation_refactors]
         }
         return ret_dict
 
@@ -109,10 +123,15 @@ class YMLRefactorResult:
             return
 
         if json_output:
+            flattened_refactors = []
+            for refactor in self.refactors:
+                if refactor.refactored:
+                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
-                "refactors": [refactor.to_dict() for refactor in self.refactors if refactor.refactored],
+                "refactors": flattened_refactors,
             }
             print(json.dumps(to_print))  # noqa: T201
             return
@@ -134,14 +153,13 @@ class SQLRuleRefactorResult:
     refactored: bool
     refactored_content: str
     original_content: str
-    refactor_logs: list[str]
-    dbt_deprecation_classes: list[str]
+    deprecation_refactors: list[DbtDeprecationRefactor]
     refactored_file_path: Optional[Path] = None
 
     def to_dict(self) -> dict:
         ret_dict = {
             "rule_name": self.rule_name,
-            "refactor_logs": self.refactor_logs,
+            "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
         }
         return ret_dict
 
@@ -169,10 +187,15 @@ class SQLRefactorResult:
             return
 
         if json_output:
+            flattened_refactors = []
+            for refactor in self.refactors:
+                if refactor.refactored:
+                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
-                "refactors": [refactor.to_dict() for refactor in self.refactors if refactor.refactored],
+                "refactors": flattened_refactors,
             }
             print(json.dumps(to_print))  # noqa: T201
             return
@@ -209,7 +232,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     MACRO_END = re.compile(r"^endmacro")
     IF_END = re.compile(r"^endif")
 
-    logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     # Track macro and if states with their positions
     macro_stack: List[Tuple[int, int, str]] = []  # [(start_pos, end_pos, macro_name), ...]
     if_stack: List[Tuple[int, int]] = []  # [(start_pos, end_pos), ...]
@@ -246,7 +269,12 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
                     line_num = 1
                 else:
                     line_num = prefix.count("\n", first_newline) + 1
-                logs.append(f"Removed unmatched {{% endmacro %}} near line {line_num}")
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Removed unmatched {{% endmacro %}} near line {line_num}",
+                        deprecation="UnexpectedJinjaBlockDeprecation"
+                    )
+                )
             else:
                 macro_stack.pop()
             continue
@@ -262,7 +290,12 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
                     line_num = 1
                 else:
                     line_num = prefix.count("\n", first_newline) + 1
-                logs.append(f"Removed unmatched {{% endif %}} near line {line_num}")
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Removed unmatched {{% endif %}} near line {line_num}",
+                        deprecation="UnexpectedJinjaBlockDeprecation"
+                        )
+                )
             else:
                 if_stack.pop()
 
@@ -276,24 +309,27 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
         refactored=result != sql_content,
         refactored_content=result,
         original_content=sql_content,
-        refactor_logs=logs,
-        dbt_deprecation_classes=["UnexpectedJinjaBlockDeprecation"],
+        deprecation_refactors=deprecation_refactors,
     )
 
 
 def rename_sql_file_names_with_spaces(sql_content: str, sql_file_path: Path):
-    refactor_logs = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     if " " in sql_file_path.name:
         new_file_path = sql_file_path.with_name(sql_file_path.name.replace(" ", "_"))
-        refactor_logs.append(f"Renamed '{sql_file_path.name}' to '{new_file_path.name}'")
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=f"Renamed '{sql_file_path.name}' to '{new_file_path.name}'",
+                deprecation="ResourceNamesWithSpacesDeprecation"
+            )
+        )
 
     return SQLRuleRefactorResult(
         rule_name="rename_sql_files_with_spaces",
         refactored=sql_file_path != new_file_path,
         refactored_content=sql_content,
         original_content=sql_content,
-        refactor_logs=refactor_logs,
-        dbt_deprecation_classes=["ResourceNamesWithSpacesDeprecation"],
+        deprecation_refactors=deprecation_refactors,
         refactored_file_path=new_file_path,
     )
 
@@ -348,7 +384,7 @@ def changeset_remove_tab_only_lines(yml_str: str) -> YMLRuleRefactorResult:
         YMLRuleRefactorResult containing the refactored YAML and any changes made
     """
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     # Process each line
     lines = yml_str.splitlines()
@@ -356,7 +392,11 @@ def changeset_remove_tab_only_lines(yml_str: str) -> YMLRuleRefactorResult:
     for i, line in enumerate(lines):
         if "\t" in line and line.strip() == "":
             refactored = True
-            refactor_logs.append(f"Removed line containing only tabs on line {i + 1}")
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Removed line containing only tabs on line {i + 1}"
+                )
+            )
             new_lines.append("")
         else:
             new_lines.append(line)
@@ -365,11 +405,10 @@ def changeset_remove_tab_only_lines(yml_str: str) -> YMLRuleRefactorResult:
 
     return YMLRuleRefactorResult(
         rule_name="remove_tab_only_lines",
-        dbt_deprecation_classes=[],
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors,
     )
 
 
@@ -541,7 +580,7 @@ def process_sql_files(
                 continue
 
             try:
-                file_refactors = []
+                file_refactors: List[SQLRefactorResult] = []
 
                 original_content = sql_file.read_text()
                 new_content = original_content
@@ -718,7 +757,7 @@ def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) 
     - moves all the owner fields that are not in owner_properties under config.meta
     """
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
     for node_type in schema_specs.nodes_with_owner:
@@ -730,15 +769,20 @@ def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) 
                 if node_refactored:
                     refactored = True
                     yml_dict[node_type][i] = processed_node
-                    refactor_logs.extend(node_refactor_logs)
+                    for log in node_refactor_logs:
+                        deprecation_refactors.append(
+                            DbtDeprecationRefactor(
+                                log=log,
+                                deprecation="CustomKeyInObjectDeprecation"
+                            )
+                        )
 
     return YMLRuleRefactorResult(
         rule_name="restructure_owner_properties",
-        dbt_deprecation_classes=["CustomKeyInObjectDeprecation"],
         refactored=refactored,
         refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors
     )
 
 
@@ -849,21 +893,28 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
                                         ] = processed_test
                                         refactor_logs.extend(test_refactor_logs)
 
+
+    deprecation_refactors = [
+        DbtDeprecationRefactor(
+            log=log,
+            deprecation="CustomKeyInConfigDeprecation"
+        )
+        for log in refactor_logs
+    ]
+
     return YMLRuleRefactorResult(
         rule_name="restructure_yaml_keys",
-        dbt_deprecation_classes=["CustomKeyInConfigDeprecation"],
         refactored=refactored,
         refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors,
     )
 
 
 def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
     """Removes extra tabs in the YAML files"""
     refactored = False
-    refactor_logs: List[str] = []
-
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     current_yaml = yml_str
 
     while True:
@@ -872,7 +923,9 @@ def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
             if "found character '\\t' that cannot start any token" in p.desc:
                 found_tab_error = True
                 refactored = True
-                refactor_logs.append(f"Found extra tabs: line {p.line} - column {p.column}")
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(log=f"Found extra tabs: line {p.line} - column {p.column}")
+                )
                 lines = current_yaml.split("\n")
                 if p.line <= len(lines):
                     line = lines[p.line - 1]  # Convert to 0-based index
@@ -889,11 +942,10 @@ def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
 
     return YMLRuleRefactorResult(
         rule_name="remove_extra_tabs",
-        dbt_deprecation_classes=[],
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors,
     )
 
 
@@ -902,12 +954,17 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
     The drawback of keeping the first occurence is that we need to use PyYAML and then lose all the comments that were in the file
     """
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     for p in yamllint.linter.run(yml_str, yaml_config):
         if p.rule == "key-duplicates":
             refactored = True
-            refactor_logs.append(f"Found duplicate keys: line {p.line} - {p.desc}")
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Found duplicate keys: line {p.line} - {p.desc}",
+                    deprecation="DuplicateYAMLKeysDeprecation"
+                )
+            )
 
     if refactored:
         import yaml
@@ -919,11 +976,10 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
 
     return YMLRuleRefactorResult(
         rule_name="remove_duplicate_keys",
-        dbt_deprecation_classes=["DuplicateYAMLKeysDeprecation"],
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors,
     )
 
 
@@ -931,7 +987,7 @@ def changeset_replace_spaces_underscores_in_name_values(
     yml_str: str, schema_specs: SchemaSpecs
 ) -> YMLRuleRefactorResult:
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
     for node_type in schema_specs.yaml_specs_per_node_type:
@@ -943,17 +999,22 @@ def changeset_replace_spaces_underscores_in_name_values(
                 if node_refactored:
                     refactored = True
                     yml_dict[node_type][i] = processed_node
-                    refactor_logs.extend(node_refactor_logs)
+                    for log in node_refactor_logs:
+                        deprecation_refactors.append(
+                            DbtDeprecationRefactor(
+                                log=log,
+                                deprecation= "ExposureNameDeprecation" if node_type == "exposures" else "ResourceNamesWithSpacesDeprecation"
+                            )
+                        )
 
     refactored_yaml = DbtYAML().dump_to_string(yml_dict) if refactored else yml_str
 
     return YMLRuleRefactorResult(
         rule_name="remove_spaces_in_resource_names",
-        dbt_deprecation_classes=["ResourceNamesWithSpacesDeprecation", "ExposureNameDeprecation"],
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors,
     )
 
 
@@ -988,7 +1049,7 @@ def changeset_remove_indentation_version(yml_str: str) -> YMLRuleRefactorResult:
         YMLRuleRefactorResult containing the refactored YAML and any changes made
     """
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     # Pattern to match any whitespace around 'version: 2'
     pattern = r"^\s*version\s*:\s*2"
@@ -1001,17 +1062,20 @@ def changeset_remove_indentation_version(yml_str: str) -> YMLRuleRefactorResult:
             if line != replacement:
                 refactored = True
                 lines[i] = replacement
-                refactor_logs.append(f"Removed the extra indentation around 'version: 2' on line {i + 1}")
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Removed the extra indentation around 'version: 2' on line {i + 1}"
+                    )
+                )
 
     refactored_yaml = "\n".join(lines) if refactored else yml_str
 
     return YMLRuleRefactorResult(
         rule_name="removed_extra_indentation",
-        dbt_deprecation_classes=[],
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors,
     )
 
 
@@ -1020,8 +1084,7 @@ def changeset_dbt_project_remove_deprecated_config(
 ) -> YMLRuleRefactorResult:
     """Remove deprecated keys"""
     refactored = False
-    refactor_logs: List[str] = []
-    dbt_deprecation_classes: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     dict_deprecated_fields_with_defaults = {
         "log-path": "logs",
@@ -1047,16 +1110,22 @@ def changeset_dbt_project_remove_deprecated_config(
             if not exclude_dbt_project_keys:
                 # by default we remove it
                 refactored = True
-                refactor_logs.append(f"Removed the deprecated field '{deprecated_field}'")
-                dbt_deprecation_classes.append(dict_fields_to_deprecation_class[deprecated_field])
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Removed the deprecated field '{deprecated_field}'",
+                        deprecation=dict_fields_to_deprecation_class[deprecated_field]
+                    )
+                )
                 del yml_dict[deprecated_field]
             # with the special field, we only remove it if it's different from the default
             elif yml_dict[deprecated_field] != dict_deprecated_fields_with_defaults[deprecated_field]:
                 refactored = True
-                refactor_logs.append(
-                    f"Removed the deprecated field '{deprecated_field}' that wasn't set to the default value"
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log= f"Removed the deprecated field '{deprecated_field}' that wasn't set to the default value",
+                        deprecation=dict_fields_to_deprecation_class[deprecated_field]
+                    )
                 )
-                dbt_deprecation_classes.append(dict_fields_to_deprecation_class[deprecated_field])
                 del yml_dict[deprecated_field]
 
     # TODO: add tests for this
@@ -1064,22 +1133,29 @@ def changeset_dbt_project_remove_deprecated_config(
         if deprecated_field in yml_dict:
             refactored = True
             if new_field not in yml_dict:
-                refactor_logs.append(f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'")
-                dbt_deprecation_classes.append(dict_fields_to_deprecation_class[deprecated_field])
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'",
+                        deprecation=dict_fields_to_deprecation_class[deprecated_field]
+                    )
+                )
                 yml_dict[new_field] = yml_dict[deprecated_field]
             else:
-                refactor_logs.append(f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'")
-                dbt_deprecation_classes.append(dict_fields_to_deprecation_class[deprecated_field])
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'",
+                        deprecation=dict_fields_to_deprecation_class[deprecated_field]
+                    )
+                )
                 yml_dict[new_field] = yml_dict[new_field] + yml_dict[deprecated_field]
             del yml_dict[deprecated_field]
 
     return YMLRuleRefactorResult(
         rule_name="remove_deprecated_config",
-        dbt_deprecation_classes=dbt_deprecation_classes,
         refactored=refactored,
         refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,  # type: ignore
         original_yaml=yml_str,
-        refactor_logs=refactor_logs,
+        deprecation_refactors=deprecation_refactors
     )
 
 
@@ -1145,13 +1221,19 @@ def changeset_dbt_project_prefix_plus_for_config(
                 all_refactor_logs.extend(refactor_logs)
 
     refactored = len(all_refactor_logs) > 0
+    deprecation_refactors = [
+        DbtDeprecationRefactor(
+            log=log,
+            deprecation="GenericJSONSchemaValidationDeprecation"
+        )
+        for log in all_refactor_logs
+    ]
     return YMLRuleRefactorResult(
         rule_name="prefix_plus_for_config",
-        dbt_deprecation_classes=["GenericJSONSchemaValidationDeprecation"],
         refactored=refactored,
         refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,  # type: ignore
         original_yaml=yml_str,
-        refactor_logs=all_refactor_logs,
+        deprecation_refactors=deprecation_refactors,
     )
 
 
