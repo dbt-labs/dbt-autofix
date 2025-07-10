@@ -156,6 +156,10 @@ class SQLRuleRefactorResult:
     deprecation_refactors: list[DbtDeprecationRefactor]
     refactored_file_path: Optional[Path] = None
 
+    @property
+    def refactor_logs(self):
+        return [refactor.log for refactor in self.deprecation_refactors]
+
     def to_dict(self) -> dict:
         ret_dict = {
             "rule_name": self.rule_name,
