@@ -622,7 +622,7 @@ def process_sql_files(
 
 def restructure_yaml_keys_for_node(
     node: Dict[str, Any], node_type: str, schema_specs: SchemaSpecs
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+) -> Tuple[Dict[str, Any], bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys according to dbt conventions.
 
     Args:
@@ -637,7 +637,7 @@ def restructure_yaml_keys_for_node(
         - List of refactor logs
     """
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     existing_meta = node.get("meta", {}).copy()
     pretty_node_type = node_type[:-1].title()
 
@@ -655,15 +655,21 @@ def restructure_yaml_keys_for_node(
             # if the field is not under config, move it under config
             if field not in node_config:
                 node_config.update({field: node[field]})
-                refactor_logs.append(
-                    f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config."
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config.",
+                        deprecation="PropertyMovedToConfigDeprecation"
+                    )
                 )
                 node["config"] = node_config
 
             # if the field is already under config, it will take precedence there, so we remove it from the top level
             else:
-                refactor_logs.append(
-                    f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is already under config, it has been removed from the top level."
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is already under config, it has been removed from the top level.",
+                        deprecation="PropertyMovedToConfigDeprecation"
+                    )
                 )
             del node[field]
 
@@ -677,23 +683,34 @@ def restructure_yaml_keys_for_node(
                 1,
             )
             if closest_match:
-                refactor_logs.append(
-                    f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not allowed, but '{closest_match[0]}' is. Moved as-is under config.meta but you might want to rename it and move it under config."
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not allowed, but '{closest_match[0]}' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
+                        deprecation="CustomKeyInObjectDeprecation"
+                    )
                 )
             else:
-                refactor_logs.append(
-                    f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not an allowed config - Moved under config.meta."
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not an allowed config - Moved under config.meta.",
+                        deprecation="CustomKeyInObjectDeprecation"
+                    )
                 )
             node_meta = node.get("config", {}).get("meta", {})
             node_meta.update({field: node[field]})
-            node["config"] = {"meta": node_meta}
+            node["config"] = node.get("config", {})
+            node["config"].update({"meta": node_meta})
             del node[field]
 
     if existing_meta:
         refactored = True
-        refactor_logs.append(
-            f"{pretty_node_type} '{node.get('name', '')}' - Moved all the meta fields under config.meta and merged with existing config.meta."
-        )
+        deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{node.get('name', '')}' - Moved all the meta fields under config.meta and merged with existing config.meta.",
+                        deprecation="CustomKeyInObjectDeprecation"
+                    )
+                )
+
         if "config" not in node:
             node["config"] = {"meta": {}}
         if "meta" not in node["config"]:
@@ -702,12 +719,12 @@ def restructure_yaml_keys_for_node(
             node["config"]["meta"].update({key: value})
         del node["meta"]
 
-    return node, refactored, refactor_logs
+    return node, refactored, deprecation_refactors
 
 
 def restructure_yaml_keys_for_test(
     test: Dict[str, Any], schema_specs: SchemaSpecs
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+) -> Tuple[Dict[str, Any], bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys for tests according to dbt conventions.
     Tests are separated from other nodes because
     - they don't support meta
@@ -725,7 +742,7 @@ def restructure_yaml_keys_for_test(
         - List of refactor logs
     """
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     pretty_node_type = "Test"
 
     # if the test is a string, we leave it as is
@@ -743,19 +760,27 @@ def restructure_yaml_keys_for_test(
             # if the field is not under config, move it under config
             if field not in node_config:
                 node_config.update({field: test[test_name][field]})
-                refactor_logs.append(f"{pretty_node_type} '{test_name}' - Field '{field}' moved under config.")
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{test_name}' - Field '{field}' moved under config.",
+                        deprecation="CustomKeyInObjectDeprecation"
+                    )
+                )
                 test[test_name]["config"] = node_config
 
             # if the field is already under config, overwrite it and remove from top level
             else:
                 node_config[field] = test[test_name][field]
-                refactor_logs.append(
-                    f"{pretty_node_type} '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level."
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
+                        deprecation="CustomKeyInObjectDeprecation"
+                    )
                 )
                 test[test_name]["config"] = node_config
             del test[test_name][field]
 
-    return test, refactored, refactor_logs
+    return test, refactored, deprecation_refactors
 
 
 def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
@@ -800,96 +825,96 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
     - provide some information if some fields don't exist but are similar to allowed fields
     """
     refactored = False
-    refactor_logs: List[str] = []
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:
             for i, node in enumerate(yml_dict[node_type]):
-                processed_node, node_refactored, node_refactor_logs = restructure_yaml_keys_for_node(
+                processed_node, node_refactored, node_deprecation_refactors = restructure_yaml_keys_for_node(
                     node, node_type, schema_specs
                 )
                 if node_refactored:
                     refactored = True
                     yml_dict[node_type][i] = processed_node
-                    refactor_logs.extend(node_refactor_logs)
+                    deprecation_refactors.extend(node_deprecation_refactors)
 
                 if "columns" in processed_node:
                     for column_i, column in enumerate(node["columns"]):
-                        processed_column, column_refactored, column_refactor_logs = restructure_yaml_keys_for_node(
+                        processed_column, column_refactored, column_deprecation_refactors = restructure_yaml_keys_for_node(
                             column, "columns", schema_specs
                         )
                         if column_refactored:
                             refactored = True
                             yml_dict[node_type][i]["columns"][column_i] = processed_column
-                            refactor_logs.extend(column_refactor_logs)
+                            deprecation_refactors.extend(column_deprecation_refactors)
 
                         # there might be some tests, but they can be called tests or data_tests
                         some_tests = {"tests", "data_tests"} & set(processed_column)
                         if some_tests:
                             test_key = next(iter(some_tests))
                             for test_i, test in enumerate(node["columns"][column_i][test_key]):
-                                processed_test, test_refactored, test_refactor_logs = restructure_yaml_keys_for_test(
+                                processed_test, test_refactored, test_refactor_deprecations = restructure_yaml_keys_for_test(
                                     test, schema_specs
                                 )
                                 if test_refactored:
                                     refactored = True
                                     yml_dict[node_type][i]["columns"][column_i][test_key][test_i] = processed_test
-                                    refactor_logs.extend(test_refactor_logs)
+                                    deprecation_refactors.extend(test_refactor_deprecations)
 
                 # if there are tests, we need to restructure them
                 some_tests = {"tests", "data_tests"} & set(processed_node)
                 if some_tests:
                     test_key = next(iter(some_tests))
                     for test_i, test in enumerate(node[test_key]):
-                        processed_test, test_refactored, test_refactor_logs = restructure_yaml_keys_for_test(
+                        processed_test, test_refactored, test_refactor_deprecations = restructure_yaml_keys_for_test(
                             test, schema_specs
                         )
                         if test_refactored:
                             refactored = True
                             yml_dict[node_type][i][test_key][test_i] = processed_test
-                            refactor_logs.extend(test_refactor_logs)
+                            deprecation_refactors.extend(test_refactor_deprecations)
 
     # for sources, the config can be set at the table level as well, which is one level lower
     if "sources" in yml_dict:
         for i, source in enumerate(yml_dict["sources"]):
             if "tables" in source:
                 for j, table in enumerate(source["tables"]):
-                    processed_source_table, source_table_refactored, source_table_refactor_logs = (
+                    processed_source_table, source_table_refactored, source_table_deprecation_refactors = (
                         restructure_yaml_keys_for_node(table, "tables", schema_specs)
                     )
                     if source_table_refactored:
                         refactored = True
                         yml_dict["sources"][i]["tables"][j] = processed_source_table
-                        refactor_logs.extend(source_table_refactor_logs)
+                        deprecation_refactors.extend(source_table_deprecation_refactors)
 
                     some_tests = {"tests", "data_tests"} & set(processed_source_table)
                     if some_tests:
                         test_key = next(iter(some_tests))
                         for test_i, test in enumerate(source["tables"][j][test_key]):
-                            processed_test, test_refactored, test_refactor_logs = restructure_yaml_keys_for_test(
+                            processed_test, test_refactored, test_refactor_deprecations = restructure_yaml_keys_for_test(
                                 test, schema_specs
                             )
                             if test_refactored:
                                 refactored = True
                                 yml_dict["sources"][i]["tables"][j][test_key][test_i] = processed_test
-                                refactor_logs.extend(test_refactor_logs)
+                                deprecation_refactors.extend(test_refactor_deprecations)
 
                     if "columns" in processed_source_table:
                         for table_column_i, table_column in enumerate(table["columns"]):
-                            processed_table_column, table_column_refactored, table_column_refactor_logs = (
+                            processed_table_column, table_column_refactored, table_column_deprecation_refactors = (
                                 restructure_yaml_keys_for_node(table_column, "columns", schema_specs)
                             )
                             if table_column_refactored:
                                 refactored = True
                                 yml_dict["sources"][i]["tables"][j]["columns"][table_column_i] = processed_table_column
-                                refactor_logs.extend(table_column_refactor_logs)
+                                deprecation_refactors.extend(table_column_deprecation_refactors)
 
                             some_tests = {"tests", "data_tests"} & set(processed_table_column)
                             if some_tests:
                                 test_key = next(iter(some_tests))
                                 for test_i, test in enumerate(table_column[test_key]):
-                                    processed_test, test_refactored, test_refactor_logs = (
+                                    processed_test, test_refactored, test_deprecation_refactors = (
                                         restructure_yaml_keys_for_test(test, schema_specs)
                                     )
                                     if test_refactored:
@@ -897,16 +922,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
                                         yml_dict["sources"][i]["tables"][j]["columns"][table_column_i][test_key][
                                             test_i
                                         ] = processed_test
-                                        refactor_logs.extend(test_refactor_logs)
-
-
-    deprecation_refactors = [
-        DbtDeprecationRefactor(
-            log=log,
-            deprecation="CustomKeyInConfigDeprecation"
-        )
-        for log in refactor_logs
-    ]
+                                        deprecation_refactors.extend(test_deprecation_refactors)
 
     return YMLRuleRefactorResult(
         rule_name="restructure_yaml_keys",

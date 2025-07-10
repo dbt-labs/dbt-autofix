@@ -9,10 +9,9 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 
 | Deprecation Code in dbt Core      | Files             | Handling                                                                                         | Support | Behavior Change |
 | --------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------ | ------- | --------------- |
-| `CustomKeyInObjectDeprecation` / `PropertyMovedToConfigDeprecation`    | YAML files        | Move all models configs under `config:` in YAML files       |   Full  | No |
+| `PropertyMovedToConfigDeprecation`    | YAML files        | Move all deprecated property-level configs under `config:` in YAML files across all resource types (models, exposures, owners, etc)      |   Full  | No |
 | `CustomKeyInObjectDeprecation`    | YAML files        | Move all models extra config (not valid or custom) under `meta:` and `meta` under `config:`      |   Full  | No |
 | `DuplicateYAMLKeysDeprecation`    | YAML files        | Remove duplicate keys in YAML files, keeping the second one to keep the same behaviour           |   Full  | No |
-| `PropertyMovedToConfigDeprecation`| YAML files        | Only allow email and name as properties for groups and exposures owners                          |   Full  | No |
 | `UnexpectedJinjaBlockDeprecation` | SQL files         | Remove extra `{% endmacro %}` and `{% endif %}` that don't have corresponding opening statements |   Full  | No |
 | `GenericJSONSchemaValidationDeprecation` | `dbt_project.yml` | Prefix all configs for models/tests etc... with a `+`                                     | Partial | No |
 | `ConfigDataPathDeprecation`       | `dbt_project.yml` | Remove deprecated config for data path (now seed)                                                |   Full  | No |

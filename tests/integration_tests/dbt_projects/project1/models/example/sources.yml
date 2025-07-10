@@ -31,6 +31,8 @@ sources:
       schema: true
       identifier: true
 
+    custom_property: true
+
     tables:
       - name: table1
         description: table1-description
