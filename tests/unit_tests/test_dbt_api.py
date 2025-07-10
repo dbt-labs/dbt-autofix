@@ -1,6 +1,6 @@
 import pytest
 
-from dbt_autofix.dbt_api import step_regex_replace_m_with_s, step_remove_output
+from dbt_autofix.dbt_api import step_regex_replace_m_with_s, step_remove_source_freshness_output
 
 
 @pytest.mark.parametrize(
@@ -31,9 +31,9 @@ from dbt_autofix.dbt_api import step_regex_replace_m_with_s, step_remove_output
         ("dbt run  --models  model_name", "dbt run  --select  model_name"),
     ],
 )
-def test_step_regex_replace_m_with_s(input_step: str, expected: str):
+def test_step_remove_source_freshness_output(input_step: str, expected: str):
     """Test the step_regex_replace function with various input scenarios."""
-    assert step_regex_replace_m_with_s(input_step) == expected
+    assert step_remove_source_freshness_output(input_step) == expected
 
 
 @pytest.mark.parametrize(
@@ -47,6 +47,6 @@ def test_step_regex_replace_m_with_s(input_step: str, expected: str):
         ("dbt list --output custom_path -t prod", "dbt list --output custom_path -t prod"),
     ],
 )
-def test_step_remove_output(input_step: str, expected: str):
+def test_step_remove_source_freshness_output(input_step: str, expected: str):
     """Test the step_regex_replace function with various input scenarios."""
-    assert step_remove_output(input_step) == expected
+    assert step_remove_source_freshness_output(input_step) == expected

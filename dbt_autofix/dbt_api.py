@@ -46,7 +46,7 @@ def job_dict_to_payload(job_dict: dict) -> dict:
     return payload
 
 
-def job_steps_updated(job_dict: dict) -> tuple[bool, List[str]]:
+def job_steps_updated(job_dict: dict, behavior_change: bool) -> tuple[bool, List[str]]:
     """
     Check if the job steps need to be updated.
     """
@@ -57,10 +57,14 @@ def job_steps_updated(job_dict: dict) -> tuple[bool, List[str]]:
     updated_steps = exec_steps.copy()
     steps_changed = False
 
-    update_step_rules = [
-        step_regex_replace_m_with_s,
-        step_remove_output,
-    ]
+    if behavior_change:
+        update_step_rules = [
+            step_remove_source_freshness_output,
+        ]
+    else:
+        update_step_rules = [
+            step_regex_replace_m_with_s,
+        ]
 
     for i, step in enumerate(updated_steps):
         if isinstance(step, str):
@@ -83,11 +87,11 @@ def step_regex_replace_m_with_s(step: str) -> str:
     step = re.sub(r"(\s)--model[s]?(\s)", r"\1--select\2", step)
     return step
 
-def step_remove_output(step: str) -> str:
+def step_remove_source_freshness_output(step: str) -> str:
     """
     Remove --output in source freshness commands.
     """
-    if step.startswith("dbt source freshness"):
+    if ("dbt source freshness") in step:
         step = re.sub(r"(\s)-o(\s+)\S+", "", step)
         step = re.sub(r"(\s)--output(\s+)\S+", "", step)
     return step
@@ -293,6 +297,7 @@ def update_jobs(  # noqa: PLR0913
     environment_ids: Optional[List[int]] = None,
     dry_run: bool = False,
     json_output: bool = False,
+    behavior_change: bool = False,
 ):
     """
     Update jobs in dbt Cloud.
@@ -303,7 +308,7 @@ def update_jobs(  # noqa: PLR0913
     changesets: List[DBTCloudChangesetResult] = []
 
     for job in jobs:
-        modified, updated_steps = job_steps_updated(job)
+        modified, updated_steps = job_steps_updated(job, behavior_change)
         execute_steps: List[str] = job.get("execute_steps", [])
 
         if modified:
