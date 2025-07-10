@@ -1,0 +1,5 @@
+models:
+  - name: model with spaces
+
+exposures:
+  - name: exposure with spaces

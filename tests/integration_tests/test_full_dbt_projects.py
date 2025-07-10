@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import tempfile
+from collections import defaultdict
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -14,6 +15,9 @@ from dbt_autofix.main import refactor_yml
 
 dbt_projects_dir_name = "dbt_projects"
 postfix_expected = "_expected"
+
+project_dir_to_behavior_change_mode = defaultdict(lambda: False)
+project_dir_to_behavior_change_mode["project_behavior_changes"] = True
 
 
 def get_project_folders():
@@ -78,10 +82,13 @@ def compare_json_logs(logs_io: StringIO, path: Path):
 
     expected_logs = open(path).read().strip().split("\n")
     expected_log_dicts = [json.loads(log) for log in expected_logs]
-    expected_log_dicts_filtered = [{k: v for k, v in log_dict.items() if k not in ignore_keys} for log_dict in expected_log_dicts]
+    expected_log_dicts_filtered = [
+        {k: v for k, v in log_dict.items() if k not in ignore_keys} for log_dict in expected_log_dicts
+    ]
 
     for log_dict in log_dicts_filtered:
         assert log_dict in expected_log_dicts_filtered
+
 
 @pytest.mark.parametrize("project_folder", get_project_folders())
 def test_project_refactor(project_folder, request):
@@ -99,7 +106,12 @@ def test_project_refactor(project_folder, request):
     # Run refactor_yml on the project
     refactor_logs_io = StringIO()
     with redirect_stdout(refactor_logs_io):
-        refactor_yml(path=Path(project_path), dry_run=False, json_output=True)
+        refactor_yml(
+            path=Path(project_path),
+            dry_run=False,
+            json_output=True,
+            behavior_change=project_dir_to_behavior_change_mode[project_folder],
+        )
 
     # Compare with expected output
     expected_dir = os.path.join(dbt_projects_dir, f"{project_folder}{postfix_expected}")
@@ -108,7 +120,7 @@ def test_project_refactor(project_folder, request):
 
     compare_dirs(project_path, expected_dir)
 
-    expected_logs_path = Path(dbt_projects_dir, "project1_expected.stdout")
+    expected_logs_path = Path(dbt_projects_dir, f"{project_folder}_expected.stdout")
     compare_json_logs(refactor_logs_io, expected_logs_path)
 
     # Clean up temporary directory after test

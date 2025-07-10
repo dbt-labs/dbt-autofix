@@ -3,18 +3,35 @@
 dbt-autofix automatically scans your dbt project for deprecated configurations and updates them to align with the latest best practices. This makes it easier to resolve deprecation warnings introduced in dbt v1.10 as well as prepare for migration to the dbt Fusion engine.
 
 
-| Deprecation Code in dbt Core      | Files             | Handling                                                                                         | Support |
-| --------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------ | ------- |
-| `CustomKeyInObjectDeprecation` / `PropertyMovedToConfigDeprecation`    | YAML files        | Move all models configs under `config:` in YAML files       |   Full  |
-| `CustomKeyInObjectDeprecation`    | YAML files        | Move all models extra config (not valid or custom) under `meta:` and `meta` under `config:`      |   Full  |
-| `DuplicateYAMLKeysDeprecation`    | YAML files        | Remove duplicate keys in YAML files, keeping the second one to keep the same behaviour           |   Full  |
-| `PropertyMovedToConfigDeprecation`| YAML files        | Only allow email and name as properties for groups and exposures owners                          |   Full  |
-| `UnexpectedJinjaBlockDeprecation` | SQL files         | Remove extra `{% endmacro %}` and `{% endif %}` that don't have corresponding opening statements |   Full  |
-| `GenericJSONSchemaValidationDeprecation` | `dbt_project.yml` | Prefix all configs for models/tests etc... with a `+`                                     | Partial |
-| `ConfigDataPathDeprecation`       | `dbt_project.yml` | Remove deprecated config for data path (now seed)                                                |   Full  |
-| `ConfigLogPathDeprecation`        | `dbt_project.yml` | Remove deprecated config for log path                                                            |   Full  |
-| `ConfigSourcePathDeprecation`     | `dbt_project.yml` | Remove deprecated config for source path                                                         |   Full  |
-| `ConfigTargetPathDeprecation`     | `dbt_project.yml` | Remove deprecated config for target path                                                         |   Full  |
+## Deprecation Coverage - Project Files
+
+The following deprecations are covered by `dbt-autofix deprecations`:
+
+| Deprecation Code in dbt Core      | Files             | Handling                                                                                         | Support | Behavior Change |
+| --------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------ | ------- | --------------- |
+| `CustomKeyInObjectDeprecation` / `PropertyMovedToConfigDeprecation`    | YAML files        | Move all models configs under `config:` in YAML files       |   Full  | No |
+| `CustomKeyInObjectDeprecation`    | YAML files        | Move all models extra config (not valid or custom) under `meta:` and `meta` under `config:`      |   Full  | No |
+| `DuplicateYAMLKeysDeprecation`    | YAML files        | Remove duplicate keys in YAML files, keeping the second one to keep the same behaviour           |   Full  | No |
+| `PropertyMovedToConfigDeprecation`| YAML files        | Only allow email and name as properties for groups and exposures owners                          |   Full  | No |
+| `UnexpectedJinjaBlockDeprecation` | SQL files         | Remove extra `{% endmacro %}` and `{% endif %}` that don't have corresponding opening statements |   Full  | No |
+| `GenericJSONSchemaValidationDeprecation` | `dbt_project.yml` | Prefix all configs for models/tests etc... with a `+`                                     | Partial | No |
+| `ConfigDataPathDeprecation`       | `dbt_project.yml` | Remove deprecated config for data path (now seed)                                                |   Full  | No |
+| `ConfigLogPathDeprecation`        | `dbt_project.yml` | Remove deprecated config for log path                                                            |   Full  | No |
+| `ConfigSourcePathDeprecation`     | `dbt_project.yml` | Remove deprecated config for source path                                                         |   Full  | No |
+| `ConfigTargetPathDeprecation`     | `dbt_project.yml` | Remove deprecated config for target path                                                         |   Full  | No |
+| `ExposureNameDeprecation` | YAML files | Replaces spaces with underscores in exposure names | Full | Yes |
+| `ResourceNamesWithSpacesDeprecation` | SQL files, YAML files | Replaces spaces with underscores in resource names, updating .sql filenames as necessary | Full | Yes |  
+
+
+## Deprecation Coverage - CLI Commands
+
+The following deprecations are covered by `dbt-autofix jobs`:
+
+| Deprecation Code in dbt                        | Handling                              | Support | Behavior Change |
+| ---------------------------------------------- | ------------------------------------- | ------- | --------------- |
+| `ModelParamUsageDeprecation`                   | Replace -m/--model with -s/--select   |   Full  |       No        |
+| `CustomOutputPathInSourceFreshnessDeprecation` | Remove -o/--output usage in `dbt source freshness` commands              |   Full  | Yes |
+
 
 ## Installation
 
@@ -57,6 +74,8 @@ uv tool install --from git+https://github.com/dbt-labs/dbt-autofix.git dbt-autof
   - add `--json` to get resulting data in a JSONL format
   - add `--json-schema-version v2.0.0-beta.4` to get the JSON schema from a specific Fusion release (by default we pick the latest)
   - add `--select <path>` to only select files in a given path (by default the tool will look at all files of the dbt project)
+  - add `--include-packages` to also autofix the packages installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with Fusion.
+  - add `--behavior-changes` to run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
 
 Each JSON object will have the following keys:
 
@@ -78,3 +97,5 @@ Run `dbt-autofix jobs --help` to see the required parameters and supported argum
 This tool requires connecting to the dbt Admin API to retrieve and update jobs which means that the user token or service token used need to have Read and Write access to jobs
 
 Running with `--dry-run`/`d` will output what changes would have been triggered without triggering them
+
+Running with `--behavior-changes` will run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.

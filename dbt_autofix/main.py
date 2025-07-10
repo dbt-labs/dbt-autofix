@@ -51,11 +51,14 @@ def refactor_yml(  # noqa: PLR0913
     include_packages: Annotated[
         bool, typer.Option("--include-packages", "-i", help="Include packages in the refactoring")
     ] = False,
+    behavior_change: Annotated[
+        bool, typer.Option("--behavior-change", help="Run fixes to deprecations that may require a behavior change")
+    ] = False,
 ):
     schema_specs = SchemaSpecs(json_schema_version)
 
     changesets = changeset_all_sql_yml_files(
-        path, schema_specs, dry_run, exclude_dbt_project_keys, select, include_packages
+        path, schema_specs, dry_run, exclude_dbt_project_keys, select, include_packages, behavior_change
     )
     yaml_results, sql_results = changesets
     if dry_run:
@@ -93,9 +96,12 @@ def jobs(  # noqa: PLR0913
     ] = None,
     dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
+    behavior_change: Annotated[
+        bool, typer.Option("--behavior-change", help="Run fixes to deprecations that may require a behavior change")
+    ] = False,
 ):
     update_jobs(
-        account_id, api_key, base_url, disable_ssl_verification, project_ids, environment_ids, dry_run, json_output
+        account_id, api_key, base_url, disable_ssl_verification, project_ids, environment_ids, dry_run, json_output, behavior_change
     )
 
 
