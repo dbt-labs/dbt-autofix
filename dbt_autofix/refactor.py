@@ -489,7 +489,7 @@ def process_yaml_files_except_dbt_project(
 
 
 def process_dbt_project_yml(
-    root_path: Path, schema_specs: SchemaSpecs, dry_run: bool = False, exclude_dbt_project_keys: bool = False
+    root_path: Path, schema_specs: SchemaSpecs, dry_run: bool = False, exclude_dbt_project_keys: bool = False, behavior_change: bool = False
 ) -> YMLRefactorResult:
     """Process dbt_project.yml"""
     if not (root_path / "dbt_project.yml").exists():
@@ -513,11 +513,17 @@ def process_dbt_project_yml(
         refactors=[],
     )
 
-    changesets = [
-        (changeset_remove_duplicate_keys, None),
-        (changeset_dbt_project_remove_deprecated_config, exclude_dbt_project_keys),
-        (changeset_dbt_project_prefix_plus_for_config, root_path, schema_specs),
-    ]
+    if behavior_change:
+        changesets = [
+            (changeset_dbt_project_flip_behavior_flags, None)
+        ]
+    else:
+        changesets = [
+            (changeset_remove_duplicate_keys, None),
+            (changeset_dbt_project_remove_deprecated_config, exclude_dbt_project_keys),
+            (changeset_dbt_project_prefix_plus_for_config, root_path, schema_specs),
+            (changeset_dbt_project_flip_behavior_flags, None)
+        ]
 
     for changeset_func, *changeset_args in changesets:
         if changeset_args[0] is None:
@@ -1237,6 +1243,35 @@ def changeset_dbt_project_prefix_plus_for_config(
     )
 
 
+def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorResult:
+    yml_dict = DbtYAML().load(yml_str) or {}
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactored = False
+
+    behavior_change_flag_to_explainations = {
+        "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands."
+    }
+
+    for key in yml_dict:
+        if key == "flags":
+            for behavior_change_flag in behavior_change_flag_to_explainations:
+                if yml_dict["flags"].get(behavior_change_flag) is False:
+                    yml_dict["flags"][behavior_change_flag] = True
+                    refactored = True
+                    deprecation_refactors.append(
+                        DbtDeprecationRefactor(
+                            log=f"Set '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}."
+                        )
+                    )
+
+    return YMLRuleRefactorResult(
+            rule_name="flip_behavior_flags",
+            refactored=refactored,
+            refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,  # type: ignore
+            original_yaml=yml_str,
+            deprecation_refactors=deprecation_refactors,
+        )
+
 def get_dbt_files_paths(path: Path, include_packages: bool = False) -> Set[str]:
     """Get model and macro paths from dbt_project.yml
 
@@ -1359,7 +1394,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     dbt_project_yml_results = []
     for dbt_root_path in dbt_roots_paths:
         dbt_project_yml_results.append(
-            process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys)
+            process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change)
         )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results

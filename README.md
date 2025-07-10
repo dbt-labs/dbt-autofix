@@ -21,7 +21,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | `ConfigTargetPathDeprecation`     | `dbt_project.yml` | Remove deprecated config for target path                                                         |   Full  | No |
 | `ExposureNameDeprecation` | YAML files | Replaces spaces with underscores in exposure names | Full | Yes |
 | `ResourceNamesWithSpacesDeprecation` | SQL files, YAML files | Replaces spaces with underscores in resource names, updating .sql filenames as necessary | Full | Yes |  
-
+| `SourceFreshnessProjectHooksNotRun` | `dbt_project.yml` | Set `source_freshness_run_project_hooks` in `dbt_project.yml` "flags" to true | Full | Yes |
 
 ## Deprecation Coverage - CLI Commands
 
