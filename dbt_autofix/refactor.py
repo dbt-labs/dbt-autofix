@@ -1249,7 +1249,7 @@ def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorRe
     refactored = False
 
     behavior_change_flag_to_explainations = {
-        "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands."
+        "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands"
     }
 
     for key in yml_dict:
@@ -1260,7 +1260,7 @@ def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorRe
                     refactored = True
                     deprecation_refactors.append(
                         DbtDeprecationRefactor(
-                            log=f"Set '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}."
+                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}."
                         )
                     )
 
