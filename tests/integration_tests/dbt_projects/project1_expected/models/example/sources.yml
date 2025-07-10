@@ -24,6 +24,7 @@ sources:
           count: 2
           period: minute
       meta:
+        custom_property: true
         my_meta: my-meta-value
 
     quoting:
