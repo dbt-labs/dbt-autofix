@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import List, Optional
 
+import json
 import typer
 from rich import print
 from rich.console import Console
@@ -72,6 +73,9 @@ def refactor_yml(  # noqa: PLR0913
                 changeset.print_to_console(json_output)
     else:
         apply_changesets(yaml_results, sql_results, json_output)
+    
+    if json_output:
+        print(json.dumps({"mode": "complete"}))  # noqa: T201
 
 
 @app.command(name="jobs")
