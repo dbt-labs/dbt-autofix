@@ -13,7 +13,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | `CustomKeyInObjectDeprecation`    | YAML files        | Move all models extra config (not valid or custom) under `meta:` and `meta` under `config:`      |   Full  | No |
 | `DuplicateYAMLKeysDeprecation`    | YAML files        | Remove duplicate keys in YAML files, keeping the second one to keep the same behaviour           |   Full  | No |
 | `UnexpectedJinjaBlockDeprecation` | SQL files         | Remove extra `{% endmacro %}` and `{% endif %}` that don't have corresponding opening statements |   Full  | No |
-| `GenericJSONSchemaValidationDeprecation` | `dbt_project.yml` | Prefix all configs for models/tests etc... with a `+`                                     | Partial | No |
+| `MissingPlusPrefixDeprecation` | `dbt_project.yml` | Prefix all built-in configs for models/tests etc... with a `+`                                     | Partial (Does not yet prefix custom configs) | No |
 | `ConfigDataPathDeprecation`       | `dbt_project.yml` | Remove deprecated config for data path (now seed)                                                |   Full  | No |
 | `ConfigLogPathDeprecation`        | `dbt_project.yml` | Remove deprecated config for log path                                                            |   Full  | No |
 | `ConfigSourcePathDeprecation`     | `dbt_project.yml` | Remove deprecated config for source path                                                         |   Full  | No |

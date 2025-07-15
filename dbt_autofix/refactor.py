@@ -1250,7 +1250,7 @@ def changeset_dbt_project_prefix_plus_for_config(
     deprecation_refactors = [
         DbtDeprecationRefactor(
             log=log,
-            deprecation="GenericJSONSchemaValidationDeprecation"
+            deprecation="MissingPlusPrefixDeprecation"
         )
         for log in all_refactor_logs
     ]
