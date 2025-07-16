@@ -784,6 +784,24 @@ def restructure_yaml_keys_for_test(
                 test[test_name]["config"] = node_config
             del test[test_name][field]
 
+    # Move non-config args under 'args' key
+    copy_test = deepcopy(test)
+    if test_name not in ("unique", "not_null", "accepted_values", "relationships"):
+        for field in copy_test[test_name]:
+            if field == "config":
+                continue
+            refactored = True
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"{pretty_node_type} '{test_name}' - Argument '{field}' moved under 'args'.",
+                    # TODO: should this be a new deprecation class?
+                    deprecation="CustomKeyInObjectDeprecation"
+                )
+            )
+            test[test_name]["args"] = test[test_name].get("args", {})
+            test[test_name]["args"].update({field: test[test_name][field]})
+            del test[test_name][field]
+
     return test, refactored, deprecation_refactors
 
 
