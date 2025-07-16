@@ -1309,6 +1309,10 @@ def get_dbt_files_paths(path: Path, include_packages: bool = False) -> Set[str]:
 
     with open(path / "dbt_project.yml", "r") as f:
         project_config = safe_load(f)
+
+    if project_config is None:
+        return set()
+
     model_paths = project_config.get("model-paths", ["models"])
     seed_paths = project_config.get("seed-paths", ["seeds"])
     macro_paths = project_config.get("macro-paths", ["macros"])
