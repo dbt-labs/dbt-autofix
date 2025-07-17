@@ -754,40 +754,48 @@ def restructure_yaml_keys_for_test(
         return test, False, []
 
     test_name = next(iter(test.keys()))
-    copy_test = deepcopy(test)
+    if isinstance(test[test_name], dict):
+        # standard test definition syntax
+        test_definition = test[test_name]
+    else:
+        # alt syntax
+        test_name = test["test_name"]
+        test_definition = test
 
-    for field in copy_test[test_name]:
+    copy_test_definition = deepcopy(test_definition)
+
+    for field in copy_test_definition:
         if field in schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields_without_meta:
             refactored = True
-            node_config = test[test_name].get("config", {})
+            node_config = test_definition.get("config", {})
 
             # if the field is not under config, move it under config
             if field not in node_config:
-                node_config.update({field: test[test_name][field]})
+                node_config.update({field: test_definition[field]})
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{test_name}' - Field '{field}' moved under config.",
                         deprecation="CustomKeyInObjectDeprecation"
                     )
                 )
-                test[test_name]["config"] = node_config
+                test_definition["config"] = node_config
 
             # if the field is already under config, overwrite it and remove from top level
             else:
-                node_config[field] = test[test_name][field]
+                node_config[field] = test_definition[field]
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
                         deprecation="CustomKeyInObjectDeprecation"
                     )
                 )
-                test[test_name]["config"] = node_config
-            del test[test_name][field]
+                test_definition["config"] = node_config
+            del test_definition[field]
 
     # Move non-config args under 'args' key
-    copy_test = deepcopy(test)
+    copy_test_definition = deepcopy(test_definition)
     if test_name not in ("unique", "not_null", "accepted_values", "relationships"):
-        for field in copy_test[test_name]:
+        for field in copy_test_definition:
             if field in ("config", "args"):
                 continue
             refactored = True
@@ -798,9 +806,9 @@ def restructure_yaml_keys_for_test(
                     deprecation="CustomKeyInObjectDeprecation"
                 )
             )
-            test[test_name]["args"] = test[test_name].get("args", {})
-            test[test_name]["args"].update({field: test[test_name][field]})
-            del test[test_name][field]
+            test_definition["args"] = test_definition.get("args", {})
+            test_definition["args"].update({field: test_definition[field]})
+            del test_definition[field]
 
     return test, refactored, deprecation_refactors
 
