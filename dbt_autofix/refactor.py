@@ -788,7 +788,7 @@ def restructure_yaml_keys_for_test(
     copy_test = deepcopy(test)
     if test_name not in ("unique", "not_null", "accepted_values", "relationships"):
         for field in copy_test[test_name]:
-            if field == "config":
+            if field in ("config", "args"):
                 continue
             refactored = True
             deprecation_refactors.append(
