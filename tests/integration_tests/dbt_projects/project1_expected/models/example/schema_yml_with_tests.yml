@@ -1,5 +1,13 @@
 models:
   - name: my_model_with_tests
+    tests:
+      - unique:
+          column_name: id
+      - custom_test:
+          config:
+            severity: warn
+          args:
+            custom_arg: some_value
     columns:
       - name: id
         description: The ID.
@@ -21,3 +29,7 @@ models:
               severity: warn
             args:
               custom_arg: some_value
+          - name: alt_test_syntax_builtin_test
+            test_name: accepted_values
+            args:
+              values: [1, 2, 3]
