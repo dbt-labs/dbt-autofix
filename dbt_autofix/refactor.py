@@ -798,7 +798,7 @@ def restructure_yaml_keys_for_test(
     if test_name not in ("unique", "not_null", "accepted_values", "relationships") or "test_name" in copy_test_definition:
         for field in copy_test_definition:
             # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
-            if field in ("config", "args", "test_name", "name", "description"):
+            if field in ("config", "args", "test_name", "name", "description", "column_name"):
                 continue
             refactored = True
             deprecation_refactors.append(
