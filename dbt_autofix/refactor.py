@@ -794,14 +794,16 @@ def restructure_yaml_keys_for_test(
 
     # Move non-config args under 'args' key
     copy_test_definition = deepcopy(test_definition)
-    if test_name not in ("unique", "not_null", "accepted_values", "relationships"):
+    # This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
+    if test_name not in ("unique", "not_null", "accepted_values", "relationships") or "test_name" in copy_test_definition:
         for field in copy_test_definition:
-            if field in ("config", "args"):
+            # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
+            if field in ("config", "args", "test_name", "name", "description"):
                 continue
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"{pretty_node_type} '{test_name}' - Argument '{field}' moved under 'args'.",
+                    log=f"{pretty_node_type} '{test_name}' - Custom test argument '{field}' moved under 'args'.",
                     # TODO: should this be a new deprecation class?
                     deprecation="CustomKeyInObjectDeprecation"
                 )
