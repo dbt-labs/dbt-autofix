@@ -39,8 +39,9 @@ sources:
         identifier: table1id
         tests:
           - dbt_expectations.expect_table_columns_to_contain_set:
-              column_list: ["col_a", "col_b"]
-              transform: upper
+              args:
+                column_list: ["col_a", "col_b"]
+                transform: upper
 
         external:
           location: s3://my-bucket/my-path

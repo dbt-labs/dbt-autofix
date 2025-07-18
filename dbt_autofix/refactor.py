@@ -745,47 +745,88 @@ def restructure_yaml_keys_for_test(
         - Boolean indicating if changes were made
         - List of refactor logs
     """
-    refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    pretty_node_type = "Test"
 
     # if the test is a string, we leave it as is
     if isinstance(test, str):
         return test, False, []
 
+    # extract the test name and definition
     test_name = next(iter(test.keys()))
-    copy_test = deepcopy(test)
+    if isinstance(test[test_name], dict):
+        # standard test definition syntax
+        test_definition = test[test_name]
+    else:
+        # alt syntax
+        test_name = test["test_name"]
+        test_definition = test
 
-    for field in copy_test[test_name]:
-        if field in schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields_without_meta:
-            refactored = True
-            node_config = test[test_name].get("config", {})
+    deprecation_refactors.extend(refactor_test_config_fields(test_definition, test_name, schema_specs))
+    deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
+
+    return test, len(deprecation_refactors) > 0, deprecation_refactors
+
+def refactor_test_config_fields(test_definition: Dict[str, Any], test_name: str, schema_specs: SchemaSpecs) -> List[DbtDeprecationRefactor]:
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    test_configs = schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields_without_meta
+    test_properties = schema_specs.yaml_specs_per_node_type["tests"].allowed_properties
+
+    copy_test_definition = deepcopy(test_definition)
+    for field in copy_test_definition:
+        # field is a config and not a property
+        if field in test_configs and field not in test_properties:
+            node_config = test_definition.get("config", {})
 
             # if the field is not under config, move it under config
             if field not in node_config:
-                node_config.update({field: test[test_name][field]})
+                node_config.update({field: test_definition[field]})
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
-                        log=f"{pretty_node_type} '{test_name}' - Field '{field}' moved under config.",
+                        log=f"Test '{test_name}' - Field '{field}' moved under config.",
                         deprecation="CustomKeyInObjectDeprecation"
                     )
                 )
-                test[test_name]["config"] = node_config
+                test_definition["config"] = node_config
 
             # if the field is already under config, overwrite it and remove from top level
             else:
-                node_config[field] = test[test_name][field]
+                node_config[field] = test_definition[field]
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
-                        log=f"{pretty_node_type} '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
+                        log=f"Test '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
                         deprecation="CustomKeyInObjectDeprecation"
                     )
                 )
-                test[test_name]["config"] = node_config
-            del test[test_name][field]
+                test_definition["config"] = node_config
+            del test_definition[field]
 
-    return test, refactored, deprecation_refactors
+    return deprecation_refactors
 
+def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
+    """Move non-config args under 'args' key
+    This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
+    """
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    copy_test_definition = deepcopy(test_definition)
+    if test_name not in ("unique", "not_null", "accepted_values", "relationships") or "test_name" in copy_test_definition:
+        for field in copy_test_definition:
+            # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
+            if field in ("config", "args", "test_name", "name", "description", "column_name"):
+                continue
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'args'.",
+                    # TODO: should this be a new deprecation class?
+                    deprecation="CustomKeyInObjectDeprecation"
+                )
+            )
+            test_definition["args"] = test_definition.get("args", {})
+            test_definition["args"].update({field: test_definition[field]})
+            del test_definition[field]
+    
+    return deprecation_refactors
 
 def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
     """Generates a refactored YAML string from a single YAML file

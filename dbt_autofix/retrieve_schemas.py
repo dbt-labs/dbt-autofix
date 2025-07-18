@@ -198,6 +198,7 @@ def get_fusion_yml_schema(version: str) -> dict:
 
     # for some reason we have 2 different schemas now in the response
     response_split = response.text.split("----------------------------------------------")
+    
     return json.loads(response_split[-1])
 
 
