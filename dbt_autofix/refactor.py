@@ -769,9 +769,13 @@ def restructure_yaml_keys_for_test(
 def refactor_test_config_fields(test_definition: Dict[str, Any], test_name: str, schema_specs: SchemaSpecs) -> List[DbtDeprecationRefactor]:
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
+    test_configs = schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields_without_meta
+    test_properties = schema_specs.yaml_specs_per_node_type["tests"].allowed_properties
+
     copy_test_definition = deepcopy(test_definition)
     for field in copy_test_definition:
-        if field in schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields_without_meta:
+        # field is a config and not a property
+        if field in test_configs and field not in test_properties:
             node_config = test_definition.get("config", {})
 
             # if the field is not under config, move it under config

@@ -1,0 +1,22 @@
+models:
+  - name: my_model_with_tests
+    columns:
+      - name: id
+        description: The ID.
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: [1, 2, 3]
+          - relationships:
+              to:
+                - model: my_other_model
+                  field: id
+                  on_delete: cascade
+                  on_update: cascade
+          - name: my_custom_test
+            test_name: custom_test
+            custom_arg: some_value
+            description: my custom test
+            config:
+              severity: warn
