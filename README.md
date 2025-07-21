@@ -21,6 +21,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | `ExposureNameDeprecation` | YAML files | Replaces spaces with underscores in exposure names | Full | Yes |
 | `ResourceNamesWithSpacesDeprecation` | SQL files, YAML files | Replaces spaces with underscores in resource names, updating .sql filenames as necessary | Full | Yes |  
 | `SourceFreshnessProjectHooksNotRun` | `dbt_project.yml` | Set `source_freshness_run_project_hooks` in `dbt_project.yml` "flags" to true | Full | Yes |
+| `MissingGenericTestArgumentsPropertyDeprecation` | YAML files | Move any keyword arguments defined as top-level property on generic test to `arguments` property | Full | No |
 
 ## Deprecation Coverage - CLI Commands
 

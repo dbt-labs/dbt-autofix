@@ -838,8 +838,7 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'args'.",
-                    # TODO: should this be a new deprecation class?
-                    deprecation="CustomKeyInObjectDeprecation"
+                    deprecation="MissingGenericTestArgumentsPropertyDeprecation"
                 )
             )
             test_definition["args"] = test_definition.get("args", {})
