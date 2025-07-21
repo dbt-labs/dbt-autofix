@@ -22,6 +22,8 @@ from dbt_autofix.retrieve_schemas import (
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
+REFACTOR_TEST_ARGS = False
+
 console = Console()
 error_console = Console(stderr=True)
 
@@ -546,6 +548,11 @@ def process_dbt_project_yml(
             yml_refactor_result.refactored = True
             yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
+    # Temporary hack to check if it is safe to refactor test args
+    if (DbtYAML().load(yml_str) or {}).get("flags", {}).get("require_generic_test_arguments_property", False):
+        global REFACTOR_TEST_ARGS
+        REFACTOR_TEST_ARGS = True
+
     return yml_refactor_result
 
 
@@ -774,7 +781,8 @@ def restructure_yaml_keys_for_test(
         test_definition = test
 
     deprecation_refactors.extend(refactor_test_config_fields(test_definition, test_name, schema_specs))
-    deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
+    if REFACTOR_TEST_ARGS:
+        deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
 
     return test, len(deprecation_refactors) > 0, deprecation_refactors
 
@@ -1463,18 +1471,17 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
 
     sql_results = process_sql_files(path, dbt_paths, dry_run, select, behavior_change, all)
 
-    # Process YAML files
-    yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all
-    )
-
     # Process dbt_project.yml
-
     dbt_project_yml_results = []
     for dbt_root_path in dbt_roots_paths:
         dbt_project_yml_results.append(
             process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change, all)
         )
+
+    # Process YAML files
+    yaml_results = process_yaml_files_except_dbt_project(
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all
+    )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results
 

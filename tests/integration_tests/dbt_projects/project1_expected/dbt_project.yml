@@ -32,3 +32,6 @@ models:
     # Config indicated by + and applies to all files under models/example/
     example:
       +materialized: view
+
+flags:
+  require_generic_test_arguments_property: true
