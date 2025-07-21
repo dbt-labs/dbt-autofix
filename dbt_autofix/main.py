@@ -55,11 +55,14 @@ def refactor_yml(  # noqa: PLR0913
     behavior_change: Annotated[
         bool, typer.Option("--behavior-change", help="Run fixes to deprecations that may require a behavior change")
     ] = False,
+    all: Annotated[
+        bool, typer.Option("--all", help="Run all fixes, including those that may require a behavior change")
+    ] = False,
 ):
     schema_specs = SchemaSpecs(json_schema_version)
 
     changesets = changeset_all_sql_yml_files(
-        path, schema_specs, dry_run, exclude_dbt_project_keys, select, include_packages, behavior_change
+        path, schema_specs, dry_run, exclude_dbt_project_keys, select, include_packages, behavior_change, all
     )
     yaml_results, sql_results = changesets
     if dry_run:

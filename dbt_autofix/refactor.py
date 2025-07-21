@@ -423,6 +423,7 @@ def process_yaml_files_except_dbt_project(
     dry_run: bool = False,
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
+    all: bool = False,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project
 
@@ -433,6 +434,7 @@ def process_yaml_files_except_dbt_project(
         dry_run: Whether to perform a dry run
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior changes
+        all: Whether to run all fixes, including those that may require a behavior change
     """
     yaml_results: List[YMLRefactorResult] = []
 
@@ -455,20 +457,21 @@ def process_yaml_files_except_dbt_project(
             )
 
             # Define the changesets to apply in order
-            if behavior_change:
-                changesets = [
-                    (changeset_replace_spaces_underscores_in_name_values, schema_specs),
-                ]
-            else:
-                changesets = [
-                    (changeset_remove_tab_only_lines, None),
-                    (changeset_remove_indentation_version, None),
-                    (changeset_remove_extra_tabs, None),
-                    (changeset_remove_duplicate_keys, None),
-                    (changeset_replace_spaces_underscores_in_name_values, schema_specs),
-                    (changeset_refactor_yml_str, schema_specs),
-                    (changeset_owner_properties_yml_str, schema_specs),
-                ]
+            behavior_change_rules = [
+                (changeset_replace_spaces_underscores_in_name_values, schema_specs),
+            ]
+            safe_change_rules = [
+                (changeset_remove_tab_only_lines, None),
+                (changeset_remove_indentation_version, None),
+                (changeset_remove_extra_tabs, None),
+                (changeset_remove_duplicate_keys, None),
+                (changeset_replace_spaces_underscores_in_name_values, schema_specs),
+                (changeset_refactor_yml_str, schema_specs),
+                (changeset_owner_properties_yml_str, schema_specs),
+            ]
+            all_rules = [*behavior_change_rules, *safe_change_rules]
+
+            changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
             # Apply each changeset in sequence
             try:
@@ -493,7 +496,7 @@ def process_yaml_files_except_dbt_project(
 
 
 def process_dbt_project_yml(
-    root_path: Path, schema_specs: SchemaSpecs, dry_run: bool = False, exclude_dbt_project_keys: bool = False, behavior_change: bool = False
+    root_path: Path, schema_specs: SchemaSpecs, dry_run: bool = False, exclude_dbt_project_keys: bool = False, behavior_change: bool = False, all: bool = False
 ) -> YMLRefactorResult:
     """Process dbt_project.yml"""
     if not (root_path / "dbt_project.yml").exists():
@@ -517,17 +520,18 @@ def process_dbt_project_yml(
         refactors=[],
     )
 
-    if behavior_change:
-        changesets = [
-            (changeset_dbt_project_flip_behavior_flags, None)
-        ]
-    else:
-        changesets = [
-            (changeset_remove_duplicate_keys, None),
-            (changeset_dbt_project_remove_deprecated_config, exclude_dbt_project_keys),
-            (changeset_dbt_project_prefix_plus_for_config, root_path, schema_specs),
-            (changeset_dbt_project_flip_behavior_flags, None)
-        ]
+    behavior_change_rules = [
+        (changeset_dbt_project_flip_behavior_flags, None)
+    ]
+    safe_change_rules = [
+        (changeset_remove_duplicate_keys, None),
+        (changeset_dbt_project_remove_deprecated_config, exclude_dbt_project_keys),
+        (changeset_dbt_project_prefix_plus_for_config, root_path, schema_specs),
+        (changeset_dbt_project_flip_behavior_flags, None)
+    ]
+    all_rules = [*behavior_change_rules, *safe_change_rules]
+
+    changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
     for changeset_func, *changeset_args in changesets:
         if changeset_args[0] is None:
@@ -559,6 +563,7 @@ def process_sql_files(
     dry_run: bool = False,
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
+    all: bool = False,
 ) -> List[SQLRefactorResult]:
     """Process all SQL files in the given paths for unmatched endings.
 
@@ -567,16 +572,23 @@ def process_sql_files(
         sql_paths: Set of paths relative to project root where SQL files are located
         dry_run: Whether to perform a dry run
         select: Optional list of paths to select
+        behavior_change: Whether to apply fixes that may lead to behavior change
+        all: Whether to run all fixes, including those that may require a behavior change
 
     Returns:
         List of SQLRefactorResult for each processed file
     """
     results: List[SQLRefactorResult] = []
 
-    if behavior_change:
-        process_sql_file_rules = [(rename_sql_file_names_with_spaces, True)]
-    else:
-        process_sql_file_rules = [(remove_unmatched_endings, False)]
+    behavior_change_rules = [
+        (rename_sql_file_names_with_spaces, True)
+    ]
+    safe_change_rules = [
+        (remove_unmatched_endings, False)
+    ]
+    all_rules = [*behavior_change_rules, *safe_change_rules]
+
+    process_sql_file_rules = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
     for sql_path in sql_paths:
         full_path = (path / sql_path).resolve()
@@ -1427,6 +1439,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     select: Optional[List[str]] = None,
     include_packages: bool = False,
     behavior_change: bool = False,
+    all: bool = False,
 ) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult]]:
     """Process all YAML files and SQL files in the project
 
@@ -1438,6 +1451,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
         select: List of paths to select
         include_packages: Whether to include packages in the refactoring
         behavior_change: Whether to apply fixes that may lead to behavior changes
+        all: Whether to run all fixes, including those that may require a behavior change
 
     Returns:
         Tuple containing:
@@ -1447,11 +1461,11 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     dbt_paths = get_dbt_files_paths(path, include_packages)
     dbt_roots_paths = get_dbt_roots_paths(path, include_packages)
 
-    sql_results = process_sql_files(path, dbt_paths, dry_run, select, behavior_change)
+    sql_results = process_sql_files(path, dbt_paths, dry_run, select, behavior_change, all)
 
     # Process YAML files
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all
     )
 
     # Process dbt_project.yml
@@ -1459,7 +1473,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     dbt_project_yml_results = []
     for dbt_root_path in dbt_roots_paths:
         dbt_project_yml_results.append(
-            process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change)
+            process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change, all)
         )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results
