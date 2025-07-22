@@ -824,7 +824,7 @@ def refactor_test_config_fields(test_definition: Dict[str, Any], test_name: str,
     return deprecation_refactors
 
 def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
-    """Move non-config args under 'args' key
+    """Move non-config args under 'arguments' key
     This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
     """
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -833,7 +833,7 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
     if test_name not in ("unique", "not_null", "accepted_values", "relationships") or "test_name" in copy_test_definition:
         for field in copy_test_definition:
             # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
-            if field in ("config", "args", "test_name", "name", "description", "column_name"):
+            if field in ("config", "arguments", "test_name", "name", "description", "column_name"):
                 continue
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
@@ -841,8 +841,8 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
                     deprecation="MissingGenericTestArgumentsPropertyDeprecation"
                 )
             )
-            test_definition["args"] = test_definition.get("args", {})
-            test_definition["args"].update({field: test_definition[field]})
+            test_definition["arguments"] = test_definition.get("arguments", {})
+            test_definition["arguments"].update({field: test_definition[field]})
             del test_definition[field]
     
     return deprecation_refactors

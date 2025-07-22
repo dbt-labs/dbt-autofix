@@ -6,7 +6,7 @@ models:
       - custom_test:
           config:
             severity: warn
-          args:
+          arguments:
             custom_arg: some_value
     columns:
       - name: id
@@ -27,9 +27,9 @@ models:
             description: my custom test
             config:
               severity: warn
-            args:
+            arguments:
               custom_arg: some_value
           - name: alt_test_syntax_builtin_test
             test_name: accepted_values
-            args:
+            arguments:
               values: [1, 2, 3]

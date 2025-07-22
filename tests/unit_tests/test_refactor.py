@@ -1235,9 +1235,9 @@ models:
         assert "compare_model" not in test[test_name]
         assert "group_by" not in test[test_name]
       
-        assert test[test_name]["args"]["expression"] == "sum(col_numeric_a)"
-        assert test[test_name]["args"]["compare_model"] == 'ref("other_model")'
-        assert test[test_name]["args"]["group_by"] == ["idx"]
+        assert test[test_name]["arguments"]["expression"] == "sum(col_numeric_a)"
+        assert test[test_name]["arguments"]["compare_model"] == 'ref("other_model")'
+        assert test[test_name]["arguments"]["group_by"] == ["idx"]
 
         # Check that appropriate logs were generated
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
