@@ -15,6 +15,7 @@ from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
 from yaml import safe_load
 
+from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.retrieve_schemas import (
     DbtProjectSpecs,
     SchemaSpecs,
@@ -278,7 +279,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endmacro %}} near line {line_num}",
-                        deprecation="UnexpectedJinjaBlockDeprecation"
+                        deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION
                     )
                 )
             else:
@@ -299,7 +300,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endif %}} near line {line_num}",
-                        deprecation="UnexpectedJinjaBlockDeprecation"
+                        deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION
                         )
                 )
             else:
@@ -326,7 +327,7 @@ def rename_sql_file_names_with_spaces(sql_content: str, sql_file_path: Path):
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f"Renamed '{sql_file_path.name}' to '{new_file_path.name}'",
-                deprecation="ResourceNamesWithSpacesDeprecation"
+                deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION
             )
         )
 
@@ -679,11 +680,11 @@ def restructure_yaml_keys_for_node(
             if field not in node_config:
                 node_config.update({field: node[field]})
                 deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config.",
-                        deprecation="PropertyMovedToConfigDeprecation"
+                        DbtDeprecationRefactor(
+                            log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config.",
+                            deprecation=DeprecationType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION
+                        )
                     )
-                )
                 node["config"] = node_config
 
             # if the field is already under config, it will take precedence there, so we remove it from the top level
@@ -709,14 +710,14 @@ def restructure_yaml_keys_for_node(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not allowed, but '{closest_match[0]}' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
-                        deprecation="CustomKeyInObjectDeprecation"
+                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
                     )
                 )
             else:
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not an allowed config - Moved under config.meta.",
-                        deprecation="CustomKeyInObjectDeprecation"
+                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
                     )
                 )
             node_meta = node.get("config", {}).get("meta", {})
@@ -730,7 +731,7 @@ def restructure_yaml_keys_for_node(
         deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Moved all the meta fields under config.meta and merged with existing config.meta.",
-                        deprecation="CustomKeyInObjectDeprecation"
+                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
                     )
                 )
 
@@ -804,7 +805,7 @@ def refactor_test_config_fields(test_definition: Dict[str, Any], test_name: str,
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Test '{test_name}' - Field '{field}' moved under config.",
-                        deprecation="CustomKeyInObjectDeprecation"
+                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
                     )
                 )
                 test_definition["config"] = node_config
@@ -815,7 +816,7 @@ def refactor_test_config_fields(test_definition: Dict[str, Any], test_name: str,
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Test '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
-                        deprecation="CustomKeyInObjectDeprecation"
+                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
                     )
                 )
                 test_definition["config"] = node_config
@@ -838,7 +839,7 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'args'.",
-                    deprecation="MissingGenericTestArgumentsPropertyDeprecation"
+                    deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION
                 )
             )
             test_definition["arguments"] = test_definition.get("arguments", {})
@@ -868,7 +869,7 @@ def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) 
                         deprecation_refactors.append(
                             DbtDeprecationRefactor(
                                 log=log,
-                                deprecation="CustomKeyInObjectDeprecation"
+                                deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
                             )
                         )
 
