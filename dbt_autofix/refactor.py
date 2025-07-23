@@ -1376,14 +1376,21 @@ def get_dbt_files_paths(path: Path, include_packages: bool = False) -> Set[str]:
     if project_config is None:
         return set()
 
-    model_paths = project_config.get("model-paths", ["models"])
-    seed_paths = project_config.get("seed-paths", ["seeds"])
-    macro_paths = project_config.get("macro-paths", ["macros"])
-    test_paths = project_config.get("test-paths", ["tests"])
-    analysis_paths = project_config.get("analysis-paths", ["analyses"])
-    snapshot_paths = project_config.get("snapshot-paths", ["snapshots"])
+    key_to_paths = {
+        "model-paths": project_config.get("model-paths", ["models"]),
+        "seed-paths": project_config.get("seed-paths", ["seeds"]),
+        "macro-paths": project_config.get("macro-paths", ["macros"]),
+        "test-paths": project_config.get("test-paths", ["tests"]),
+        "analysis-paths": project_config.get("analysis-paths", ["analyses"]),
+        "snapshot-paths": project_config.get("snapshot-paths", ["snapshots"]),
+    }
 
-    all_paths = set(model_paths + seed_paths + macro_paths + test_paths + analysis_paths + snapshot_paths)
+    all_paths = set()
+    for key, paths in key_to_paths.items():
+        if not isinstance(paths, list):
+            error_console.print(f"Warning: Paths '{paths}' for '{key}' cannot be autofixed", style="yellow")
+            continue
+        all_paths.update(paths)
 
     if include_packages:
         packages_path = project_config.get("packages-paths", "dbt_packages")
