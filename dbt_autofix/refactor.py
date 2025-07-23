@@ -702,7 +702,7 @@ def restructure_yaml_keys_for_node(
         if field not in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields:
             refactored = True
             closest_match = difflib.get_close_matches(
-                field,
+                str(field),
                 schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields.union(
                     set(schema_specs.yaml_specs_per_node_type[node_type].allowed_properties)
                 ),
