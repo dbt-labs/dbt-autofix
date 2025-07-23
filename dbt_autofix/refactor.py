@@ -826,6 +826,7 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
 
     copy_test_definition = deepcopy(test_definition)
     if test_name not in ("unique", "not_null", "accepted_values", "relationships") or "test_name" in copy_test_definition:
+        # Avoid refactoring if the test already has an arguments key that is not a dict
         if "arguments" in test_definition and not isinstance(test_definition["arguments"], dict):
             return deprecation_refactors
 
