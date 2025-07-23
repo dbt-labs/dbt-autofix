@@ -322,6 +322,8 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
 
 def rename_sql_file_names_with_spaces(sql_content: str, sql_file_path: Path):
     deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    new_file_path = sql_file_path
     if " " in sql_file_path.name:
         new_file_path = sql_file_path.with_name(sql_file_path.name.replace(" ", "_"))
         deprecation_refactors.append(
