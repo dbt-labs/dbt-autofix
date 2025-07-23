@@ -23,8 +23,6 @@ from dbt_autofix.retrieve_schemas import (
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
-REFACTOR_TEST_ARGS = False
-
 console = Console()
 error_console = Console(stderr=True)
 
@@ -551,11 +549,6 @@ def process_dbt_project_yml(
             yml_refactor_result.refactored = True
             yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
-    # Temporary hack to check if it is safe to refactor test args
-    if (DbtYAML().load(yml_str) or {}).get("flags", {}).get("require_generic_test_arguments_property", False):
-        global REFACTOR_TEST_ARGS
-        REFACTOR_TEST_ARGS = True
-
     return yml_refactor_result
 
 
@@ -784,8 +777,7 @@ def restructure_yaml_keys_for_test(
         test_definition = test
 
     deprecation_refactors.extend(refactor_test_config_fields(test_definition, test_name, schema_specs))
-    if REFACTOR_TEST_ARGS:
-        deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
+    deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
 
     return test, len(deprecation_refactors) > 0, deprecation_refactors
 
@@ -834,13 +826,16 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
 
     copy_test_definition = deepcopy(test_definition)
     if test_name not in ("unique", "not_null", "accepted_values", "relationships") or "test_name" in copy_test_definition:
+        if "arguments" in test_definition and not isinstance(test_definition["arguments"], dict):
+            return deprecation_refactors
+
         for field in copy_test_definition:
             # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
             if field in ("config", "arguments", "test_name", "name", "description", "column_name"):
                 continue
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'args'.",
+                    log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'arguments'.",
                     deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION
                 )
             )
