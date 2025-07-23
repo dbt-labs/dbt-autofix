@@ -532,7 +532,6 @@ def process_dbt_project_yml(
         (changeset_remove_duplicate_keys, None),
         (changeset_dbt_project_remove_deprecated_config, exclude_dbt_project_keys),
         (changeset_dbt_project_prefix_plus_for_config, root_path, schema_specs),
-        (changeset_dbt_project_flip_behavior_flags, None)
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
