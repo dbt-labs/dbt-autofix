@@ -494,8 +494,8 @@ def process_yaml_files_except_dbt_project(
                 yaml_results.append(yml_refactor_result)
 
             except Exception as e:
-                error_console.print(f"Error processing YAML at path {yml_file}: {e}", style="bold red")
-                raise e
+                error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
+                exit(1)
 
     return yaml_results
 
