@@ -33,11 +33,3 @@ models:
             test_name: accepted_values
             arguments:
               values: [1, 2, 3]
-          - custom_test_with_arguments:
-              arguments: my_arguments
-          - test_name: custom_test_with_arguments_alt_format
-            arguments: my_arguments
-          - custom_test_with_arguments_dict:
-              arguments:
-                custom_arg: some_value
-                invalid_custom_arg: some_value
