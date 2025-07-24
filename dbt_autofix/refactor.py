@@ -463,14 +463,13 @@ def process_yaml_files_except_dbt_project(
 
             # Define the changesets to apply in order
             behavior_change_rules = [
-                (changeset_replace_spaces_underscores_in_name_values, schema_specs),
+                (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
             ]
             safe_change_rules = [
                 (changeset_remove_tab_only_lines, None),
                 (changeset_remove_indentation_version, None),
                 (changeset_remove_extra_tabs, None),
                 (changeset_remove_duplicate_keys, None),
-                (changeset_replace_spaces_underscores_in_name_values, schema_specs),
                 (changeset_refactor_yml_str, schema_specs),
                 (changeset_owner_properties_yml_str, schema_specs),
             ]
@@ -839,7 +838,7 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
                 continue
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'args'.",
+                    log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'arguments'.",
                     deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION
                 )
             )
@@ -1071,30 +1070,23 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
     )
 
 
-def changeset_replace_spaces_underscores_in_name_values(
+def changeset_replace_non_alpha_underscores_in_name_values(
     yml_str: str, schema_specs: SchemaSpecs
 ) -> YMLRuleRefactorResult:
-    refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:
             for i, node in enumerate(yml_dict[node_type]):
-                processed_node, node_refactored, node_refactor_logs = replace_node_name_spaces_with_underscores(
+                processed_node, node_deprecation_refactors = replace_node_name_non_alpha_with_underscores(
                     node, node_type
                 )
-                if node_refactored:
-                    refactored = True
+                if node_deprecation_refactors:
                     yml_dict[node_type][i] = processed_node
-                    for log in node_refactor_logs:
-                        deprecation_refactors.append(
-                            DbtDeprecationRefactor(
-                                log=log,
-                                deprecation= "ExposureNameDeprecation" if node_type == "exposures" else "ResourceNamesWithSpacesDeprecation"
-                            )
-                        )
+                    deprecation_refactors.extend(node_deprecation_refactors)
 
+    refactored = len(deprecation_refactors) > 0
     refactored_yaml = DbtYAML().dump_to_string(yml_dict) if refactored else yml_str
 
     return YMLRuleRefactorResult(
@@ -1106,22 +1098,33 @@ def changeset_replace_spaces_underscores_in_name_values(
     )
 
 
-def replace_node_name_spaces_with_underscores(node: dict[str, str], node_type: str):
-    node_refactor_logs = []
+def replace_node_name_non_alpha_with_underscores(node: dict[str, str], node_type: str):
+    node_deprecation_refactors: List[DbtDeprecationRefactor] = []
     node_copy = node.copy()
     pretty_node_type = node_type[:-1].title()
 
-    for key, value in node.items():
-        if key == "name" and " " in value:
-            new_value = value.replace(" ", "_")
-            node_copy[key] = new_value
+    deprecation = None
+    name = node.get("name", None)
+    new_name = None
+    if name:
+        if node_type == "exposures":
+            new_name = name.replace(" ", "_")
+            new_name =''.join(c for c in new_name if (c.isalnum() or c == "_"))
+            deprecation = "ExposureNameDeprecation"
+        else:
+            new_name = name.replace(" ", "_")
+            deprecation = "ResourceNamesWithSpacesDeprecation"
 
-            node_refactor_logs.append(
-                f"{pretty_node_type} '{node['name']} - Updated 'name' from '{value}' to '{new_value}'."
+        if new_name and new_name != name:
+            node_copy["name"] = new_name
+            node_deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log = f"{pretty_node_type} '{node['name']} - Updated 'name' from '{name}' to '{new_name}'.",
+                    deprecation=deprecation
+                )
             )
-    refactored = len(node_refactor_logs) != 0
 
-    return node_copy, refactored, node_refactor_logs
+    return node_copy, node_deprecation_refactors
 
 
 def changeset_remove_indentation_version(yml_str: str) -> YMLRuleRefactorResult:

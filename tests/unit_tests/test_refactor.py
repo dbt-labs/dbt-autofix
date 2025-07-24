@@ -15,7 +15,7 @@ from dbt_autofix.refactor import (
     changeset_remove_duplicate_keys,
     changeset_remove_extra_tabs,
     changeset_remove_indentation_version,
-    changeset_replace_spaces_underscores_in_name_values,
+    changeset_replace_non_alpha_underscores_in_name_values,
     dict_to_yaml_str,
     rec_check_yaml_path,
     remove_unmatched_endings,
@@ -1871,7 +1871,7 @@ models:
 class TestReplaceSpacesUnderscoresInNameValues:
     """Tests for changeset_remove_duplicate_keys function"""
 
-    def test_changeset_replace_spaces_underscores_in_name_values(self, schema_specs: SchemaSpecs):
+    def test_changeset_replace_non_alpha_underscores_in_name_values(self, schema_specs: SchemaSpecs):
         """Test that YAML without duplicate keys is not modified"""
         input_yaml = """
 version: 2
@@ -1881,8 +1881,9 @@ models:
 
 exposures: 
   - name: exposure with spaces
+  - name: exposure_with)(*!#$&)# special chars
 """
-        result = changeset_replace_spaces_underscores_in_name_values(input_yaml, schema_specs)
+        result = changeset_replace_non_alpha_underscores_in_name_values(input_yaml, schema_specs)
         assert result.refactored
         refactored_dict = safe_load(result.refactored_yaml)
 
@@ -1894,3 +1895,6 @@ exposures:
 
         exposure_refactored = refactored_dict["exposures"][0]
         assert exposure_refactored["name"] == "exposure_with_spaces"
+
+        exposure_special_chars_refactored = refactored_dict["exposures"][1]
+        assert exposure_special_chars_refactored["name"] == "exposure_with_special_chars"

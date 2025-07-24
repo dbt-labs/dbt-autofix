@@ -18,7 +18,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | `ConfigLogPathDeprecation`        | `dbt_project.yml` | Remove deprecated config for log path                                                            |   Full  | No |
 | `ConfigSourcePathDeprecation`     | `dbt_project.yml` | Remove deprecated config for source path                                                         |   Full  | No |
 | `ConfigTargetPathDeprecation`     | `dbt_project.yml` | Remove deprecated config for target path                                                         |   Full  | No |
-| `ExposureNameDeprecation` | YAML files | Replaces spaces with underscores in exposure names | Full | Yes |
+| `ExposureNameDeprecation` | YAML files | Replaces spaces with underscores and removes non-alphanumeric characters in exposure names | Full | Yes |
 | `ResourceNamesWithSpacesDeprecation` | SQL files, YAML files | Replaces spaces with underscores in resource names, updating .sql filenames as necessary | Full | Yes |  
 | `SourceFreshnessProjectHooksNotRun` | `dbt_project.yml` | Set `source_freshness_run_project_hooks` in `dbt_project.yml` "flags" to true | Full | Yes |
 | `MissingGenericTestArgumentsPropertyDeprecation` | YAML files | Move any keyword arguments defined as top-level property on generic test to `arguments` property | Full | No |
