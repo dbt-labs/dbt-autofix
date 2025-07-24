@@ -1119,7 +1119,7 @@ def replace_node_name_non_alpha_with_underscores(node: dict[str, str], node_type
             node_copy["name"] = new_name
             node_deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log = f"{pretty_node_type} '{node['name']} - Updated 'name' from '{name}' to '{new_name}'.",
+                    log = f"{pretty_node_type} '{node['name']}' - Updated 'name' from '{name}' to '{new_name}'.",
                     deprecation=deprecation
                 )
             )
