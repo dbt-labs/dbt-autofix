@@ -902,6 +902,20 @@ class TestDbtProjectYAMLPusPrefix:
         assert expected_data == new_yml
         assert len(refactor_logs) == 2
 
+    def test_check_project_custom_config_not_in_meta(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
+        test_data = {"models": {"custom_config": "custom_value", "folder": {"custom_config": "custom_value", "materialized": "table"}}}
+        expected_data ={"models": {"+meta": {"custom_config": "custom_value"}, "folder": {"+meta": {"custom_config": "custom_value"}, "+materialized": "table"}}}
+
+        new_file = temp_project_dir / "models" / "folder" / "my_model.sql"
+        new_file.parent.mkdir(parents=True, exist_ok=True)
+        new_file.write_text("select 1 as id")
+
+        new_yml, refactor_logs = rec_check_yaml_path(
+            test_data, temp_project_dir, schema_specs.dbtproject_specs_per_node_type["models"]
+        )
+        assert expected_data == new_yml
+        assert len(refactor_logs) == 3
+
     def test_check_project_no_change(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
         # Test that output_yaml produces valid YAML
 
