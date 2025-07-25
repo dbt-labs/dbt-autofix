@@ -129,11 +129,15 @@ class SchemaSpecs:
                 dbt_project_schema["definitions"][saved_query_property_field_name_dbt_project]["properties"]
             ),
         )
-        # dbtproject_specs_exposures = DbtProjectSpecs(
-        #     allowed_config_fields_dbt_project_with_plus=set(
-        #         dbt_project_schema["definitions"]["ProjectExposuresConfig"]["properties"]
-        #     ),
-        # )
+
+        exposure_property_field_name_dbt_project = self._get_dbt_project_schema_fields(
+            dbt_project_schema, "exposures"
+        )
+        dbtproject_specs_exposures = DbtProjectSpecs(
+            allowed_config_fields_dbt_project_with_plus=set(
+                dbt_project_schema["definitions"][exposure_property_field_name_dbt_project]["properties"]
+            ),
+        )
 
         return (
             {
@@ -157,7 +161,7 @@ class SchemaSpecs:
                 "sources": dbtproject_specs_sources,
                 "tests": dbtproject_specs_tests,
                 "data_tests": dbtproject_specs_tests,
-                # "exposures": dbtproject_specs_exposures, -- doesn't exist for exposure right now...
+                "exposures": dbtproject_specs_exposures,
             },
         )
 
