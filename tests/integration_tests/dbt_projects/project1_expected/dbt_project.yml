@@ -37,3 +37,6 @@ models:
 
 exposures:
   +enabled: true
+
+flags:
+  require_generic_test_arguments_property: true
