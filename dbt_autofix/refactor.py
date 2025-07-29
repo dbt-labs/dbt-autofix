@@ -23,6 +23,8 @@ from dbt_autofix.retrieve_schemas import (
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
+REFACTOR_TEST_ARGS = False
+
 console = Console()
 error_console = Console(stderr=True)
 
@@ -547,6 +549,11 @@ def process_dbt_project_yml(
             yml_refactor_result.refactored = True
             yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
+    # Temporary hack to check if it is safe to refactor test args
+    if (DbtYAML().load(yml_str) or {}).get("flags", {}).get("require_generic_test_arguments_property", False):
+        global REFACTOR_TEST_ARGS
+        REFACTOR_TEST_ARGS = True
+
     return yml_refactor_result
 
 
@@ -775,7 +782,8 @@ def restructure_yaml_keys_for_test(
         test_definition = test
 
     deprecation_refactors.extend(refactor_test_config_fields(test_definition, test_name, schema_specs))
-    deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
+    if REFACTOR_TEST_ARGS:
+        deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
 
     return test, len(deprecation_refactors) > 0, deprecation_refactors
 
