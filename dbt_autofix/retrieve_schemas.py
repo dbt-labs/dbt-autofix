@@ -192,7 +192,7 @@ class SchemaSpecs:
                 "tests": dbtproject_specs_tests,
                 "data_tests": dbtproject_specs_tests,
                 "exposures": dbtproject_specs_exposures,
-                "unit_tests": dbtproject_specs_unit_tests,
+                "unit-tests": dbtproject_specs_unit_tests,
             },
             valid_top_level_yaml_fields
         )

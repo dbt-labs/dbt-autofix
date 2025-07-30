@@ -1,0 +1,9 @@
+analyses:
+  - name: analysis_name
+    description: "test description"
+    custom_field: custom_value
+    docs:
+      show: true
+      node_color: purple
+    config:
+      tags: "test"
