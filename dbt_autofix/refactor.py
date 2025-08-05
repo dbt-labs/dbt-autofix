@@ -15,6 +15,8 @@ from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
 from yaml import safe_load
 
+
+from dbt_common.clients.jinja import get_template, render_template
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.retrieve_schemas import (
     DbtProjectSpecs,
@@ -320,6 +322,74 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     )
 
 
+def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs) -> SQLRuleRefactorResult:
+    """Move custom configs to meta in SQL files.
+
+    Args:
+        sql_content: The SQL content to process
+        schema_specs: The schema specifications to use
+    """
+    refactored = False
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    # Capture original config macro calls
+    original_sql_configs = {}
+    def capture_config(*args, **kwargs):
+        original_sql_configs.update(kwargs)
+
+    ctx = {"config": capture_config}
+    template = get_template(sql_content, ctx=ctx, capture_macros=True)
+
+    # Crude way to avoid rendering the template if it doesn't contain 'config'
+    if "config" in sql_content:
+        render_template(template, ctx=ctx)
+
+    # Refactor config based on schema specs
+    refactored_sql_configs = deepcopy(original_sql_configs)
+    moved_to_meta = []
+    for sql_config_key, sql_config_value in original_sql_configs.items():
+        # If the config key is not in the schema specs, move it to meta
+        if sql_config_key not in schema_specs.yaml_specs_per_node_type["models"].allowed_config_fields:
+            if "meta" not in refactored_sql_configs:
+                refactored_sql_configs["meta"] = {}
+            refactored_sql_configs["meta"].update({sql_config_key: sql_config_value})
+            moved_to_meta.append(sql_config_key)
+            del refactored_sql_configs[sql_config_key]
+
+    # Update {{ config(...) }} macro call with new configs if any were moved to meta
+    refactored_content = None
+    if refactored_sql_configs != original_sql_configs:
+        refactored = True
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to meta",
+                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+            )
+        )
+        config_pattern = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
+        new_config_str = _serialize_config_macro_call(refactored_sql_configs)
+        def replace_config(match):
+            return f"{{{{ config({new_config_str}) }}}}"
+        refactored_content = config_pattern.sub(replace_config, sql_content, count=1)
+
+    return SQLRuleRefactorResult(
+        rule_name="move_custom_configs_to_meta_sql",
+        refactored=refactored,
+        refactored_content=refactored_content or sql_content,
+        original_content=sql_content,
+        deprecation_refactors=deprecation_refactors,
+    )
+
+def _serialize_config_macro_call(config_dict: dict) -> str:
+    items = []
+    for k, v in config_dict.items():
+        if isinstance(v, str):
+            v_str = f'"{v}"'
+        else:
+            v_str = str(v)
+        items.append(f"{k}={v_str}")
+    return ", ".join(items)
+
 def rename_sql_file_names_with_spaces(sql_content: str, sql_file_path: Path):
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -568,6 +638,7 @@ def skip_file(file_path: Path, select: Optional[List[str]] = None) -> bool:
 def process_sql_files(
     path: Path,
     sql_paths: Iterable[str],
+    schema_specs: SchemaSpecs,
     dry_run: bool = False,
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
@@ -589,10 +660,11 @@ def process_sql_files(
     results: List[SQLRefactorResult] = []
 
     behavior_change_rules = [
-        (rename_sql_file_names_with_spaces, True)
+        (rename_sql_file_names_with_spaces, True, False)
     ]
     safe_change_rules = [
-        (remove_unmatched_endings, False)
+        (remove_unmatched_endings, False, False),
+        (move_custom_configs_to_meta_sql, False, True)
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
@@ -616,9 +688,13 @@ def process_sql_files(
                 new_content = original_content
 
                 new_file_path = sql_file
-                for sql_file_rule, requires_file_path in process_sql_file_rules:
-                    if requires_file_path:
+                for sql_file_rule, requires_file_path, requires_schema_specs in process_sql_file_rules:
+                    if requires_file_path and requires_schema_specs:
+                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path, schema_specs)
+                    elif requires_file_path:
                         sql_file_refactor_result = sql_file_rule(new_content, new_file_path)
+                    elif requires_schema_specs:
+                        sql_file_refactor_result = sql_file_rule(new_content, schema_specs)
                     else:
                         sql_file_refactor_result = sql_file_rule(new_content)
 
@@ -1497,7 +1573,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     dbt_paths = get_dbt_files_paths(path, include_packages)
     dbt_roots_paths = get_dbt_roots_paths(path, include_packages)
 
-    sql_results = process_sql_files(path, dbt_paths, dry_run, select, behavior_change, all)
+    sql_results = process_sql_files(path, dbt_paths, schema_specs,dry_run, select, behavior_change, all)
 
     # Process dbt_project.yml
     dbt_project_yml_results = []
