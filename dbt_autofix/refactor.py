@@ -17,6 +17,7 @@ from yaml import safe_load
 
 
 from dbt_common.clients.jinja import get_template, render_template
+from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.retrieve_schemas import (
     DbtProjectSpecs,
@@ -341,8 +342,10 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
     template = get_template(sql_content, ctx=ctx, capture_macros=True)
 
     # Crude way to avoid rendering the template if it doesn't contain 'config'
-    if "config" in sql_content:
+    if "config(" in sql_content:
         render_template(template, ctx=ctx)
+
+    statically_parsed_config = statically_parse_unrendered_config(sql_content) or {}
 
     # Refactor config based on schema specs
     refactored_sql_configs = deepcopy(original_sql_configs)
@@ -359,18 +362,22 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
     # Update {{ config(...) }} macro call with new configs if any were moved to meta
     refactored_content = None
     if refactored_sql_configs != original_sql_configs:
-        refactored = True
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to meta",
-                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+        # Determine if jinja rendering occurred as part of config macro call
+        original_config_str = _serialize_config_macro_call(original_sql_configs)
+        post_render_statically_parsed_config = statically_parse_unrendered_config(f"{{{{ config({original_config_str}) }}}}")
+        if post_render_statically_parsed_config == statically_parsed_config:
+            refactored = True
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to meta",
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+                )
             )
-        )
-        config_pattern = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
-        new_config_str = _serialize_config_macro_call(refactored_sql_configs)
-        def replace_config(match):
-            return f"{{{{ config({new_config_str}) }}}}"
-        refactored_content = config_pattern.sub(replace_config, sql_content, count=1)
+            config_pattern = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
+            new_config_str = _serialize_config_macro_call(refactored_sql_configs)
+            def replace_config(match):
+                return f"{{{{ config({new_config_str}) }}}}"
+            refactored_content = config_pattern.sub(replace_config, sql_content, count=1)
 
     return SQLRuleRefactorResult(
         rule_name="move_custom_configs_to_meta_sql",
