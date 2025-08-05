@@ -322,7 +322,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     )
 
 
-def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs) -> SQLRuleRefactorResult:
+def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs, node_type: str) -> SQLRuleRefactorResult:
     """Move custom configs to meta in SQL files.
 
     Args:
@@ -349,7 +349,7 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs)
     moved_to_meta = []
     for sql_config_key, sql_config_value in original_sql_configs.items():
         # If the config key is not in the schema specs, move it to meta
-        if sql_config_key not in schema_specs.yaml_specs_per_node_type["models"].allowed_config_fields:
+        if sql_config_key not in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields:
             if "meta" not in refactored_sql_configs:
                 refactored_sql_configs["meta"] = {}
             refactored_sql_configs["meta"].update({sql_config_key: sql_config_value})
@@ -637,7 +637,7 @@ def skip_file(file_path: Path, select: Optional[List[str]] = None) -> bool:
 
 def process_sql_files(
     path: Path,
-    sql_paths: Iterable[str],
+    sql_paths_to_node_type: Dict[str, str],
     schema_specs: SchemaSpecs,
     dry_run: bool = False,
     select: Optional[List[str]] = None,
@@ -670,7 +670,7 @@ def process_sql_files(
 
     process_sql_file_rules = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
-    for sql_path in sql_paths:
+    for sql_path, node_type in sql_paths_to_node_type.items():
         full_path = (path / sql_path).resolve()
         if not full_path.exists():
             error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
@@ -690,11 +690,11 @@ def process_sql_files(
                 new_file_path = sql_file
                 for sql_file_rule, requires_file_path, requires_schema_specs in process_sql_file_rules:
                     if requires_file_path and requires_schema_specs:
-                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path, schema_specs)
+                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path, schema_specs, node_type)
                     elif requires_file_path:
                         sql_file_refactor_result = sql_file_rule(new_content, new_file_path)
                     elif requires_schema_specs:
-                        sql_file_refactor_result = sql_file_rule(new_content, schema_specs)
+                        sql_file_refactor_result = sql_file_rule(new_content, schema_specs, node_type)
                     else:
                         sql_file_refactor_result = sql_file_rule(new_content)
 
@@ -1450,7 +1450,7 @@ def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorRe
             deprecation_refactors=deprecation_refactors,
         )
 
-def get_dbt_files_paths(path: Path, include_packages: bool = False) -> Set[str]:
+def get_dbt_files_paths(root_path: Path, include_packages: bool = False) -> Dict[str, str]:
     """Get model and macro paths from dbt_project.yml
 
     Args:
@@ -1461,11 +1461,11 @@ def get_dbt_files_paths(path: Path, include_packages: bool = False) -> Set[str]:
         A list of paths to the models, macros, tests, analyses, and snapshots
     """
 
-    if not (path / "dbt_project.yml").exists():
-        error_console.print(f"Error: dbt_project.yml not found in {path}", style="red")
+    if not (root_path / "dbt_project.yml").exists():
+        error_console.print(f"Error: dbt_project.yml not found in {root_path}", style="red")
         return set()
 
-    with open(path / "dbt_project.yml", "r") as f:
+    with open(root_path / "dbt_project.yml", "r") as f:
         project_config = safe_load(f)
 
     if project_config is None:
@@ -1480,16 +1480,27 @@ def get_dbt_files_paths(path: Path, include_packages: bool = False) -> Set[str]:
         "snapshot-paths": project_config.get("snapshot-paths", ["snapshots"]),
     }
 
-    all_paths = set()
+    key_to_node_type = {
+        "model-paths": "models",
+        "seed-paths": "seeds",
+        "macro-paths": "macros",
+        "test-paths": "tests",
+        "analysis-paths": "analyses",
+        "snapshot-paths": "snapshots",
+    }
+
+    path_to_node_type = {}
+
     for key, paths in key_to_paths.items():
         if not isinstance(paths, list):
             error_console.print(f"Warning: Paths '{paths}' for '{key}' cannot be autofixed", style="yellow")
             continue
-        all_paths.update(paths)
+        for path in paths:
+            path_to_node_type[str(path)] = key_to_node_type[key]
 
     if include_packages:
         packages_path = project_config.get("packages-paths", "dbt_packages")
-        packages_dir = path / packages_path
+        packages_dir = root_path / packages_path
 
         if packages_dir.exists():
             for package_folder in packages_dir.iterdir():
@@ -1508,19 +1519,19 @@ def get_dbt_files_paths(path: Path, include_packages: bool = False) -> Set[str]:
 
                         # Combine package folder path with each path type
                         for model_path in package_model_paths:
-                            all_paths.add(str(package_folder / model_path))
+                            path_to_node_type[str(package_folder / model_path)] = "models"
                         for seed_path in package_seed_paths:
-                            all_paths.add(str(package_folder / seed_path))
+                            path_to_node_type[str(package_folder / seed_path)] = "seeds"
                         for macro_path in package_macro_paths:
-                            all_paths.add(str(package_folder / macro_path))
+                            path_to_node_type[str(package_folder / macro_path)] = "macros"
                         for test_path in package_test_paths:
-                            all_paths.add(str(package_folder / test_path))
+                            path_to_node_type[str(package_folder / test_path)] = "tests"
                         for analysis_path in package_analysis_paths:
-                            all_paths.add(str(package_folder / analysis_path))
+                            path_to_node_type[str(package_folder / analysis_path)] = "analyses"
                         for snapshot_path in package_snapshot_paths:
-                            all_paths.add(str(package_folder / snapshot_path))
+                            path_to_node_type[str(package_folder / snapshot_path)] = "snapshots"
 
-    return all_paths
+    return path_to_node_type
 
 
 def get_dbt_roots_paths(root_path: Path, include_packages: bool = False) -> Set[str]:
@@ -1570,10 +1581,11 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
         - List of YAML refactor results
         - List of SQL refactor results
     """
-    dbt_paths = get_dbt_files_paths(path, include_packages)
+    dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages)
+    dbt_paths = list(dbt_paths_to_node_type.keys())
     dbt_roots_paths = get_dbt_roots_paths(path, include_packages)
 
-    sql_results = process_sql_files(path, dbt_paths, schema_specs,dry_run, select, behavior_change, all)
+    sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
 
     # Process dbt_project.yml
     dbt_project_yml_results = []
