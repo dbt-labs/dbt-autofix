@@ -448,6 +448,7 @@ def process_yaml_files_except_dbt_project(
             set((root_path / Path(model_path)).resolve().glob("**/*.yaml"))
         )
         for yml_file in yaml_files:
+            is_in_root_project = yml_file.is_relative_to(root_path)
             if skip_file(yml_file, select):
                 continue
 
@@ -463,15 +464,15 @@ def process_yaml_files_except_dbt_project(
 
             # Define the changesets to apply in order
             behavior_change_rules = [
-                (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
+                (changeset_replace_non_alpha_underscores_in_name_values, [schema_specs]),
             ]
             safe_change_rules = [
                 (changeset_remove_tab_only_lines, None),
                 (changeset_remove_indentation_version, None),
                 (changeset_remove_extra_tabs, None),
                 (changeset_remove_duplicate_keys, None),
-                (changeset_refactor_yml_str, schema_specs),
-                (changeset_owner_properties_yml_str, schema_specs),
+                (changeset_refactor_yml_str, [schema_specs, is_in_root_project]),
+                (changeset_owner_properties_yml_str, [schema_specs]),
             ]
             all_rules = [*behavior_change_rules, *safe_change_rules]
 
@@ -483,7 +484,7 @@ def process_yaml_files_except_dbt_project(
                     if changeset_args is None:
                         changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
                     else:
-                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
+                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml, *changeset_args)
 
                     if changeset_result.refactored:
                         yml_refactor_result.refactors.append(changeset_result)
@@ -500,7 +501,7 @@ def process_yaml_files_except_dbt_project(
 
 
 def process_dbt_project_yml(
-    root_path: Path, schema_specs: SchemaSpecs, dry_run: bool = False, exclude_dbt_project_keys: bool = False, behavior_change: bool = False, all: bool = False
+    root_path: Path, schema_specs: SchemaSpecs, dry_run: bool = False, exclude_dbt_project_keys: bool = False, behavior_change: bool = False, all: bool = False, is_root_project: bool = False
 ) -> YMLRefactorResult:
     """Process dbt_project.yml"""
     if not (root_path / "dbt_project.yml").exists():
@@ -550,7 +551,7 @@ def process_dbt_project_yml(
             yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
     # Temporary hack to check if it is safe to refactor test args
-    if (DbtYAML().load(yml_str) or {}).get("flags", {}).get("require_generic_test_arguments_property", False):
+    if is_root_project and (DbtYAML().load(yml_str) or {}).get("flags", {}).get("require_generic_test_arguments_property", False):
         global REFACTOR_TEST_ARGS
         REFACTOR_TEST_ARGS = True
 
@@ -747,7 +748,7 @@ def restructure_yaml_keys_for_node(
 
 
 def restructure_yaml_keys_for_test(
-    test: Dict[str, Any], schema_specs: SchemaSpecs
+    test: Dict[str, Any], schema_specs: SchemaSpecs, is_in_root_project: bool = False
 ) -> Tuple[Dict[str, Any], bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys for tests according to dbt conventions.
     Tests are separated from other nodes because
@@ -782,7 +783,7 @@ def restructure_yaml_keys_for_test(
         test_definition = test
 
     deprecation_refactors.extend(refactor_test_config_fields(test_definition, test_name, schema_specs))
-    if REFACTOR_TEST_ARGS:
+    if not is_in_root_project or REFACTOR_TEST_ARGS:
         deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
 
     return test, len(deprecation_refactors) > 0, deprecation_refactors
@@ -886,7 +887,7 @@ def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) 
     )
 
 
-def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:  # noqa: PLR0912,PLR0915
+def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs, is_in_root_project: bool = False) -> YMLRuleRefactorResult:  # noqa: PLR0912,PLR0915
     """Generates a refactored YAML string from a single YAML file
     - moves all the config fields under config
     - moves all the meta fields under config.meta and merges with existing config.meta
@@ -937,7 +938,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
                             test_key = next(iter(some_tests))
                             for test_i, test in enumerate(node["columns"][column_i][test_key]):
                                 processed_test, test_refactored, test_refactor_deprecations = restructure_yaml_keys_for_test(
-                                    test, schema_specs
+                                    test, schema_specs, is_in_root_project
                                 )
                                 if test_refactored:
                                     refactored = True
@@ -950,7 +951,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
                     test_key = next(iter(some_tests))
                     for test_i, test in enumerate(node[test_key]):
                         processed_test, test_refactored, test_refactor_deprecations = restructure_yaml_keys_for_test(
-                            test, schema_specs
+                            test, schema_specs, is_in_root_project
                         )
                         if test_refactored:
                             refactored = True
@@ -975,7 +976,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
                         test_key = next(iter(some_tests))
                         for test_i, test in enumerate(source["tables"][j][test_key]):
                             processed_test, test_refactored, test_refactor_deprecations = restructure_yaml_keys_for_test(
-                                test, schema_specs
+                                test, schema_specs, is_in_root_project
                             )
                             if test_refactored:
                                 refactored = True
@@ -997,7 +998,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
                                 test_key = next(iter(some_tests))
                                 for test_i, test in enumerate(table_column[test_key]):
                                     processed_test, test_refactored, test_deprecation_refactors = (
-                                        restructure_yaml_keys_for_test(test, schema_specs)
+                                        restructure_yaml_keys_for_test(test, schema_specs, is_in_root_project)
                                     )
                                     if test_refactored:
                                         refactored = True
@@ -1503,7 +1504,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     dbt_project_yml_results = []
     for dbt_root_path in dbt_roots_paths:
         dbt_project_yml_results.append(
-            process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change, all)
+            process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change, all, is_root_project=dbt_root_path == path)
         )
 
     # Process YAML files
