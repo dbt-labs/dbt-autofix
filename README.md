@@ -12,6 +12,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | `PropertyMovedToConfigDeprecation`    | YAML files        | Move all deprecated property-level configs under `config:` in YAML files across all resource types (models, exposures, owners, etc)      |   Full  | No |
 | `CustomKeyInObjectDeprecation`    | YAML files        | Move all models extra config (not valid or custom) under `meta:` and `meta` under `config:`      |   Full  | No |
 | `DuplicateYAMLKeysDeprecation`    | YAML files        | Remove duplicate keys in YAML files, keeping the second one to keep the same behaviour           |   Full  | No |
+| `CustomTopLevelKeyDeprecation` | YAML files | Delete custom top-level key-value pairs in YAML files | Full | No |
 | `UnexpectedJinjaBlockDeprecation` | SQL files         | Remove extra `{% endmacro %}` and `{% endif %}` that don't have corresponding opening statements |   Full  | No |
 | `MissingPlusPrefixDeprecation` | `dbt_project.yml` | Prefix all built-in configs for models/tests etc... with a `+`                                     | Partial (Does not yet prefix custom configs) | No |
 | `ConfigDataPathDeprecation`       | `dbt_project.yml` | Remove deprecated config for data path (now seed)                                                |   Full  | No |

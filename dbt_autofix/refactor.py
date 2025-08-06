@@ -910,10 +910,23 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
     - moves all the meta fields under config.meta and merges with existing config.meta
     - moves all the unknown fields under config.meta
     - provide some information if some fields don't exist but are similar to allowed fields
+    - remove custom top-level keys
     """
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
+
+    yml_dict_keys = list(yml_dict.keys())
+    for key in yml_dict_keys:
+        if key not in schema_specs.valid_top_level_yaml_fields:
+            refactored = True
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Removed custom top-level key: '{key}'",
+                    deprecation=DeprecationType.CUSTOM_TOP_LEVEL_KEY_DEPRECATION
+                )
+            )
+            yml_dict.pop(key)
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:

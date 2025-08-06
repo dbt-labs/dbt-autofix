@@ -28,11 +28,11 @@ class DbtProjectSpecs:
 
 class SchemaSpecs:
     def __init__(self, version: Optional[str] = None):
-        self.yaml_specs_per_node_type, self.dbtproject_specs_per_node_type = self._get_specs(version)
+        self.yaml_specs_per_node_type, self.dbtproject_specs_per_node_type, self.valid_top_level_yaml_fields = self._get_specs(version)
         self.owner_properties = ["name", "email"]
         self.nodes_with_owner = ["groups", "exposures"]
 
-    def _get_specs(self, version: Optional[str] = None) -> tuple[dict[str, YAMLSpecs], dict[str, DbtProjectSpecs]]:
+    def _get_specs(self, version: Optional[str] = None) -> tuple[dict[str, YAMLSpecs], dict[str, DbtProjectSpecs], list[str]]:
         if os.getenv("DEBUG"):
             logging.basicConfig(level=logging.INFO)
 
@@ -41,49 +41,13 @@ class SchemaSpecs:
         yml_schema = get_fusion_yml_schema(version)
         dbt_project_schema = get_fusion_dbt_project_schema(version)
 
+        valid_top_level_yaml_fields = list(yml_schema["properties"].keys())
+
+        # "models"
         model_property_field_name, model_config_field_name = self._get_yml_schema_fields(yml_schema, "models")
         yaml_specs_models = YAMLSpecs(
             allowed_config_fields=set(yml_schema["definitions"][model_config_field_name]["properties"]),
             allowed_properties=set(yml_schema["definitions"][model_property_field_name]["properties"]),
-        )
-        source_property_field_name, source_config_field_name = self._get_yml_schema_fields(yml_schema, "sources")
-        yaml_specs_sources = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][source_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][source_property_field_name]["properties"]),
-        )
-        snapshot_property_field_name, snapshot_config_field_name = self._get_yml_schema_fields(yml_schema, "snapshots")
-        yaml_specs_snapshots = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][snapshot_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][snapshot_property_field_name]["properties"]),
-        )
-        seed_property_field_name, seed_config_field_name = self._get_yml_schema_fields(yml_schema, "seeds")
-        yaml_specs_seeds = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][seed_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][seed_property_field_name]["properties"]),
-        )
-        exposure_property_field_name, exposure_config_field_name = self._get_yml_schema_fields(yml_schema, "exposures")
-        yaml_specs_exposures = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][exposure_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][exposure_property_field_name]["properties"]),
-        )
-        table_property_field_name, table_config_field_name = self._get_yml_schema_subfields(
-            yml_schema, source_property_field_name, "tables"
-        )
-        yaml_specs_tables = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][table_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][table_property_field_name]["properties"]),
-        )
-        column_property_field_name, column_config_field_name = self._get_yml_schema_subfields(
-            yml_schema, model_property_field_name, "columns"
-        )
-        columns = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][column_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][column_property_field_name]["properties"]),
-        )
-        test_property_field_name, test_config_field_name = self._get_yml_schema_fields(yml_schema, "tests")
-        yaml_specs_tests = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][test_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][test_property_field_name]["properties"]),
         )
         model_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "models")
         dbtproject_specs_models = DbtProjectSpecs(
@@ -91,11 +55,25 @@ class SchemaSpecs:
                 dbt_project_schema["definitions"][model_property_field_name_dbt_project]["properties"]
             ),
         )
+
+        # "sources"
+        source_property_field_name, source_config_field_name = self._get_yml_schema_fields(yml_schema, "sources")
+        yaml_specs_sources = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][source_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][source_property_field_name]["properties"]),
+        )
         source_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "sources")
         dbtproject_specs_sources = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][source_property_field_name_dbt_project]["properties"]
             ),
+        )
+
+        # "snapshots"
+        snapshot_property_field_name, snapshot_config_field_name = self._get_yml_schema_fields(yml_schema, "snapshots")
+        yaml_specs_snapshots = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][snapshot_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][snapshot_property_field_name]["properties"]),
         )
         snapshot_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "snapshots")
         dbtproject_specs_snapshots = DbtProjectSpecs(
@@ -103,11 +81,58 @@ class SchemaSpecs:
                 dbt_project_schema["definitions"][snapshot_property_field_name_dbt_project]["properties"]
             ),
         )
+
+        # "seeds"
+        seed_property_field_name, seed_config_field_name = self._get_yml_schema_fields(yml_schema, "seeds")
+        yaml_specs_seeds = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][seed_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][seed_property_field_name]["properties"]),
+        )
         seed_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "seeds")
         dbtproject_specs_seeds = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][seed_property_field_name_dbt_project]["properties"]
             ),
+        )
+
+        # "exposures"
+        exposure_property_field_name, exposure_config_field_name = self._get_yml_schema_fields(yml_schema, "exposures")
+        yaml_specs_exposures = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][exposure_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][exposure_property_field_name]["properties"]),
+        )
+        exposure_property_field_name_dbt_project = self._get_dbt_project_schema_fields(
+            dbt_project_schema, "exposures"
+        )
+        dbtproject_specs_exposures = DbtProjectSpecs(
+            allowed_config_fields_dbt_project_with_plus=set(
+                dbt_project_schema["definitions"][exposure_property_field_name_dbt_project]["properties"]
+            ),
+        )
+
+        # "tables"
+        table_property_field_name, table_config_field_name = self._get_yml_schema_subfields(
+            yml_schema, source_property_field_name, "tables"
+        )
+        yaml_specs_tables = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][table_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][table_property_field_name]["properties"]),
+        )
+
+        # "columns"
+        column_property_field_name, column_config_field_name = self._get_yml_schema_subfields(
+            yml_schema, model_property_field_name, "columns"
+        )
+        columns = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][column_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][column_property_field_name]["properties"]),
+        )
+
+        # "tests" or "data_tests"
+        test_property_field_name, test_config_field_name = self._get_yml_schema_fields(yml_schema, "tests")
+        yaml_specs_tests = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][test_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][test_property_field_name]["properties"]),
         )
         test_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "tests")
         dbtproject_specs_tests = DbtProjectSpecs(
@@ -115,27 +140,31 @@ class SchemaSpecs:
                 dbt_project_schema["definitions"][test_property_field_name_dbt_project]["properties"]
             ),
         )
-        metric_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "metrics")
-        dbtproject_specs_metrics = DbtProjectSpecs(
-            allowed_config_fields_dbt_project_with_plus=set(
-                dbt_project_schema["definitions"][metric_property_field_name_dbt_project]["properties"]
-            ),
-        )
-        saved_query_property_field_name_dbt_project = self._get_dbt_project_schema_fields(
-            dbt_project_schema, "saved-queries"
-        )
-        dbtproject_specs_saved_queries = DbtProjectSpecs(
-            allowed_config_fields_dbt_project_with_plus=set(
-                dbt_project_schema["definitions"][saved_query_property_field_name_dbt_project]["properties"]
-            ),
+
+        # "groups"
+        group_property_field_name, group_config_field_name = self._get_yml_schema_fields(yml_schema, "groups")
+        yaml_specs_groups = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][group_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][group_property_field_name]["properties"]),
         )
 
-        exposure_property_field_name_dbt_project = self._get_dbt_project_schema_fields(
-            dbt_project_schema, "exposures"
+        # "analyses"
+        analysis_property_field_name, analysis_config_field_name = self._get_yml_schema_fields(yml_schema, "analyses")
+        yaml_specs_analyses = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][analysis_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][analysis_property_field_name]["properties"]),
         )
-        dbtproject_specs_exposures = DbtProjectSpecs(
+
+        # "unit_tests"
+        unit_tests_property_field_name, unit_tests_config_field_name = self._get_yml_schema_fields(yml_schema, "unit_tests")
+        yaml_specs_unit_tests = YAMLSpecs(
+            allowed_config_fields=set(yml_schema["definitions"][unit_tests_config_field_name]["properties"]),
+            allowed_properties=set(yml_schema["definitions"][unit_tests_property_field_name]["properties"]),
+        )
+        unit_tests_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "unit_tests")
+        dbtproject_specs_unit_tests = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
-                dbt_project_schema["definitions"][exposure_property_field_name_dbt_project]["properties"]
+                dbt_project_schema["definitions"][unit_tests_property_field_name_dbt_project]["properties"]
             ),
         )
 
@@ -150,19 +179,22 @@ class SchemaSpecs:
                 "exposures": yaml_specs_exposures,
                 "tables": yaml_specs_tables,  # tables is nested under sources
                 "columns": columns,  # columns is nested under models
+                "groups": yaml_specs_groups,
+                "analyses": yaml_specs_analyses,
+                "unit_tests": yaml_specs_unit_tests,
             },
             {
-                "metrics": dbtproject_specs_metrics,
                 "models": dbtproject_specs_models,
                 "seeds": dbtproject_specs_seeds,
                 # "semantic-models": dbtproject_specs_saved_queries, -- there is an issue with those specs in 165
-                "saved-queries": dbtproject_specs_saved_queries,
                 "snapshots": dbtproject_specs_snapshots,
                 "sources": dbtproject_specs_sources,
                 "tests": dbtproject_specs_tests,
                 "data_tests": dbtproject_specs_tests,
                 "exposures": dbtproject_specs_exposures,
+                "unit-tests": dbtproject_specs_unit_tests,
             },
+            valid_top_level_yaml_fields
         )
 
     def _get_yml_schema_fields(self, yml_schema: dict, node_type: str) -> tuple[str, str]:
