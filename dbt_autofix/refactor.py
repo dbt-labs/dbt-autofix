@@ -665,6 +665,23 @@ def restructure_yaml_keys_for_node(
     existing_meta = node.get("meta", {}).copy()
     pretty_node_type = node_type[:-1].title()
 
+    for field in node.get("config", {}):
+        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields:
+            continue
+
+        refactored = True
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is not an allowed config - Moved under config.meta.",
+                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+            )
+        )
+        node_config_meta = node.get("config", {}).get("meta", {})
+        node_config_meta.update({field: node["config"][field]})
+        node["config"] = node.get("config", {})
+        node["config"].update({"meta": node_config_meta})
+        del node["config"][field]
+
     # we can not loop node and modify it at the same time
     copy_node = node.copy()
 
