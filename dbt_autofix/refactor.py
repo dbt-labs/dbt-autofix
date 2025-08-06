@@ -1470,13 +1470,13 @@ def get_dbt_files_paths(root_path: Path, include_packages: bool = False) -> Dict
 
     if not (root_path / "dbt_project.yml").exists():
         error_console.print(f"Error: dbt_project.yml not found in {root_path}", style="red")
-        return set()
+        return {}
 
     with open(root_path / "dbt_project.yml", "r") as f:
         project_config = safe_load(f)
 
     if project_config is None:
-        return set()
+        return {}
 
     key_to_paths = {
         "model-paths": project_config.get("model-paths", ["models"]),
