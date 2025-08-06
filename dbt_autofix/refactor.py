@@ -666,7 +666,8 @@ def restructure_yaml_keys_for_node(
     pretty_node_type = node_type[:-1].title()
 
     for field in node.get("config", {}):
-        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields:
+        # Special casing target_schema and target_database because they are renamed by another autofix rule
+        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields or field in ("target_schema", "target_database"):
             continue
 
         refactored = True
@@ -1281,13 +1282,14 @@ def rec_check_yaml_path(
 
     # TODO: what about individual models in the config there?
     # indivdual models would show up here but without the `.sql` (or `.py`)
-    if not path.exists():
+
+    if not path.exists() and not _path_exists_as_file(path):
         return yml_dict, [] if refactor_logs is None else refactor_logs
 
     yml_dict_copy = yml_dict.copy() if yml_dict else {}
     for k, v in yml_dict_copy.items():
         log_msg = None
-        if not (path / k).exists():
+        if not (path / k).exists() and not _path_exists_as_file(path / k):
             # Built-in config missing "+"
             if k in node_fields.allowed_config_fields_dbt_project:
                 new_k = f"+{k}"
@@ -1312,6 +1314,8 @@ def rec_check_yaml_path(
             yml_dict[k] = new_dict
     return yml_dict, [] if refactor_logs is None else refactor_logs
 
+def _path_exists_as_file(path: Path) -> bool:
+    return path.with_suffix(".py").exists() or path.with_suffix(".sql").exists() or path.with_suffix(".csv").exists()
 
 def changeset_dbt_project_prefix_plus_for_config(
     yml_str: str, path: Path, schema_specs: SchemaSpecs

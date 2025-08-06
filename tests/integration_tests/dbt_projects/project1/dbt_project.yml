@@ -35,6 +35,9 @@ models:
     example:
       materialized: view
       custom_config: custom_value
+      my_first_dbt_model:
+        materialized: table
+        custom_config: custom_value
 
 exposures:
   enabled: true

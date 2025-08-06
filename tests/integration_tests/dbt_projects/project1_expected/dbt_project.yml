@@ -31,6 +31,10 @@ models:
   dbt_autofix_tests:
     # Config indicated by + and applies to all files under models/example/
     example:
+      my_first_dbt_model:
+        +materialized: table
+        +meta:
+          custom_config: custom_value
       +materialized: view
       +meta:
         custom_config: custom_value
