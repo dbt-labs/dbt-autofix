@@ -748,6 +748,24 @@ def restructure_yaml_keys_for_node(
     existing_meta = node.get("meta", {}).copy()
     pretty_node_type = node_type[:-1].title()
 
+    for field in node.get("config", {}):
+        # Special casing target_schema and target_database because they are renamed by another autofix rule
+        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields or field in ("target_schema", "target_database"):
+            continue
+
+        refactored = True
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is not an allowed config - Moved under config.meta.",
+                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+            )
+        )
+        node_config_meta = node.get("config", {}).get("meta", {})
+        node_config_meta.update({field: node["config"][field]})
+        node["config"] = node.get("config", {})
+        node["config"].update({"meta": node_config_meta})
+        del node["config"][field]
+
     # we can not loop node and modify it at the same time
     copy_node = node.copy()
 
@@ -1360,25 +1378,40 @@ def rec_check_yaml_path(
 
     # TODO: what about individual models in the config there?
     # indivdual models would show up here but without the `.sql` (or `.py`)
-    if not path.exists():
+
+    if not path.exists() and not _path_exists_as_file(path):
         return yml_dict, [] if refactor_logs is None else refactor_logs
 
     yml_dict_copy = yml_dict.copy() if yml_dict else {}
     for k, v in yml_dict_copy.items():
-        if k in node_fields.allowed_config_fields_dbt_project and not (path / k).exists():
-            new_k = f"+{k}"
-            yml_dict[new_k] = v
-            log_msg = f"Added '+' in front of the nested config '{k}'"
-            if refactor_logs is None:
-                refactor_logs = [log_msg]
-            else:
-                refactor_logs.append(log_msg)
-            del yml_dict[k]
+        log_msg = None
+        if not (path / k).exists() and not _path_exists_as_file(path / k):
+            # Built-in config missing "+"
+            if k in node_fields.allowed_config_fields_dbt_project:
+                new_k = f"+{k}"
+                yml_dict[new_k] = v
+                log_msg = f"Added '+' in front of the nested config '{k}'"
+            # Custom config not in meta
+            elif not k.startswith("+"):
+                log_msg = f"Moved custom config '{k}' to '+meta'"
+                meta = yml_dict.get("+meta", {})
+                meta.update({k: v})
+                yml_dict["+meta"] = meta
+            
+            if log_msg:
+                if refactor_logs is None:
+                    refactor_logs = [log_msg]
+                else:
+                    refactor_logs.append(log_msg)
+            
+                del yml_dict[k]
         elif isinstance(yml_dict[k], dict):
             new_dict, refactor_logs = rec_check_yaml_path(yml_dict[k], path / k, node_fields, refactor_logs)
             yml_dict[k] = new_dict
     return yml_dict, [] if refactor_logs is None else refactor_logs
 
+def _path_exists_as_file(path: Path) -> bool:
+    return path.with_suffix(".py").exists() or path.with_suffix(".sql").exists() or path.with_suffix(".csv").exists()
 
 def changeset_dbt_project_prefix_plus_for_config(
     yml_str: str, path: Path, schema_specs: SchemaSpecs

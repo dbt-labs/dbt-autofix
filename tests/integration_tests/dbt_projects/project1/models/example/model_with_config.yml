@@ -1,0 +1,5 @@
+models:
+  - name: my_first_dbt_model
+    config:
+      materialized: table
+      custom_config: custom_value

@@ -1,4 +1,0 @@
-models:
-  - name: my_first_dbt_model
-    config:
-      materiaflized: table
