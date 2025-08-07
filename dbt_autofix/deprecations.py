@@ -15,6 +15,6 @@ class DeprecationType(str, Enum):
     CONFIG_TARGET_PATH_DEPRECATION = "ConfigTargetPathDeprecation"
     CONFIG_DATA_PATH_DEPRECATION = "ConfigDataPathDeprecation"
     CONFIG_SOURCE_PATH_DEPRECATION = "ConfigSourcePathDeprecation"
-    MISSING_PLUS_PREFIX_DEPRECATION = "MissingPlusPrefixDeprecation" 
-    CUSTOM_KEY_IN_CONFIG_DEPRECATION = "CustomKeyInConfigDeprecation"
+    MISSING_PLUS_PREFIX_DEPRECATION = "MissingPlusPrefixDeprecation"
     CUSTOM_TOP_LEVEL_KEY_DEPRECATION = "CustomTopLevelKeyDeprecation"
+    CUSTOM_KEY_IN_CONFIG_DEPRECATION = "CustomKeyInConfigDeprecation"
