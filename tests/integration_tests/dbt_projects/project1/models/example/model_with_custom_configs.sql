@@ -7,4 +7,15 @@
     meta={'existing_meta_config': 'existing_meta_config'}
 ) }}
 
-select 1 as id
+
+{{ config.get('custom_config') }}
+
+{{ config.get('custom_config', 'default_value') }}
+
+{{ config.get('materialized') }}
+
+{{ config.get('materialized', 'default_value') }}
+
+{{ config.get('custom_config_dict').a }}
+
+{{ config.get('custom_config_dict').get('a', 'default_value') }}
