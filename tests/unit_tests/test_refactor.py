@@ -1209,7 +1209,7 @@ models:
         assert "accepted_values" in accepted_values_test
         assert "config" in accepted_values_test["accepted_values"]
         assert accepted_values_test["accepted_values"]["config"]["where"] == "date_column > __3_days_ago__"
-        assert accepted_values_test["accepted_values"]["values"] == ["placed", "shipped", "completed", "returned"]
+        assert accepted_values_test["accepted_values"]["arguments"]["values"] == ["placed", "shipped", "completed", "returned"]
 
         # Check that appropriate logs were generated
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
@@ -1366,7 +1366,7 @@ models:
         # Check third test (dict without config)
         accepted_values_test = column["tests"][2]
         assert "accepted_values" in accepted_values_test
-        assert accepted_values_test["accepted_values"]["values"] == ["active", "inactive"]
+        assert accepted_values_test["accepted_values"]["arguments"]["values"] == ["active", "inactive"]
         assert "config" not in accepted_values_test["accepted_values"]
 
         # Check that appropriate logs were generated
@@ -1477,7 +1477,7 @@ sources:
         assert "accepted_values" in accepted_values_test
         assert "config" in accepted_values_test["accepted_values"]
         assert accepted_values_test["accepted_values"]["config"]["where"] == "status is not null"
-        assert accepted_values_test["accepted_values"]["values"] == ["pending", "active", "completed"]
+        assert accepted_values_test["accepted_values"]["arguments"]["values"] == ["pending", "active", "completed"]
 
         # Check that appropriate logs were generated
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)

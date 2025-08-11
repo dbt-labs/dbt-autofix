@@ -15,13 +15,15 @@ models:
           - not_null
           - unique
           - accepted_values:
-              values: [1, 2, 3]
+              arguments:
+                values: [1, 2, 3]
           - relationships:
-              to:
-                - model: my_other_model
-                  field: id
-                  on_delete: cascade
-                  on_update: cascade
+              arguments:
+                to:
+                  - model: my_other_model
+                    field: id
+                    on_delete: cascade
+                    on_update: cascade
           - name: my_custom_test
             test_name: custom_test
             description: my custom test
