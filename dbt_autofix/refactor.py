@@ -681,6 +681,7 @@ def process_dbt_project_yml(
     ]
     safe_change_rules = [
         (changeset_remove_duplicate_keys, None),
+        (changeset_dbt_project_flip_test_arguments_behavior_flag, None),
         (changeset_dbt_project_remove_deprecated_config, exclude_dbt_project_keys),
         (changeset_dbt_project_prefix_plus_for_config, root_path, schema_specs),
     ]
@@ -1548,12 +1549,38 @@ def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorRe
                     refactored = True
                     deprecation_refactors.append(
                         DbtDeprecationRefactor(
-                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}."
+                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
+                            deprecation="SourceFreshnessProjectHooksNotRun"
                         )
                     )
 
     return YMLRuleRefactorResult(
             rule_name="flip_behavior_flags",
+            refactored=refactored,
+            refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,  # type: ignore
+            original_yaml=yml_str,
+            deprecation_refactors=deprecation_refactors,
+        )
+
+def changeset_dbt_project_flip_test_arguments_behavior_flag(yml_str: str) -> YMLRuleRefactorResult:
+    yml_dict = DbtYAML().load(yml_str) or {}
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactored = False
+
+    existing_flags = yml_dict.get("flags", {})
+    if existing_flags.get("require_generic_test_arguments_property") is False or "require_generic_test_arguments_property" not in existing_flags:
+        yml_dict["flags"] = existing_flags
+        yml_dict["flags"]["require_generic_test_arguments_property"] = True
+        refactored = True
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log="Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
+                deprecation="MissingGenericTestArgumentsPropertyDeprecation"
+            )
+        )
+
+    return YMLRuleRefactorResult(
+            rule_name="changeset_dbt_project_flip_test_arguments_behavior_flag",
             refactored=refactored,
             refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,  # type: ignore
             original_yaml=yml_str,
