@@ -26,6 +26,13 @@ from dbt_autofix.retrieve_schemas import (
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
+COMMON_PROPERTY_MISSPELLINGS = {
+    "desciption": "description",
+    "descrption": "description",
+    "descritption": "description",
+    "desscription": "description",
+}
+
 console = Console()
 error_console = Console(stderr=True)
 
@@ -821,12 +828,6 @@ def restructure_yaml_keys_for_node(
     existing_config = node.get("config", {}).copy()
     pretty_node_type = node_type[:-1].title()
 
-    COMMON_PROPERTY_MISSPELLINGS = {
-        "desciption": "description",
-        "descrption": "description",
-        "descritption": "description",
-    }
-
     for field in existing_config:
         # Special casing target_schema and target_database because they are renamed by another autofix rule
         if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields or field in ("target_schema", "target_database"):
@@ -974,6 +975,7 @@ def restructure_yaml_keys_for_test(
         test_name = test["test_name"]
         test_definition = test
 
+    deprecation_refactors.extend(refactor_test_common_misspellings(test_definition, test_name))
     deprecation_refactors.extend(refactor_test_config_fields(test_definition, test_name, schema_specs))
     deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
 
@@ -1012,6 +1014,22 @@ def refactor_test_config_fields(test_definition: Dict[str, Any], test_name: str,
                     )
                 )
                 test_definition["config"] = node_config
+            del test_definition[field]
+
+    return deprecation_refactors
+
+def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    for field in test_definition:
+        if field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Test '{test_name}' - Field '{field}' is a common misspelling of '{COMMON_PROPERTY_MISSPELLINGS[field.lower()]}', it has been renamed.",
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
+                )
+            )
+            test_definition[COMMON_PROPERTY_MISSPELLINGS[field.lower()]] = test_definition[field]
             del test_definition[field]
 
     return deprecation_refactors

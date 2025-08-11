@@ -10,11 +10,11 @@ models:
             custom_arg: some_value
     columns:
       - name: id
-        description: The ID.
         data_tests:
           - not_null
           - unique
           - accepted_values:
+              description: accepted_values test for id
               arguments:
                 values: [1, 2, 3]
           - relationships:
@@ -43,3 +43,5 @@ models:
               arguments:
                 custom_arg: some_value
                 invalid_custom_arg: some_value
+        description: The ID.
+    description: "description"
