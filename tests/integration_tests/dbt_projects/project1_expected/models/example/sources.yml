@@ -2,13 +2,6 @@
 
 sources:
   - name: my-source
-    description: |-
-      This is a model about something
-      
-      This model contains:
-        * This
-        * That
-        * The other thing
         
     database: my-db
     schema: my-schema
@@ -74,3 +67,10 @@ sources:
             filter: my filter
           meta:
             my_meta: my-meta-value-table1
+    description: |-
+      This is a model about something
+      
+      This model contains:
+        * This
+        * That
+        * The other thing

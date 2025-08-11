@@ -821,6 +821,12 @@ def restructure_yaml_keys_for_node(
     existing_config = node.get("config", {}).copy()
     pretty_node_type = node_type[:-1].title()
 
+    COMMON_PROPERTY_MISSPELLINGS = {
+        "desciption": "description",
+        "descrption": "description",
+        "descritption": "description",
+    }
+
     for field in existing_config:
         # Special casing target_schema and target_database because they are renamed by another autofix rule
         if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields or field in ("target_schema", "target_database"):
@@ -844,6 +850,19 @@ def restructure_yaml_keys_for_node(
 
     for field in copy_node:
         if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_properties:
+            continue
+        # This is very hard-coded because it is a 'safe' fix and we don't want to break the user's code
+        elif field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
+            refactored = True
+            correct_field = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is a common misspelling of '{correct_field}', it has been renamed.",
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
+                )
+            )
+            node[correct_field] = node[field]
+            del node[field]
             continue
 
         if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields_without_meta:
@@ -1064,7 +1083,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
     - moves all the meta fields under config.meta and merges with existing config.meta
     - moves all the unknown fields under config.meta
     - provide some information if some fields don't exist but are similar to allowed fields
-    - remove custom top-level keys
+    - removes custom top-level keys
     """
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []

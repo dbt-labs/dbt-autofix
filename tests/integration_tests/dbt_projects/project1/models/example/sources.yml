@@ -2,7 +2,7 @@
 
 sources:
   - name: my-source
-    description: |-
+    desciption: |-
       This is a model about something
       
       This model contains:
