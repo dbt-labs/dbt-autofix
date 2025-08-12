@@ -684,7 +684,8 @@ def process_dbt_project_yml(
     )
 
     behavior_change_rules = [
-        (changeset_dbt_project_flip_behavior_flags, None)
+        (changeset_dbt_project_flip_behavior_flags, None),
+        (changeset_dbt_project_unsafe_config_renames, schema_specs)
     ]
     safe_change_rules = [
         (changeset_remove_duplicate_keys, None),
@@ -1568,6 +1569,55 @@ def changeset_dbt_project_prefix_plus_for_config(
         deprecation_refactors=deprecation_refactors,
     )
 
+def changeset_dbt_project_unsafe_config_renames(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
+    yml_dict = DbtYAML().load(yml_str) or {}
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactored = False
+
+    for node_type, node_spec in schema_specs.dbtproject_specs_per_node_type.items():
+        for k, v in (yml_dict.get(node_type) or {}).copy().items():
+            if k.strip("+") in node_spec.unsafe_config_renames:
+                refactored = True
+                yml_dict[node_type][f"+{node_spec.unsafe_config_renames[k.strip('+')]}"] = v
+                yml_dict[node_type].pop(k, None)
+                yml_dict[node_type].pop(f"+{k.strip('+')}", None)
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Renamed the deprecated field '{k}' to +'{node_spec.unsafe_config_renames[k.strip('+')]}'",
+                    )
+                )
+            elif isinstance(v, dict):
+                rec_refactors = rec_dbt_project_unsafe_config_renames(v, node_spec)
+                if rec_refactors:
+                    refactored = True
+                    deprecation_refactors.extend(rec_refactors)
+
+    return YMLRuleRefactorResult(
+        rule_name="unsafe_config_renames",
+        refactored=refactored,
+        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,  # type: ignore
+        original_yaml=yml_str,
+        deprecation_refactors=deprecation_refactors,
+    )
+
+def rec_dbt_project_unsafe_config_renames(yml_dict: Dict[str, Any], node_spec: DbtProjectSpecs) -> List[DbtDeprecationRefactor]:
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    yml_dict_copy = yml_dict.copy()
+    for k, v in yml_dict_copy.items():
+        if k.strip("+") in node_spec.unsafe_config_renames:
+            yml_dict[f"+{node_spec.unsafe_config_renames[k.strip('+')]}"] = v
+            yml_dict.pop(k, None)
+            yml_dict.pop(f"+{k.strip('+')}", None)
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Renamed the deprecated field '{k}' to +'{node_spec.unsafe_config_renames[k.strip('+')]}'",
+                )
+            )
+        elif isinstance(v, dict):
+            deprecation_refactors.extend(rec_dbt_project_unsafe_config_renames(v, node_spec))
+
+    return deprecation_refactors
 
 def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorResult:
     yml_dict = DbtYAML().load(yml_str) or {}
