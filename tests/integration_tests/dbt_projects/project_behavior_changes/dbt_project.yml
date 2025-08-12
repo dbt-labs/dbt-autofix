@@ -18,6 +18,15 @@ macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
 target-path: "target"
 
+
+snapshots:
+  +target_database: database
+  target_schema: schema
+  dbt_autofix_tests:
+    example:
+      target_database: database
+      +target_schema: schema
+
 flags:
   source_freshness_run_project_hooks: false
 
