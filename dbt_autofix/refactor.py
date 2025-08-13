@@ -34,6 +34,8 @@ COMMON_PROPERTY_MISSPELLINGS = {
     "desscription": "description",
 }
 
+CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
+
 console = Console()
 error_console = Console(stderr=True)
 
@@ -362,23 +364,29 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
         original_sql_configs.update(kwargs)
 
     ctx = {"config": capture_config}
-    template = get_template(sql_content, ctx=ctx, capture_macros=True)
 
-    # Crude way to avoid rendering the template if it doesn't contain 'config'
-    if "config(" in sql_content:
-        render_template(template, ctx=ctx)
+    original_statically_parsed_config = statically_parse_unrendered_config(sql_content) or {}
 
-    statically_parsed_config = statically_parse_unrendered_config(sql_content) or {}
-
-    # Refactor config based on schema specs
     refactored_sql_configs = None
     contains_jinja = False
     try:
+        # Crude way to avoid rendering the template if it doesn't contain 'config'
+        if "config(" in sql_content:
+            # Use regex to extract the {{ config(...) }} part of sql_content
+            config_macro_match = CONFIG_MACRO_PATTERN.search(sql_content)
+            config_macro_str = config_macro_match.group(0) if config_macro_match else ""
+
+            template = get_template(config_macro_str, ctx=ctx, capture_macros=True)
+            render_template(template, ctx=ctx)
+
         refactored_sql_configs = deepcopy(original_sql_configs)
     except Exception:
         # config() macro calls with jinja requiring dbt context will result in deepcopy error due to Undefined values
         refactored_sql_configs = None
         contains_jinja = True
+
+        if original_statically_parsed_config:
+            original_sql_configs = original_statically_parsed_config
 
     moved_to_meta = []
     for sql_config_key, sql_config_value in original_sql_configs.items():
@@ -403,7 +411,7 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
         # Determine if jinja rendering occurred as part of config macro call
         original_config_str = _serialize_config_macro_call(original_sql_configs)
         post_render_statically_parsed_config = statically_parse_unrendered_config(f"{{{{ config({original_config_str}) }}}}")
-        if post_render_statically_parsed_config == statically_parsed_config:
+        if post_render_statically_parsed_config == original_statically_parsed_config:
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
@@ -411,15 +419,14 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
                 )
             )
-            config_pattern = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
             new_config_str = _serialize_config_macro_call(refactored_sql_configs)
             def replace_config(match):
                 return f"{{{{ config({new_config_str}) }}}}"
-            refactored_content = config_pattern.sub(replace_config, sql_content, count=1)
+            refactored_content = CONFIG_MACRO_PATTERN.sub(replace_config, sql_content, count=1)
         else:
             contains_jinja = True
     
-    if moved_to_meta and contains_jinja: 
+    if moved_to_meta and contains_jinja:
         refactor_warnings.append(
             f"Detected custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta}, "
             f"but autofix was unable to refactor {'them' if len(moved_to_meta) > 1 else 'it'} due to Jinja usage in the config macro call.\n\t"

@@ -20,6 +20,7 @@ from dbt_autofix.refactor import (
     rec_check_yaml_path,
     remove_unmatched_endings,
     skip_file,
+    CONFIG_MACRO_PATTERN,
 )
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
@@ -1912,3 +1913,53 @@ exposures:
 
         exposure_special_chars_refactored = refactored_dict["exposures"][1]
         assert exposure_special_chars_refactored["name"] == "exposure_with_special_chars"
+
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [
+        (
+            "{{ config(materialized='table', myconf=1) }}",
+            "{{ config(materialized='table', myconf=1) }}",
+        ),
+        (
+            "{{  config( materialized = 'view' )  }}",
+            "{{  config( materialized = 'view' )  }}",
+        ),
+        (
+            "{{config(foo='bar')}}",
+            "{{config(foo='bar')}}",
+        ),
+        (
+            "{{ config() }}",
+            "{{ config() }}",
+        ),
+        (
+            "{{ config(materialized='table', myconf=run_started_at) }}",
+            "{{ config(materialized='table', myconf=run_started_at) }}",
+        ),
+        (
+            # Should not match if not a config macro
+            "{{ not_config(foo='bar') }}",
+            None,
+        ),
+        (
+            # Should not match if not a macro call
+            "config(materialized='table')",
+            None,
+        ),
+        (
+            # Should match with newlines and spaces
+            "{{ config(\n    materialized = 'table',\n    myconf = 2\n) }}",
+            "{{ config(\n    materialized = 'table',\n    myconf = 2\n) }}",
+        ),
+    ]
+)
+def test_config_regex(input_str, expected_match):
+    match = CONFIG_MACRO_PATTERN.search(input_str)
+    if expected_match is None:
+        assert match is None
+    else:
+        assert match is not None
+        assert match.group(0) == expected_match
+
