@@ -4,7 +4,7 @@ import json
 import os
 import re
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -14,6 +14,7 @@ from rich.console import Console
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
 from yaml import safe_load
+from jinja2 import Undefined
 
 
 from dbt_common.clients.jinja import get_template, render_template
@@ -166,6 +167,7 @@ class SQLRuleRefactorResult:
     original_content: str
     deprecation_refactors: list[DbtDeprecationRefactor]
     refactored_file_path: Optional[Path] = None
+    refactor_warnings: list[str] = field(default_factory=list)
 
     @property
     def refactor_logs(self):
@@ -188,6 +190,7 @@ class SQLRefactorResult:
     refactored_content: str
     original_content: str
     refactors: list[SQLRuleRefactorResult]
+    has_warnings: bool = False
 
     def update_sql_file(self) -> None:
         """Update the SQL file with the refactored content"""
@@ -198,7 +201,7 @@ class SQLRefactorResult:
         Path(new_file_path).write_text(self.refactored_content)
 
     def print_to_console(self, json_output: bool = True):
-        if not self.refactored:
+        if not self.refactored and not self.has_warnings:
             return
 
         if json_output:
@@ -206,11 +209,17 @@ class SQLRefactorResult:
             for refactor in self.refactors:
                 if refactor.refactored:
                     flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+            
+            flattened_warnings = []
+            for refactor in self.refactors:
+                if refactor.refactor_warnings:
+                    flattened_warnings.extend(refactor.refactor_warnings)
 
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
                 "refactors": flattened_refactors,
+                "warnings": flattened_warnings,
             }
             print(json.dumps(to_print))  # noqa: T201
             return
@@ -225,6 +234,13 @@ class SQLRefactorResult:
 
                 for log in refactor.refactor_logs:
                     console.print(f"    {log}")
+
+                for warning in refactor.refactor_warnings:
+                    console.print(f"    Warning: {warning}", style="red")
+            elif refactor.refactor_warnings:
+                console.print(f"  {refactor.rule_name}", style="yellow")
+                for warning in refactor.refactor_warnings:
+                    console.print(f"    Warning: {warning}", style="red")
 
 
 def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa: PLR0912
@@ -338,6 +354,7 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
     """
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactor_warnings: list[str] = []
 
     # Capture original config macro calls
     original_sql_configs = {}
@@ -354,7 +371,15 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
     statically_parsed_config = statically_parse_unrendered_config(sql_content) or {}
 
     # Refactor config based on schema specs
-    refactored_sql_configs = deepcopy(original_sql_configs)
+    refactored_sql_configs = None
+    contains_jinja = False
+    try:
+        refactored_sql_configs = deepcopy(original_sql_configs)
+    except Exception:
+        # config() macro calls with jinja requiring dbt context will result in deepcopy error due to Undefined values
+        refactored_sql_configs = None
+        contains_jinja = True
+
     moved_to_meta = []
     for sql_config_key, sql_config_value in original_sql_configs.items():
         # If the config key is not in the schema specs, move it to meta
@@ -365,15 +390,16 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
             allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
 
         if sql_config_key not in allowed_config_fields:
-            if "meta" not in refactored_sql_configs:
-                refactored_sql_configs["meta"] = {}
-            refactored_sql_configs["meta"].update({sql_config_key: sql_config_value})
             moved_to_meta.append(sql_config_key)
-            del refactored_sql_configs[sql_config_key]
+            if refactored_sql_configs is not None:
+                if "meta" not in refactored_sql_configs:
+                    refactored_sql_configs["meta"] = {}
+                refactored_sql_configs["meta"].update({sql_config_key: sql_config_value})
+                del refactored_sql_configs[sql_config_key]
 
     # Update {{ config(...) }} macro call with new configs if any were moved to meta
     refactored_content = None
-    if refactored_sql_configs != original_sql_configs:
+    if refactored_sql_configs and refactored_sql_configs != original_sql_configs:
         # Determine if jinja rendering occurred as part of config macro call
         original_config_str = _serialize_config_macro_call(original_sql_configs)
         post_render_statically_parsed_config = statically_parse_unrendered_config(f"{{{{ config({original_config_str}) }}}}")
@@ -381,7 +407,7 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to meta",
+                    log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to 'meta'",
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
                 )
             )
@@ -390,6 +416,15 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
             def replace_config(match):
                 return f"{{{{ config({new_config_str}) }}}}"
             refactored_content = config_pattern.sub(replace_config, sql_content, count=1)
+        else:
+            contains_jinja = True
+    
+    if moved_to_meta and contains_jinja: 
+        refactor_warnings.append(
+            f"Detected custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta}, "
+            f"but autofix was unable to refactor {'them' if len(moved_to_meta) > 1 else 'it'} due to Jinja usage in the config macro call.\n\t"
+            f"Please manually move the custom configs {moved_to_meta} to 'meta'.",
+        )
 
     return SQLRuleRefactorResult(
         rule_name="move_custom_configs_to_meta_sql",
@@ -397,6 +432,7 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
         refactored_content=refactored_content or sql_content,
         original_content=sql_content,
         deprecation_refactors=deprecation_refactors,
+        refactor_warnings=refactor_warnings,
     )
 
 def _serialize_config_macro_call(config_dict: dict) -> str:
@@ -637,23 +673,23 @@ def process_yaml_files_except_dbt_project(
             changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
             # Apply each changeset in sequence
-            # try:
-            for changeset_func, changeset_args in changesets:
-                if changeset_args is None:
-                    changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
-                else:
-                    changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
+            try:
+                for changeset_func, changeset_args in changesets:
+                    if changeset_args is None:
+                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
+                    else:
+                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
 
-                if changeset_result.refactored:
-                    yml_refactor_result.refactors.append(changeset_result)
-                    yml_refactor_result.refactored = True
-                    yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
+                    if changeset_result.refactored:
+                        yml_refactor_result.refactors.append(changeset_result)
+                        yml_refactor_result.refactored = True
+                        yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
-                yaml_results.append(yml_refactor_result)
+                    yaml_results.append(yml_refactor_result)
 
-            # except Exception as e:
-                # error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
-                # exit(1)
+            except Exception as e:
+                error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
+                exit(1)
 
     return yaml_results
 
@@ -789,6 +825,7 @@ def process_sql_files(
                     file_refactors.append(sql_file_refactor_result)
 
                 refactored = (new_content != original_content) or (new_file_path != sql_file)
+                has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])
                 results.append(
                     SQLRefactorResult(
                         dry_run=dry_run,
@@ -798,6 +835,7 @@ def process_sql_files(
                         original_content=original_content,
                         refactors=file_refactors,
                         refactored_file_path=new_file_path,
+                        has_warnings=has_warnings,
                     )
                 )
             except Exception as e:
@@ -1797,4 +1835,4 @@ def apply_changesets(
     for sql_result in sql_results:
         if sql_result.refactored:
             sql_result.update_sql_file()
-            sql_result.print_to_console(json_output)
+        sql_result.print_to_console(json_output)

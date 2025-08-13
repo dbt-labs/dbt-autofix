@@ -1,3 +1,4 @@
-{{ config(materialized='table') }}
-
-{{ run_started_at }}
+{{ config(
+    materialized = 'table',
+    myconf = run_started_at,
+) }}
