@@ -3,7 +3,7 @@
 
 {{ config.get('meta').custom_config }}
 
-{{ (config.get('meta').custom_config or 'default_value') }}
+{{ config.get('custom_config', 'default_value') }}
 
 {{ config.get('materialized') }}
 

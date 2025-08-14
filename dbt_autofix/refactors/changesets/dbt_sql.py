@@ -234,6 +234,7 @@ def move_custom_config_access_to_meta_sql(sql_content: str, schema_specs: Schema
     refactored = False
     refactored_content = sql_content
     deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactor_warnings: List[str] = []
 
     # Crude way to avoid refactoring the file if it contains any cusotm 'config' variable
     if "set config" in sql_content:
@@ -268,7 +269,13 @@ def move_custom_config_access_to_meta_sql(sql_content: str, schema_specs: Schema
         if default is None:
             replacement = f"config.get('meta').{config_key}"
         else:
-            replacement = f"(config.get('meta').{config_key} or {default})"
+            refactor_warnings.append(
+                f"Detected config.get({config_key}, {default}) in SQL file, "
+                "but autofix was unable to refactor it safely.\n\t"
+                "Please manually access the config value from 'meta'.",
+            )
+            continue
+            # replacement = f"(config.get('meta').{config_key} or {default})"
         replacements.append((start, end, replacement, match.group(0)))
         refactored = True
 
@@ -289,6 +296,7 @@ def move_custom_config_access_to_meta_sql(sql_content: str, schema_specs: Schema
         refactored_content=refactored_content,
         original_content=sql_content,
         deprecation_refactors=deprecation_refactors,
+        refactor_warnings=refactor_warnings,
     )
 
 
