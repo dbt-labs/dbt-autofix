@@ -7,7 +7,7 @@ import yamllint.config
 import yamllint.linter
 from rich.console import Console
 
-from dbt_autofix.refactor import DbtYAML
+from dbt_autofix.refactors.yml import DbtYAML
 
 console = Console()
 

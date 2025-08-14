@@ -16,13 +16,14 @@ from dbt_autofix.refactor import (
     changeset_remove_extra_tabs,
     changeset_remove_indentation_version,
     changeset_replace_non_alpha_underscores_in_name_values,
-    dict_to_yaml_str,
-    rec_check_yaml_path,
     remove_unmatched_endings,
     skip_file,
-    CONFIG_MACRO_PATTERN,
 )
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+
+from dbt_autofix.refactors.yml import dict_to_yaml_str
+from dbt_autofix.refactors.changesets.dbt_sql import CONFIG_MACRO_PATTERN
+from dbt_autofix.refactors.changesets.dbt_project_yml import rec_check_yaml_path
 
 
 @pytest.fixture
