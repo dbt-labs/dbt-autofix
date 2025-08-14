@@ -38,3 +38,20 @@ models:
               arguments:
                 custom_arg: some_value
               invalid_custom_arg: some_value
+
+  - name: my_versioned_model_with_tests
+    versions:
+      - v: 1
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - a
+                - b
+                - c
+      - v: 2
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - a
+                - b
+                - c

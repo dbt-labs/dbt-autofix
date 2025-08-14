@@ -282,6 +282,20 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
                             refactored = True
                             yml_dict[node_type][i][test_key][test_i] = processed_test
                             deprecation_refactors.extend(test_refactor_deprecations)
+                
+                if "versions" in processed_node:
+                    for version_i, version in enumerate(node["versions"]):
+                        some_tests = {"tests", "data_tests"} & set(version)
+                        if some_tests:
+                            test_key = next(iter(some_tests))
+                            for test_i, test in enumerate(version[test_key]):
+                                processed_test, test_refactored, test_refactor_deprecations = restructure_yaml_keys_for_test(
+                                    test, schema_specs
+                                )
+                                if test_refactored:
+                                    refactored = True
+                                    yml_dict[node_type][i]["versions"][version_i][test_key][test_i] = processed_test
+                                    deprecation_refactors.extend(test_refactor_deprecations)
 
     # for sources, the config can be set at the table level as well, which is one level lower
     if "sources" in yml_dict:
