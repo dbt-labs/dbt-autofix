@@ -211,7 +211,7 @@ def process_sql_files(
     safe_change_rules = [
         (remove_unmatched_endings, False, False),
         (move_custom_configs_to_meta_sql, False, True),
-        (move_custom_config_access_to_meta_sql, False, True)
+        # (move_custom_config_access_to_meta_sql, False, True)
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
