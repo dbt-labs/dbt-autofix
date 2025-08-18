@@ -134,8 +134,7 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
 
     ctx = {"config": capture_config}
 
-    original_statically_parsed_config = statically_parse_unrendered_config(sql_content) or {}
-
+    original_statically_parsed_config = {}
     refactored_sql_configs = None
     contains_jinja = False
     try:
@@ -144,6 +143,8 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
             # Use regex to extract the {{ config(...) }} part of sql_content
             config_macro_match = CONFIG_MACRO_PATTERN.search(sql_content)
             config_macro_str = config_macro_match.group(0) if config_macro_match else ""
+
+            original_statically_parsed_config = statically_parse_unrendered_config(config_macro_str) or {}
 
             template = get_template(config_macro_str, ctx=ctx, capture_macros=True)
             render_template(template, ctx=ctx)
