@@ -7,6 +7,11 @@ models:
       - custom_test:
           custom_arg: some_value
           severity: warn
+      - dbt_utils.mutually_exclusive_ranges:
+          partition_by: account_id
+          lower_bound_column: start_date
+          upper_bound_column: end_date
+          gaps: not_allowed
     columns:
       - name: id
         descrption: The ID.

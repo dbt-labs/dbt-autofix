@@ -8,6 +8,12 @@ models:
             severity: warn
           arguments:
             custom_arg: some_value
+      - dbt_utils.mutually_exclusive_ranges:
+          arguments:
+            partition_by: account_id
+            lower_bound_column: start_date
+            upper_bound_column: end_date
+            gaps: not_allowed
     columns:
       - name: id
         data_tests:

@@ -404,6 +404,12 @@ def refactor_test_config_fields(test_definition: Dict[str, Any], test_name: str,
 
     copy_test_definition = deepcopy(test_definition)
     for field in copy_test_definition:
+
+        # dbt_utils.mutually_exclusive_ranges accepts partition_by as an argument
+        # https://github.com/dbt-labs/dbt-utils/blob/0feb9571187119dc48203ad91d8b064a660d6d3a/macros/generic_tests/mutually_exclusive_ranges.sql#L5
+        if field == "partition_by" and test_name == "dbt_utils.mutually_exclusive_ranges":
+            continue
+
         # field is a config and not a property
         if field in test_configs and field not in test_properties:
             node_config = test_definition.get("config", {})
