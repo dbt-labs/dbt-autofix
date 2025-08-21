@@ -5,6 +5,7 @@ from dbt_autofix.refactors.results import SQLRuleRefactorResult
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.jinja import statically_parse_unrendered_config
+from dbt_autofix.refactors.constants import COMMON_PROPERTY_MISSPELLINGS
 from dbt_common.clients.jinja import get_template, render_template
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 from copy import deepcopy
@@ -115,7 +116,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     )
 
 
-def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs, node_type: str) -> SQLRuleRefactorResult:
+def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs, node_type: str) -> SQLRuleRefactorResult:
     """Move custom configs to meta in SQL files.
 
     Args:
@@ -130,6 +131,8 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
     # Capture original config macro calls
     original_sql_configs = {}
     def capture_config(*args, **kwargs):
+        if args and len(args) > 0:
+            original_sql_configs.update(args[0])
         original_sql_configs.update(kwargs)
 
     ctx = {"config": capture_config}
@@ -159,15 +162,20 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
             original_sql_configs = original_statically_parsed_config
 
     moved_to_meta = []
+    renamed_configs = []
     for sql_config_key, sql_config_value in original_sql_configs.items():
         # If the config key is not in the schema specs, move it to meta
         allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields
-
+    
         # Special casing snapshots because target_schema and target_database are renamed by another autofix rule
         if node_type == "snapshots":
             allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
-
-        if sql_config_key not in allowed_config_fields:
+        if sql_config_key in COMMON_PROPERTY_MISSPELLINGS:
+            renamed_configs.append(sql_config_key)
+            if refactored_sql_configs is not None:
+                refactored_sql_configs[COMMON_PROPERTY_MISSPELLINGS[sql_config_key]] = sql_config_value
+                del refactored_sql_configs[sql_config_key]
+        elif sql_config_key not in allowed_config_fields:
             moved_to_meta.append(sql_config_key)
             if refactored_sql_configs is not None:
                 if "meta" not in refactored_sql_configs:
@@ -175,7 +183,7 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
                 refactored_sql_configs["meta"].update({sql_config_key: sql_config_value})
                 del refactored_sql_configs[sql_config_key]
 
-    # Update {{ config(...) }} macro call with new configs if any were moved to meta
+    # Update {{ config(...) }} macro call with new configs if any were moved to meta or renamed
     refactored_content = None
     if refactored_sql_configs and refactored_sql_configs != original_sql_configs:
         # Determine if jinja rendering occurred as part of config macro call
@@ -183,12 +191,20 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
         post_render_statically_parsed_config = statically_parse_unrendered_config(f"{{{{ config({original_config_str}) }}}}")
         if post_render_statically_parsed_config == original_statically_parsed_config:
             refactored = True
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to 'meta'",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+            for renamed_config in renamed_configs:
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Renamed custom config '{renamed_config}' to '{COMMON_PROPERTY_MISSPELLINGS[renamed_config]}'",
+                        deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+                    )
                 )
-            )
+            if moved_to_meta:
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to 'meta'",
+                        deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+                    )
+                )
             new_config_str = _serialize_config_macro_call(refactored_sql_configs)
             def replace_config(match):
                 return f"{{{{ config({new_config_str}) }}}}"
@@ -196,12 +212,19 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
         else:
             contains_jinja = True
     
-    if moved_to_meta and contains_jinja:
-        refactor_warnings.append(
-            f"Detected custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta}, "
-            f"but autofix was unable to refactor {'them' if len(moved_to_meta) > 1 else 'it'} due to Jinja usage in the config macro call.\n\t"
-            f"Please manually move the custom configs {moved_to_meta} to 'meta'.",
-        )
+    if contains_jinja:
+        if moved_to_meta:
+            refactor_warnings.append(
+                f"Detected custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta}, "
+                f"but autofix was unable to refactor {'them' if len(moved_to_meta) > 1 else 'it'} due to Jinja usage in the config macro call.\n\t"
+                f"Please manually move the custom configs {moved_to_meta} to 'meta'.",
+            )
+        if renamed_configs:
+            refactor_warnings.append(
+                f"Detected incorrect spelling of config{'s' if len(renamed_configs) > 1 else ''} {renamed_configs}, "
+                f"but autofix was unable to refactor {'them' if len(renamed_configs) > 1 else 'it'} due to Jinja usage in the config macro call.\n\t"
+                f"Please manually rename the custom configs {renamed_configs} to the correct spelling.",
+            )
 
     return SQLRuleRefactorResult(
         rule_name="move_custom_configs_to_meta_sql",
@@ -214,14 +237,17 @@ def move_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs,
 
 
 def _serialize_config_macro_call(config_dict: dict) -> str:
-    items = []
-    for k, v in config_dict.items():
-        if isinstance(v, str):
-            v_str = f'"{v}"'
-        else:
-            v_str = str(v)
-        items.append(f"{k}={v_str}")
-    return ", ".join(items)
+    if any('-' in k for k in config_dict):
+       return str(config_dict) 
+    else:
+        items = []
+        for k, v in config_dict.items():
+            if isinstance(v, str):
+                v_str = f'"{v}"'
+            else:
+                v_str = str(v)
+            items.append(f"{k}={v_str}")
+        return ", ".join(items)
 
 
 def move_custom_config_access_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs, node_type: str) -> SQLRuleRefactorResult:
