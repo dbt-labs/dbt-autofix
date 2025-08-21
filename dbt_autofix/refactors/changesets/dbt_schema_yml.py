@@ -9,16 +9,9 @@ from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, yaml_config
-
+from dbt_autofix.refactors.constants import COMMON_PROPERTY_MISSPELLINGS
 
 NUM_SPACES_TO_REPLACE_TAB = 2
-
-COMMON_PROPERTY_MISSPELLINGS = {
-    "desciption": "description",
-    "descrption": "description",
-    "descritption": "description",
-    "desscription": "description",
-}
 
 def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
     """Generates a refactored YAML string from a single YAML file

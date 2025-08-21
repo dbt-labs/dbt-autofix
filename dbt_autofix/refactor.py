@@ -29,7 +29,7 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
 from dbt_autofix.refactors.changesets.dbt_sql import (
     rename_sql_file_names_with_spaces,
     remove_unmatched_endings,
-    move_custom_configs_to_meta_sql,
+    refactor_custom_configs_to_meta_sql,
     move_custom_config_access_to_meta_sql,
 )
 
@@ -210,7 +210,7 @@ def process_sql_files(
     ]
     safe_change_rules = [
         (remove_unmatched_endings, False, False),
-        (move_custom_configs_to_meta_sql, False, True),
+        (refactor_custom_configs_to_meta_sql, False, True),
         # (move_custom_config_access_to_meta_sql, False, True)
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]
