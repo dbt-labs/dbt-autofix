@@ -5,7 +5,7 @@ from dbt_autofix.refactors.results import SQLRuleRefactorResult
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.jinja import statically_parse_unrendered_config
-from dbt_autofix.refactors.constants import COMMON_PROPERTY_MISSPELLINGS
+from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
 from dbt_common.clients.jinja import get_template, render_template
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 from copy import deepcopy
@@ -170,10 +170,10 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
         # Special casing snapshots because target_schema and target_database are renamed by another autofix rule
         if node_type == "snapshots":
             allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
-        if sql_config_key in COMMON_PROPERTY_MISSPELLINGS:
+        if sql_config_key in COMMON_CONFIG_MISSPELLINGS:
             renamed_configs.append(sql_config_key)
             if refactored_sql_configs is not None:
-                refactored_sql_configs[COMMON_PROPERTY_MISSPELLINGS[sql_config_key]] = sql_config_value
+                refactored_sql_configs[COMMON_CONFIG_MISSPELLINGS[sql_config_key]] = sql_config_value
                 del refactored_sql_configs[sql_config_key]
         elif sql_config_key not in allowed_config_fields:
             moved_to_meta.append(sql_config_key)
@@ -194,7 +194,7 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
             for renamed_config in renamed_configs:
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
-                        log=f"Renamed custom config '{renamed_config}' to '{COMMON_PROPERTY_MISSPELLINGS[renamed_config]}'",
+                        log=f"Config '{renamed_config}' is a common misspelling of '{COMMON_CONFIG_MISSPELLINGS[renamed_config]}', it has been renamed.",
                         deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
                     )
                 )
