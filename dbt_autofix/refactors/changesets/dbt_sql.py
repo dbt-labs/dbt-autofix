@@ -170,6 +170,7 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
         # Special casing snapshots because target_schema and target_database are renamed by another autofix rule
         if node_type == "snapshots":
             allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
+
         if sql_config_key in COMMON_CONFIG_MISSPELLINGS:
             renamed_configs.append(sql_config_key)
             if refactored_sql_configs is not None:
