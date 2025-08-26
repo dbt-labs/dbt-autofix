@@ -3,3 +3,5 @@ models:
     config:
       materialized: table
       custom_config: custom_value
+      pre-hook: select 1
+      post-hook: select 2
