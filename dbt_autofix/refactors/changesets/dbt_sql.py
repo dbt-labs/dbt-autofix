@@ -208,7 +208,7 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
                 )
             new_config_str = _serialize_config_macro_call(refactored_sql_configs)
             def replace_config(match):
-                return f"{{{{ config({new_config_str}) }}}}"
+                return f"{{{{ config({new_config_str}\n) }}}}"
             refactored_content = CONFIG_MACRO_PATTERN.sub(replace_config, sql_content, count=1)
         else:
             contains_jinja = True
@@ -247,7 +247,7 @@ def _serialize_config_macro_call(config_dict: dict) -> str:
                 v_str = f'"{v}"'
             else:
                 v_str = str(v)
-            items.append(f"{k}={v_str}")
+            items.append(f"\n    {k}={v_str}")
         return ", ".join(items)
 
 
