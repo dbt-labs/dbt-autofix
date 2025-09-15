@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import List, Optional
 
+from importlib.metadata import version
 import json
 import typer
 from rich import print
@@ -122,6 +123,12 @@ def print_fields_matrix(
     print_matrix(json_schema_version)
 
 
+def version_callback(show_version: bool):
+    if show_version:
+        typer.echo(f"dbt-autofix version: {version('dbt-autofix')}")
+        raise typer.Exit()
+
+
 if __name__ == "__main__":
     app()
 
@@ -131,6 +138,7 @@ def main(
     debug: bool = typer.Option(
         False, "--debug", help="Enable debug mode with pretty exceptions", envvar="DBT_AUTOFIX_DEBUG"
     ),
+    version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
 ):
     if debug:
         app.pretty_exceptions_enable = True
