@@ -23,7 +23,7 @@ def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) 
 
     for node_type in schema_specs.nodes_with_owner:
         if node_type in yml_dict:
-            for i, node in enumerate(yml_dict[node_type]):
+            for i, node in enumerate(yml_dict.get(node_type) or []):
                 processed_node, node_refactored, node_refactor_logs = restructure_owner_properties(
                     node, node_type, schema_specs
                 )
@@ -231,7 +231,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:
-            for i, node in enumerate(yml_dict[node_type]):
+            for i, node in enumerate(yml_dict.get(node_type) or []):
                 processed_node, node_refactored, node_deprecation_refactors = restructure_yaml_keys_for_node(
                     node, node_type, schema_specs
                 )
@@ -630,7 +630,7 @@ def changeset_replace_non_alpha_underscores_in_name_values(
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:
-            for i, node in enumerate(yml_dict[node_type]):
+            for i, node in enumerate(yml_dict.get(node_type) or []):
                 processed_node, node_deprecation_refactors = replace_node_name_non_alpha_with_underscores(
                     node, node_type
                 )
