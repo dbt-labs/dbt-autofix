@@ -21,6 +21,7 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
+    context_settings={"help_option_names": ["-h", "--help"]}
 )
 
 current_dir = Path.cwd()
