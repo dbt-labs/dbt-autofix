@@ -125,7 +125,7 @@ def print_fields_matrix(
 
 def version_callback(show_version: bool):
     if show_version:
-        typer.echo(f"dbt-autofix version: {version('dbt-autofix')}")
+        typer.echo(f"dbt-autofix {version('dbt-autofix')}")
         raise typer.Exit()
 
 
