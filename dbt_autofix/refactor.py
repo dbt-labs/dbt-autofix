@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Any
 
 from rich.console import Console
 from yaml import safe_load
 import yamllint.linter
 
-
+from dbt_autofix.semantic_definitions import SemanticDefinitions
 from dbt_autofix.retrieve_schemas import (
     SchemaSpecs,
 )
@@ -24,6 +24,10 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_flip_test_arguments_behavior_flag,
     changeset_dbt_project_remove_deprecated_config,
     changeset_dbt_project_prefix_plus_for_config,
+)
+from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
+    changeset_merge_semantic_models_with_models,
+    changeset_delete_top_level_semantic_models,
 )
 
 from dbt_autofix.refactors.changesets.dbt_sql import (
@@ -49,6 +53,7 @@ def process_yaml_files_except_dbt_project(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
+    semantic_definitions: Optional[SemanticDefinitions] = None,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project
 
@@ -97,24 +102,30 @@ def process_yaml_files_except_dbt_project(
 
             changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
+            if semantic_definitions:
+                changesets = [
+                    (changeset_merge_semantic_models_with_models, semantic_definitions),
+                    (changeset_delete_top_level_semantic_models, None),
+                ]
+
             # Apply each changeset in sequence
-            try:
-                for changeset_func, changeset_args in changesets:
-                    if changeset_args is None:
-                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
-                    else:
-                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
+            # try:
+            for changeset_func, changeset_args in changesets:
+                if changeset_args is None:
+                    changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
+                else:
+                    changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
 
-                    if changeset_result.refactored:
-                        yml_refactor_result.refactors.append(changeset_result)
-                        yml_refactor_result.refactored = True
-                        yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
+                if changeset_result.refactored:
+                    yml_refactor_result.refactors.append(changeset_result)
+                    yml_refactor_result.refactored = True
+                    yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
-                    yaml_results.append(yml_refactor_result)
+                yaml_results.append(yml_refactor_result)
 
-            except Exception as e:
-                error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
-                exit(1)
+            # except Exception as e:
+            #     error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
+            #     exit(1)
 
     return yaml_results
 
@@ -415,6 +426,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     include_packages: bool = False,
     behavior_change: bool = False,
     all: bool = False,
+    semantic_layer: bool = False,
 ) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult]]:
     """Process all YAML files and SQL files in the project
 
@@ -441,14 +453,16 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
 
     # Process dbt_project.yml
     dbt_project_yml_results = []
-    for dbt_root_path in dbt_roots_paths:
-        dbt_project_yml_results.append(
-            process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change, all)
-        )
+    if not semantic_layer:
+        for dbt_root_path in dbt_roots_paths:
+            dbt_project_yml_results.append(
+                process_dbt_project_yml(Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change, all)
+            )
 
     # Process YAML files
+    semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
     )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results

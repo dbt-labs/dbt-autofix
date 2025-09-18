@@ -1,8 +1,10 @@
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import jinja2
 
 from dbt_common.clients.jinja import get_environment
+from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
 
 
 def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
@@ -52,3 +54,42 @@ def construct_static_kwarg_value(kwarg) -> str:
     # This is still useful to be able to detect changes in unrendered configs, even if it is
     # not an exact representation of the user input.
     return str(kwarg)
+
+
+@dataclass
+class RefArgs:
+    name: str
+    package: Optional[str]
+    version: Optional[str]
+
+
+def statically_parse_ref(expression: str) -> Optional[RefArgs]:
+    """
+    Returns a RefArgs or List[str] object, corresponding to ref or source respectively, given an input jinja expression.
+
+    input: str representing how input node is referenced in tested model sql
+        * examples:
+        - "ref('my_model_a')"
+            -> RefArgs(name='my_model_a', package=None, version=None)
+        - "ref('my_model_a', version=3)"
+            -> RefArgs(name='my_model_a', package=None, version=3)
+        - "ref('package', 'my_model_a', version=3)"
+            -> RefArgs(name='my_model_a', package='package', version=3)
+
+    """
+    ref: Optional[RefArgs] = None
+
+    try:
+        statically_parsed = py_extract_from_source(f"{{{{ {expression} }}}}")
+    except ExtractionError:
+        pass
+
+    if statically_parsed.get("refs"):
+        raw_ref = list(statically_parsed["refs"])[0]
+        ref = RefArgs(
+            package=raw_ref.get("package"),
+            name=raw_ref.get("name"),
+            version=raw_ref.get("version"),
+        )
+
+    return ref

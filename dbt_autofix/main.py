@@ -13,6 +13,7 @@ from dbt_autofix.duplicate_keys import find_duplicate_keys, print_duplicate_keys
 from dbt_autofix.fields_properties_configs import print_matrix
 from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 console = Console()
 error_console = Console(stderr=True)
@@ -60,11 +61,14 @@ def refactor_yml(  # noqa: PLR0913
     all: Annotated[
         bool, typer.Option("--all", help="Run all fixes, including those that may require a behavior change")
     ] = False,
+    semantic_layer: Annotated[
+        bool, typer.Option("--semantic-layer", help="Run fixes to semantic layer")
+    ] = False,
 ):
     schema_specs = SchemaSpecs(json_schema_version)
 
     changesets = changeset_all_sql_yml_files(
-        path, schema_specs, dry_run, exclude_dbt_project_keys, select, include_packages, behavior_change, all
+        path, schema_specs, dry_run, exclude_dbt_project_keys, select, include_packages, behavior_change, all, semantic_layer,
     )
     yaml_results, sql_results = changesets
     if dry_run:
