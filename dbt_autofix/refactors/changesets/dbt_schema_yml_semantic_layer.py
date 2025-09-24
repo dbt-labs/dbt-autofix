@@ -254,7 +254,7 @@ def changeset_delete_top_level_semantic_models(yml_str: str) -> YMLRuleRefactorR
     return YMLRuleRefactorResult(
         rule_name="delete_top_level_semantic_models",
         refactored=refactored,
-        refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
+        refactored_yaml=dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors
     )

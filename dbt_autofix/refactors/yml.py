@@ -46,8 +46,13 @@ def read_file(path: Path) -> Dict:
     return yaml.load(path)
 
 
-def dict_to_yaml_str(content: Dict[str, Any]) -> str:
+def dict_to_yaml_str(content: Dict[str, Any], write_empty: bool = False) -> str:
     """Write a dict value to a YAML string"""
+
+    # If content is empty, return an empty string
+    if not content and write_empty:
+        return ""
+
     yaml = DbtYAML()
     file_text = yaml.dump_to_string(content)  # type: ignore
     return file_text

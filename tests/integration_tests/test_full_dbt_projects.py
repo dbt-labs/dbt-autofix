@@ -19,6 +19,9 @@ postfix_expected = "_expected"
 project_dir_to_behavior_change_mode = defaultdict(lambda: False)
 project_dir_to_behavior_change_mode["project_behavior_changes"] = True
 
+project_dir_to_semantic_layer_mode = defaultdict(lambda: False)
+project_dir_to_semantic_layer_mode["project_semantic_layer"] = True
+
 
 def get_project_folders():
     dbt_projects_dir = os.path.join(os.path.dirname(__file__), dbt_projects_dir_name)
@@ -111,6 +114,7 @@ def test_project_refactor(project_folder, request):
             dry_run=False,
             json_output=True,
             behavior_change=project_dir_to_behavior_change_mode[project_folder],
+            semantic_layer=project_dir_to_semantic_layer_mode[project_folder],
         )
 
     # Compare with expected output
