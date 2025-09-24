@@ -26,6 +26,32 @@ def changeset_merge_semantic_models_with_models(yml_str: str, semantic_definitio
                     )
                 )
 
+    for semantic_model in yml_dict.get("semantic_models", []):
+        model_key = semantic_definitions.get_model_key_for_semantic_model(semantic_model)
+        # Semantic model has valid model 'ref' but no corresponding model entry in any .yml file
+        if model_key and not semantic_definitions.model_key_exists_for_semantic_model(model_key):
+            if "models" not in yml_dict:
+                yml_dict["models"] = []
+
+            new_model_node = {
+                "name": model_key[0],
+            }
+
+            processed_new_model_node, new_model_node_refactored, new_model_node_refactor_logs = merge_semantic_models_with_model(
+                new_model_node,
+                semantic_definitions
+            )
+            if new_model_node_refactored:
+                refactored = True
+                yml_dict["models"].append(processed_new_model_node)
+                for log in new_model_node_refactor_logs:
+                    deprecation_refactors.append(
+                        DbtDeprecationRefactor(
+                            log=log,
+                            deprecation=None
+                        )
+                    )
+
     return YMLRuleRefactorResult(
         rule_name="restructure_owner_properties",
         refactored=refactored,

@@ -439,6 +439,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
         include_packages: Whether to include packages in the refactoring
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
+        semantic_layer: Whether to run fixes to semantic layer
 
     Returns:
         Tuple containing:

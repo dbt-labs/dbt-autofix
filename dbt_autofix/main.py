@@ -65,6 +65,9 @@ def refactor_yml(  # noqa: PLR0913
         bool, typer.Option("--semantic-layer", help="Run fixes to semantic layer")
     ] = False,
 ):
+    if semantic_layer and include_packages:
+        raise typer.BadParameter("--include-packages is not supported with --semantic-layer")
+
     schema_specs = SchemaSpecs(json_schema_version)
 
     changesets = changeset_all_sql_yml_files(
