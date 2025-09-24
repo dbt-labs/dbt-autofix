@@ -3,8 +3,6 @@ from dbt_autofix.refactors.results import YMLRuleRefactorResult
 from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
 from dbt_autofix.semantic_definitions import SemanticDefinitions
-from dbt_autofix.deprecations import DeprecationType
-from typing import Optional
 
 def changeset_merge_semantic_models_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
     refactored = False

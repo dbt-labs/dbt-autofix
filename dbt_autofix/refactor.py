@@ -109,23 +109,23 @@ def process_yaml_files_except_dbt_project(
                 ]
 
             # Apply each changeset in sequence
-            # try:
-            for changeset_func, changeset_args in changesets:
-                if changeset_args is None:
-                    changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
-                else:
-                    changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
+            try:
+                for changeset_func, changeset_args in changesets:
+                    if changeset_args is None:
+                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
+                    else:
+                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
 
-                if changeset_result.refactored:
-                    yml_refactor_result.refactors.append(changeset_result)
-                    yml_refactor_result.refactored = True
-                    yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
+                    if changeset_result.refactored:
+                        yml_refactor_result.refactors.append(changeset_result)
+                        yml_refactor_result.refactored = True
+                        yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
-                yaml_results.append(yml_refactor_result)
+                    yaml_results.append(yml_refactor_result)
 
-            # except Exception as e:
-            #     error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
-            #     exit(1)
+            except Exception as e:
+                error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
+                exit(1)
 
     return yaml_results
 
