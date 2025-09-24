@@ -153,10 +153,11 @@ def merge_dimensions_with_model_columns(node: Dict[str, Any], dimensions: List[D
             node_columns[dimension_col_name]["dimension"] = {
                 "type": dimension["type"]
             }
+            # Add time granularity to top-level column if it was defined on the dimension
             if dimension_time_granularity:
-                node_columns[dimension_col_name]["dimension"]["time_granularity"] = dimension_time_granularity
+                node_columns[dimension_col_name]["granularity"] = dimension_time_granularity
             logs.append(f"Added '{dimension['type']}' dimension to column '{dimension_col_name}'.")
-        # If column doesn't exist, add a new one with new entity if no special characters in expr
+        # If column doesn't exist, add a new one with new dimension if no special characters in expr
         elif not any(char in dimension_col_name for char in (" ", "|", "(")):
             if node.get("columns"):
                 node["columns"].append({
@@ -172,8 +173,9 @@ def merge_dimensions_with_model_columns(node: Dict[str, Any], dimensions: List[D
                         "type": dimension["type"]
                     }
                 }]
+            # Add time granularity to top-level column if it was defined on the dimension
             if dimension_time_granularity:
-                node["columns"][-1]["dimension"]["time_granularity"] = dimension_time_granularity
+                node["columns"][-1]["granularity"] = dimension_time_granularity
             logs.append(f"Added new column '{dimension_col_name}' with '{dimension['type']}' dimension.")
         # Create entity as derived semantic entity
         else:
