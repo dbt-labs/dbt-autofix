@@ -91,7 +91,7 @@ def merge_semantic_models_with_model(
 
 def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[str, Any]]) -> List[str]:
     logs: List[str] = []
-    node_columns = {column["name"]: column for column in node["columns"]}
+    node_columns = {column["name"]: column for column in node.get("columns", [])}
 
     for entity in entities:
         entity_col_name = entity.get("expr") or entity["name"]
@@ -143,7 +143,7 @@ def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[
 
 def merge_dimensions_with_model_columns(node: Dict[str, Any], dimensions: List[Dict[str, Any]]) -> List[str]:
     logs: List[str] = []
-    node_columns = {column["name"]: column for column in node["columns"]}
+    node_columns = {column["name"]: column for column in node.get("columns", [])}
 
     for dimension in dimensions:
         dimension_col_name = dimension["name"]
