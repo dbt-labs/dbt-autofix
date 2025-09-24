@@ -78,6 +78,9 @@ def merge_semantic_models_with_model(
             # Propagate dimensions to model columns or derived_semantics
             node_logs.extend(merge_dimensions_with_model_columns(node, semantic_model.get("dimensions", [])))
 
+            # propagate measures to model metrics
+            node_logs.extend(merge_measures_with_model_metrics(node, semantic_model.get("measures", [])))
+
             refactored = True
             refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
             for log in node_logs:
@@ -197,6 +200,43 @@ def merge_dimensions_with_model_columns(node: Dict[str, Any], dimensions: List[D
     return logs
 
 
+def merge_measures_with_model_metrics(node: Dict[str, Any], measures: List[Dict[str, Any]]) -> List[str]:
+    logs: List[str] = []
+    node_metrics = {metric["name"]: metric for metric in node.get("metrics", [])}
+
+    for measure in measures:
+        metric_name = measure["name"]
+
+        # Build metric to add to model / update existing metric on model
+        metric = {
+            "name": metric_name,
+            "type": "simple",
+            "label": measure.get("label") or metric_name
+        }
+        for key, value in measure.items():
+            metric[key] = value
+        
+        # Renamed non_additive_dimension keys
+        if metric.get("non_additive_dimension"):
+            # window_choice -> window_agg
+            window_choice = metric["non_additive_dimension"].pop("window_choice")
+            metric["non_additive_dimension"]["window_agg"] = window_choice
+            # window_groupings -> group_by
+            window_groupings = metric["non_additive_dimension"].pop("window_groupings")
+            metric["non_additive_dimension"]["group_by"] = window_groupings
+
+        # Add measure to metric if metric already exists, or create new metric
+        if metric_name in node_metrics:
+            node_metrics[metric_name].update(metric)
+            logs.append(f"Updated existing metric '{metric_name}' with measure '{metric_name}' from semantic model '{node['name']}'.")
+        else:
+            if "metrics" not in node:
+                node["metrics"] = []
+            node["metrics"].append(metric)
+            logs.append(f"Added new simple metric '{metric_name}' from measure '{metric_name}' on semantic model '{node['name']}'.")
+    
+    return logs
+
 def changeset_delete_top_level_semantic_models(yml_str: str) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -206,7 +246,7 @@ def changeset_delete_top_level_semantic_models(yml_str: str) -> YMLRuleRefactorR
         refactored = True
         deprecation_refactors.append(
             DbtDeprecationRefactor(
-                log="Deleted top-level 'semantic_models' definitions: " + ", ".join(["'" + semantic_model["name"] + "'" for semantic_model in semantic_models_deleted]),
+                log="Deleted top-level 'semantic_models' definitions: " + ", ".join(["'" + semantic_model["name"] + "'" for semantic_model in semantic_models_deleted]) + ".",
                 deprecation=None
             )
         )
