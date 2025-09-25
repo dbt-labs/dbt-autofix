@@ -51,6 +51,8 @@ class SchemaSpecs:
             "sources": ["dataset", "project", "data_space"],
         }
 
+        node_type_to_config_key_aliases_with_plus = {node_type: [f"+{alias}" for alias in aliases] for node_type, aliases in node_type_to_config_key_aliases.items()}
+
         # "models"
         model_property_field_name, model_config_field_name = self._get_yml_schema_fields(yml_schema, "models")
         yaml_specs_models = YAMLSpecs(
@@ -61,7 +63,7 @@ class SchemaSpecs:
         dbtproject_specs_models = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][model_property_field_name_dbt_project]["properties"],
-            ).union(node_type_to_config_key_aliases["models"]),
+            ).union(node_type_to_config_key_aliases_with_plus["models"]),
         )
 
         # "sources"
@@ -74,7 +76,7 @@ class SchemaSpecs:
         dbtproject_specs_sources = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][source_property_field_name_dbt_project]["properties"]
-            ).union(node_type_to_config_key_aliases["sources"]),
+            ).union(node_type_to_config_key_aliases_with_plus["sources"]),
         )
 
         # "snapshots"
@@ -87,7 +89,7 @@ class SchemaSpecs:
         dbtproject_specs_snapshots = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][snapshot_property_field_name_dbt_project]["properties"]
-            ).union(node_type_to_config_key_aliases["snapshots"]),
+            ).union(node_type_to_config_key_aliases_with_plus["snapshots"]),
         )
 
         # "seeds"
@@ -100,7 +102,7 @@ class SchemaSpecs:
         dbtproject_specs_seeds = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][seed_property_field_name_dbt_project]["properties"]
-            ).union(node_type_to_config_key_aliases["seeds"]),
+            ).union(node_type_to_config_key_aliases_with_plus["seeds"]),
         )
 
         # "exposures"
@@ -146,7 +148,7 @@ class SchemaSpecs:
         dbtproject_specs_tests = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][test_property_field_name_dbt_project]["properties"]
-            ).union(node_type_to_config_key_aliases["tests"]),
+            ).union(node_type_to_config_key_aliases_with_plus["tests"]),
         )
 
         # "groups"
