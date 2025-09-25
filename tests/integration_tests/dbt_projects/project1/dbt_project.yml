@@ -35,9 +35,18 @@ models:
     example:
       materialized: view
       custom_config: custom_value
+      dataset: my_dataset
+      project: my_project
+      data_space: my_data_space
       my_first_dbt_model:
         materialized: table
         custom_config: custom_value
+
+seeds:
+  dbt_autofix_tests:
+    dataset: my_dataset
+    project: my_project
+    data_space: my_data_space
 
 exposures:
   enabled: true

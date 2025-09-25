@@ -38,6 +38,15 @@ models:
       +materialized: view
       +meta:
         custom_config: custom_value
+      +dataset: my_dataset
+      +project: my_project
+      +data_space: my_data_space
+
+seeds:
+  dbt_autofix_tests:
+    +dataset: my_dataset
+    +project: my_project
+    +data_space: my_data_space
 
 exposures:
   +enabled: true
