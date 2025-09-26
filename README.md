@@ -2,6 +2,8 @@
 
 dbt-autofix automatically scans your dbt project for deprecated configurations and updates them to align with the latest best practices. This makes it easier to resolve deprecation warnings introduced in dbt v1.10 as well as prepare for migration to the dbt Fusion engine.
 
+There will also be cases that dbt-autofix cannot resolve and require manual intervention. For those scenarios, using AI Agents can be helpfiul see the below section on [Using `AGENTS.md`](#using-agentsmd). Even if you don't intend to use LLMs, the [`AGENTS.md`](./AGENTS.md) can be a very helpful guidance for work that may need to be done after autofix has done it's part.
+
 
 ## Deprecation Coverage - Project Files
 
@@ -100,3 +102,9 @@ This tool requires connecting to the dbt Admin API to retrieve and update jobs w
 Running with `--dry-run`/`d` will output what changes would have been triggered without triggering them
 
 Running with `--behavior-changes` will run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
+
+### Using `AGENTS.md`
+
+[`AGENTS.md`](./AGENTS.md) is provided as a reference and starting place for those interested in using AI agents to assist them with migration work that dbt-autofix is not capable of resolving.
+
+The 
