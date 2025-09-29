@@ -4,6 +4,75 @@ from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
 from dbt_autofix.semantic_definitions import SemanticDefinitions
 
+
+def changeset_merge_metrics_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
+    refactored = False
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    yml_dict = DbtYAML().load(yml_str) or {}
+
+    for i, node in enumerate(yml_dict.get("models") or []):
+        processed_node, node_refactored, node_refactor_logs = merge_metrics_with_model(
+            node,
+            semantic_definitions
+        )
+        
+        if node_refactored:
+            refactored = True
+            yml_dict["models"][i] = processed_node
+            for log in node_refactor_logs:
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=log,
+                        deprecation=None
+                    )
+                )
+
+    return YMLRuleRefactorResult(
+        rule_name="merge_metrics_with_model_metrics",
+        refactored=refactored,
+        refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
+        original_yaml=yml_str,
+        deprecation_refactors=deprecation_refactors
+    )
+
+
+def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
+    refactored = False
+    refactor_logs: List[str] = []
+    simple_metrics_on_model = {metric["name"]: metric for metric in node.get("metrics", []) if metric["type"] == "simple"}
+
+    # For each top-level metric, determine whether it can be merged with the model depending on its linked measures
+    for metric_name, metric in semantic_definitions.metrics.items():
+        # Simple metrics can be merged to this model if they have a measure that exists as a simple metric on the model
+        if metric["type"] == "simple":
+
+            # Extract measure name from top-level simple metric
+            if isinstance(metric["type_params"]["measure"], dict):
+                measure_name = metric["type_params"]["measure"]["name"]
+            else:
+                measure_name = metric["type_params"]["measure"]
+
+            if measure_name in simple_metrics_on_model:
+                metric_update = {}
+                if "label" in metric:
+                    metric_update["label"] = metric["label"]
+                if "join_to_timespine" in metric:
+                    metric_update["join_to_timespine"] = metric["join_to_timespine"]
+                if "fill_nulls_with" in metric:
+                    metric_update["fill_nulls_with"] = metric["fill_nulls_with"]
+                if "filter" in metric:
+                    metric_update["filter"] = metric["filter"]
+                if "alias" in metric:
+                    metric_update["alias"] = metric["alias"]
+
+                simple_metrics_on_model[measure_name].update(metric_update)
+                semantic_definitions.mark_metric_as_merged(metric_name)
+                refactored = True
+                refactor_logs.append(f"Merged simple metric '{metric_name}' with simple metric '{metric_name}' on model '{node['name']}'.")
+
+    return node, refactored, refactor_logs
+
+
 def changeset_merge_semantic_models_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -268,6 +337,42 @@ def changeset_delete_top_level_semantic_models(yml_str: str) -> YMLRuleRefactorR
 
     if semantic_models_deleted := yml_dict.pop("semantic_models", None):
         refactored = True
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log="Deleted top-level 'semantic_models' definitions: " + ", ".join(["'" + semantic_model["name"] + "'" for semantic_model in semantic_models_deleted]) + ".",
+                deprecation=None
+            )
+        )
+
+    return YMLRuleRefactorResult(
+        rule_name="delete_top_level_semantic_models",
+        refactored=refactored,
+        refactored_yaml=dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str,
+        original_yaml=yml_str,
+        deprecation_refactors=deprecation_refactors
+    )
+
+
+def changeset_migrate_or_delete_top_level_metrics(yml_str: str) -> YMLRuleRefactorResult:
+    refactored = False
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    yml_dict = DbtYAML().load(yml_str) or {}
+
+    top_level_metrics = yml_dict.get("metrics", [])
+    transformed_metrics = []
+
+    for metric in top_level_metrics:
+        # Only keep metrics that cross 
+        if "metrics" in metric and len(metric["metrics"]) > 1:
+            # Accept type_params keys at the top-level
+            type_params = metric.pop("type_params", {})
+            metric.update(type_params)
+            # Rename "metrics" to "metric_aliases"
+            metric["metric_aliases"] = metric.pop("metrics")
+            transformed_metrics.append(metric)
+        else:
+            transformed_metrics.append(metric)
+
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log="Deleted top-level 'semantic_models' definitions: " + ", ".join(["'" + semantic_model["name"] + "'" for semantic_model in semantic_models_deleted]) + ".",

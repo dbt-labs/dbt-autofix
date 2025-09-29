@@ -56,14 +56,16 @@ models:
     metrics:
       - name: order_total
         type: simple
-        label: order_total
+        label: Order Total
         description: The total amount for each order including taxes.
         agg: sum
       - name: order_count
         type: simple
-        label: order_count
+        label: Drink Orders
         expr: 1
         agg: sum
+        filter: |
+          {{ Dimension('order_id__is_drink_order') }} = true
       - name: tax_paid
         type: simple
         label: tax_paid
@@ -71,7 +73,7 @@ models:
         agg: sum
       - name: order_cost
         type: simple
-        label: order_cost
+        label: Order Cost
         description: The cost for each order item. Cost is calculated as a sum of the supply cost for each order item.
         agg: sum
 

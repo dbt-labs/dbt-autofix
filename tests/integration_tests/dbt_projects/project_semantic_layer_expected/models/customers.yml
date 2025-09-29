@@ -54,12 +54,12 @@ models:
         agg: count_distinct
       - name: count_lifetime_orders
         type: simple
-        label: count_lifetime_orders
+        label: Count Lifetime Orders
         description: Total count of orders per customer.
         agg: sum
       - name: lifetime_spend_pretax
         type: simple
-        label: lifetime_spend_pretax
+        label: LTV Pre-tax
         description: Customer lifetime spend before taxes.
         agg: sum
       - name: lifetime_spend

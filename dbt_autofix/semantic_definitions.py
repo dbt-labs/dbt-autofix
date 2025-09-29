@@ -8,6 +8,8 @@ class SemanticDefinitions:
     def __init__(self, root_path: Path, dbt_paths: List[str]):
         self.semantic_models: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = self.collect_semantic_models(root_path, dbt_paths)
         self.model_yml_keys: Set[Tuple[str, Optional[str]]] = self.collect_model_yml_keys(root_path, dbt_paths)
+        self.metrics: Dict[str, Dict[str, Any]] = self.collect_metrics(root_path, dbt_paths)
+        self.merged_metrics: Set[str] = set()
     
     def get_semantic_model(self, model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
         model_key = (model_name, version)
@@ -21,6 +23,9 @@ class SemanticDefinitions:
 
     def model_key_exists_for_semantic_model(self, model_key: Tuple[str, Optional[str]]) -> bool:
         return model_key in self.model_yml_keys
+    
+    def mark_metric_as_merged(self, metric_name: str):
+        self.merged_metrics.add(metric_name)
 
     def collect_semantic_models(self, root_path: Path, dbt_paths: List[str]) -> Dict[Tuple[str, Optional[str]], Dict[str, Any]]:
         semantic_models: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = {}
@@ -55,3 +60,17 @@ class SemanticDefinitions:
                             for version in model["versions"]:
                                 model_keys.add((model["name"], version.get("v")))
         return model_keys
+    
+    def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, Dict[str, Any]]:
+        metrics: Dict[str, Dict[str, Any]] = {}
+        for dbt_path in dbt_paths:
+            yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
+                set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
+            )
+            for yml_file in yaml_files:
+                yml_str = yml_file.read_text()
+                yml_dict = DbtYAML().load(yml_str) or {}
+                if "metrics" in yml_dict:
+                    for metric in yml_dict["metrics"]:
+                        metrics[metric["name"]] = metric
+        return metrics
