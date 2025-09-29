@@ -83,6 +83,11 @@ models:
           - name: revenue
             offset_window: 1 month
             alias: revenue_prev_month
+      - name: cumulative_revenue
+        description: The cumulative revenue for all orders.
+        label: Cumulative Revenue (All Time)
+        type: cumulative
+        input_metric: revenue
 
 metrics:
   # Simple metrics
@@ -102,11 +107,6 @@ metrics:
         alias: cost
 
   #Cumulative Metrics
-  - name: cumulative_revenue
-    description: The cumulative revenue for all orders.
-    label: Cumulative Revenue (All Time)
-    type: cumulative
-    measure: revenue
 
 saved_queries:
   - name: revenue_metrics

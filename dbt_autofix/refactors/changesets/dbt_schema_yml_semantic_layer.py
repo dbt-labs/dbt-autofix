@@ -116,6 +116,27 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Added ratio metric '{metric_name}' to model '{node['name']}'.")
+        
+        elif metric["type"] == "cumulative":
+            measure = metric.get("type_params", {}).get("measure")
+            if isinstance(measure, dict):
+                measure_name = measure["name"]
+            else:
+                measure_name = measure
+
+            if measure_name in simple_metrics_on_model:
+                # Remove type_params from top-level
+                type_params = metric.pop("type_params", {})
+                metric.update(type_params)
+
+                # Rename "measure" to "input_metric"
+                if "measure" in metric:
+                    metric["input_metric"] = metric.pop("measure")
+
+                node["metrics"].append(metric)
+                semantic_definitions.mark_metric_as_merged(metric_name)
+                refactored = True
+                refactor_logs.append(f"Added cumulative metric '{metric_name}' to model '{node['name']}'.")
 
     return node, refactored, refactor_logs
 
