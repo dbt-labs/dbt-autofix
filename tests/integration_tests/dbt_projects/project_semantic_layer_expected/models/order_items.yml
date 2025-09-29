@@ -60,6 +60,17 @@ models:
         description: The median revenue generated for each order item.
         agg: median
         expr: product_price
+      - name: revenue_growth_mom
+        description: "Percentage growth of revenue compared to 1 month ago. Excluded tax"
+        type: derived
+        label: Revenue Growth % M/M
+        expr: (current_revenue - revenue_prev_month)*100/revenue_prev_month
+        input_metrics:
+          - name: revenue
+            alias: current_revenue
+          - name: revenue
+            offset_window: 1 month
+            alias: revenue_prev_month
 
 metrics:
   # Simple metrics
@@ -80,17 +91,6 @@ metrics:
     type: ratio
     numerator: drink_revenue
     denominator: revenue
-  - name: revenue_growth_mom
-    description: "Percentage growth of revenue compared to 1 month ago. Excluded tax"
-    type: derived
-    label: Revenue Growth % M/M
-    expr: (current_revenue - revenue_prev_month)*100/revenue_prev_month
-    input_metrics:
-      - name: revenue
-        alias: current_revenue
-      - name: revenue
-        offset_window: 1 month
-        alias: revenue_prev_month
   - name: order_gross_profit
     description: Gross profit from each order.
     type: derived

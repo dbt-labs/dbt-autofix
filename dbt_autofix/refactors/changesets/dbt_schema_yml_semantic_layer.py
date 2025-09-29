@@ -43,9 +43,12 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
 
     # For each top-level metric, determine whether it can be merged with the model depending on its linked measures
     for metric_name, metric in semantic_definitions.metrics.items():
+        # No need to further merge metrics that have already been merged
+        if metric_name in semantic_definitions.merged_metrics:
+            continue
+
         # Simple metrics can be merged to this model if they have a measure that exists as a simple metric on the model
         if metric["type"] == "simple":
-
             # Extract measure name from top-level simple metric
             if isinstance(metric["type_params"]["measure"], dict):
                 measure_name = metric["type_params"]["measure"]["name"]
@@ -69,6 +72,27 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Merged simple metric '{metric_name}' with simple metric '{metric_name}' on model '{node['name']}'.")
+        # Derived metrics can be merged to this model if they have metrics that exist as simple metrics on the model
+        elif metric["type"] == "derived":
+            metric_names = []
+            for input_metric in metric.get("type_params", {}).get("metrics", []):
+                if isinstance(input_metric, dict):
+                    metric_names.append(input_metric["name"])
+                else:
+                    metric_names.append(input_metric)
+
+            if all(metric_name in simple_metrics_on_model for metric_name in metric_names):
+                # Remove type_params from top-level
+                type_params = metric.pop("type_params", {})
+                metric.update(type_params)
+                # Rename "metrics" to "input_metrics"
+                if "metrics" in metric:
+                    metric["input_metrics"] = metric.pop("metrics")
+
+                node["metrics"].append(metric)
+                semantic_definitions.mark_metric_as_merged(metric_name)
+                refactored = True
+                refactor_logs.append(f"Added derived metric '{metric_name}' with to model '{node['name']}'.")
 
     return node, refactored, refactor_logs
 

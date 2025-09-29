@@ -67,15 +67,14 @@ models:
         label: lifetime_spend
         agg: sum
         description: Gross customer lifetime spend inclusive of taxes.
-metrics:
-  - name: average_order_value
-    description: LTV pre-tax / number of orders
-    label: Average Order Value
-    type: derived
-    expr: lifetime_spend_pretax / count_lifetime_orders
-    input_metrics:
-      - count_lifetime_orders
-      - lifetime_spend_pretax
+      - name: average_order_value
+        description: LTV pre-tax / number of orders
+        label: Average Order Value
+        type: derived
+        expr: lifetime_spend_pretax / count_lifetime_orders
+        input_metrics:
+          - count_lifetime_orders
+          - lifetime_spend_pretax
 
 saved_queries:
   - name: customer_order_metrics
