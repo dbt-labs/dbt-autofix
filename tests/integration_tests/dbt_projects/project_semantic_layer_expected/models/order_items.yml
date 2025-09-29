@@ -88,6 +88,25 @@ models:
         label: Cumulative Revenue (All Time)
         type: cumulative
         input_metric: revenue
+      - name: conversion_metric
+        description: The conversion metric description
+        type: conversion
+        label: Conversion Metric
+        entity: entity
+        calculation: calculation_type
+        window: window
+        constant_properties:
+          - base_property: dimension
+            conversion_property: entity
+        base_metric:
+          name: revenue
+          fill_nulls_with: test
+          join_to_timespine: true
+          filter: filter
+        conversion_metric:
+          name: food_revenue
+          fill_nulls_with: test
+          join_to_timespine: false
 
 metrics:
   # Simple metrics
@@ -105,8 +124,6 @@ metrics:
       - name: revenue
       - name: order_cost
         alias: cost
-
-  #Cumulative Metrics
 
 saved_queries:
   - name: revenue_metrics

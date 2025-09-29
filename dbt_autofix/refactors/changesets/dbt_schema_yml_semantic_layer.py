@@ -137,6 +137,35 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Added cumulative metric '{metric_name}' to model '{node['name']}'.")
+        elif metric["type"] == "conversion":
+            base_measure = metric.get("type_params", {}).get("conversion_type_params", {}).get("base_measure")
+            if isinstance(base_measure, dict):
+                base_measure_name = base_measure["name"]
+            else:
+                base_measure_name = base_measure
+            
+            conversion_measure = metric.get("type_params", {}).get("conversion_type_params", {}).get("conversion_measure")
+            if isinstance(conversion_measure, dict):
+                conversion_measure_name = conversion_measure["name"]
+            else:
+                conversion_measure_name = conversion_measure
+            
+            if base_measure_name in simple_metrics_on_model and conversion_measure_name in simple_metrics_on_model:
+                # Remove type_params from top-level
+                conversion_type_params = metric.pop("type_params", {}).pop("conversion_type_params", {})
+                metric.update(conversion_type_params)
+
+                # Rename "base_measure" to "base_metric"
+                if "base_measure" in metric:
+                    metric["base_metric"] = metric.pop("base_measure")
+                # Rename "conversion_measure" to "conversion_metric"
+                if "conversion_measure" in metric:
+                    metric["conversion_metric"] = metric.pop("conversion_measure")
+
+                node["metrics"].append(metric)
+                semantic_definitions.mark_metric_as_merged(metric_name)
+                refactored = True
+                refactor_logs.append(f"Added conversion metric '{metric_name}' to model '{node['name']}'.")
 
     return node, refactored, refactor_logs
 
@@ -440,14 +469,25 @@ def changeset_migrate_or_delete_top_level_metrics(yml_str: str, semantic_definit
                 )
             )
         else:
-            # Transform metric to be compatible with new syntax, but leave at top-level
-            type_params = metric.pop("type_params", {})
-            metric.update(type_params)
-            # Rename "metrics" to "input_metrics"
-            if "metrics" in metric:
-                metric["input_metrics"] = metric.pop("metrics")
-            transformed_metrics.append(metric)
+            # Transform metric to be compatible with new syntax, but leave metric at top-level
+            if metric["type"] == "conversion":
+                conversion_type_params = metric.pop("type_params", {}).pop("conversion_type_params", {})
+                metric.update(conversion_type_params)
+                # Rename "base_measure" to "base_metric"
+                if "base_measure" in metric:
+                    metric["base_metric"] = metric.pop("base_measure")
+                # Rename "conversion_measure" to "conversion_metric"
+                if "conversion_measure" in metric:
+                    metric["conversion_metric"] = metric.pop("conversion_measure")
+            else:
+                # Bring type-params values to top-level
+                type_params = metric.pop("type_params", {})
+                metric.update(type_params)
+                # Rename "metrics" to "input_metrics"
+                if "metrics" in metric:
+                    metric["input_metrics"] = metric.pop("metrics")
 
+            transformed_metrics.append(metric)
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(

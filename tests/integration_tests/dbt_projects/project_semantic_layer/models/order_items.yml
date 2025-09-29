@@ -128,14 +128,33 @@ metrics:
         - name: revenue
         - name: order_cost
           alias: cost
-
-  #Cumulative Metrics
   - name: cumulative_revenue
     description: The cumulative revenue for all orders.
     label: Cumulative Revenue (All Time)
     type: cumulative
     type_params:
       measure: revenue
+  - name: conversion_metric
+    description: The conversion metric description
+    type: conversion
+    label: Conversion Metric
+    type_params:
+      conversion_type_params:
+        entity: entity
+        calculation: calculation_type
+        base_measure: 
+          name: revenue
+          fill_nulls_with: test
+          join_to_timespine: true
+          filter: filter
+        conversion_measure:
+          name: food_revenue
+          fill_nulls_with: test
+          join_to_timespine: false
+        window: window
+        constant_properties:
+          - base_property: dimension
+            conversion_property: entity
 
 saved_queries:
   - name: revenue_metrics
