@@ -353,7 +353,7 @@ def changeset_delete_top_level_semantic_models(yml_str: str) -> YMLRuleRefactorR
     )
 
 
-def changeset_migrate_or_delete_top_level_metrics(yml_str: str) -> YMLRuleRefactorResult:
+def changeset_migrate_or_delete_top_level_metrics(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -362,26 +362,39 @@ def changeset_migrate_or_delete_top_level_metrics(yml_str: str) -> YMLRuleRefact
     transformed_metrics = []
 
     for metric in top_level_metrics:
-        # Only keep metrics that cross 
-        if "metrics" in metric and len(metric["metrics"]) > 1:
-            # Accept type_params keys at the top-level
+        # Do not include in transformed_metrics, effectively removing the metric from top-level specification
+        if metric["name"] in semantic_definitions.merged_metrics:
+            refactored = True
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Deleted top-level metric '{metric['name']}'.",
+                    deprecation=None
+                )
+            )
+        else:
+            # Transform metric to be compatible with new syntax, but leave at top-level
             type_params = metric.pop("type_params", {})
             metric.update(type_params)
-            # Rename "metrics" to "metric_aliases"
-            metric["metric_aliases"] = metric.pop("metrics")
-            transformed_metrics.append(metric)
-        else:
+            # Rename "metrics" to "input_metrics"
+            if "metrics" in metric:
+                metric["input_metrics"] = metric.pop("metrics")
             transformed_metrics.append(metric)
 
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log="Deleted top-level 'semantic_models' definitions: " + ", ".join(["'" + semantic_model["name"] + "'" for semantic_model in semantic_models_deleted]) + ".",
-                deprecation=None
+            refactored = True
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Updated top-level metric '{metric['name']}' to be compatible with new syntax, but left at top-level.",
+                    deprecation=None
+                )
             )
-        )
+
+    if not transformed_metrics:
+        yml_dict.pop("metrics", None)
+    else:
+        yml_dict["metrics"] = transformed_metrics
 
     return YMLRuleRefactorResult(
-        rule_name="delete_top_level_semantic_models",
+        rule_name="migrate_or_delete_top_level_metrics",
         refactored=refactored,
         refactored_yaml=dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str,
         original_yaml=yml_str,
