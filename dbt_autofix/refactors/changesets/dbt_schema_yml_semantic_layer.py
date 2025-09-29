@@ -93,6 +93,29 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Added derived metric '{metric_name}' with to model '{node['name']}'.")
+        # Ratio metrics can be merged to this model if they have numerator and denominator that exist as simple metrics on the model
+        elif metric["type"] == "ratio":
+            numerator = metric.get("type_params", {}).get("numerator")
+            if isinstance(numerator, dict):
+                numerator_name = numerator["name"]
+            else:
+                numerator_name = numerator
+            
+            denominator = metric.get("type_params", {}).get("denominator")
+            if isinstance(denominator, dict):
+                denominator_name = denominator["name"]
+            else:
+                denominator_name = denominator
+
+            if numerator_name in simple_metrics_on_model and denominator_name in simple_metrics_on_model:
+                # Remove type_params from top-level
+                type_params = metric.pop("type_params", {})
+                metric.update(type_params)
+
+                node["metrics"].append(metric)
+                semantic_definitions.mark_metric_as_merged(metric_name)
+                refactored = True
+                refactor_logs.append(f"Added ratio metric '{metric_name}' to model '{node['name']}'.")
 
     return node, refactored, refactor_logs
 

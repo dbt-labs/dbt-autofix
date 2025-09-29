@@ -60,6 +60,18 @@ models:
         description: The median revenue generated for each order item.
         agg: median
         expr: product_price
+      - name: food_revenue_pct
+        description: The % of order revenue from food.
+        label: Food Revenue %
+        type: ratio
+        numerator: food_revenue
+        denominator: revenue
+      - name: drink_revenue_pct
+        description: The % of order revenue from drinks.
+        label: Drink Revenue %
+        type: ratio
+        numerator: drink_revenue
+        denominator: revenue
       - name: revenue_growth_mom
         description: "Percentage growth of revenue compared to 1 month ago. Excluded tax"
         type: derived
@@ -79,18 +91,6 @@ metrics:
     label: Order Cost
     type: simple
     measure: order_cost
-  - name: food_revenue_pct
-    description: The % of order revenue from food.
-    label: Food Revenue %
-    type: ratio
-    numerator: food_revenue
-    denominator: revenue
-  - name: drink_revenue_pct
-    description: The % of order revenue from drinks.
-    label: Drink Revenue %
-    type: ratio
-    numerator: drink_revenue
-    denominator: revenue
   - name: order_gross_profit
     description: Gross profit from each order.
     type: derived
