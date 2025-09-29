@@ -110,11 +110,6 @@ models:
 
 metrics:
   # Simple metrics
-  - name: order_cost
-    description: Sum of cost for each order item.
-    label: Order Cost
-    type: simple
-    measure: order_cost
   - name: order_gross_profit
     description: Gross profit from each order.
     type: derived

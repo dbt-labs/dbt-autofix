@@ -68,7 +68,30 @@ def process_yaml_files_except_dbt_project(
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
     """
-    yaml_results: List[YMLRefactorResult] = []
+    file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
+
+    # Define the changesets to apply in order
+    behavior_change_rules = [
+        (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
+    ]
+    safe_change_rules = [
+        (changeset_remove_tab_only_lines, None),
+        (changeset_remove_indentation_version, None),
+        (changeset_remove_extra_tabs, None),
+        (changeset_remove_duplicate_keys, None),
+        (changeset_refactor_yml_str, schema_specs),
+        (changeset_owner_properties_yml_str, schema_specs),
+    ]
+    all_rules = [*behavior_change_rules, *safe_change_rules]
+
+    changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
+
+    if semantic_definitions:
+        changesets = [
+            (changeset_merge_semantic_models_with_models, semantic_definitions),
+            (changeset_merge_metrics_with_models, semantic_definitions),
+            (changeset_delete_top_level_semantic_models, None),
+        ]
 
     for model_path in model_paths:
         yaml_files = set((root_path / Path(model_path)).resolve().glob("**/*.yml")).union(
@@ -87,31 +110,6 @@ def process_yaml_files_except_dbt_project(
                 original_yaml=yml_str,
                 refactors=[],
             )
-
-            # Define the changesets to apply in order
-            behavior_change_rules = [
-                (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
-            ]
-            safe_change_rules = [
-                (changeset_remove_tab_only_lines, None),
-                (changeset_remove_indentation_version, None),
-                (changeset_remove_extra_tabs, None),
-                (changeset_remove_duplicate_keys, None),
-                (changeset_refactor_yml_str, schema_specs),
-                (changeset_owner_properties_yml_str, schema_specs),
-            ]
-            all_rules = [*behavior_change_rules, *safe_change_rules]
-
-            changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
-
-            if semantic_definitions:
-                changesets = [
-                    (changeset_merge_semantic_models_with_models, semantic_definitions),
-                    (changeset_merge_metrics_with_models, semantic_definitions),
-                    (changeset_delete_top_level_semantic_models, None),
-                    (changeset_migrate_or_delete_top_level_metrics, semantic_definitions),
-                ]
-
             # Apply each changeset in sequence
             try:
                 for changeset_func, changeset_args in changesets:
@@ -125,13 +123,47 @@ def process_yaml_files_except_dbt_project(
                         yml_refactor_result.refactored = True
                         yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
 
-                    yaml_results.append(yml_refactor_result)
+                    file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
 
             except Exception as e:
                 error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
                 exit(1)
 
-    return yaml_results
+    # Certain changesets can only be applied after all the other changesets have been applied to all the files
+    final_changesets = []
+    if semantic_definitions:
+        final_changesets = [
+            (changeset_migrate_or_delete_top_level_metrics, semantic_definitions),
+        ]
+
+    for model_path in model_paths:
+        yaml_files = set((root_path / Path(model_path)).resolve().glob("**/*.yml")).union(
+            set((root_path / Path(model_path)).resolve().glob("**/*.yaml"))
+        )
+        for yml_file in yaml_files:
+            if skip_file(yml_file, select):
+                continue
+
+            yml_str = yml_file.read_text()
+            yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
+
+            try:
+                for changeset_func, changeset_args in final_changesets:
+                    if changeset_args is None:
+                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
+                    else:
+                        changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
+                    
+                    if changeset_result.refactored:
+                        yml_refactor_result.refactors.append(changeset_result)
+                        yml_refactor_result.refactored = True
+                        yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
+
+            except Exception as e:
+                error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
+                exit(1)
+
+    return list(file_name_to_yaml_results.values())
 
 
 def process_dbt_project_yml(
