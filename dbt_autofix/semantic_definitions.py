@@ -6,9 +6,14 @@ from dbt_autofix.jinja import statically_parse_ref
 
 class SemanticDefinitions:
     def __init__(self, root_path: Path, dbt_paths: List[str]):
+        # All semantic models from semantic_models: entries in schema.yml files, keyed by their model key
         self.semantic_models: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = self.collect_semantic_models(root_path, dbt_paths)
+        # All model keys from models: entries in schema.yml files
         self.model_yml_keys: Set[Tuple[str, Optional[str]]] = self.collect_model_yml_keys(root_path, dbt_paths)
+        # All top-level metrics from metrics: entries in schema.yml files
         self.metrics: Dict[str, Dict[str, Any]] = self.collect_metrics(root_path, dbt_paths)
+
+        self.merged_semantic_models: Set[str] = set()
         self.merged_metrics: Set[str] = set()
     
     def get_semantic_model(self, model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -26,6 +31,9 @@ class SemanticDefinitions:
     
     def mark_metric_as_merged(self, metric_name: str):
         self.merged_metrics.add(metric_name)
+    
+    def mark_semantic_model_as_merged(self, semantic_model_name: str):
+        self.merged_semantic_models.add(semantic_model_name)
 
     def collect_semantic_models(self, root_path: Path, dbt_paths: List[str]) -> Dict[Tuple[str, Optional[str]], Dict[str, Any]]:
         semantic_models: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = {}

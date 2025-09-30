@@ -89,13 +89,13 @@ def process_yaml_files_except_dbt_project(
         changesets = [
             (changeset_merge_semantic_models_with_models, semantic_definitions),
             (changeset_merge_metrics_with_models, semantic_definitions),
-            (changeset_delete_top_level_semantic_models, None),
         ]
     
     # Certain changesets can only be applied after all the other changesets have been applied to all the files
     final_changesets = []
     if semantic_definitions:
         final_changesets = [
+            (changeset_delete_top_level_semantic_models, semantic_definitions),
             (changeset_migrate_or_delete_top_level_metrics, semantic_definitions),
         ]
 

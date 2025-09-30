@@ -189,6 +189,7 @@ def changeset_merge_semantic_models_with_models(yml_str: str, semantic_definitio
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
+    # Merge semantic models with existing models in yml
     for i, node in enumerate(yml_dict.get("models") or []):
         processed_node, node_refactored, node_refactor_logs = merge_semantic_models_with_model(
             node,
@@ -206,6 +207,8 @@ def changeset_merge_semantic_models_with_models(yml_str: str, semantic_definitio
                     )
                 )
 
+    # Create new model entries for semantic models that don't have a corresponding model entry in any .yml file
+    # and merge semantic models with them
     for semantic_model in yml_dict.get("semantic_models", []):
         model_key = semantic_definitions.get_model_key_for_semantic_model(semantic_model)
         # Semantic model has valid model 'ref' but no corresponding model entry in any .yml file
@@ -287,6 +290,7 @@ def merge_semantic_models_with_model(
 
             refactored = True
             refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
+            semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"])
             for log in node_logs:
                 refactor_log += f"\n\t* {log}"
             refactor_logs.append(
@@ -445,19 +449,30 @@ def merge_measures_with_model_metrics(node: Dict[str, Any], measures: List[Dict[
     
     return logs
 
-def changeset_delete_top_level_semantic_models(yml_str: str) -> YMLRuleRefactorResult:
+def changeset_delete_top_level_semantic_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
-    if semantic_models_deleted := yml_dict.pop("semantic_models", None):
-        refactored = True
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log="Deleted top-level 'semantic_models' definitions: " + ", ".join(["'" + semantic_model["name"] + "'" for semantic_model in semantic_models_deleted]) + ".",
-                deprecation=None
+    top_level_semantic_models = yml_dict.get("semantic_models", [])
+    new_semantic_models = []
+
+    for semantic_model in top_level_semantic_models:
+        if semantic_model["name"] in semantic_definitions.merged_semantic_models:
+            refactored = True
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Deleted top-level semantic model '{semantic_model['name']}'.",
+                    deprecation=None
+                )
             )
-        )
+        else:
+            new_semantic_models.append(semantic_model)
+    
+    if not new_semantic_models:
+        yml_dict.pop("semantic_models", None)
+    else:
+        yml_dict["semantic_models"] = new_semantic_models
 
     return YMLRuleRefactorResult(
         rule_name="delete_top_level_semantic_models",
