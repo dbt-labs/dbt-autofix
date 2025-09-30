@@ -8,7 +8,7 @@ from collections import defaultdict
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
-
+import pprint
 import pytest
 
 from dbt_autofix.main import refactor_yml
@@ -90,6 +90,12 @@ def compare_json_logs(logs_io: StringIO, path: Path):
     ]
 
     for log_dict in log_dicts_filtered:
+        if log_dict not in expected_log_dicts_filtered:
+            print("Log dict not in expected log dicts:")
+            pprint.pprint(log_dict)
+            print("Expected log dicts:")
+            pprint.pprint(expected_log_dicts_filtered)
+
         assert log_dict in expected_log_dicts_filtered
 
 
