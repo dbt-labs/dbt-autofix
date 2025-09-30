@@ -67,6 +67,7 @@ semantic_models:
       - name: lifetime_spend
         agg: sum
         description: Gross customer lifetime spend inclusive of taxes.
+        create_metric: true
 
 metrics:
   - name: lifetime_spend_pretax
