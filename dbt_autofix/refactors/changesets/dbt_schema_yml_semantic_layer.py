@@ -134,6 +134,10 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 # Rename "measure" to "input_metric"
                 if "measure" in metric:
                     metric["input_metric"] = metric.pop("measure")
+                    # Remove "fill_nulls_with" and "join_to_timespine" from input_metrics
+                    if isinstance(metric["input_metric"], dict):
+                        metric["input_metric"].pop("fill_nulls_with", None)
+                        metric["input_metric"].pop("join_to_timespine", None)
 
                 node["metrics"].append(metric)
                 semantic_definitions.mark_metric_as_merged(metric_name)
@@ -160,9 +164,17 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 # Rename "base_measure" to "base_metric"
                 if "base_measure" in metric:
                     metric["base_metric"] = metric.pop("base_measure")
+                    # Remove "fill_nulls_with" and "join_to_timespine" from base_metric
+                    if isinstance(metric["base_metric"], dict):
+                        metric["base_metric"].pop("fill_nulls_with", None)
+                        metric["base_metric"].pop("join_to_timespine", None)
                 # Rename "conversion_measure" to "conversion_metric"
                 if "conversion_measure" in metric:
                     metric["conversion_metric"] = metric.pop("conversion_measure")
+                    # Remove "fill_nulls_with" and "join_to_timespine" from conversion_metric
+                    if isinstance(metric["conversion_metric"], dict):
+                        metric["conversion_metric"].pop("fill_nulls_with", None)
+                        metric["conversion_metric"].pop("join_to_timespine", None)
 
                 node["metrics"].append(metric)
                 semantic_definitions.mark_metric_as_merged(metric_name)

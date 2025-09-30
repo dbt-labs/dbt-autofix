@@ -100,13 +100,9 @@ models:
             conversion_property: entity
         base_metric:
           name: revenue
-          fill_nulls_with: test
-          join_to_timespine: true
           filter: filter
         conversion_metric:
           name: food_revenue
-          fill_nulls_with: test
-          join_to_timespine: false
 
 metrics:
   # Simple metrics
