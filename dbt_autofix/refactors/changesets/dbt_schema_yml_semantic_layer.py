@@ -431,11 +431,13 @@ def merge_measures_with_model_metrics(node: Dict[str, Any], measures: List[Dict[
         # Renamed non_additive_dimension keys
         if metric.get("non_additive_dimension"):
             # window_choice -> window_agg
-            window_choice = metric["non_additive_dimension"].pop("window_choice")
-            metric["non_additive_dimension"]["window_agg"] = window_choice
+            window_choice = metric["non_additive_dimension"].pop("window_choice", None)
+            if window_choice:
+                metric["non_additive_dimension"]["window_agg"] = window_choice
             # window_groupings -> group_by
-            window_groupings = metric["non_additive_dimension"].pop("window_groupings")
-            metric["non_additive_dimension"]["group_by"] = window_groupings
+            window_groupings = metric["non_additive_dimension"].pop("window_groupings", None)
+            if window_groupings:
+                metric["non_additive_dimension"]["group_by"] = window_groupings
 
         # Add measure to metric if metric already exists, or create new metric
         if metric_name in node_metrics:
