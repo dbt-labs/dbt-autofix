@@ -82,12 +82,18 @@ def compare_json_logs(logs_io: StringIO, path: Path):
     logs = logs.strip().split("\n")
     log_dicts = [json.loads(log) for log in logs]
     log_dicts_filtered = [{k: v for k, v in log_dict.items() if k not in ignore_keys} for log_dict in log_dicts]
+    for log_dict in log_dicts_filtered:
+        if 'refactors' in log_dict:
+            log_dict['refactors'] = sorted(log_dict['refactors'], key=lambda x: x['log'])
 
     expected_logs = open(path).read().strip().split("\n")
     expected_log_dicts = [json.loads(log) for log in expected_logs]
     expected_log_dicts_filtered = [
         {k: v for k, v in log_dict.items() if k not in ignore_keys} for log_dict in expected_log_dicts
     ]
+    for expected_log_dict in expected_log_dicts_filtered:
+        if 'refactors' in expected_log_dict:
+            expected_log_dict['refactors'] = sorted(expected_log_dict['refactors'], key=lambda x: x['log'])
 
     for log_dict in log_dicts_filtered:
         if log_dict not in expected_log_dicts_filtered:
