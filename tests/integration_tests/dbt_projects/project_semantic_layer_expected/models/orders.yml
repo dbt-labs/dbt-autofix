@@ -69,6 +69,7 @@ models:
       - name: tax_paid
         type: simple
         label: tax_paid
+        hidden: true
         description: The total tax paid on each order.
         agg: sum
       - name: order_cost

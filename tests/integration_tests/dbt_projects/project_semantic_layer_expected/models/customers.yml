@@ -50,6 +50,7 @@ models:
       - name: customers
         type: simple
         label: customers
+        hidden: true
         description: Count of unique customers
         agg: count_distinct
       - name: count_lifetime_orders
@@ -65,6 +66,7 @@ models:
       - name: lifetime_spend
         type: simple
         label: lifetime_spend
+        hidden: true
         agg: sum
         description: Gross customer lifetime spend inclusive of taxes.
       - name: average_order_value

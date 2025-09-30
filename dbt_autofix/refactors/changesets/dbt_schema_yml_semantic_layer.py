@@ -69,6 +69,8 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                     metric_update["alias"] = metric["alias"]
 
                 simple_metrics_on_model[measure_name].update(metric_update)
+                # Remove existing 'hidden' property if merging into existing simple metric
+                simple_metrics_on_model[measure_name].pop("hidden", None)
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Merged simple metric '{metric_name}' with simple metric '{metric_name}' on model '{node['name']}'.")
@@ -403,6 +405,10 @@ def merge_measures_with_model_metrics(node: Dict[str, Any], measures: List[Dict[
             "type": "simple",
             "label": measure.get("label") or metric_name
         }
+        create_metric = measure.pop("create_metric", False)
+        if not create_metric:
+            metric["hidden"] = True
+
         for key, value in measure.items():
             metric[key] = value
         
