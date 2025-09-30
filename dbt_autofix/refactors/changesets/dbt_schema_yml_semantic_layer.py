@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional, Union
 from dbt_autofix.refactors.results import YMLRuleRefactorResult
 from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
@@ -57,20 +57,30 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
 
             if measure_name in simple_metrics_on_model:
                 metric_update = {}
+                new_measure_name = measure_name
                 if "label" in metric:
                     metric_update["label"] = metric["label"]
-                if "join_to_timespine" in metric:
-                    metric_update["join_to_timespine"] = metric["join_to_timespine"]
                 if "fill_nulls_with" in metric:
+                    new_measure_name += f"_fill_nulls_with_{metric['fill_nulls_with']}"
                     metric_update["fill_nulls_with"] = metric["fill_nulls_with"]
+                if "join_to_timespine" in metric:
+                    new_measure_name += "_join_to_timespine"
+                    metric_update["join_to_timespine"] = metric["join_to_timespine"]
                 if "filter" in metric:
                     metric_update["filter"] = metric["filter"]
                 if "alias" in metric:
                     metric_update["alias"] = metric["alias"]
+                if new_measure_name != measure_name:
+                    metric_update["name"] = new_measure_name
 
+                # Apply update and rename simple metric if new_measure_name is different from measure_name
                 simple_metrics_on_model[measure_name].update(metric_update)
+                simple_metrics_on_model[new_measure_name] = simple_metrics_on_model.pop(measure_name)
+
                 # Remove existing 'hidden' property if merging into existing simple metric
                 simple_metrics_on_model[measure_name].pop("hidden", None)
+
+                # Mark metric as refactored and merged
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Merged simple metric '{metric_name}' with simple metric '{metric_name}' on model '{node['name']}'.")
@@ -121,28 +131,26 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
         
         elif metric["type"] == "cumulative":
             measure = metric.get("type_params", {}).get("measure")
-            if isinstance(measure, dict):
-                measure_name = measure["name"]
-            else:
-                measure_name = measure
+            raw_measure_name, measure_name = get_name_from_measure(measure)
 
+            add_cumulative_metric_to_model = False
             if measure_name in simple_metrics_on_model:
-                # Remove type_params from top-level
-                type_params = metric.pop("type_params", {})
-                metric.update(type_params)
+                add_cumulative_metric_to_model = True                
+            elif raw_measure_name and raw_measure_name in simple_metrics_on_model:
+                add_cumulative_metric_to_model = True
+                
+                # Create hidden simple metric since only raw measure name is present
+                new_simple_metric = create_hidden_simple_metric_from(simple_metrics_on_model[raw_measure_name], measure_name, fill_nulls_with, join_to_timespine)
+                node["metrics"].append(new_simple_metric)
+                refactored = True
+                refactor_logs.append(f"Added hidden simple metric '{measure_name}' to model '{node['name']}'.")
 
-                # Rename "measure" to "input_metric"
-                if "measure" in metric:
-                    metric["input_metric"] = metric.pop("measure")
-                    # Remove "fill_nulls_with" and "join_to_timespine" from input_metrics
-                    if isinstance(metric["input_metric"], dict):
-                        metric["input_metric"].pop("fill_nulls_with", None)
-                        metric["input_metric"].pop("join_to_timespine", None)
-
-                node["metrics"].append(metric)
+            if add_cumulative_metric_to_model:
+                node["metrics"].append(migrate_cumulative_metric(metric, measure_name))
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Added cumulative metric '{metric_name}' to model '{node['name']}'.")
+        
         elif metric["type"] == "conversion":
             base_measure = metric.get("type_params", {}).get("conversion_type_params", {}).get("base_measure")
             if isinstance(base_measure, dict):
@@ -182,6 +190,57 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 refactor_logs.append(f"Added conversion metric '{metric_name}' to model '{node['name']}'.")
 
     return node, refactored, refactor_logs
+
+def get_name_from_measure(measure: Union[str, Dict[str, Any]]) -> Tuple[str, str]:
+    raw_measure_name, measure_name = None, None
+    if isinstance(measure, dict):
+        measure_name = measure["name"]
+        raw_measure_name = measure_name
+        # Update measure name with fill_nulls_with and join_to_timespine if provided
+        fill_nulls_with = measure.get("fill_nulls_with")
+        join_to_timespine = measure.get("join_to_timespine")
+        if fill_nulls_with:
+            measure_name += f"_fill_nulls_with_{fill_nulls_with}"
+        if join_to_timespine:
+            measure_name += "_join_to_timespine"
+    else:
+        raw_measure_name = measure
+        measure_name = measure
+    
+    return raw_measure_name, measure_name
+
+def create_hidden_simple_metric_from(other_simple_metric: Dict[str, Any], name: str, fill_nulls_with: Optional[str] = None, join_to_timespine: Optional[bool] = None) -> Dict[str, Any]:
+    new_metric = other_simple_metric.copy()
+    new_metric["name"] = name
+    new_metric["hidden"] = True
+    if fill_nulls_with:
+        new_metric["fill_nulls_with"] = fill_nulls_with
+    if join_to_timespine:
+        new_metric["join_to_timespine"] = join_to_timespine
+
+    return new_metric
+
+def migrate_cumulative_metric(metric: Dict[str, Any], measure_name: str) -> Dict[str, Any]:
+    # Remove type_params from top-level
+    type_params = metric.pop("type_params", {})
+    metric.update(type_params)
+
+    # Rename "measure" to "input_metric"
+    if "measure" in metric:
+        metric["input_metric"] = metric.pop("measure")
+    
+    # Remove fill_nulls_with and join_to_timespine from input_metric if they exist
+    if isinstance(metric["input_metric"], dict):
+        metric["input_metric"].pop("fill_nulls_with", None)
+        metric["input_metric"].pop("join_to_timespine", None)
+
+    # Ensure cumulative metric is pointing to correct measure
+    if isinstance(metric["input_metric"], dict):
+        metric["input_metric"]["name"] = measure_name
+    else:
+        metric["input_metric"] = measure_name
+
+    return metric
 
 
 def changeset_merge_semantic_models_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
