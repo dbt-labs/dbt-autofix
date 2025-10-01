@@ -88,6 +88,23 @@ models:
         label: Cumulative Revenue (All Time)
         type: cumulative
         input_metric: revenue
+      - name: revenue_fill_nulls_with_test_join_to_timespine
+        type: simple
+        label: Revenue
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
+        agg: sum
+        expr: product_price
+        hidden: true
+        fill_nulls_with: test
+        join_to_timespine: true
+      - name: food_revenue_fill_nulls_with_test
+        type: simple
+        label: Food Revenue
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
+        agg: sum
+        expr: case when is_food_item is true then product_price else 0 end
+        hidden: true
+        fill_nulls_with: test
       - name: conversion_metric
         description: The conversion metric description
         type: conversion
@@ -99,10 +116,10 @@ models:
           - base_property: dimension
             conversion_property: entity
         base_metric:
-          name: revenue
+          name: revenue_fill_nulls_with_test_join_to_timespine
           filter: filter
         conversion_metric:
-          name: food_revenue
+          name: food_revenue_fill_nulls_with_test
 
 metrics:
   # Simple metrics
