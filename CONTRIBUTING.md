@@ -24,3 +24,16 @@ GOLDIE_UPDATE=1 pytest tests/integration_tests
 ```
 
 to automatically update the expected *.stdout files.
+
+
+## Releasing
+
+To kick off a new release: 
+1. Click into 'Releases' under the 'About' section of https://github.com/dbt-labs/dbt-autofix
+2. Click 'Draft a new release'
+3. Create a new tag - incrementing the last latest release available on https://pypi.org/project/dbt-autofix/ by either a minor or patch version as appropriate - format should be `v0.*.*`
+4. Title the release the same as the tag name from (3)
+5. Click 'Generate release notes` to populate the release body
+6. Hit 'Publish Release' ensuring that `Set as the latest release` is checked.
+
+That's it! The Github release triggers an automated release to pypi which can be observed at: https://github.com/dbt-labs/dbt-autofix/actions/workflows/release.yml
