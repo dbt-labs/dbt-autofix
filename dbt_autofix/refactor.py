@@ -71,7 +71,6 @@ def process_yaml_files_except_dbt_project(
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
-    # Define the changesets to apply in order
     behavior_change_rules = [
         (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
     ]
@@ -86,19 +85,25 @@ def process_yaml_files_except_dbt_project(
     all_rules = [*behavior_change_rules, *safe_change_rules]
     changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
+    ordered_changesets = [
+        changesets,
+    ]
+
+    # Override ordered changesets if semantic definitions are provided
     if semantic_definitions:
-        changesets = [
-            (changeset_merge_semantic_models_with_models, semantic_definitions),
-            (changeset_merge_simple_metrics_with_models, semantic_definitions),
-            (changeset_merge_complex_metrics_with_models, semantic_definitions),
-        ]
-    
-    # Certain changesets can only be applied after all the other changesets have been applied to all the files
-    final_changesets = []
-    if semantic_definitions:
-        final_changesets = [
-            (changeset_delete_top_level_semantic_models, semantic_definitions),
-            (changeset_migrate_or_delete_top_level_metrics, semantic_definitions),
+        # Certain changesets can only be applied after all the other changesets have been applied to all the files
+        ordered_changesets = [
+            [
+                (changeset_merge_semantic_models_with_models, semantic_definitions),
+                (changeset_merge_simple_metrics_with_models, semantic_definitions),
+            ],
+            [
+                (changeset_merge_complex_metrics_with_models, semantic_definitions),
+            ],
+            [
+                (changeset_delete_top_level_semantic_models, semantic_definitions),
+                (changeset_migrate_or_delete_top_level_metrics, semantic_definitions),
+            ],
         ]
 
     def _apply_changesets(file_name_to_yaml_results: Dict[str, YMLRefactorResult], changesets: List[Tuple[Callable, Any]]) -> None:
@@ -141,8 +146,8 @@ def process_yaml_files_except_dbt_project(
                     error_console.print(f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red")
                     exit(1)
 
-    _apply_changesets(file_name_to_yaml_results, changesets)
-    _apply_changesets(file_name_to_yaml_results, final_changesets)
+    for changesets in ordered_changesets:
+        _apply_changesets(file_name_to_yaml_results, changesets)
 
     return list(file_name_to_yaml_results.values())
 
