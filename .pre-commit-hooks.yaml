@@ -1,0 +1,10 @@
+- id: dbt-autofix
+  name: dbt-autofix
+  description: Automatically fix dbt deprecations
+  entry: |
+    bash -c 'for f in $@; do dbt-autofix deprecations --select "${f}"; done'
+  language: python
+  types: [yaml]
+  require_serial: true
+  additional_dependencies:
+    - "dbt-autofix"
