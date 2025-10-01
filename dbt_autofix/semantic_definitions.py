@@ -16,7 +16,7 @@ class SemanticDefinitions:
         self.merged_semantic_models: Set[str] = set()
         self.merged_metrics: Set[str] = set()
     
-    def get_semantic_model(self, model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def get_semantic_model_for_model(self, model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
         model_key = (model_name, version)
         return self.semantic_models.get(model_key)
 

@@ -373,58 +373,79 @@ def merge_semantic_models_with_model(
     refactored = False
     refactor_logs: List[str] = []
 
-    if "versions" in node:
-        # TODO: handle merging semantic models into versioned models
-        pass
-    else:
-        if semantic_model := semantic_definitions.get_semantic_model(node["name"]):
-            node_logs = []
-            # Create a semantic_model property for the model
-            semantic_model_block = {
-                "enabled": True,
-            }
-            if semantic_model.get("config"):
-                semantic_model_block["config"] = semantic_model["config"]
-            if semantic_model["name"] != node["name"]:
-                semantic_model_block["name"] = node["name"]
-            node["semantic_model"] = semantic_model_block
-
-            # Propagate semantic model properties to the model
-            if semantic_model.get("description"):
-                if node.get("description"):
-                    node["description"] += node.get("description", "") + semantic_model["description"]
-                    node_logs.append(f"Appended semantic model 'description' to model 'description'.")
-                else:
-                    node["description"] = semantic_model["description"]
-                    node_logs.append(f"Set model 'description' to semantic model 'description'.")
-            
-            if agg_time_dimension := semantic_model.get("defaults", {}).get("agg_time_dimension"):
-                node["agg_time_dimension"] = agg_time_dimension
-                node_logs.append(f"Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.")
-            
-            # Propagate entities to model columns or derived_semantics
-            node_logs.extend(merge_entities_with_model_columns(node, semantic_model.get("entities", [])))
-
-            # Propagate dimensions to model columns or derived_semantics
-            node_logs.extend(merge_dimensions_with_model_columns(node, semantic_model.get("dimensions", [])))
-
-            # propagate measures to model metrics
-            node_logs.extend(merge_measures_with_model_metrics(node, semantic_model.get("measures", [])))
-
-            refactored = True
-            refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
-            semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"])
-            for log in node_logs:
-                refactor_log += f"\n\t* {log}"
-            refactor_logs.append(
-                refactor_log
-            )
+    if semantic_model := semantic_definitions.get_semantic_model_for_model(node["name"]):
+        node, node_logs = merge_semantic_model_with_model(semantic_model, node)
+        refactored = True
+        refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
+        semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"])
+        for log in node_logs:
+            refactor_log += f"\n\t* {log}"
+        refactor_logs.append(
+            refactor_log
+        )
+    elif "versions" in node:
+        for version in node["versions"]:
+            v = version["v"]
+            if semantic_model := semantic_definitions.get_semantic_model_for_model(node["name"], v):
+                node, node_logs = merge_semantic_model_with_model(semantic_model, node, v=v)
+                refactored = True
+                refactor_log = f"Model '{node['name']}' version '{v}' - Merged with semantic model '{semantic_model['name']}'."
+                semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"])
+                for log in node_logs:
+                    refactor_log += f"\n\t* {log}"
+                refactor_logs.append(refactor_log)
         
     return node, refactored, refactor_logs
 
-def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[str, Any]]) -> List[str]:
+def merge_semantic_model_with_model(semantic_model: Dict[str, Any], model: Dict[str, Any], v: Optional[str] = None) -> Tuple[Dict[str, Any], List[str]]:
+    node_logs = []
+    # Create a semantic_model property for the model
+    semantic_model_block = {
+        "enabled": True,
+    }
+    if semantic_model.get("config"):
+        semantic_model_block["config"] = semantic_model["config"]
+    if semantic_model["name"] != model["name"]:
+        semantic_model_block["name"] = model["name"]
+    model["semantic_model"] = semantic_model_block
+
+    # Propagate semantic model properties to the model
+    if semantic_model.get("description"):
+        if model.get("description"):
+            model["description"] += model.get("description", "") + semantic_model["description"]
+            node_logs.append(f"Appended semantic model 'description' to model 'description'.")
+        else:
+            model["description"] = semantic_model["description"]
+            node_logs.append(f"Set model 'description' to semantic model 'description'.")
+    
+    if agg_time_dimension := semantic_model.get("defaults", {}).get("agg_time_dimension"):
+        model["agg_time_dimension"] = agg_time_dimension
+        node_logs.append(f"Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.")
+    
+    # TODO: support version for following methods + propagate version through
+    # Propagate entities to model columns or derived_semantics
+    node_logs.extend(merge_entities_with_model_columns(model, semantic_model.get("entities", [])))
+
+    # Propagate dimensions to model columns or derived_semantics
+    node_logs.extend(merge_dimensions_with_model_columns(model, semantic_model.get("dimensions", [])))
+
+    # propagate measures to model metrics
+    node_logs.extend(merge_measures_with_model_metrics(model, semantic_model.get("measures", [])))
+
+    return model, node_logs
+
+def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[str, Any]], v: Optional[str] = None) -> List[str]:
     logs: List[str] = []
     node_columns = {column["name"]: column for column in node.get("columns", [])}
+    versioned_node_columns = {}
+    version_block = None
+    if v:
+        versions = node.get("versions", [])
+        for version in versions:
+            if version.get("v") == v:
+                versioned_node_columns = {column["name"]: column for column in version.get("columns", [])}
+                version_block = version
+                break
 
     for entity in entities:
         entity_col_name = entity.get("expr") or entity["name"]
@@ -437,22 +458,46 @@ def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[
             if entity.get("name") != entity_col_name:
                 node_columns[entity_col_name]["entity"]["name"] = entity["name"]
             logs.append(f"Added '{entity['type']}' entity to column '{entity_col_name}'.")
+        # Add entity to versioned column if it exists
+        elif v and entity_col_name in versioned_node_columns:
+            versioned_node_columns[entity_col_name]["entity"] = {
+                "type": entity["type"]
+            }
+            if entity.get("name") != entity_col_name:
+                versioned_node_columns[entity_col_name]["entity"]["name"] = entity["name"]
+            logs.append(f"Added '{entity['type']}' entity to column '{entity_col_name}' for version '{v}'.")
         # If column doesn't exist, add a new one with new entity if no special characters in expr
         elif not any(char in entity_col_name for char in (" ", "|", "(")):
-            if node.get("columns"):
+            # Add to existing columns lists
+            if not v and node.get("columns"):
                 node["columns"].append({
                     "name": entity_col_name,
                     "entity": {
                         "type": entity["type"]
                     }
                 })
-            else:
-                node["columns"] = [{
+            elif version_block and version_block.get("columns"):
+                version_block["columns"].append({
                     "name": entity_col_name,
                     "entity": {
                         "type": entity["type"]
                     }
-                }]
+                })
+            else:
+                if version_block:
+                    version_block["columns"] = [{
+                        "name": entity_col_name,
+                        "entity": {
+                            "type": entity["type"]
+                        }
+                    }]
+                else:
+                    node["columns"] = [{
+                        "name": entity_col_name,
+                        "entity": {
+                            "type": entity["type"]
+                        }
+                    }]
             logs.append(f"Added new column '{entity_col_name}' with '{entity['type']}' entity.")
         # Create entity as derived semantic entity
         else:
