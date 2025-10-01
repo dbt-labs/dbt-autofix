@@ -1,17 +1,25 @@
-from typing import List, Tuple, Dict, Any, Optional, Union
+from typing import List, Tuple, Dict, Any, Optional, Union, Callable
 from dbt_autofix.refactors.results import YMLRuleRefactorResult
 from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
 from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 
-def changeset_merge_metrics_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
+def changeset_merge_simple_metrics_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
+    return merge_metrics_with_models(yml_str, semantic_definitions, merge_simple_metrics_with_model)
+
+
+def changeset_merge_complex_metrics_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
+    return merge_metrics_with_models(yml_str, semantic_definitions, merge_complex_metrics_with_model)
+
+
+def merge_metrics_with_models(yml_str: str, semantic_definitions: SemanticDefinitions, merge_fn: Callable) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
     for i, node in enumerate(yml_dict.get("models") or []):
-        processed_node, node_refactored, node_refactor_logs = merge_metrics_with_model(
+        processed_node, node_refactored, node_refactor_logs = merge_fn(
             node,
             semantic_definitions
         )
@@ -36,7 +44,7 @@ def changeset_merge_metrics_with_models(yml_str: str, semantic_definitions: Sema
     )
 
 
-def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
+def merge_simple_metrics_with_model(node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
     refactored = False
     refactor_logs: List[str] = []
     simple_metrics_on_model = {metric["name"]: metric for metric in node.get("metrics", []) if metric["type"] == "simple"}
@@ -84,8 +92,22 @@ def merge_metrics_with_model(node: Dict[str, Any], semantic_definitions: Semanti
                 semantic_definitions.mark_metric_as_merged(metric_name)
                 refactored = True
                 refactor_logs.append(f"Merged simple metric '{metric_name}' with simple metric '{metric_name}' on model '{node['name']}'.")
+    
+    return node, refactored, refactor_logs
+
+
+def merge_complex_metrics_with_model(node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
+    refactored = False
+    refactor_logs: List[str] = []
+    simple_metrics_on_model = {metric["name"]: metric for metric in node.get("metrics", []) if metric["type"] == "simple"}
+
+    # For each top-level metric, determine whether it can be merged with the model depending on its linked measures
+    for metric_name, metric in semantic_definitions.metrics.items():
+        # No need to further merge metrics that have already been merged
+        if metric_name in semantic_definitions.merged_metrics:
+            continue
         # Derived metrics can be merged to this model if they have metrics that exist as simple metrics on the model
-        elif metric["type"] == "derived":
+        if metric["type"] == "derived":
             metric_names = []
             for input_metric in metric.get("type_params", {}).get("metrics", []):
                 if isinstance(input_metric, dict):
