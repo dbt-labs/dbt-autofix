@@ -61,6 +61,7 @@ models:
         description: Count of unique customers
         agg: count_distinct
         type: simple
+        hidden: true
       - name: lifetime_spend
         agg: sum
         description: Gross customer lifetime spend inclusive of taxes.

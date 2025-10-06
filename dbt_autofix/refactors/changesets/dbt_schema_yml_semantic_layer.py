@@ -333,7 +333,6 @@ def get_or_create_metric_for_measure(
     is_hidden: bool,
     semantic_definitions: SemanticDefinitions,
     dbt_model_node: Dict[str, Any],
-    # TODO - add model_node for this and append metric to it!!!
 ) -> Tuple[Dict[str, Any], bool]:
     """Returns tuple(metric, is_new_metric)."""
     measure_name = measure["name"]
@@ -393,6 +392,8 @@ def add_metric_for_measures_in_model(
     semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
 
     def create_simple_metric_from_measure(measure: Dict[str, Any], is_hidden: bool) -> Tuple[Dict[str, Any], bool]:
+        # since these are measures with no measure input wrapper, there are no available
+        # values for fill_nulls_with and join_to_timespine.
         return get_or_create_metric_for_measure(
             measure=measure,
             fill_nulls_with=None,
@@ -415,7 +416,7 @@ def add_metric_for_measures_in_model(
         elif semantic_definitions.artificial_metric_name_exists(measure_name):
             continue
         # elif create_metric = True, if it's not already in our list of artificial metrics, create it with hidden = False
-        elif measure.get("create_metric", True):
+        elif measure.get("create_metric", False):
             metric, is_new_metric = create_simple_metric_from_measure(measure, is_hidden=False)
         # Optionally, we can add metrics for measures that are never consumed...
         else:

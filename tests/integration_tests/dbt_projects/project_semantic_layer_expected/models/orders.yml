@@ -103,14 +103,11 @@ models:
 
         agg: sum
         expr: 1
-      - name: order_count
-        expr: 1
-        agg: sum
-        type: simple
       - name: tax_paid
         description: The total tax paid on each order.
         agg: sum
         type: simple
+        hidden: true
 saved_queries:
   - name: order_metrics
     query_params:
