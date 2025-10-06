@@ -8,20 +8,29 @@ from rich.console import Console
 
 console = Console()
 
-def changeset_merge_simple_metrics_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
-    # return merge_metrics_with_models(yml_str, semantic_definitions, merge_simple_metrics_with_model)
-    return run_change_function_against_each_model(yml_str, semantic_definitions, combine_simple_metrics_with_their_input_measure, "merge_simple_metrics_with_model_metrics")
 
+def changeset_merge_simple_metrics_with_models(
+    yml_str: str, semantic_definitions: SemanticDefinitions
+) -> YMLRuleRefactorResult:
+    # return merge_metrics_with_models(yml_str, semantic_definitions, merge_simple_metrics_with_model)
+    return run_change_function_against_each_model(
+        yml_str,
+        semantic_definitions,
+        combine_simple_metrics_with_their_input_measure,
+        "merge_simple_metrics_with_model_metrics",
+    )
 
 
 def changeset_merge_complex_metrics_with_models(
     yml_str: str, semantic_definitions: SemanticDefinitions
 ) -> YMLRuleRefactorResult:
-    return run_change_function_against_each_model(yml_str, semantic_definitions, merge_complex_metrics_with_model, "merge_complex_metrics_with_model_metrics")
+    return run_change_function_against_each_model(
+        yml_str, semantic_definitions, merge_complex_metrics_with_model, "merge_complex_metrics_with_model_metrics"
+    )
 
 
 def run_change_function_against_each_model(
-    yml_str: str, 
+    yml_str: str,
     semantic_definitions: SemanticDefinitions,
     merge_fn: Callable,
     rule_name: str,
@@ -61,14 +70,16 @@ def append_metric_to_model(
     model_node["metrics"].append(metric)
 
 
-def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
+def combine_simple_metrics_with_their_input_measure(
+    model_node: Dict[str, Any], semantic_definitions: SemanticDefinitions
+) -> Tuple[Dict[str, Any], bool, List[str]]:
     refactored = False
     refactor_logs: List[str] = []
 
     semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
     console.print(semantic_model, style="yellow")
     measures_on_semantic_model: List[Dict[str, Any]] = get_measures_from_model(semantic_model)
-    
+
     # for each simple metric in our semantic definitions, check if its measure is on this model
     # then flatten it by pulling the measure settings up into the metric.
     # Then, finally put the metric INTO the model that owned the measure.
@@ -90,7 +101,7 @@ def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], 
             measure_name = metric["type_params"]["measure"]
             fill_nulls_with = None
             join_to_timespine = None
-        
+
         measure = next((m for m in measures_on_semantic_model if m["name"] == measure_name), None)
         if not measure:
             continue
@@ -104,8 +115,7 @@ def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], 
             metric["use_discrete_percentile"] = measure["use_discrete_percentile"]
         if measure.get("use_approximate_percentile"):
             metric["use_approximate_percentile"] = measure["use_approximate_percentile"]
-        
-        
+
         if measure.get("agg_time_dimension"):
             metric["agg_time_dimension"] = measure["agg_time_dimension"]
         if measure.get("non_additive_dimension"):
@@ -126,15 +136,16 @@ def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], 
 
         # At this point, type_params should only include "measure", so we can just remove it wholely.
         metric.pop("type_params", {})
-        
 
         if "metrics" not in model_node:
             model_node["metrics"] = []
         model_node["metrics"].append(metric)
         semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=measure_name)
         refactored = True
-        refactor_logs.append(f"Folded input measure '{measure_name}' into simple metric '{metric_name}' and moved '{metric_name}' to model '{model_node['name']}'.")
-    
+        refactor_logs.append(
+            f"Folded input measure '{measure_name}' into simple metric '{metric_name}' and moved '{metric_name}' to model '{model_node['name']}'."
+        )
+
     return model_node, refactored, refactor_logs
 
 
@@ -311,7 +322,7 @@ def make_artificial_metric_name(
         base_name += f"_fill_nulls_with_{fill_nulls_with}"
     if join_to_timespine:
         base_name += "_join_to_timespine"
-    
+
     # increment to avoid duplication if another metric by this name was created by the
     # original (probably human) yaml authors.
     final_name = base_name
@@ -408,7 +419,7 @@ def add_metric_for_measures_in_model(
         metric = None
         is_new_metric = False
         # if there was a metric with this name to begin with, skip this step
-        #   because we already ignored create_metric=True directives in that case 
+        #   because we already ignored create_metric=True directives in that case
         #   in dbt-semantic-interfaces and metricflow.
         if measure_name in semantic_definitions.initial_metrics:
             continue
@@ -420,19 +431,17 @@ def add_metric_for_measures_in_model(
             metric, is_new_metric = create_simple_metric_from_measure(measure, is_hidden=False)
         # Optionally, we can add metrics for measures that are never consumed...
         else:
-            # since we're just preserving measures here, don't make a new metric if 
+            # since we're just preserving measures here, don't make a new metric if
             # it was merged into something already.
             if semantic_definitions.measure_is_merged(measure_name):
                 continue
             # Let's convert this currently unused measure as it's probably a human's WIP
             metric, is_new_metric = create_simple_metric_from_measure(measure, is_hidden=True)
-            
+
         if is_new_metric:
             refactored = True
-            refactor_logs.append(
-                f"Added simple metric '{metric.get('name')}' to model '{model_node['name']}'."
-            )
-        
+            refactor_logs.append(f"Added simple metric '{metric.get('name')}' to model '{model_node['name']}'.")
+
     return model_node, refactored, refactor_logs
 
 
@@ -446,6 +455,7 @@ def changeset_add_metrics_for_measures(
         add_metric_for_measures_in_model,
         "add_new_metrics_for_measures_to_model",
     )
+
 
 def get_name_from_measure_input(measure: Union[str, Dict[str, Any]]) -> Tuple[str, str]:
     raw_measure_name, measure_name = None, None
@@ -738,7 +748,7 @@ def merge_measures_with_model_metrics(node: Dict[str, Any], measures: List[Dict[
 
     for measure in measures:
         metric_name = measure["name"]
-        
+
         # Build metric to add to model / update existing metric on model
         metric = {"name": metric_name, "type": "simple", "label": measure.get("label") or metric_name}
         create_metric = measure.pop("create_metric", False)
