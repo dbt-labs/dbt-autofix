@@ -31,6 +31,7 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_prefix_plus_for_config,
 )
 from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
+    changeset_add_metrics_for_measures,
     changeset_merge_semantic_models_with_models,
     changeset_delete_top_level_semantic_models,
     changeset_merge_simple_metrics_with_models,
@@ -101,6 +102,9 @@ def process_yaml_files_except_dbt_project(
             [
                 (changeset_merge_semantic_models_with_models, semantic_definitions),
                 (changeset_merge_simple_metrics_with_models, semantic_definitions),
+            ],
+            [
+                (changeset_add_metrics_for_measures, semantic_definitions),
             ],
             [
                 (changeset_merge_complex_metrics_with_models, semantic_definitions),
