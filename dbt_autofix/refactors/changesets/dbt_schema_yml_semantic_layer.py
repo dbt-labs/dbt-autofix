@@ -81,12 +81,15 @@ def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], 
         measure_input = metric.get("type_params", {}).get("measure")
         if measure_input is None:
             # we've already fixed this one, so skip it.
-            console.print(f"simple metric {metric_name} has no measure input, so skipping", style="blue")
             continue
         if isinstance(measure_input, dict):
             measure_name = metric["type_params"]["measure"]["name"]
+            fill_nulls_with = measure_input.get("fill_nulls_with")
+            join_to_timespine = measure_input.get("join_to_timespine")
         else:
             measure_name = metric["type_params"]["measure"]
+            fill_nulls_with = None
+            join_to_timespine = None
         
         measure = next((m for m in measures_on_semantic_model if m["name"] == measure_name), None)
         if not measure:
@@ -116,11 +119,10 @@ def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], 
 
         if measure.get("expr"):
             metric["expr"] = measure["expr"]
-        # TODO: these are wrong; they're pointing at the measure, not the measure_input.  Fix them.
-        # if measure.get("fill_nulls_with"):
-        #     metric["fill_nulls_with"] = measure["fill_nulls_with"]
-        # if measure.get("join_to_timespine"):
-        #     metric["join_to_timespine"] = measure["join_to_timespine"]
+        if fill_nulls_with:
+            metric["fill_nulls_with"] = fill_nulls_with
+        if join_to_timespine:
+            metric["join_to_timespine"] = join_to_timespine
 
         # At this point, type_params should only include "measure", so we can just remove it wholely.
         metric.pop("type_params", {})
@@ -134,63 +136,6 @@ def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], 
         refactor_logs.append(f"Folded input measure '{measure_name}' into simple metric '{metric_name}' and moved '{metric_name}' to model '{model_node['name']}'.")
     
     return model_node, refactored, refactor_logs
-
-
-
-# def merge_simple_metrics_with_model(node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
-#     refactored = False
-#     refactor_logs: List[str] = []
-#     simple_metrics_on_model = {
-#         metric["name"]: metric for metric in node.get("metrics", []) if metric["type"] == "simple"
-#     }
-
-#     # For each top-level metric, determine whether it can be merged with the model depending on its linked measures
-#     for metric_name, metric in semantic_definitions.metrics.items():
-#         # No need to further merge metrics that have already been merged
-#         if metric_name in semantic_definitions.merged_metrics:
-#             continue
-
-#         # Simple metrics can be merged to this model if they have a measure that exists as a simple metric on the model
-#         if metric["type"] == "simple":
-#             # Extract measure name from top-level simple metric
-#             if isinstance(metric["type_params"]["measure"], dict):
-#                 measure_name = metric["type_params"]["measure"]["name"]
-#             else:
-#                 measure_name = metric["type_params"]["measure"]
-
-#             if measure_name in simple_metrics_on_model:
-#                 metric_update = {}
-#                 new_measure_name = measure_name
-#                 if "label" in metric:
-#                     metric_update["label"] = metric["label"]
-#                 if "fill_nulls_with" in metric:
-#                     new_measure_name += f"_fill_nulls_with_{metric['fill_nulls_with']}"
-#                     metric_update["fill_nulls_with"] = metric["fill_nulls_with"]
-#                 if "join_to_timespine" in metric:
-#                     new_measure_name += "_join_to_timespine"
-#                     metric_update["join_to_timespine"] = metric["join_to_timespine"]
-#                 if "filter" in metric:
-#                     metric_update["filter"] = metric["filter"]
-#                 if "alias" in metric:
-#                     metric_update["alias"] = metric["alias"]
-#                 if new_measure_name != measure_name:
-#                     metric_update["name"] = new_measure_name
-
-#                 # Apply update and rename simple metric if new_measure_name is different from measure_name
-#                 simple_metrics_on_model[measure_name].update(metric_update)
-#                 simple_metrics_on_model[new_measure_name] = simple_metrics_on_model.pop(measure_name)
-
-#                 # Remove existing 'hidden' property if merging into existing simple metric
-#                 simple_metrics_on_model[measure_name].pop("hidden", None)
-
-#                 # Mark metric as refactored and merged
-#                 semantic_definitions.mark_metric_as_merged(metric_name)
-#                 refactored = True
-#                 refactor_logs.append(
-#                     f"Merged simple metric '{metric_name}' with simple metric '{metric_name}' on model '{node['name']}'."
-#                 )
-
-#     return node, refactored, refactor_logs
 
 
 def merge_complex_metrics_with_model(
@@ -412,7 +357,9 @@ def get_or_create_metric_for_measure(
     artificial_metric = copy.deepcopy(measure)
     artificial_metric["name"] = artificial_metric_name
     artificial_metric["type"] = "simple"
-    artificial_metric["hidden"] = is_hidden
+    if is_hidden:
+        artificial_metric["hidden"] = True
+    artificial_metric.pop("create_metric", {})
     # The following is copied from earlier versions of this script and might bear further testing.
     # Renamed non_additive_dimension keys
     if artificial_metric.get("non_additive_dimension"):
