@@ -16,10 +16,13 @@ class SemanticDefinitions:
         self.metrics: Dict[str, Dict[str, Any]] = self.collect_metrics(root_path, dbt_paths)
 
         self.merged_semantic_models: Set[str] = set()
-        self.merged_metrics: Set[str] = set()
+        self._semantic_model_to_dbt_model_name_map: Dict[str, str] = {}
 
-    def get_semantic_model(self, model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        model_key = (model_name, version)
+        # TODO @patricky do I need this?
+        self.merged_metrics: Set[str] = set()
+    
+    def get_semantic_model(self, dbt_model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        model_key = (dbt_model_name, version)
         return self.semantic_models.get(model_key)
 
     def get_model_key_for_semantic_model(self, semantic_model: Dict[str, Any]) -> Optional[Tuple[str, Optional[str]]]:
@@ -33,9 +36,13 @@ class SemanticDefinitions:
 
     def mark_metric_as_merged(self, metric_name: str):
         self.merged_metrics.add(metric_name)
-
-    def mark_semantic_model_as_merged(self, semantic_model_name: str):
+    
+    def mark_semantic_model_as_merged(self, semantic_model_name: str, new_dbt_model_name: str):
         self.merged_semantic_models.add(semantic_model_name)
+        self._semantic_model_to_dbt_model_name_map[semantic_model_name] = new_dbt_model_name
+
+    def get_model_for_semantic_model(self, semantic_model_name: str) -> str:
+        return self._semantic_model_to_dbt_model_name_map[semantic_model_name]
 
     def collect_semantic_models(
         self, root_path: Path, dbt_paths: List[str]

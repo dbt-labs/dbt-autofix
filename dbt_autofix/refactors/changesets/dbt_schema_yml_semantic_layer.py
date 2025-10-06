@@ -5,10 +5,10 @@ from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
 from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 
-def changeset_merge_simple_metrics_with_models(
-    yml_str: str, semantic_definitions: SemanticDefinitions
-) -> YMLRuleRefactorResult:
-    return merge_metrics_with_models(yml_str, semantic_definitions, merge_simple_metrics_with_model)
+def changeset_merge_simple_metrics_with_models(yml_str: str, semantic_definitions: SemanticDefinitions) -> YMLRuleRefactorResult:
+    # return merge_metrics_with_models(yml_str, semantic_definitions, merge_simple_metrics_with_model)
+    return merge_metrics_with_models(yml_str, semantic_definitions, combine_simple_metrics_with_their_input_measure)
+
 
 
 def changeset_merge_complex_metrics_with_models(
@@ -42,9 +42,70 @@ def merge_metrics_with_models(
     )
 
 
-def merge_simple_metrics_with_model(
-    node: Dict[str, Any], semantic_definitions: SemanticDefinitions
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+def combine_simple_metrics_with_their_input_measure(model_node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
+    refactored = False
+    refactor_logs: List[str] = []
+
+    semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
+    measures_on_semantic_model: List[Dict[str, Any]] = semantic_model.get("measures", [])
+    
+    # for each simple metric in our semantic definitions, check if its measure is on this model
+    # then flatten it by pulling the measure settings up into the metric.
+    # Then, finally put the metric INTO the model that owned the measure.
+    for metric_name, metric in semantic_definitions.metrics.items():
+        if metric["type"] != "simple":
+            continue
+
+        # Extract measure name from top-level simple metric
+        if isinstance(metric["type_params"]["measure"], dict):
+            measure_name = metric["type_params"]["measure"]["name"]
+        else:
+            measure_name = metric["type_params"]["measure"]
+        
+        measure = next((m for m in measures_on_semantic_model if m["name"] == measure_name), None)
+        if not measure:
+            continue
+
+        if measure.get("agg"):
+            metric["agg"] = measure["agg"]
+        # agg_params stuff
+        if measure.get("percentile"):
+            metric["percentile"] = measure["percentile"]
+        if measure.get("use_discrete_percentile"):
+            metric["use_discrete_percentile"] = measure["use_discrete_percentile"]
+        if measure.get("use_approximate_percentile"):
+            metric["use_approximate_percentile"] = measure["use_approximate_percentile"]
+        
+        
+        if measure.get("agg_time_dimension"):
+            metric["agg_time_dimension"] = measure["agg_time_dimension"]
+        if measure.get("non_additive_dimension"):
+            metric["non_additive_dimension"] = {}
+            if measure["non_additive_dimension"].get("name"):
+                metric["non_additive_dimension"]["name"] = measure["non_additive_dimension"]["name"]
+            if measure["non_additive_dimension"].get("window_choice"):
+                metric["non_additive_dimension"]["window_agg"] = measure["non_additive_dimension"]["window_choice"]
+            if measure["non_additive_dimension"].get("window_groupings"):
+                metric["non_additive_dimension"]["group_by"] = measure["non_additive_dimension"]["window_groupings"]
+
+        if measure.get("expr"):
+            metric["expr"] = measure["expr"]
+        if measure.get("fill_nulls_with"):
+            metric["fill_nulls_with"] = measure["fill_nulls_with"]
+        if measure.get("join_to_timespine"):
+            metric["join_to_timespine"] = measure["join_to_timespine"]
+
+        if "metrics" not in model_node:
+            model_node["metrics"] = []
+        model_node["metrics"].append(metric)
+        refactored = True
+        refactor_logs.append(f"Folded input measure '{measure_name}' into simple metric '{metric_name}' and moved '{metric_name}' to model '{model_node['name']}'.")
+    
+    return model_node, refactored, refactor_logs
+
+
+
+def merge_simple_metrics_with_model(node: Dict[str, Any], semantic_definitions: SemanticDefinitions) -> Tuple[Dict[str, Any], bool, List[str]]:
     refactored = False
     refactor_logs: List[str] = []
     simple_metrics_on_model = {
@@ -449,11 +510,11 @@ def merge_semantic_models_with_model(
             node_logs.extend(merge_dimensions_with_model_columns(node, semantic_model.get("dimensions", [])))
 
             # propagate measures to model metrics
-            node_logs.extend(merge_measures_with_model_metrics(node, semantic_model.get("measures", [])))
+            # node_logs.extend(merge_measures_with_model_metrics(node, semantic_model.get("measures", [])))
 
             refactored = True
             refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
-            semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"])
+            semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"], node["name"])
             for log in node_logs:
                 refactor_log += f"\n\t* {log}"
             refactor_logs.append(refactor_log)
@@ -553,12 +614,15 @@ def merge_measures_with_model_metrics(node: Dict[str, Any], measures: List[Dict[
 
     for measure in measures:
         metric_name = measure["name"]
-
+        
         # Build metric to add to model / update existing metric on model
         metric = {"name": metric_name, "type": "simple", "label": measure.get("label") or metric_name}
         create_metric = measure.pop("create_metric", False)
         if not create_metric:
             metric["hidden"] = True
+        # elif: TODO @patricky: skip this if there is a perfectly-matched simple metric already in existence!
+        #       This will match the existing behavior for old-style YAML interpretation, where the create_true
+        #       is ignored if a simple metric with a conflicting name already exists.
 
         for key, value in measure.items():
             metric[key] = value
