@@ -18,7 +18,6 @@ class SemanticDefinitions:
         self.merged_semantic_models: Set[str] = set()
         self._semantic_model_to_dbt_model_name_map: Dict[str, str] = {}
 
-        # TODO @patricky do I need this?
         self.merged_metrics: Set[str] = set()
         # these are measures that have been merged into a metric of SOME sort.  They may not exist in an obvious
         # way; for example, it might have been folded up into an existing simple metric.

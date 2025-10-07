@@ -353,7 +353,6 @@ def get_or_create_metric_for_measure(
 
     artificial_metric_name = make_artificial_metric_name(
         measure_name=measure_name,
-        # THESE ARE WRONG
         fill_nulls_with=measure.get("fill_nulls_with"),
         join_to_timespine=measure.get("join_to_timespine"),
         semantic_definitions=semantic_definitions,
@@ -639,8 +638,7 @@ def merge_semantic_models_with_model(
             node_logs.extend(merge_dimensions_with_model_columns(node, semantic_model.get("dimensions", [])))
 
             # propagate measures to model metrics
-            # node_logs.extend(merge_measures_with_model_metrics(node, semantic_model.get("measures", [])))
-
+            
             refactored = True
             refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
             semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"], node["name"])
