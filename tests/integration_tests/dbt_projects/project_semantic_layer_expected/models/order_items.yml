@@ -37,29 +37,29 @@ models:
     agg_time_dimension: ordered_at
     metrics:
       - name: revenue
+        description: Sum of the product revenue for each order item. Excludes tax.
         type: simple
         label: Revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
-      - name: food_revenue
+      - name: median_revenue
+        description: The median revenue for each order item. Excludes tax.
         type: simple
+        label: Median Revenue
+        agg: median
+        expr: product_price
+      - name: food_revenue
+        description: The revenue from food in each order
         label: Food Revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
+        type: simple
         agg: sum
         expr: case when is_food_item is true then product_price else 0 end
       - name: drink_revenue
-        type: simple
+        description: The revenue from drinks in each order
         label: Drink Revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
+        type: simple
         agg: sum
         expr: case when is_drink_item is true then product_price else 0 end
-      - name: median_revenue
-        type: simple
-        label: Median Revenue
-        description: The median revenue generated for each order item.
-        agg: median
-        expr: product_price
       - name: food_revenue_pct
         description: The % of order revenue from food.
         label: Food Revenue %
@@ -89,18 +89,18 @@ models:
         type: cumulative
         input_metric: revenue
       - name: revenue_fill_nulls_with_test_join_to_timespine
+        description: Sum of the product revenue for each order item. Excludes tax.
         type: simple
         label: Revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
         hidden: true
         fill_nulls_with: test
         join_to_timespine: true
       - name: food_revenue_fill_nulls_with_test
-        type: simple
+        description: The revenue from food in each order
         label: Food Revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
+        type: simple
         agg: sum
         expr: case when is_food_item is true then product_price else 0 end
         hidden: true
@@ -115,12 +115,12 @@ models:
         constant_properties:
           - base_property: dimension
             conversion_property: entity
+
         base_metric:
           name: revenue_fill_nulls_with_test_join_to_timespine
           filter: filter
         conversion_metric:
           name: food_revenue_fill_nulls_with_test
-
 metrics:
   # Simple metrics
   - name: order_gross_profit
@@ -132,7 +132,6 @@ metrics:
       - name: revenue
       - name: order_cost
         alias: cost
-
 saved_queries:
   - name: revenue_metrics
     query_params:

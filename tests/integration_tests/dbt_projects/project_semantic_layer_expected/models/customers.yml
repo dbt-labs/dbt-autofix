@@ -47,27 +47,25 @@ models:
       enabled: true
     agg_time_dimension: first_ordered_at
     metrics:
-      - name: customers
+      - name: lifetime_spend_pretax
+        description: Customer's lifetime spend before tax
+        label: LTV Pre-tax
         type: simple
-        label: customers
-        hidden: true
+        agg: sum
+      - name: count_lifetime_orders
+        description: Count of lifetime orders
+        label: Count Lifetime Orders
+        type: simple
+        agg: sum
+      - name: customers
         description: Count of unique customers
         agg: count_distinct
-      - name: count_lifetime_orders
         type: simple
-        label: Count Lifetime Orders
-        description: Total count of orders per customer.
-        agg: sum
-      - name: lifetime_spend_pretax
-        type: simple
-        label: LTV Pre-tax
-        description: Customer lifetime spend before taxes.
-        agg: sum
+        hidden: true
       - name: lifetime_spend
-        type: simple
-        label: lifetime_spend
         agg: sum
         description: Gross customer lifetime spend inclusive of taxes.
+        type: simple
       - name: average_order_value
         description: LTV pre-tax / number of orders
         label: Average Order Value
@@ -76,7 +74,6 @@ models:
         input_metrics:
           - count_lifetime_orders
           - lifetime_spend_pretax
-
 saved_queries:
   - name: customer_order_metrics
     query_params:

@@ -13,13 +13,23 @@ class SemanticDefinitions:
         # All model keys from models: entries in schema.yml files
         self.model_yml_keys: Set[Tuple[str, Optional[str]]] = self.collect_model_yml_keys(root_path, dbt_paths)
         # All top-level metrics from metrics: entries in schema.yml files
-        self.metrics: Dict[str, Dict[str, Any]] = self.collect_metrics(root_path, dbt_paths)
+        self.initial_metrics: Dict[str, Dict[str, Any]] = self.collect_metrics(root_path, dbt_paths)
 
         self.merged_semantic_models: Set[str] = set()
-        self.merged_metrics: Set[str] = set()
+        self._semantic_model_to_dbt_model_name_map: Dict[str, str] = {}
 
-    def get_semantic_model(self, model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        model_key = (model_name, version)
+        self.merged_metrics: Set[str] = set()
+        # these are measures that have been merged into a metric of SOME sort.  They may not exist in an obvious
+        # way; for example, it might have been folded up into an existing simple metric.
+        self._merged_measures: Set[str] = set()
+        # Simple metrics created just to replace an old measure.  This maps
+        # (measure_name, fill_nulls_with value, join_to_timespine value) to the new metric
+        # to help power deduplication lookups.
+        self._artificial_metric_names_map: Dict[Tuple[str, Optional[str], Optional[bool]], Dict[str, Any]] = {}
+        self._set_of_artificial_metric_names: Set[str] = set()
+
+    def get_semantic_model(self, dbt_model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        model_key = (dbt_model_name, version)
         return self.semantic_models.get(model_key)
 
     def get_model_key_for_semantic_model(self, semantic_model: Dict[str, Any]) -> Optional[Tuple[str, Optional[str]]]:
@@ -31,11 +41,43 @@ class SemanticDefinitions:
     def model_key_exists_for_semantic_model(self, model_key: Tuple[str, Optional[str]]) -> bool:
         return model_key in self.model_yml_keys
 
-    def mark_metric_as_merged(self, metric_name: str):
+    def mark_metric_as_merged(self, metric_name: str, measure_name: Optional[str]):
         self.merged_metrics.add(metric_name)
+        if measure_name:
+            self._merged_measures.add(measure_name)
 
-    def mark_semantic_model_as_merged(self, semantic_model_name: str):
+    def measure_is_merged(self, measure_name: str) -> bool:
+        return measure_name in self._merged_measures
+
+    def mark_semantic_model_as_merged(self, semantic_model_name: str, new_dbt_model_name: str):
         self.merged_semantic_models.add(semantic_model_name)
+        self._semantic_model_to_dbt_model_name_map[semantic_model_name] = new_dbt_model_name
+
+    def record_artificial_metric(
+        self,
+        *,
+        measure_name: str,
+        fill_nulls_with: Optional[str],
+        join_to_timespine: Optional[bool],
+        metric: Dict[str, Any],
+    ):
+        self._artificial_metric_names_map[(measure_name, fill_nulls_with, join_to_timespine)] = metric
+        self._set_of_artificial_metric_names.add(metric["name"])
+
+    def get_artificial_metric(
+        self,
+        *,
+        measure_name: str,
+        fill_nulls_with: Optional[str],
+        join_to_timespine: Optional[bool],
+    ) -> Optional[Dict[str, Any]]:
+        return self._artificial_metric_names_map.get((measure_name, fill_nulls_with, join_to_timespine))
+
+    def artificial_metric_name_exists(self, metric_name: str) -> bool:
+        return metric_name in self._set_of_artificial_metric_names
+
+    def get_model_for_semantic_model(self, semantic_model_name: str) -> str:
+        return self._semantic_model_to_dbt_model_name_map[semantic_model_name]
 
     def collect_semantic_models(
         self, root_path: Path, dbt_paths: List[str]
@@ -79,7 +121,7 @@ class SemanticDefinitions:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
-            for yml_file in yaml_files:
+            for yml_file in sorted(yaml_files):
                 yml_str = yml_file.read_text()
                 yml_dict = DbtYAML().load(yml_str) or {}
                 if "metrics" in yml_dict:

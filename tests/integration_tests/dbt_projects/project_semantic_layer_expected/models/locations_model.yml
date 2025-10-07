@@ -1,6 +1,5 @@
 models:
   - name: locations
-
     semantic_model:
       enabled: true
     description: |
@@ -19,9 +18,8 @@ models:
         granularity: day
     metrics:
       - name: average_tax_rate
-        type: simple
-        label: average_tax_rate
-        hidden: true
         description: Average tax rate.
         expr: tax_rate
         agg: average
+        type: simple
+        hidden: true
