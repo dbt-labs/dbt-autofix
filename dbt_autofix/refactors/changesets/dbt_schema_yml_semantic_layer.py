@@ -6,13 +6,10 @@ from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
 from dbt_autofix.semantic_definitions import SemanticDefinitions
 from rich.console import Console
 
-console = Console()
-
 
 def changeset_merge_simple_metrics_with_models(
     yml_str: str, semantic_definitions: SemanticDefinitions
 ) -> YMLRuleRefactorResult:
-    # return merge_metrics_with_models(yml_str, semantic_definitions, merge_simple_metrics_with_model)
     return run_change_function_against_each_model(
         yml_str,
         semantic_definitions,
@@ -77,7 +74,6 @@ def combine_simple_metrics_with_their_input_measure(
     refactor_logs: List[str] = []
 
     semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
-    console.print(semantic_model, style="yellow")
     measures_on_semantic_model: List[Dict[str, Any]] = get_measures_from_model(semantic_model)
 
     # for each simple metric in our semantic definitions, check if its measure is on this model
@@ -85,7 +81,6 @@ def combine_simple_metrics_with_their_input_measure(
     # Then, finally put the metric INTO the model that owned the measure.
     for metric_name, metric in semantic_definitions.initial_metrics.items():
         if metric["type"] != "simple":
-            # console.print(f"metric {metric_name} is not simple, so skipping", style="blue")
             continue
 
         # Extract measure name from top-level simple metric
@@ -754,9 +749,6 @@ def merge_measures_with_model_metrics(node: Dict[str, Any], measures: List[Dict[
         create_metric = measure.pop("create_metric", False)
         if not create_metric:
             metric["hidden"] = True
-        # elif: TODO @patricky: skip this if there is a perfectly-matched simple metric already in existence!
-        #       This will match the existing behavior for old-style YAML interpretation, where the create_true
-        #       is ignored if a simple metric with a conflicting name already exists.
 
         for key, value in measure.items():
             metric[key] = value

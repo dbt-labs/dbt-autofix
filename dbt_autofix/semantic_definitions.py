@@ -122,7 +122,7 @@ class SemanticDefinitions:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
-            for yml_file in yaml_files:
+            for yml_file in sorted(yaml_files):
                 yml_str = yml_file.read_text()
                 yml_dict = DbtYAML().load(yml_str) or {}
                 if "metrics" in yml_dict:
