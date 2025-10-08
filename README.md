@@ -107,5 +107,3 @@ Running with `--behavior-changes` will run the _subset_ of fixes that would reso
 ### Using `AGENTS.md`
 
 [`AGENTS.md`](./AGENTS.md) is provided as a reference and starting place for those interested in using AI agents to assist them with migration work that dbt-autofix is not capable of resolving.
-
-The 
