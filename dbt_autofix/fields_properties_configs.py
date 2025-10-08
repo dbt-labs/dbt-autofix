@@ -18,17 +18,6 @@ class AllowedConfig:
 models_allowed_config = AllowedConfig(
     allowed_config_fields=set(
         [
-            # model specific
-            "materialized",
-            "sql_header",
-            "on_configuration_change",
-            "unique_key",
-            "incremental_strategy",  # was missing at first
-            "on_schema_change",  # was missing at first
-            "batch_size",
-            "begin",
-            "lookback",
-            "concurrent_batches",
             # general
             "enabled",
             "tags",
@@ -42,6 +31,17 @@ models_allowed_config = AllowedConfig(
             "grants",
             "contract",
             "event_time",
+            # model-specific
+            "materialized",
+            "sql_header",
+            "on_configuration_change",
+            "unique_key",
+            "incremental_strategy",
+            "on_schema_change",
+            "batch_size",
+            "begin",
+            "lookback",
+            "concurrent_batches",
             # Snowflake: https://github.com/dbt-labs/dbt-adapters/blob/af33935b119347cc021554ea854884bce986ef8d/dbt-snowflake/src/dbt/adapters/snowflake/impl.py#L42-L58
             "transient",
             "cluster_by",
@@ -122,11 +122,13 @@ models_allowed_config = AllowedConfig(
     ),
     allowed_properties=set(
         [
+            # general
             "name",
             "description",
+            "config",
+            # model-specific
             "latest_version",
             "deprecation_date",
-            "config",
             "constraints",
             "data_tests",
             "tests",
@@ -137,34 +139,36 @@ models_allowed_config = AllowedConfig(
     ),
 )
 sources_allowed_config = AllowedConfig(
-    allowed_config_fields=set(["enabled", "event_time", "meta", "freshness", "tags"]),
+    allowed_config_fields=set(
+        [
+            # general
+            "enabled",
+            "event_time",
+            "meta",
+            "tags",
+            # source-specific
+            "freshness",
+        ]
+    ),
     allowed_properties=set(
         [
+            # general
             "name",
             "description",
+            "config",
+            # source-specific
             "database",
             "schema",
             "loader",
             "loaded_at_field",
             "quoting",
             "tables",
-            "config",
         ]
     ),
 )
 snapshots_allowed_config = AllowedConfig(
     allowed_config_fields=set(
         [
-            # snapshot specific
-            "database",
-            "schema",
-            "unique_key",
-            "strategy",
-            "updated_at",
-            "check_cols",
-            "snapshot_meta_column_names",
-            "hard_deletes",
-            "dbt_valid_to_current",
             # general
             "enabled",
             "tags",
@@ -174,6 +178,16 @@ snapshots_allowed_config = AllowedConfig(
             "persist_docs",
             "grants",
             "event_time",
+            # snapshot-specific
+            "database",
+            "schema",
+            "unique_key",
+            "strategy",
+            "updated_at",
+            "check_cols",
+            "snapshot_meta_column_names",
+            "hard_deletes",
+            "dbt_valid_to_current",
             # moved from property
             "docs",
             # not in docs for config
@@ -182,9 +196,11 @@ snapshots_allowed_config = AllowedConfig(
     ),
     allowed_properties=set(
         [
+            # general
             "name",
             "description",
             "config",
+            # snapshot-specific
             "tests",
             "columns",
         ]
@@ -193,10 +209,6 @@ snapshots_allowed_config = AllowedConfig(
 seeds_allowed_config = AllowedConfig(
     allowed_config_fields=set(
         [
-            # seed specific
-            "quote_columns",
-            "column_types",
-            "delimiter",
             # general
             "enabled",
             "tags",
@@ -210,15 +222,21 @@ seeds_allowed_config = AllowedConfig(
             "meta",
             "grants",
             "event_time",
+            # seed-specific
+            "quote_columns",
+            "column_types",
+            "delimiter",
             # moved from property
             "docs",
         ]
     ),
     allowed_properties=set(
         [
+            # general
             "name",
             "description",
             "config",
+            # seed-specific
             "tests",
             "columns",
         ]
@@ -247,6 +265,7 @@ tests_allowed_config = AllowedConfig(
     ),
     allowed_properties=set(
         [
+            # general
             "name",
             "description",
             "config",
