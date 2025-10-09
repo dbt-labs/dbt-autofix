@@ -48,6 +48,7 @@ If you don't have `uv` installed, you can install `uv` and `uvx`, [following the
 - to run the latest version of the tool: `uvx dbt-autofix`
 - to run a specific version of the tool: `uvx dbt-autofix@0.1.2`
 - to install the tool as a dedicated CLI: `uv tool install dbt-autofix`
+- to upgrade the tool installed as a dedicated CLI: `uv tool upgrade dbt-autofix`
 
 #### With pip
 
