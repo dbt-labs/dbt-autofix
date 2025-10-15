@@ -1,5 +1,7 @@
-from typing import Dict, Tuple, Optional, Any, List, Set
+from dataclasses import dataclass
+from typing import Dict, Tuple, Optional, Any, List, Set, Union
 from pathlib import Path
+from typing_extensions import Self
 from dbt_autofix.refactors.yml import DbtYAML
 from dbt_autofix.jinja import statically_parse_ref
 
@@ -128,3 +130,60 @@ class SemanticDefinitions:
                     for metric in yml_dict["metrics"]:
                         metrics[metric["name"]] = metric
         return metrics
+
+
+@dataclass
+class MeasureInput:
+    name: str
+    _is_object_form: bool
+    fill_nulls_with: Optional[str] = None
+    join_to_timespine: Optional[bool] = None
+    filter: Optional[str] = None
+    alias: Optional[str] = None
+
+    @staticmethod
+    def parse_from_yaml(yaml_obj: Optional[Union[str, Dict[str, Any]]]) -> Optional["MeasureInput"]:
+        if yaml_obj is None:
+            return None
+        if isinstance(yaml_obj, dict):
+            return MeasureInput(
+                name=yaml_obj["name"],
+                _is_object_form=True,
+                fill_nulls_with=yaml_obj.get("fill_nulls_with"),
+                join_to_timespine=yaml_obj.get("join_to_timespine"),
+                filter=yaml_obj.get("filter"),
+                alias=yaml_obj.get("alias"),
+            )
+        else:
+            return MeasureInput(name=yaml_obj, _is_object_form=False)
+
+    def to_metric_input_yaml_obj(self, metric_name: str) -> Union[str, Dict[str, Any]]:
+        """Convert to a metric input object.  Several fields will be lost in the process."""
+        if self._is_object_form:
+            return metric_name
+        
+        inputs = {
+            "name": metric_name,
+            "filter": self.filter,
+            "alias": self.alias,
+        }
+        # filter out fields that did not exist before
+        inputs = {k: v for k, v in inputs.items() if v is not None}
+        return inputs
+
+
+class ModelAccessHelpers:
+    @staticmethod
+    def get_measures_from_model(semantic_model_node: Dict[str, Any]) -> List[Dict[str, Any]]:
+        return semantic_model_node.get("measures", [])
+
+    @staticmethod
+    def maybe_get_measure_from_model(
+        semantic_model_node: Dict[str, Any],
+        measure_name: str,
+    ) -> Optional[Dict[str, Any]]:
+        all_measures = ModelAccessHelpers.get_measures_from_model(semantic_model_node)
+        return next(
+            (m for m in all_measures if m["name"] == measure_name),
+            None,
+        )

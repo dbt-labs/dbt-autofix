@@ -134,6 +134,15 @@ metrics:
     type: cumulative
     type_params:
       measure: revenue
+  - name: cumulative_revenue_with_input_settings
+    description: The cumulative revenue for all orders, but now with fill_nulls_with and join_to_timespine settings.
+    label: Cumulative Revenue (All Time)
+    type: cumulative
+    type_params:
+      measure: 
+        name: revenue
+        fill_nulls_with: 150
+        join_to_timespine: true
   - name: conversion_metric
     description: The conversion metric description
     type: conversion
