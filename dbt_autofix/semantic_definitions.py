@@ -161,7 +161,7 @@ class MeasureInput:
         """Convert to a metric input object.  Several fields will be lost in the process."""
         if self._is_object_form:
             return metric_name
-        
+
         inputs = {
             "name": metric_name,
             "filter": self.filter,

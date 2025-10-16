@@ -95,7 +95,7 @@ models:
         type: cumulative
         input_metric:
           name: revenue_1
-      - name: revenue_2
+      - name: revenue_fill_nulls_with_150_join_to_timespine
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
@@ -105,7 +105,7 @@ models:
         description: The cumulative revenue for all orders, but now with fill_nulls_with and join_to_timespine settings.
         label: Cumulative Revenue (All Time)
         type: cumulative
-        input_metric: revenue_2
+        input_metric: revenue_fill_nulls_with_150_join_to_timespine
       - name: revenue_fill_nulls_with_test_join_to_timespine
         description: Sum of the product revenue for each order item. Excludes tax.
         type: simple

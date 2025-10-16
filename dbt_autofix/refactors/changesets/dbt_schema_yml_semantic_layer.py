@@ -1,11 +1,9 @@
 import copy
-from re import M
 from typing import List, Tuple, Dict, Any, Optional, Union, Callable
 from dbt_autofix.refactors.results import YMLRuleRefactorResult
 from dbt_autofix.refactors.results import DbtDeprecationRefactor
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
 from dbt_autofix.semantic_definitions import MeasureInput, SemanticDefinitions, ModelAccessHelpers
-from rich.console import Console
 
 
 def changeset_merge_simple_metrics_with_models(
@@ -172,14 +170,14 @@ def _maybe_merge_cumulative_metric_with_model(
     )
     if not artificial_simple_metric:
         return refactored, refactor_logs
-    
+
     if is_new_metric:
         refactor_logs.append(
             f"Added hidden simple metric '{artificial_simple_metric['name']}' to "
             f"model '{model_node['name']}' as input for cumulative metric '{metric_name}'.",
         )
     semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
-    
+
     type_params = metric.pop("type_params", {})
     cumulative_type_params = type_params.pop("cumulative_type_params", None)
 
@@ -190,7 +188,7 @@ def _maybe_merge_cumulative_metric_with_model(
             metric["grain_to_date"] = cumulative_type_params.pop("grain_to_date")
         if cumulative_type_params.get("period_agg"):
             metric["period_agg"] = cumulative_type_params.pop("period_agg")
-   
+
     metric["input_metric"] = measure_input.to_metric_input_yaml_obj(metric_name=artificial_simple_metric["name"])
     append_metric_to_model(model_node, metric)
     refactored = True
