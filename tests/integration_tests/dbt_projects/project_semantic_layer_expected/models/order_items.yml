@@ -109,26 +109,29 @@ models:
         input_metric:
           name: revenue_fill_nulls_with_150_join_to_timespine
       - name: revenue_fill_nulls_with_test_join_to_timespine
-        description: Sum of the product revenue for each order item. Excludes tax.
-        type: simple
-        label: Revenue
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
+        type: simple
         hidden: true
         fill_nulls_with: test
         join_to_timespine: true
       - name: food_revenue_fill_nulls_with_test
-        description: The revenue from food in each order
-        label: Food Revenue
-        type: simple
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: case when is_food_item is true then product_price else 0 end
+        type: simple
         hidden: true
         fill_nulls_with: test
       - name: conversion_metric
         description: The conversion metric description
         type: conversion
         label: Conversion Metric
+        base_metric:
+          name: revenue_fill_nulls_with_test_join_to_timespine
+          filter: filter
+        conversion_metric:
+          name: food_revenue_fill_nulls_with_test
         entity: entity
         calculation: calculation_type
         window: window
@@ -136,11 +139,6 @@ models:
           - base_property: dimension
             conversion_property: entity
 
-        base_metric:
-          name: revenue_fill_nulls_with_test_join_to_timespine
-          filter: filter
-        conversion_metric:
-          name: food_revenue_fill_nulls_with_test
 metrics:
   # Simple metrics
   - name: order_gross_profit
