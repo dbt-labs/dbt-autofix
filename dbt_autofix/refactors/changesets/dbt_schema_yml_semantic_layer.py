@@ -431,6 +431,11 @@ def get_or_create_metric_for_measure(
         if window_groupings:
             artificial_metric["non_additive_dimension"]["group_by"] = window_groupings
 
+    if fill_nulls_with is not None:
+        artificial_metric["fill_nulls_with"] = fill_nulls_with
+    if join_to_timespine is not None:
+        artificial_metric["join_to_timespine"] = join_to_timespine
+
     semantic_definitions.record_artificial_metric(
         measure_name=measure_name,
         fill_nulls_with=fill_nulls_with,

@@ -159,7 +159,7 @@ class MeasureInput:
 
     def to_metric_input_yaml_obj(self, metric_name: str) -> Union[str, Dict[str, Any]]:
         """Convert to a metric input object.  Several fields will be lost in the process."""
-        if self._is_object_form:
+        if not self._is_object_form:
             return metric_name
 
         inputs = {
