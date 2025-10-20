@@ -81,8 +81,9 @@ def combine_simple_metrics_with_their_input_measure(
             continue
 
         # Extract measure name from top-level simple metric
-        measure_input = metric.get("type_params", {}).get("measure")
-        measure_input = MeasureInput.parse_from_yaml(measure_input)
+        measure_input = MeasureInput.parse_from_yaml(
+            metric.get("type_params", {}).get("measure"),
+        )
         if measure_input is None:
             # we've already fixed this one, so skip it.
             continue
