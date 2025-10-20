@@ -174,10 +174,11 @@ metrics:
         calculation: calculation_type
         base_measure:
           name: revenue
-          fill_nulls_with: test
           join_to_timespine: true
         conversion_measure:
           name: average_tax_rate
+          fill_nulls_with: 8675309
+          filter: blah blah filter stuff here
         window: window
         constant_properties:
           - base_property: dimension

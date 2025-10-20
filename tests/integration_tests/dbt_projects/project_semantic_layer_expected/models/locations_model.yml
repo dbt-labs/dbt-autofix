@@ -23,3 +23,10 @@ models:
         agg: average
         type: simple
         hidden: true
+      - name: average_tax_rate_fill_nulls_with_8675309
+        description: Average tax rate.
+        expr: tax_rate
+        agg: average
+        type: simple
+        hidden: true
+        fill_nulls_with: 8675309

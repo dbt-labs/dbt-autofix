@@ -138,6 +138,13 @@ models:
         constant_properties:
           - base_property: dimension
             conversion_property: entity
+      - name: revenue_join_to_timespine
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
+        agg: sum
+        expr: product_price
+        type: simple
+        hidden: true
+        join_to_timespine: true
 metrics:
   # Simple metrics
   - name: conversion_metric_across_two_models
@@ -145,9 +152,9 @@ metrics:
     type: conversion
     label: Conversion Metric Across Two Models
     base_metric:
-      name: revenue_fill_nulls_with_test_join_to_timespine
+      name: revenue_join_to_timespine
     conversion_metric:
-      name: average_tax_rate
+      name: average_tax_rate_fill_nulls_with_8675309
       filter: blah blah filter stuff here
     entity: entity
     calculation: calculation_type
