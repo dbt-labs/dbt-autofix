@@ -138,9 +138,24 @@ models:
         constant_properties:
           - base_property: dimension
             conversion_property: entity
-
 metrics:
   # Simple metrics
+  - name: conversion_metric_across_two_models
+    description: The conversion metric description across two models and should be kept top level
+    type: conversion
+    label: Conversion Metric Across Two Models
+    base_metric:
+      name: revenue_fill_nulls_with_test_join_to_timespine
+    conversion_metric:
+      name: average_tax_rate
+      filter: blah blah filter stuff here
+    entity: entity
+    calculation: calculation_type
+    window: window
+    constant_properties:
+      - base_property: dimension
+        conversion_property: entity
+
   - name: order_gross_profit
     description: Gross profit from each order.
     type: derived

@@ -215,7 +215,6 @@ def _maybe_merge_conversion_metric_with_model(
     if metric_name in semantic_definitions.merged_metrics:
         # we've already merged this metric, so no need to do anything further!
         return refactored, refactor_logs
-
     # Try to turn the base measure input into a base metric input
     type_params = metric.get("type_params", {})
     conversion_type_params = type_params.get("conversion_type_params", {})
@@ -311,6 +310,7 @@ def merge_complex_metrics_with_model(
         # No need to further merge metrics that have already been merged
         if metric_name in semantic_definitions.merged_metrics:
             continue
+
         # Derived metrics can be merged to this model if they have metrics that exist as simple metrics on the model
         if metric["type"] == "derived":
             metric_names = []
@@ -365,7 +365,10 @@ def merge_complex_metrics_with_model(
 
         elif metric["type"] == "conversion":
             metric_refactored, metric_refactor_logs = _maybe_merge_conversion_metric_with_model(
-                metric, model_node, semantic_model, semantic_definitions
+                metric,
+                model_node,
+                semantic_model,
+                semantic_definitions,
             )
             refactored = refactored or metric_refactored
             refactor_logs.extend(metric_refactor_logs)
@@ -768,12 +771,45 @@ def changeset_migrate_or_delete_top_level_metrics(
         else:
             # Transform metric to be compatible with new syntax, but leave metric at top-level
             if metric["type"] == "conversion":
-                conversion_type_params = metric.pop("type_params", {}).pop("conversion_type_params", {})
+                type_params = metric.pop("type_params", {})
+                conversion_type_params = type_params.pop("conversion_type_params", {})
+                # Input measures should have been turned into metrics already, so we just have to
+                # get them. We'll ignore missing inputs as errors in the original YAML and just do best effort here.
+                base_measure_input = MeasureInput.parse_from_yaml(conversion_type_params.pop("base_measure", None))
+                new_base_metric = (
+                    semantic_definitions.get_artificial_metric(
+                        measure_name=base_measure_input.name,
+                        fill_nulls_with=base_measure_input.fill_nulls_with,
+                        join_to_timespine=base_measure_input.join_to_timespine,
+                    )
+                    if base_measure_input
+                    else None
+                )
+                if base_measure_input and new_base_metric:
+                    metric["base_metric"] = base_measure_input.to_metric_input_yaml_obj(
+                        metric_name=new_base_metric["name"]
+                    )
+
+                conversion_measure_input = MeasureInput.parse_from_yaml(
+                    conversion_type_params.pop("conversion_measure", None)
+                )
+                new_conversion_metric = (
+                    semantic_definitions.get_artificial_metric(
+                        measure_name=conversion_measure_input.name,
+                        fill_nulls_with=conversion_measure_input.fill_nulls_with,
+                        join_to_timespine=conversion_measure_input.join_to_timespine,
+                    )
+                    if conversion_measure_input
+                    else None
+                )
+                if conversion_measure_input and new_conversion_metric:
+                    metric["conversion_metric"] = conversion_measure_input.to_metric_input_yaml_obj(
+                        metric_name=new_conversion_metric["name"],
+                    )
+
+                # Now we re-insert and flatten the old type params
                 metric.update(conversion_type_params)
-                # If these still exist, there were issues in the original yaml.  We'll remove them here and let
-                # the user clean things up later.
-                metric.pop("base_measure")
-                metric.pop("conversion_measure")
+                metric.update(type_params)
             else:
                 # Bring type-params values to top-level
                 type_params = metric.pop("type_params", {})
