@@ -383,17 +383,15 @@ def make_artificial_metric_name(
     semantic_definitions: SemanticDefinitions,
 ) -> str:
     base_name = measure_name
+    # Can't just use 'if fill_nulls_with:' here because we don't want to miss the
+    # case where fill_nulls_with is zero.
     if fill_nulls_with is not None and fill_nulls_with != "":
         try:
-            fill_nulls_with_int = int(fill_nulls_with)
+            val = int(fill_nulls_with)
+            fill_nulls_with_str = f"negative_{abs(val)}" if val < 0 else str(val)
         except ValueError:
-            fill_nulls_with_int = None
-        if fill_nulls_with_int is not None and fill_nulls_with_int < 0:
-            fill_nulls_with_str = f"negative_{abs(fill_nulls_with_int)}"
-        else:
-            # either it's positive, or we're just going to best-effort this rather than
-            # breaking during autofix (but a non-integer won't pass validation for metricflow)
-            fill_nulls_with_str = f"{fill_nulls_with}"
+            fill_nulls_with_str = str(fill_nulls_with)
+
         base_name += f"_fill_nulls_with_{fill_nulls_with_str}"
     if join_to_timespine:
         base_name += "_join_to_timespine"
