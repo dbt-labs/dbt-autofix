@@ -229,10 +229,10 @@ class SchemaSpecs:
 
 
 def get_fusion_latest_version() -> str:
-    latest_versions_url = "https://public.cdn.getdbt.com/fs/latest.json"
+    latest_versions_url = "https://public.cdn.getdbt.com/fs/versions.json"
     resp = httpx.get(latest_versions_url)
     resp.raise_for_status()
-    return resp.json()["tag"]
+    return resp.json()["latest"]["tag"]
 
 
 def get_fusion_yml_schema(version: str) -> dict:
