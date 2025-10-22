@@ -116,13 +116,13 @@ models:
         hidden: true
         fill_nulls_with: test
         join_to_timespine: true
-      - name: food_revenue_fill_nulls_with_test
+      - name: food_revenue_fill_nulls_with_negative_12
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: case when is_food_item is true then product_price else 0 end
         type: simple
         hidden: true
-        fill_nulls_with: test
+        fill_nulls_with: -12
       - name: conversion_metric
         description: The conversion metric description
         type: conversion
@@ -131,7 +131,7 @@ models:
           name: revenue_fill_nulls_with_test_join_to_timespine
           filter: filter
         conversion_metric:
-          name: food_revenue_fill_nulls_with_test
+          name: food_revenue_fill_nulls_with_negative_12
         entity: entity
         calculation: calculation_type
         window: window

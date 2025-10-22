@@ -158,7 +158,7 @@ metrics:
           filter: filter
         conversion_measure:
           name: food_revenue
-          fill_nulls_with: test
+          fill_nulls_with: -12
           join_to_timespine: false
         window: window
         constant_properties:
