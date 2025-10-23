@@ -163,6 +163,15 @@ metrics:
       - base_property: dimension
         conversion_property: entity
 
+  - name: multi_model_derived_metric
+    description: "Derived metric that uses metrics from two different models"
+    type: derived
+    label: multi model avg revenue per food order
+    expr: current_revenue / food_orders
+    input_metrics:
+      - name: revenue
+        alias: current_revenue
+      - name: food_orders
   - name: order_gross_profit
     description: Gross profit from each order.
     type: derived

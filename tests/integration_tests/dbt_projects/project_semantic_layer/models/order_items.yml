@@ -118,6 +118,16 @@ metrics:
         - name: revenue
           offset_window: 1 month
           alias: revenue_prev_month
+  - name: multi_model_derived_metric
+    description: "Derived metric that uses metrics from two different models"
+    type: derived
+    label: multi model avg revenue per food order
+    type_params:
+      expr: current_revenue / food_orders
+      metrics:
+        - name: revenue
+          alias: current_revenue
+        - food_orders
   - name: order_gross_profit
     description: Gross profit from each order.
     type: derived

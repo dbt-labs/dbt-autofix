@@ -290,6 +290,13 @@ def get_metric_input_dict(metric: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
         return {"name": metric}
     return metric
 
+def change_metrics_to_input_metrics(metric: Dict[str, Any]) -> None:
+    """Currently only used for derived metrics."""
+    if "metrics" in metric:
+        metric["input_metrics"] = [
+            get_metric_input_dict(input_metric) for input_metric in metric.pop("metrics", [])
+        ]
+
 def merge_complex_metrics_with_model(
     model_node: Dict[str, Any],
     semantic_definitions: SemanticDefinitions,
@@ -328,11 +335,7 @@ def merge_complex_metrics_with_model(
                 # Remove type_params from top-level
                 type_params = metric.pop("type_params", {})
                 metric.update(type_params)
-                # Rename "metrics" to "input_metrics"
-                if "metrics" in metric:
-                    metric["input_metrics"] = [
-                        get_metric_input_dict(input_metric) for input_metric in metric.pop("metrics", [])
-                    ]
+                change_metrics_to_input_metrics(metric)
 
                 model_node["metrics"].append(metric)
                 semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
@@ -828,9 +831,7 @@ def changeset_migrate_or_delete_top_level_metrics(
                 # Bring type-params values to top-level
                 type_params = metric.pop("type_params", {})
                 metric.update(type_params)
-                # Rename "metrics" to "input_metrics"
-                if "metrics" in metric:
-                    metric["input_metrics"] = metric.pop("metrics")
+                change_metrics_to_input_metrics(metric)
 
             transformed_metrics.append(metric)
             refactored = True
