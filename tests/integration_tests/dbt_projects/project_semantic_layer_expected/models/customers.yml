@@ -72,8 +72,8 @@ models:
         type: derived
         expr: lifetime_spend_pretax / count_lifetime_orders
         input_metrics:
-          - count_lifetime_orders
-          - lifetime_spend_pretax
+          - name: count_lifetime_orders
+          - name: lifetime_spend_pretax
 saved_queries:
   - name: customer_order_metrics
     query_params:

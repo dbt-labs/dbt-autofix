@@ -285,6 +285,10 @@ def _maybe_merge_conversion_metric_with_model(
 
     return refactored, refactor_logs
 
+def get_metric_input_dict(metric: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+    if isinstance(metric, str):
+        return {"name": metric}
+    return metric
 
 def merge_complex_metrics_with_model(
     model_node: Dict[str, Any],
@@ -326,7 +330,9 @@ def merge_complex_metrics_with_model(
                 metric.update(type_params)
                 # Rename "metrics" to "input_metrics"
                 if "metrics" in metric:
-                    metric["input_metrics"] = metric.pop("metrics")
+                    metric["input_metrics"] = [
+                        get_metric_input_dict(input_metric) for input_metric in metric.pop("metrics", [])
+                    ]
 
                 model_node["metrics"].append(metric)
                 semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
