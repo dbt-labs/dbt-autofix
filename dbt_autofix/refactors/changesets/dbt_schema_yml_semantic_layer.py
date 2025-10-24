@@ -688,46 +688,46 @@ def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[
     return logs
 
 
-def merge_dimensions_with_model_columns(node: Dict[str, Any], dimensions: List[Dict[str, Any]]) -> List[str]:
+def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: List[Dict[str, Any]]) -> List[str]:
     logs: List[str] = []
-    node_columns = {column["name"]: column for column in node.get("columns", [])}
+    model_node_columns = {column["name"]: column for column in model_node.get("columns", [])}
 
     for dimension in dimensions:
         dimension_col_name = dimension["name"]
         dimension_time_granularity = dimension.get("type_params", {}).get("time_granularity")
 
         # Add dimension to column if column already exists
-        if dimension_col_name in node_columns:
-            node_columns[dimension_col_name]["dimension"] = {"type": dimension["type"]}
+        if dimension_col_name in model_node_columns:
+            model_node_columns[dimension_col_name]["dimension"] = {"type": dimension["type"]}
             # Add time granularity to top-level column if it was defined on the dimension
             if dimension_time_granularity:
-                node_columns[dimension_col_name]["granularity"] = dimension_time_granularity
+                model_node_columns[dimension_col_name]["granularity"] = dimension_time_granularity
             logs.append(f"Added '{dimension['type']}' dimension to column '{dimension_col_name}'.")
         # If column doesn't exist, add a new one with new dimension if no special characters in expr
         elif not any(char in dimension_col_name for char in (" ", "|", "(")):
-            if node.get("columns"):
-                node["columns"].append({"name": dimension_col_name, "dimension": {"type": dimension["type"]}})
+            if model_node.get("columns"):
+                model_node["columns"].append({"name": dimension_col_name, "dimension": {"type": dimension["type"]}})
             else:
-                node["columns"] = [{"name": dimension_col_name, "dimension": {"type": dimension["type"]}}]
+                model_node["columns"] = [{"name": dimension_col_name, "dimension": {"type": dimension["type"]}}]
             # Add time granularity to top-level column if it was defined on the dimension
             if dimension_time_granularity:
-                node["columns"][-1]["granularity"] = dimension_time_granularity
+                model_node["columns"][-1]["granularity"] = dimension_time_granularity
             logs.append(f"Added new column '{dimension_col_name}' with '{dimension['type']}' dimension.")
         # Create entity as derived semantic entity
         else:
-            if "derived_semantics" not in node:
-                node["derived_semantics"] = {"entities": []}
-            if "dimensions" not in node["derived_semantics"]:
-                node["derived_semantics"]["dimensions"] = []
+            if "derived_semantics" not in model_node:
+                model_node["derived_semantics"] = {"entities": []}
+            if "dimensions" not in model_node["derived_semantics"]:
+                model_node["derived_semantics"]["dimensions"] = []
 
-            node["derived_semantics"]["dimensions"].append(
+            model_node["derived_semantics"]["dimensions"].append(
                 {
                     "name": dimension_col_name,
                     "type": dimension["type"],
                 }
             )
             if dimension_time_granularity:
-                node["derived_semantics"]["dimensions"][-1]["time_granularity"] = dimension_time_granularity
+                model_node["derived_semantics"]["dimensions"][-1]["time_granularity"] = dimension_time_granularity
             logs.append(f"Added 'derived_semantics' to model with '{dimension['type']}' entity.")
 
     return logs
