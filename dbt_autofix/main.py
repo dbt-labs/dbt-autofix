@@ -92,6 +92,9 @@ def refactor_yml(  # noqa: PLR0913
     else:
         apply_changesets(yaml_results, sql_results, json_output)
 
+    if any(changeset.refactored for changeset in [*yaml_results, *sql_results]):
+        raise typer.Exit(code=1)
+
     if json_output:
         print(json.dumps({"mode": "complete"}))  # noqa: T201
 
