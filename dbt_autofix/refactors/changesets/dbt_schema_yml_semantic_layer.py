@@ -693,25 +693,42 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
     model_node_columns = {column["name"]: column for column in model_node.get("columns", [])}
 
     for dimension in dimensions:
-        dimension_col_name = dimension["name"]
+        dimension_col_name = dimension.get("expr") or dimension["name"]
+        dim_name = dimension["name"]
+        dim_expr = dimension.get("expr")
+        
+        def is_valid_name(name: str) -> bool:
+            return not any(char in name for char in (" ", "|", "("))
+        
         dimension_time_granularity = dimension.get("type_params", {}).get("time_granularity")
 
+        def get_mergeable_dimension_fields() -> Dict[str, Any]:
+            base_dim_dict = {
+                "type": dimension["type"],
+            }
+            if dimension_col_name != dim_name:
+                base_dim_dict["name"] = dim_name
+            column_fields = {
+                "dimension": base_dim_dict,
+            }
+            if dimension_time_granularity:
+                column_fields["granularity"] = dimension_time_granularity
+            return column_fields
+        
         # Add dimension to column if column already exists
         if dimension_col_name in model_node_columns:
-            model_node_columns[dimension_col_name]["dimension"] = {"type": dimension["type"]}
-            # Add time granularity to top-level column if it was defined on the dimension
-            if dimension_time_granularity:
-                model_node_columns[dimension_col_name]["granularity"] = dimension_time_granularity
+            model_node_columns[dimension_col_name].update(get_mergeable_dimension_fields())
             logs.append(f"Added '{dimension['type']}' dimension to column '{dimension_col_name}'.")
-        # If column doesn't exist, add a new one with new dimension if no special characters in expr
-        elif not any(char in dimension_col_name for char in (" ", "|", "(")):
-            if model_node.get("columns"):
-                model_node["columns"].append({"name": dimension_col_name, "dimension": {"type": dimension["type"]}})
-            else:
-                model_node["columns"] = [{"name": dimension_col_name, "dimension": {"type": dimension["type"]}}]
-            # Add time granularity to top-level column if it was defined on the dimension
-            if dimension_time_granularity:
-                model_node["columns"][-1]["granularity"] = dimension_time_granularity
+        # If column doesn't exist, add a new one with new dimension if no special characters in it
+        elif is_valid_name(dimension_col_name):
+            if not model_node.get("columns", False):
+                model_node["columns"] = []
+            model_node["columns"].append(
+                {
+                    "name": dimension_col_name,
+                    **get_mergeable_dimension_fields(),
+                }
+            )
             logs.append(f"Added new column '{dimension_col_name}' with '{dimension['type']}' dimension.")
         # Create entity as derived semantic entity
         else:
@@ -719,15 +736,17 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
                 model_node["derived_semantics"] = {"entities": []}
             if "dimensions" not in model_node["derived_semantics"]:
                 model_node["derived_semantics"]["dimensions"] = []
-
-            model_node["derived_semantics"]["dimensions"].append(
-                {
-                    "name": dimension_col_name,
-                    "type": dimension["type"],
-                }
-            )
+            
+            new_dim = {
+                "name": dim_name,
+                "type": dimension["type"],
+            }
             if dimension_time_granularity:
-                model_node["derived_semantics"]["dimensions"][-1]["time_granularity"] = dimension_time_granularity
+                new_dim["time_granularity"] = dimension_time_granularity
+            if dim_expr:
+                new_dim["expr"] = dim_expr
+            model_node["derived_semantics"]["dimensions"].append(new_dim)
+
             logs.append(f"Added 'derived_semantics' to model with '{dimension['type']}' entity.")
 
     return logs

@@ -16,6 +16,12 @@ models:
         dimension:
           type: time
         granularity: day
+    derived_semantics:
+      entities: []
+      dimensions:
+        - name: my_complex_dimension
+          type: categorical
+          expr: CONCAT(location_name, ' ', opened_at)
     metrics:
       - name: average_tax_rate
         description: Average tax rate.
