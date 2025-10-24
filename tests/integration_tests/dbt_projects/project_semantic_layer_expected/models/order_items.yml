@@ -43,6 +43,13 @@ models:
         label: Revenue
         agg: sum
         expr: product_price
+      - name: revenue_with_stacked_filters
+        description: Sum of the product revenue for each order item. Excludes tax.
+        type: simple
+        label: Revenue
+        filter: (revenue_filter_on_metric_itself) AND (revenue_filter_on_input)
+        agg: sum
+        expr: product_price
       - name: median_revenue
         description: The median revenue for each order item. Excludes tax.
         type: simple

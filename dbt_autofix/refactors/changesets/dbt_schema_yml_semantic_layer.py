@@ -123,6 +123,14 @@ def combine_simple_metrics_with_their_input_measure(
         if join_to_timespine:
             metric["join_to_timespine"] = join_to_timespine
 
+        if measure_input.filter:
+            metric_filter = metric.get("filter", None)
+            if metric_filter:
+                metric_filter = f"({metric_filter}) AND ({measure_input.filter})"
+            else:
+                metric_filter = measure_input.filter
+            metric["filter"] = metric_filter
+
         # At this point, type_params should only include "measure", so we can just remove it wholely.
         metric.pop("type_params", {})
 

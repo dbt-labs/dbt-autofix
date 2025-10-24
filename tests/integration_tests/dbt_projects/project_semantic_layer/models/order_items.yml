@@ -43,6 +43,10 @@ semantic_models:
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
+      - name: revenue_measure_with_filter
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
+        agg: sum
+        expr: product_price
       - name: food_revenue
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
@@ -64,6 +68,15 @@ metrics:
     label: Revenue
     type_params:
       measure: revenue
+  - name: revenue_with_stacked_filters
+    description: Sum of the product revenue for each order item. Excludes tax.
+    type: simple
+    label: Revenue
+    filter: revenue_filter_on_metric_itself
+    type_params:
+      measure:
+        name: revenue_measure_with_filter
+        filter: revenue_filter_on_input
   - name: order_cost
     description: Sum of cost for each order item.
     label: Order Cost
