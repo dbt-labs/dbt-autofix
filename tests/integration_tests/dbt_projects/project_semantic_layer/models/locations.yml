@@ -9,6 +9,9 @@ semantic_models:
       - name: location
         type: primary
         expr: location_id
+      - name: not_mergeable_entity
+        type: categorical
+        expr: location + " " + location_name
     dimensions:
       - name: location_name
         type: categorical

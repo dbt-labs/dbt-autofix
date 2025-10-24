@@ -9,6 +9,7 @@ models:
       - name: location_id
         entity:
           type: primary
+          name: location
       - name: location_name
         dimension:
           type: categorical
@@ -17,7 +18,10 @@ models:
           type: time
         granularity: day
     derived_semantics:
-      entities: []
+      entities:
+        - name: not_mergeable_entity
+          type: categorical
+          expr: location + " " + location_name
       dimensions:
         - name: my_complex_dimension
           type: categorical

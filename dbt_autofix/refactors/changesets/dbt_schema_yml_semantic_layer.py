@@ -648,24 +648,37 @@ def merge_semantic_models_with_model(
 
 
 def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[str, Any]]) -> List[str]:
+    """Merges entities from a semantic model into the model's columns.
+
+    This function assumes you've already limited the entity list to those that could be
+    on this model, based on matching the model and semantic model.
+    """
     logs: List[str] = []
     node_columns = {column["name"]: column for column in node.get("columns", [])}
 
     for entity in entities:
-        entity_col_name = entity.get("expr") or entity["name"]
+        entity_name = entity["name"]
+        entity_expr = entity.get("expr")
+        entity_col_name = entity_expr or entity_name
+
+        def make_entity_dict() -> Dict[str, Any]:
+            entity_dict = {"type": entity["type"]}
+            if entity_name != entity_col_name:
+                entity_dict["name"] = entity_name
+            return entity_dict
 
         # Add entity to column if column already exists
         if entity_col_name in node_columns:
-            node_columns[entity_col_name]["entity"] = {"type": entity["type"]}
-            if entity.get("name") != entity_col_name:
-                node_columns[entity_col_name]["entity"]["name"] = entity["name"]
+            node_columns[entity_col_name]["entity"] = make_entity_dict()
             logs.append(f"Added '{entity['type']}' entity to column '{entity_col_name}'.")
         # If column doesn't exist, add a new one with new entity if no special characters in expr
         elif not any(char in entity_col_name for char in (" ", "|", "(")):
-            if node.get("columns"):
-                node["columns"].append({"name": entity_col_name, "entity": {"type": entity["type"]}})
-            else:
-                node["columns"] = [{"name": entity_col_name, "entity": {"type": entity["type"]}}]
+            if not node.get("columns"):
+                node["columns"] = []
+            node["columns"].append({
+                "name": entity_col_name,
+                "entity": make_entity_dict(),
+            })
             logs.append(f"Added new column '{entity_col_name}' with '{entity['type']}' entity.")
         # Create entity as derived semantic entity
         else:
@@ -675,14 +688,13 @@ def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[
             if "entities" not in node["derived_semantics"]:
                 node["derived_semantics"]["entities"] = []
 
-            node["derived_semantics"]["entities"].append(
-                {
-                    "name": entity_col_name,
-                    "type": entity["type"],
-                }
-            )
-            if entity.get("expr"):
-                node["derived_semantics"]["entities"][-1]["expr"] = entity["expr"]
+            new_entity = {
+                "name": entity_name,
+                "type": entity["type"],
+            }
+            if entity_expr:
+                new_entity["expr"] = entity_expr
+            node["derived_semantics"]["entities"].append(new_entity)
             logs.append(f"Added 'derived_semantics' to model with '{entity['type']}' entity.")
 
     return logs

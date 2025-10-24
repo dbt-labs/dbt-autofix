@@ -19,6 +19,7 @@ models:
       - name: product_id
         entity:
           type: foreign
+          name: product
       - name: ordered_at
         dimension:
           type: time

@@ -47,6 +47,7 @@ models:
       - name: location_id
         entity:
           type: foreign
+          name: location
       - name: customer_order_number
         dimension:
           type: categorical
