@@ -109,6 +109,7 @@ models:
         type: cumulative
         input_metric:
           name: revenue_fill_nulls_with_150_join_to_timespine
+          filter: cumulative_filter
       - name: revenue_fill_nulls_with_test_join_to_timespine
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum

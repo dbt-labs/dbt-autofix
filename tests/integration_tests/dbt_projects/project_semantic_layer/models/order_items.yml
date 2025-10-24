@@ -153,6 +153,7 @@ metrics:
         name: revenue
         fill_nulls_with: 150
         join_to_timespine: true
+        filter: cumulative_filter
   - name: conversion_metric
     description: The conversion metric description
     type: conversion
