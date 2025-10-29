@@ -1694,6 +1694,27 @@ models:
         lines = result.refactored_yaml.split("\n")
         assert lines[5] == "      materialized: table"  # 6 spaces (tab+4 spaces)
 
+    def test_tab_before_key(self):
+        input_yaml = """
+version: 2
+models:
+  - name: network_backfill_requests
+    description: Information on dynamically-allocated requests.
+
+    columns:
+      - name: 	BrowserId
+        description: 	ID of the browser to match values via the API
+    config:
+      materialized: table
+      meta:
+        owner: team
+"""
+        result = changeset_remove_extra_tabs(input_yaml)
+        assert result.refactored
+        assert len(result.refactor_logs) == 2  # Two tab characters found
+        # lines = result.refactored_yaml.split("\n")
+        # assert lines[5] == "      materialized: table"  # 6 spaces (tab+4 spaces)
+
 
 class TestReplaceFancyQuotes:
     """Tests for changeset_replace_fancy_quotes function"""
