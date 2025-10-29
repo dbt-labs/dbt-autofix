@@ -90,7 +90,7 @@ def process_yaml_files_except_dbt_project(
         (changeset_refactor_yml_str, schema_specs),
         (changeset_owner_properties_yml_str, schema_specs),
     ]
-    all_rules = [*behavior_change_rules, *safe_change_rules]
+    all_rules = [*safe_change_rules, *behavior_change_rules]
     changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
     ordered_changesets = [
