@@ -156,10 +156,7 @@ def process_yaml_files_except_dbt_project(
                         file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
 
                 except Exception as e:
-                    error_console.print(
-                        f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
-                    )
-                    exit(1)
+                    error_console.print(f"Warning: Could not apply fixes to {yml_file}: {e.__class__.__name__}: {e}", style="yellow")
 
     for changesets in ordered_changesets:
         _apply_changesets(file_name_to_yaml_results, changesets)
@@ -314,7 +311,7 @@ def process_sql_files(
                     )
                 )
             except Exception as e:
-                error_console.print(f"Error processing {sql_file}: {e}", style="bold red")
+                error_console.print(f"Warning: Could not apply fixes to {sql_file}: {e.__class__.__name__}: {e}", style="yellow")
 
     return results
 
