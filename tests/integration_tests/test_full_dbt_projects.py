@@ -127,6 +127,51 @@ def test_project_refactor(project_folder, request):
             json_output=True,
             behavior_change=project_dir_to_behavior_change_mode[project_folder],
             semantic_layer=project_dir_to_semantic_layer_mode[project_folder],
+        )
+
+    # Compare with expected output
+    expected_dir = os.path.join(dbt_projects_dir, f"{project_folder}{postfix_expected}")
+    if not os.path.exists(expected_dir):
+        pytest.fail(f"Expected output directory not found: {expected_dir}")
+
+    compare_dirs(project_path, expected_dir)
+
+    expected_logs_path = Path(dbt_projects_dir, f"{project_folder}_expected.stdout")
+    compare_json_logs(refactor_logs_io, expected_logs_path)
+
+    # Clean up temporary directory after test
+    def cleanup_temp_dir():
+        try:
+            shutil.rmtree(temp_dir)
+            print(f"Cleaned up temporary directory: {temp_dir}")
+        except Exception as e:
+            print(f"Failed to clean up {temp_dir}: {e}")
+
+    request.addfinalizer(cleanup_temp_dir)
+
+
+@pytest.mark.parametrize("project_folder", get_project_folders())
+def test_project_refactor_all(project_folder, request):
+    dbt_projects_dir = os.path.join(os.path.dirname(__file__), dbt_projects_dir_name)
+    source_dir = os.path.join(dbt_projects_dir, project_folder)
+
+    # Create a temporary directory for the project
+    temp_dir = tempfile.mkdtemp(prefix=f"dbt_autofix_test_{project_folder}_")
+
+    # Copy the project files to the temporary directory
+    project_path = os.path.join(temp_dir, project_folder)
+    shutil.copytree(source_dir, project_path, dirs_exist_ok=True)
+    print(f"Copied project '{project_folder}' to temporary directory: {temp_dir}")
+
+    # Run refactor_yml on the project
+    refactor_logs_io = StringIO()
+    with redirect_stdout(refactor_logs_io):
+        refactor_yml(
+            path=Path(project_path),
+            dry_run=False,
+            json_output=True,
+            behavior_change=project_dir_to_behavior_change_mode[project_folder],
+            semantic_layer=project_dir_to_semantic_layer_mode[project_folder],
             all=True,
         )
 
