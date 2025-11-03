@@ -151,23 +151,24 @@ def _maybe_merge_cumulative_metric_with_model(
     model_node: Dict[str, Any],
     semantic_model: Dict[str, Any],
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[bool, List[str]]:
+) -> Tuple[bool, List[str], bool]:
     refactored = False
+    moved_to_model = False
     refactor_logs: List[str] = []
     metric_name = metric["name"]
     if metric_name in semantic_definitions.merged_metrics:
         # we've already merged this metric, so no need to do anything further!
-        return refactored, refactor_logs
+        return refactored, refactor_logs, moved_to_model
 
     measure_input = MeasureInput.parse_from_yaml(metric.get("type_params", {}).get("measure"))
     if measure_input is None:
         # This shouldn't happen; it seems like the measure was missing in the original yaml.
-        return refactored, refactor_logs
+        return refactored, refactor_logs, moved_to_model
 
     measure = ModelAccessHelpers.maybe_get_measure_from_model(semantic_model, measure_input.name)
     if measure is None:
         # The measure is not on THIS model, so we don't need to do anything here.
-        return refactored, refactor_logs
+        return refactored, refactor_logs, moved_to_model
 
     artificial_simple_metric, is_new_metric = get_or_create_metric_for_measure(
         measure=measure,
@@ -178,7 +179,7 @@ def _maybe_merge_cumulative_metric_with_model(
         dbt_model_node=model_node,
     )
     if not artificial_simple_metric:
-        return refactored, refactor_logs
+        return refactored, refactor_logs, moved_to_model
 
     if is_new_metric:
         refactor_logs.append(
@@ -205,7 +206,8 @@ def _maybe_merge_cumulative_metric_with_model(
         f"Added cumulative metric '{metric_name}' to model '{model_node['name']}'.",
     )
 
-    return refactored, refactor_logs
+    moved_to_model = refactored
+    return refactored, refactor_logs, moved_to_model
 
 
 def _maybe_merge_conversion_metric_with_model(
@@ -213,16 +215,17 @@ def _maybe_merge_conversion_metric_with_model(
     model_node: Dict[str, Any],
     semantic_model: Dict[str, Any],
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[bool, List[str]]:
+) -> Tuple[bool, List[str], bool]:
     refactored = False
     refactor_logs: List[str] = []
     base_metric_in_model = False
     conversion_metric_in_model = False
+    moved_to_model = False
 
     metric_name = metric["name"]
     if metric_name in semantic_definitions.merged_metrics:
         # we've already merged this metric, so no need to do anything further!
-        return refactored, refactor_logs
+        return refactored, refactor_logs, moved_to_model
     # Try to turn the base measure input into a base metric input
     type_params = metric.get("type_params", {})
     conversion_type_params = type_params.get("conversion_type_params", {})
@@ -290,8 +293,9 @@ def _maybe_merge_conversion_metric_with_model(
         type_params.pop("conversion_type_params", None)
         metric.update(type_params)
         metric.pop("type_params", None)
+        moved_to_model = True
 
-    return refactored, refactor_logs
+    return refactored, refactor_logs, moved_to_model
 
 def get_metric_input_dict(metric: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
     if isinstance(metric, str):
@@ -305,15 +309,152 @@ def change_metrics_to_input_metrics(metric: Dict[str, Any]) -> None:
             get_metric_input_dict(input_metric) for input_metric in metric.pop("metrics", [])
         ]
 
+def _get_metric_from_model_or_top_level(
+    metric_name: str,
+    model_node: Dict[str, Any],
+    semantic_definitions: SemanticDefinitions,
+) -> Optional[Dict[str, Any]]:
+    """Returns the metric from the model if possible, else falls back to initial top-level metrics."""
+    metric_from_model = next((metric for metric in model_node.get("metrics", []) if metric["name"] == metric_name), None)
+    if metric_from_model:
+        return metric_from_model
+    return semantic_definitions.initial_metrics.get(metric_name)
+
+def _get_metric_name_from_metric_input(metric_input: Union[str, Dict[str, Any]]) -> str:
+    if isinstance(metric_input, str):
+        return metric_input
+    # should be a dict then
+    return metric_input["name"]
+
+def try_to_merge_complex_metric_with_model_recursive(
+    metric: Dict[str, Any],
+    model_node: Dict[str, Any],
+    semantic_model: Dict[str, Any],
+    semantic_definitions: SemanticDefinitions,
+) -> Tuple[bool, List[str], bool]:
+    refactored = False
+    refactor_logs: List[str] = []
+
+    metric_name = metric["name"]
+
+    # base recursion case: simple metrics should already be on their appropriate model
+    # (and also don't repeat work on already-merged metrics)
+    if metric["type"] == "simple" or metric_name in semantic_definitions.merged_metrics:
+        is_on_model = metric_name in [metric["name"] for metric in model_node.get("metrics", [])]
+        return refactored, refactor_logs, is_on_model
+
+    # if a cumulative metric, call that function
+    if metric["type"] == "cumulative":
+        metric_refactored, metric_refactor_logs, moved_to_model = _maybe_merge_cumulative_metric_with_model(
+            metric, 
+            model_node,
+            semantic_model,
+            semantic_definitions,
+        )
+        refactored = refactored or metric_refactored
+        refactor_logs.extend(metric_refactor_logs)
+        return refactored, refactor_logs, moved_to_model
+
+    # a conversion metric, call that function
+    if metric["type"] == "conversion":
+        metric_refactored, metric_refactor_logs, moved_to_model = _maybe_merge_conversion_metric_with_model(
+            metric,
+            model_node,
+            semantic_model,
+            semantic_definitions,
+        )
+        refactored = refactored or metric_refactored
+        refactor_logs.extend(metric_refactor_logs)
+        return refactored, refactor_logs, moved_to_model
+
+    if metric["type"] == "derived":
+        # try to merge all the input metrics first
+        input_metric_names: List[str] = []
+        for input_metric in metric.get("type_params", {}).get("metrics", []):
+            input_metric_names.append(_get_metric_name_from_metric_input(input_metric))
+        
+        moved_to_model = True
+        for input_metric_name in input_metric_names:
+            input_metric = _get_metric_from_model_or_top_level(input_metric_name, model_node, semantic_definitions)
+            if not input_metric:
+                # we can't merge the derived metric.  Let's just bail.
+                # (We don't need to recurse here; every metric will be iterated over.  We only recurse so we know 
+                # whether or not we can merge this metric, and that's answered now.)
+                moved_to_model = False
+                break
+                
+            sub_refactored, sub_refactor_logs, sub_moved_to_model = try_to_merge_complex_metric_with_model_recursive(
+                input_metric,
+                model_node,
+                semantic_model,
+                semantic_definitions,
+            )
+            refactored = refactored or sub_refactored
+            refactor_logs.extend(sub_refactor_logs)
+            if not sub_moved_to_model:
+                moved_to_model = False
+                break
+        if moved_to_model:
+            # we know that every input is on the model at this point, so we can merge this metric, too.
+            # Remove type_params from top-level
+            type_params = metric.pop("type_params", {})
+            metric.update(type_params)
+            change_metrics_to_input_metrics(metric)
+
+            model_node["metrics"].append(metric)
+            semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
+            refactored = True
+            refactor_logs.append(f"Added derived metric '{metric_name}' with to model '{model_node['name']}'.")
+        
+        return refactored, refactor_logs, moved_to_model
+    
+    if metric["type"] == "ratio":
+        moved_to_model = False
+        numerator_name = _get_metric_name_from_metric_input(metric.get("type_params", {}).get("numerator"))
+        denominator_name = _get_metric_name_from_metric_input(metric.get("type_params", {}).get("denominator"))
+        numerator_metric = _get_metric_from_model_or_top_level(numerator_name, model_node, semantic_definitions)
+        denominator_metric = _get_metric_from_model_or_top_level(denominator_name, model_node, semantic_definitions)
+        if not numerator_metric or not denominator_metric:
+            # we can't merge the ratio metric.  Let's just bail.
+            # (We don't need to recurse here; every metric will be iterated over.  We only recurse so we know 
+            # whether or not we can merge this metric, and that's answered now.)
+            return refactored, refactor_logs, False
+        numerator_refactored, numerator_refactor_logs, numerator_moved_to_model = try_to_merge_complex_metric_with_model_recursive(
+            numerator_metric,
+            model_node,
+            semantic_model,
+            semantic_definitions,
+        )
+        denominator_refactored, denominator_refactor_logs, denominator_moved_to_model = try_to_merge_complex_metric_with_model_recursive(
+            denominator_metric,
+            model_node,
+            semantic_model,
+            semantic_definitions,
+        )
+        refactored = refactored or numerator_refactored or denominator_refactored
+        refactor_logs.extend(numerator_refactor_logs)
+        refactor_logs.extend(denominator_refactor_logs)
+        if numerator_moved_to_model and denominator_moved_to_model:
+            # we know that every input is on the model at this point, so we can merge this metric, too.
+            # Remove type_params from top-level
+            type_params = metric.pop("type_params", {})
+            metric.update(type_params)
+            model_node["metrics"].append(metric)
+            semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
+            refactored = True
+            refactor_logs.append(f"Added ratio metric '{metric_name}' to model '{model_node['name']}'.")
+            moved_to_model = True
+
+        return refactored, refactor_logs, moved_to_model
+
+    raise ValueError(f"Unknown metric type: {metric['type']}")
+
 def merge_complex_metrics_with_model(
     model_node: Dict[str, Any],
     semantic_definitions: SemanticDefinitions,
 ) -> Tuple[Dict[str, Any], bool, List[str]]:
     refactored = False
     refactor_logs: List[str] = []
-    simple_metrics_on_model = {
-        metric["name"]: metric for metric in model_node.get("metrics", []) if metric["type"] == "simple"
-    }
     semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
     if not semantic_model:
         # Nothing to work with here, so we should just skip this model.
@@ -329,66 +470,15 @@ def merge_complex_metrics_with_model(
         # No need to further merge metrics that have already been merged
         if metric_name in semantic_definitions.merged_metrics:
             continue
-
-        # Derived metrics can be merged to this model if they have metrics that exist as simple metrics on the model
-        if metric["type"] == "derived":
-            metric_names = []
-            for input_metric in metric.get("type_params", {}).get("metrics", []):
-                if isinstance(input_metric, dict):
-                    metric_names.append(input_metric["name"])
-                else:
-                    metric_names.append(input_metric)
-
-            if all(metric_name in simple_metrics_on_model for metric_name in metric_names):
-                # Remove type_params from top-level
-                type_params = metric.pop("type_params", {})
-                metric.update(type_params)
-                change_metrics_to_input_metrics(metric)
-
-                model_node["metrics"].append(metric)
-                semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
-                refactored = True
-                refactor_logs.append(f"Added derived metric '{metric_name}' with to model '{model_node['name']}'.")
-        # Ratio metrics can be merged to this model if they have numerator and denominator that exist as simple metrics on the model
-        elif metric["type"] == "ratio":
-            numerator = metric.get("type_params", {}).get("numerator")
-            if isinstance(numerator, dict):
-                numerator_name = numerator["name"]
-            else:
-                numerator_name = numerator
-
-            denominator = metric.get("type_params", {}).get("denominator")
-            if isinstance(denominator, dict):
-                denominator_name = denominator["name"]
-            else:
-                denominator_name = denominator
-
-            if numerator_name in simple_metrics_on_model and denominator_name in simple_metrics_on_model:
-                # Remove type_params from top-level
-                type_params = metric.pop("type_params", {})
-                metric.update(type_params)
-
-                model_node["metrics"].append(metric)
-                semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
-                refactored = True
-                refactor_logs.append(f"Added ratio metric '{metric_name}' to model '{model_node['name']}'.")
-
-        elif metric["type"] == "cumulative":
-            metric_refactored, metric_refactor_logs = _maybe_merge_cumulative_metric_with_model(
-                metric, model_node, semantic_model, semantic_definitions
-            )
-            refactored = refactored or metric_refactored
-            refactor_logs.extend(metric_refactor_logs)
-
-        elif metric["type"] == "conversion":
-            metric_refactored, metric_refactor_logs = _maybe_merge_conversion_metric_with_model(
-                metric,
-                model_node,
-                semantic_model,
-                semantic_definitions,
-            )
-            refactored = refactored or metric_refactored
-            refactor_logs.extend(metric_refactor_logs)
+    
+        metric_refactored, metric_refactor_logs, _is_on_model = try_to_merge_complex_metric_with_model_recursive(
+            metric,
+            model_node,
+            semantic_model,
+            semantic_definitions,
+        )
+        refactored = refactored or metric_refactored
+        refactor_logs.extend(metric_refactor_logs)
 
     return model_node, refactored, refactor_logs
 

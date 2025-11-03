@@ -102,6 +102,15 @@ models:
         label: Cumulative Revenue (All Time)
         type: cumulative
         input_metric: revenue_1
+      - name: aaa_order_multi_layer_derived_metric # aaa in name to make it process earlier than dependencies
+        description: "Derived metric that uses metrics from two different models."
+        type: derived
+        label: multi model avg revenue per food order
+        expr: current_revenue / cumulative_revenue
+        input_metrics:
+          - name: revenue
+            alias: current_revenue
+          - name: cumulative_revenue
       - name: revenue_fill_nulls_with_150_join_to_timespine
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
@@ -156,15 +165,6 @@ models:
         join_to_timespine: true
 metrics:
   # Simple metrics
-  - name: aaa_order_multi_layer_derived_metric # aaa in name to make it process earlier than dependencies
-    description: "Derived metric that uses metrics from two different models."
-    type: derived
-    label: multi model avg revenue per food order
-    expr: current_revenue / cumulative_revenue
-    input_metrics:
-      - name: revenue
-        alias: current_revenue
-      - name: cumulative_revenue
   - name: conversion_metric_across_two_models
     description: The conversion metric description across two models and should be kept top level
     type: conversion
