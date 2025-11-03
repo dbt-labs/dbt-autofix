@@ -1786,6 +1786,27 @@ models:
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
 
+    def test_multiple_lines_including_valid_quotes(self):
+        """Test replacing fancy quotes across multiple lines"""
+        input_yaml = """version: 2
+models:
+  - name: \u201ctest_model\u201d
+    description: \u201cA test\u201d
+  - name: "second_test_model"
+    description: "A test (\u201cagain\u201d)\""""
+        expected_yaml = """version: 2
+models:
+  - name: "test_model"
+    description: "A test"
+  - name: "second_test_model"
+    description: "A test (\u201cagain\u201d)\""""
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        assert len(result.refactor_logs) == 2  # Two lines with fancy quotes
+        assert "line 3" in result.refactor_logs[0]
+        assert "line 4" in result.refactor_logs[1]
+        assert result.refactored_yaml == expected_yaml
+
 
 class TestRemoveDuplicateKeys:
     """Tests for changeset_remove_duplicate_keys function"""
