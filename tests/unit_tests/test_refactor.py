@@ -1778,6 +1778,14 @@ models:
         assert lines[2].startswith("  - name:")
         assert lines[4].startswith("      - name:")
 
+    def test_dont_replace_fancy_quotes_within_string(self):
+        """Allow fancy quotes within a valid string"""
+        input_yaml = 'name: "description \u201cinner\u201d"'
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert not result.refactored
+        assert len(result.refactor_logs) == 0
+        assert result.refactored_yaml == input_yaml
+
 
 class TestRemoveDuplicateKeys:
     """Tests for changeset_remove_duplicate_keys function"""
