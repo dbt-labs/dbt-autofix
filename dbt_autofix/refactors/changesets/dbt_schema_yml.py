@@ -28,36 +28,50 @@ def changeset_replace_fancy_quotes(yml_str: str) -> YMLRuleRefactorResult:
     Returns:
         YMLRuleRefactorResult containing the refactored YAML and any changes made
     """
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    # deprecation_refactors: List[DbtDeprecationRefactor] = []
+    # refactored = False
+    refactor_result = YMLRuleRefactorResult(
+            rule_name="replace_fancy_quotes",
+            refactored=False,
+            refactored_yaml=yml_str,
+            original_yaml=yml_str,
+            deprecation_refactors=[],
+        )
 
     # Pattern to match fancy quotes: U+201C or U+201D
     fancy_quotes_pattern = re.compile(r'[\u201c\u201d]')
 
-    # Find all matches with their positions to track line numbers
-    lines_with_quotes = set()
-    for match in fancy_quotes_pattern.finditer(yml_str):
-        line_num = yml_str[:match.start()].count('\n') + 1
-        lines_with_quotes.add(line_num)
+    search_pattern = fancy_quotes_pattern.search(yml_str)
+    
 
-    # Generate logs for each affected line
-    for line_num in sorted(lines_with_quotes):
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log=f"Replaced fancy quotes with standard double quotes on line {line_num}"
+    # Exit early if no fancy quotes
+    if not search_pattern:
+        return refactor_result
+
+    first_line_num = search_pattern.start()
+
+    # Process each line
+    lines = yml_str.splitlines()
+    end_pos = 0
+    for i, line in enumerate(lines):
+        # avoid processing lines we already know don't include match
+        end_pos += len(line)
+        if end_pos < first_line_num:
+            continue
+        # replace in line
+        if re.search(fancy_quotes_pattern, line):
+            refactor_result.refactored = True
+            lines[i] = fancy_quotes_pattern.sub('"', line)
+            refactor_result.deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Replaced fancy quotes with standard double quotes on line {i + 1}"
+                )
             )
-        )
 
-    # Replace all fancy quotes in one pass
-    refactored_yaml = fancy_quotes_pattern.sub('"', yml_str)
-    refactored = refactored_yaml != yml_str
+    if refactor_result.refactored:
+        refactor_result.refactored_yaml = "\n".join(lines)
 
-    return YMLRuleRefactorResult(
-        rule_name="replace_fancy_quotes",
-        refactored=refactored,
-        refactored_yaml=refactored_yaml,
-        original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-    )
+    return refactor_result
 
 
 def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
