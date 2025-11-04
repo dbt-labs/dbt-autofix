@@ -1,6 +1,6 @@
 analyses:
   - name: analysis_name
-    description: "test description"
+    description: "test description “test"
     config:
       tags: "test"
       meta:
