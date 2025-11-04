@@ -40,26 +40,27 @@ def changeset_replace_fancy_quotes(yml_str: str) -> YMLRuleRefactorResult:
 
     # Pattern to match fancy quotes: U+201C or U+201D
     fancy_quotes_pattern = re.compile(r'[\u201c\u201d]')
+    # Pattern to check if fancy quotes are within a pair of double quotes
+    fancy_quotes_within_double_quotes_pattern = re.compile(r'\".*[\u201c\u201d].*\"')
 
-    search_pattern = fancy_quotes_pattern.search(yml_str)
+    # Check if any fancy quotes in string
+    fancy_quotes_search = fancy_quotes_pattern.search(yml_str)
     
-
     # Exit early if no fancy quotes
-    if not search_pattern:
+    if not fancy_quotes_search:
         return refactor_result
-
-    first_line_num = search_pattern.start()
 
     # Process each line
     lines = yml_str.splitlines()
+    first_quote_pos = fancy_quotes_search.start()
     end_pos = 0
     for i, line in enumerate(lines):
         # avoid processing lines we already know don't include match
         end_pos += len(line)
-        if end_pos < first_line_num:
+        if end_pos < first_quote_pos:
             continue
         # replace in line
-        if re.search(fancy_quotes_pattern, line):
+        if fancy_quotes_pattern.search(line) and not fancy_quotes_within_double_quotes_pattern.search(line):
             refactor_result.refactored = True
             lines[i] = fancy_quotes_pattern.sub('"', line)
             refactor_result.deprecation_refactors.append(
