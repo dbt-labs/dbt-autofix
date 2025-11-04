@@ -66,7 +66,7 @@ run the tool directly
 uvx --from git+https://github.com/dbt-labs/dbt-autofix.git dbt-autofix --help
 ```
 
-or install it so that it can be run with `dbt-cleanup` in the future
+or install it so that it can be run with `dbt-autofix` in the future
 ```sh
 uv tool install --from git+https://github.com/dbt-labs/dbt-autofix.git dbt-autofix
 ```
