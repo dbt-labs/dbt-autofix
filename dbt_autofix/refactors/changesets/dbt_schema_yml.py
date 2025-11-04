@@ -28,8 +28,6 @@ def changeset_replace_fancy_quotes(yml_str: str) -> YMLRuleRefactorResult:
     Returns:
         YMLRuleRefactorResult containing the refactored YAML and any changes made
     """
-    # deprecation_refactors: List[DbtDeprecationRefactor] = []
-    # refactored = False
     refactor_result = YMLRuleRefactorResult(
             rule_name="replace_fancy_quotes",
             refactored=False,
@@ -52,14 +50,7 @@ def changeset_replace_fancy_quotes(yml_str: str) -> YMLRuleRefactorResult:
 
     # Process each line
     lines = yml_str.splitlines()
-    first_quote_pos = fancy_quotes_search.start()
-    end_pos = 0
     for i, line in enumerate(lines):
-        # avoid processing lines we already know don't include match
-        end_pos += len(line)
-        if end_pos < first_quote_pos:
-            continue
-        # replace in line
         if fancy_quotes_pattern.search(line) and not fancy_quotes_within_double_quotes_pattern.search(line):
             refactor_result.refactored = True
             lines[i] = fancy_quotes_pattern.sub('"', line)
