@@ -717,7 +717,7 @@ def merge_semantic_models_with_model(
             # Propagate semantic model properties to the model
             if semantic_model.get("description"):
                 if node.get("description"):
-                    node["description"] += node.get("description", "") + semantic_model["description"]
+                    node["description"] += f" {semantic_model['description']}"
                     node_logs.append(f"Appended semantic model 'description' to model 'description'.")
                 else:
                     node["description"] = semantic_model["description"]
