@@ -1,0 +1,10 @@
+analyses:
+  - name: analysis_name
+    description: "test description"
+    config:
+      tags: "test"
+      meta:
+        custom_field: custom_value
+      docs:
+        show: true
+        node_color: purple

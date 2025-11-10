@@ -18,3 +18,5 @@ venv
 # special files
 config_resources.csv
 project2/*
+
+.DS_Store

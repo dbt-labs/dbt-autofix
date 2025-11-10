@@ -1,0 +1,9 @@
+groups:
+  - name: finance
+    owner:
+      email: finance@jaffleshop.com
+    description: For the finance team
+    custom_field: custom_value
+    config:
+      meta:
+        data_owner: Finance team

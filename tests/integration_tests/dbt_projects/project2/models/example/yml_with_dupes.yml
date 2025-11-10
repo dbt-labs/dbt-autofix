@@ -1,0 +1,6 @@
+models:
+  - name: my_dbt_model_with_dupes
+    description: desc1
+    description: desc2
+
+          
