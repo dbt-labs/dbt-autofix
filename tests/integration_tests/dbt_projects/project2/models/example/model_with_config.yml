@@ -1,0 +1,10 @@
+models:
+  - name: my_first_dbt_model
+    config:
+      materialized: table
+      custom_config: custom_value
+      pre-hook: select 1
+      post-hook: select 2
+      dataset: my_dataset
+      project: my_project
+      data_space: my_data_space

@@ -1,0 +1,72 @@
+
+
+sources:
+  - name: my-source
+    desciption: |-
+      This is a model about something
+      
+      This model contains:
+        * This
+        * That
+        * The other thing
+        
+    database: my-db
+    schema: my-schema
+    loader: my-loader
+    meta: 
+      my_meta: my-meta-value
+    tags: 
+      - my-tag
+    
+    config:
+      enabled: true
+
+    freshness:
+      warn_after:
+        count: 2
+        period: minute
+
+    quoting:
+      database: false
+      schema: true
+      identifier: true
+
+    custom_property: true
+
+    tables:
+      - name: table1
+        description: table1-description
+        meta: 
+          my_meta: my-meta-value-table1
+        identifier: table1id
+        loaded_at_field: my_loaded_at_field
+        tests:
+          - dbt_expectations.expect_table_columns_to_contain_set:
+              column_list: ["col_a", "col_b"]
+              transform: upper
+        tags: 
+          - my-other-tag
+        freshness:
+          error_after:
+            count: 2
+            period: hour
+          filter: my filter
+
+
+        external: 
+          location: s3://my-bucket/my-path
+          format: parquet
+          partitions:
+            - name: collector_hour
+              data_type: timestamp
+              expression: to_timestamp(substr(metadata$filename, 8, 13), 'YYYY/MM/DD/HH24')
+        columns:
+          - name: col1
+            description: col1-description
+            meta: 
+              my_meta: my-meta-value-col1
+            tests:
+              - unique:
+                  where: 1=1
+              - not_null
+	

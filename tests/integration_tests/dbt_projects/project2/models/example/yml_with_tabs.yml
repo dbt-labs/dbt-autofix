@@ -1,0 +1,8 @@
+models:
+  - name: my_tab_dbt_model
+    columns:
+      - name: id
+        description:	The ID.
+        data_tests:
+          - not_null
+          

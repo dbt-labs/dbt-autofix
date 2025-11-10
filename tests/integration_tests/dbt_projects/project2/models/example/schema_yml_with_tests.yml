@@ -1,0 +1,62 @@
+models:
+  - name: my_model_with_tests
+    descrption: "description"
+    tests:
+      - unique:
+          column_name: id
+      - custom_test:
+          custom_arg: some_value
+          severity: warn
+      - dbt_utils.mutually_exclusive_ranges:
+          partition_by: account_id
+          lower_bound_column: start_date
+          upper_bound_column: end_date
+          gaps: not_allowed
+    columns:
+      - name: id
+        descrption: The ID.
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: [1, 2, 3]
+              desciption: accepted_values test for id
+          - relationships:
+              to:
+                - model: my_other_model
+                  field: id
+                  on_delete: cascade
+                  on_update: cascade
+          - name: my_custom_test
+            test_name: custom_test
+            custom_arg: some_value
+            description: my custom test
+            severity: warn
+          - name: alt_test_syntax_builtin_test
+            test_name: accepted_values
+            values: [1, 2, 3]
+          - custom_test_with_arguments:
+              arguments: my_arguments
+          - test_name: custom_test_with_arguments_alt_format
+            arguments: my_arguments
+          - custom_test_with_arguments_dict:
+              arguments:
+                custom_arg: some_value
+              invalid_custom_arg: some_value
+
+  - name: my_versioned_model_with_tests
+    versions:
+      - v: 1
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - a
+                - b
+                - c
+      - v: 2
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - a
+                - b
+                - c

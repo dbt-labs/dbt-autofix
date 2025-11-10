@@ -1,0 +1,72 @@
+models:
+  - name: my_model_with_tests
+    tests:
+      - unique:
+          column_name: id
+      - custom_test:
+          config:
+            severity: warn
+          arguments:
+            custom_arg: some_value
+      - dbt_utils.mutually_exclusive_ranges:
+          arguments:
+            partition_by: account_id
+            lower_bound_column: start_date
+            upper_bound_column: end_date
+            gaps: not_allowed
+    columns:
+      - name: id
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              description: accepted_values test for id
+              arguments:
+                values: [1, 2, 3]
+          - relationships:
+              arguments:
+                to:
+                  - model: my_other_model
+                    field: id
+                    on_delete: cascade
+                    on_update: cascade
+          - name: my_custom_test
+            test_name: custom_test
+            description: my custom test
+            config:
+              severity: warn
+            arguments:
+              custom_arg: some_value
+          - name: alt_test_syntax_builtin_test
+            test_name: accepted_values
+            arguments:
+              values: [1, 2, 3]
+          - custom_test_with_arguments:
+              arguments: my_arguments
+          - test_name: custom_test_with_arguments_alt_format
+            arguments: my_arguments
+          - custom_test_with_arguments_dict:
+              arguments:
+                custom_arg: some_value
+                invalid_custom_arg: some_value
+        description: The ID.
+    description: "description"
+
+  - name: my_versioned_model_with_tests
+    versions:
+      - v: 1
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - a
+                  - b
+                  - c
+      - v: 2
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - a
+                  - b
+                  - c

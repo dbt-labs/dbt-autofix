@@ -1,0 +1,27 @@
+ version: 2
+
+models:
+  - name: my_first_dbt_model
+    my_config: mine
+    description: &description "A starter dbt model"
+    columns:
+      - &copy_me
+        name: id
+        meta: 
+          my_meta: minemine
+        my_config: mine
+        description: The ID.
+        data_tests:
+          - not_null
+
+    config:
+      meta:
+        invalid_field: "invalid"
+  - name: my_second_dbt_model
+    description: *description
+    columns:
+      - <<: *copy_me
+        data_tests:
+          - unique
+          - not_null:
+              where: 1=1

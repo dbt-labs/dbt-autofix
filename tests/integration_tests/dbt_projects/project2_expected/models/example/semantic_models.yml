@@ -1,0 +1,74 @@
+semantic_models:
+  - name: customers
+    defaults:
+      agg_time_dimension: first_ordered_at
+    description: |
+      Customer grain mart.
+    model: ref('customers')
+    entities:
+      - name: customer
+        expr: customer_id
+        type: primary
+    dimensions:
+      - name: customer_name
+        type: categorical
+      - name: customer_type
+        type: categorical
+      - name: first_ordered_at
+        type: time
+        type_params:
+          time_granularity: day
+      - name: last_ordered_at
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: customers
+        description: Count of unique customers
+        agg: count_distinct
+      - name: count_lifetime_orders
+        description: Total count of orders per customer.
+        agg: sum
+      - name: lifetime_spend_pretax
+        description: Customer lifetime spend before taxes.
+        agg: sum
+      - name: lifetime_spend
+        agg: sum
+        description: Gross customer lifetime spend inclusive of taxes.
+
+metrics:
+  - name: lifetime_spend_pretax
+    description: Customer's lifetime spend before tax
+    label: LTV Pre-tax
+    type: simple
+    type_params:
+      measure: lifetime_spend_pretax
+  - name: count_lifetime_orders
+    description: Count of lifetime orders
+    label: Count Lifetime Orders
+    type: simple
+    type_params:
+      measure: count_lifetime_orders
+  - name: average_order_value
+    description: LTV pre-tax / number of orders
+    label: Average Order Value
+    type: derived
+    type_params:
+      metrics:
+        - count_lifetime_orders
+        - lifetime_spend_pretax
+      expr: lifetime_spend_pretax / count_lifetime_orders
+
+saved_queries:
+  - name: customer_order_metrics
+    query_params:
+      metrics:
+        - count_lifetime_orders
+        - lifetime_spend_pretax
+        - average_order_value
+      group_by:
+        - Entity('customer')
+    exports:
+      - name: customer_order_metrics
+        config:
+          export_as: table
