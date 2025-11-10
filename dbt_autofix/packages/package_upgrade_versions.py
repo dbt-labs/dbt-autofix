@@ -1,7 +1,8 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from pprint import pprint
+from typing import Any, Optional, Union
 from semver.version import Version
 import yaml
 import yamllint
@@ -23,9 +24,10 @@ VALID_PACKAGE_YML_NAMES: set[str] = set(['packages.yml', 'dependencies.yml'])
 
 @dataclass
 class DbtPackage:
-    package_id: str
+    package_dict: Optional[dict[str, Union[str,list[str]]]]
+    package_id: Optional[str]
     package_name: Optional[str]
-    package_version_str: str
+    package_version_str: Optional[str]
     package_version: Optional[Version]
     current_project_package_version_str: Optional[str]
     current_project_package_version: Optional[Version]
@@ -36,6 +38,8 @@ class DbtPackage:
     max_upgradeable_version: Optional[str]
     lowest_fusion_compatible_version: Optional[str]
     fusion_compatible_versions: Optional[list[Version]]
+    git_url: Optional[str]
+    opt_in_prerelease: bool = False
 
     def __post_init__(self):
         pass
@@ -48,7 +52,7 @@ class DbtPackage:
 class DbtPackageFile:
     file_path: Optional[Path]
     yml_str: str = ""
-    yml_dict: list[dict[str, str]] = field(default_factory=list)
+    yml_dict: list[dict[str, Union[str, list[str]]]] = field(default_factory=list)
     package_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
 
     def parse_file_path_to_string(self):
@@ -62,18 +66,25 @@ class DbtPackageFile:
             console.log(f"Error when parsing package file {self.file_path}")
     
     def parse_yml_string_to_dict(self):
+        if not self.yml_str:
+            console.log("No YML string found, use parse_file_path_to_string first")
         try:
             parsed_package_file = DbtYAML().load(self.yml_str) or {}
         except:
             console.log(f"Error when parsing package file {self.file_path}")
             return
-        if parsed_package_file != {}:
-            for package in parsed_package_file:
-                print(f"package: {package}")
-                # self.yml_dict[str(k)] = str(v)
-                self.yml_dict.append(package)
-            else:
-                console.log(f"Package file {self.file_path} could not be parsed")
+        if parsed_package_file == {}:
+            console.log("No content parsed")
+            return
+        if "packages" not in parsed_package_file:
+            console.log("File does not contain packages key")
+            return
+        for package in parsed_package_file["packages"]:
+            print(f"package: {package}")
+            self.yml_dict.append(package)
+        else:
+            console.log(f"Package file {self.file_path} could not be parsed")
+        console.log(pprint(self.yml_dict))
 
     def parse_package_dependencies(self):
         for k, v in self.yml_dict:
@@ -88,7 +99,6 @@ class DbtPackageFile:
 
 def find_package_paths(
     root_dir: Path,
-# ) -> Tuple[List[DuplicateFound], List[DuplicateFound]]:
 ) -> list[Path]:
     packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
         "packages-install-path", "dbt_packages"
@@ -109,7 +119,6 @@ def find_package_paths(
 
 def find_package_yml_files(
     root_dir: Path,
-# ) -> Tuple[List[DuplicateFound], List[DuplicateFound]]:
 ) -> list[Path]:
     yml_files = set(root_dir.glob("**/*.yml")).union(set(root_dir.glob("**/*.yaml")))
 
@@ -125,7 +134,7 @@ def find_package_yml_files(
     return package_yml_files
 
 
-def parse_package_files(package_file_paths: list[Path]):
+def parse_package_files(package_file_paths: list[Path]) -> list[DbtPackageFile]:
     if package_file_paths == []:
         return []
     

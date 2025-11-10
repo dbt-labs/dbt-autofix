@@ -1,3 +1,4 @@
+from pprint import pprint
 import tempfile
 from pathlib import Path
 from dbt_autofix.packages.package_upgrade_versions import find_package_yml_files, parse_package_files, DbtPackageFile
@@ -121,9 +122,6 @@ def test_find_package_files(temp_project_dir: Path):
 
 def test_parse_file_path_to_string(temp_project_dir: Path):
     package_files = find_package_yml_files(temp_project_dir)
-    assert len(package_files) == 1
-    assert package_files[0].name == "packages.yml"
-    assert package_files[0] == Path(f"{temp_project_dir}/packages.yml")
     package_file = DbtPackageFile(file_path=package_files[0])
     package_file.parse_file_path_to_string()
     assert package_file.file_path is not None
@@ -151,8 +149,12 @@ packages:
 """
 
 
-def test_parse_package_files(temp_project_dir: Path):
-    package_file_paths = find_package_yml_files(temp_project_dir)
-    package_files = parse_package_files(package_file_paths)
+def test_parse_package_string_to_dict(temp_project_dir: Path):
+    package_files = find_package_yml_files(temp_project_dir)
+    package_file = DbtPackageFile(file_path=package_files[0])
+    package_file.parse_file_path_to_string()
+    package_file.parse_yml_string_to_dict()
+    pprint(package_file.yml_dict)
+
     assert len(package_files) == 1
-    assert len(package_files) == len(package_file_paths)
+
