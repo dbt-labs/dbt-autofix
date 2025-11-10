@@ -38,6 +38,17 @@ def identify_duplicate_keys(
     print_duplicate_keys(project_duplicates, package_duplicates)
 
 
+@app.command(name="upgrade-packages")
+def upgrade_packages(
+    path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
+    dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
+    json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
+):
+    print(f"[green]Identifying packages with available upgrades in {path}[/green]\n")
+    # project_duplicates, package_duplicates = find_duplicate_keys(path)
+    # print_duplicate_keys(project_duplicates, package_duplicates)
+
+
 @app.command(name="deprecations")
 def refactor_yml(  # noqa: PLR0913
     path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
