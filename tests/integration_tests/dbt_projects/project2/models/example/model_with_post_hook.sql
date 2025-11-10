@@ -1,1 +1,0 @@
-{{ config({'pre-hook': 'select 1', 'post-hook': 'select 2'}) }}

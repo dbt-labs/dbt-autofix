@@ -1,9 +1,10 @@
 from pprint import pprint
 import tempfile
 from pathlib import Path
-from dbt_autofix.packages.package_upgrade_versions import find_package_yml_files, parse_package_files, DbtPackageFile
+from dbt_autofix.packages.dbt_package import DbtPackage
 
 import pytest
+
 
 @pytest.fixture
 def temp_project_dir():
@@ -28,7 +29,7 @@ models:
   - name: model2
     description: "Second model"
 """)
-        
+
         # Create package YAML file
         project_dir.joinpath("packages.yml").write_text("""
 packages:
@@ -50,7 +51,7 @@ packages:
   - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
     revision: main # use a branch or a tag name
 """)
-        
+
         # Create package lock file
         project_dir.joinpath("package-lock.yml").write_text("""
 packages:
@@ -113,48 +114,23 @@ models:
         yield project_dir
 
 
-def test_find_package_files(temp_project_dir: Path):
-    package_files = find_package_yml_files(temp_project_dir)
-    assert len(package_files) == 1
-    assert package_files[0].name == "packages.yml"
-    assert package_files[0] == Path(f"{temp_project_dir}/packages.yml")
-
-
-def test_parse_file_path_to_string(temp_project_dir: Path):
-    package_files = find_package_yml_files(temp_project_dir)
-    package_file = DbtPackageFile(file_path=package_files[0])
-    package_file.parse_file_path_to_string()
-    assert package_file.file_path is not None
-    assert package_file.yml_str != ""
-    assert len(package_file.yml_str) > 0
-    assert package_file.yml_str == """
-packages:
-  - package: dbt-labs/dbt_external_tables
-    version: [">=0.8.0", "<0.9.0"]
-  
-  - package: dbt-labs/dbt_utils
-    version: [">=0.9.0", "<1.0.0"]
-
-  - package: dbt-labs/codegen
-    version: [">=0.8.0", "<0.9.0"]
-
-  - package: dbt-labs/audit_helper
-    version: [">=0.6.0", "<0.7.0"]
-
-  - package: metaplane/dbt_expectations
-    version: [">=0.10.8", "<1.0.0"]
-
-  - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
-    revision: main # use a branch or a tag name
-"""
-
-
-def test_parse_package_string_to_dict(temp_project_dir: Path):
-    package_files = find_package_yml_files(temp_project_dir)
-    package_file = DbtPackageFile(file_path=package_files[0])
-    package_file.parse_file_path_to_string()
-    package_file.parse_yml_string_to_dict()
-    pprint(package_file.yml_dict)
-
-    assert len(package_files) == 1
-
+@pytest.mark.parametrize(
+    "version_range,expected_result",
+    [
+        (
+            [">1.0.0"],
+            True,
+        ),
+        (
+            [">1.0.0", "<2.0.0"],
+            False,
+        ),
+        (
+            [">=2.0.0"],
+            True,
+        ),
+    ],
+)
+def test_fusion_compatible_dbt_version_ranges(version_range: list[str], expected_result: bool):
+    package = DbtPackage(package_dict={"package": "test_package"})
+    assert package.is_dbt_version_fusion_compatible(version_range) == expected_result
