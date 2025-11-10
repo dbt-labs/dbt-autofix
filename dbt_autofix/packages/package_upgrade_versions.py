@@ -19,6 +19,8 @@ rules:
 
 yaml_config = yamllint.config.YamlLintConfig(config)
 
+VALID_PACKAGE_YML_NAMES: set[str] = set(['packages.yml', 'dependencies.yml'])
+
 @dataclass
 class DbtPackage:
     package_id: str
@@ -52,6 +54,7 @@ class DbtPackageFile:
     def parse_file_path_to_string(self):
         try:
             self.yml_str = self.file_path.read_text()
+            console.log(f"parsed yaml string: {self.yml_str}")
         except:
             console.log(f"Error when parsing package file {self.file_path}")
     
@@ -78,7 +81,7 @@ class DbtPackageFile:
             self.package_dependencies[package_name] = package
 
 
-def find_package_files(
+def find_package_paths(
     root_dir: Path,
 # ) -> Tuple[List[DuplicateFound], List[DuplicateFound]]:
 ) -> list[Path]:
@@ -99,12 +102,31 @@ def find_package_files(
     return [Path(str(path)) for path in yml_files_packages_not_integration_tests]
 
 
+def find_package_yml_files(
+    root_dir: Path,
+# ) -> Tuple[List[DuplicateFound], List[DuplicateFound]]:
+) -> list[Path]:
+    yml_files = set(root_dir.glob("**/*.yml")).union(set(root_dir.glob("**/*.yaml")))
+
+    package_yml_files = []
+
+
+    for yml_file in yml_files:
+        if yml_file.name in VALID_PACKAGE_YML_NAMES:
+            package_yml_files.append(yml_file)
+    
+    if len(package_yml_files) == 0:
+        console.log("No package YML files found")
+    return package_yml_files
+
+
 def parse_package_files(package_file_paths: list[Path]):
     if package_file_paths == []:
         return []
     
     package_files: list[DbtPackageFile] = []
     for path in package_file_paths:
+        console.log(f"package path: {path}")
         package_file = DbtPackageFile(path)
         package_file.parse_file_path_to_string()
         package_file.parse_yml_string_to_dict()
