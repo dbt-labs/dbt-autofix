@@ -24,10 +24,10 @@ VALID_PACKAGE_YML_NAMES: set[str] = set(['packages.yml', 'dependencies.yml'])
 
 @dataclass
 class DbtPackage:
-    package_dict: Optional[dict[str, Union[str,list[str]]]]
+    package_dict: dict[str, Union[str,list[str]]]
     package_id: Optional[str]
     package_name: Optional[str]
-    package_version_str: Optional[str]
+    package_version_str: Optional[list[str]]
     package_version: Optional[Version]
     current_project_package_version_str: Optional[str]
     current_project_package_version: Optional[Version]
@@ -42,9 +42,26 @@ class DbtPackage:
     opt_in_prerelease: bool = False
 
     def __post_init__(self):
-        pass
+        self.parse_package_dict()
 
-    def parse_current_package_version(self):
+
+    def parse_package_dict(self):
+        if "package" in self.package_dict and type(self.package_dict["package"]) == "str":
+            self.package_name = str(self.package_dict["package"])
+        if "version" in self.package_dict
+            if type(self.package_dict["version"] == "list"):
+                self.package_version_str = [str(version) for version in self.package_dict["version"]
+            elif type(self.package_dict["version"] == "str"):
+                self.package_version_str = [str(self.package_dict["version"])]
+        if "git" in self.package_dict:
+            self.git_url = str(self.package_dict["git"])
+        if "install-prerelease" in self.package_dict:
+            if str(self.package_dict["install-prerelease"]) == "true":
+                self.opt_in_prerelease = True
+            else:
+                self.opt_in_prerelease = False
+
+    def parse_current_package_version_range(self):
         pass
 
 
