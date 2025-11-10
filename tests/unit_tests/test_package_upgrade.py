@@ -119,6 +119,38 @@ def test_find_package_files(temp_project_dir: Path):
     assert package_files[0] == Path(f"{temp_project_dir}/packages.yml")
 
 
+def test_parse_file_path_to_string(temp_project_dir: Path):
+    package_files = find_package_yml_files(temp_project_dir)
+    assert len(package_files) == 1
+    assert package_files[0].name == "packages.yml"
+    assert package_files[0] == Path(f"{temp_project_dir}/packages.yml")
+    package_file = DbtPackageFile(file_path=package_files[0])
+    package_file.parse_file_path_to_string()
+    assert package_file.file_path is not None
+    assert package_file.yml_str != ""
+    assert len(package_file.yml_str) > 0
+    assert package_file.yml_str == """
+packages:
+  - package: dbt-labs/dbt_external_tables
+    version: [">=0.8.0", "<0.9.0"]
+  
+  - package: dbt-labs/dbt_utils
+    version: [">=0.9.0", "<1.0.0"]
+
+  - package: dbt-labs/codegen
+    version: [">=0.8.0", "<0.9.0"]
+
+  - package: dbt-labs/audit_helper
+    version: [">=0.6.0", "<0.7.0"]
+
+  - package: metaplane/dbt_expectations
+    version: [">=0.10.8", "<1.0.0"]
+
+  - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
+    revision: main # use a branch or a tag name
+"""
+
+
 def test_parse_package_files(temp_project_dir: Path):
     package_file_paths = find_package_yml_files(temp_project_dir)
     package_files = parse_package_files(package_file_paths)

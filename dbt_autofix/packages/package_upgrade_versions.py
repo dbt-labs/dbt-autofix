@@ -46,12 +46,15 @@ class DbtPackage:
 
 @dataclass
 class DbtPackageFile:
-    file_path: Path
+    file_path: Optional[Path]
     yml_str: str = ""
-    yml_dict: dict[str, str] = field(default_factory=dict)
+    yml_dict: list[dict[str, str]] = field(default_factory=list)
     package_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
 
     def parse_file_path_to_string(self):
+        if not self.file_path:
+            console.log("No file path set")
+            return
         try:
             self.yml_str = self.file_path.read_text()
             console.log(f"parsed yaml string: {self.yml_str}")
@@ -65,8 +68,10 @@ class DbtPackageFile:
             console.log(f"Error when parsing package file {self.file_path}")
             return
         if parsed_package_file != {}:
-            for k, v in parsed_package_file:
-                self.yml_dict[str(k)] = str(v)
+            for package in parsed_package_file:
+                print(f"package: {package}")
+                # self.yml_dict[str(k)] = str(v)
+                self.yml_dict.append(package)
             else:
                 console.log(f"Package file {self.file_path} could not be parsed")
 
