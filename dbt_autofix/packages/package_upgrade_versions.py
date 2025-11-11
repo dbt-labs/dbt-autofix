@@ -10,6 +10,7 @@ import yamllint.linter
 import yamllint.config
 from rich.console import Console
 from dbt_autofix.refactors.yml import DbtYAML, read_file
+from dbt_autofix.packages.installed_packages import DbtInstalledPackage, find_package_paths, parse_package_info_from_package_dbt_project_yml, get_current_installed_package_versions
 
 console = Console()
 
@@ -25,25 +26,27 @@ VALID_PACKAGE_YML_NAMES: set[str] = set(['packages.yml', 'dependencies.yml'])
 @dataclass
 class DbtPackage:
     package_dict: dict[str, Union[str,list[str]]]
-    package_id: Optional[str]
-    package_name: Optional[str]
-    package_version_str: Optional[list[str]]
-    package_version: Optional[Version]
-    current_project_package_version_str: Optional[str]
-    current_project_package_version: Optional[Version]
-    current_project_package_version_range_str: Optional[list[str]]
-    current_project_package_version_range: Optional[list[Version]]
-    require_dbt_version: Optional[list[str]]
-    min_upgradeable_version: Optional[str]
-    max_upgradeable_version: Optional[str]
-    lowest_fusion_compatible_version: Optional[str]
-    fusion_compatible_versions: Optional[list[Version]]
-    git_url: Optional[str]
+    package_id: Optional[str] = None
+    package_name: Optional[str] = None
+    package_version_str: Optional[list[str]] = None
+    package_version: Optional[Version] = None
+    current_project_package_version_str: Optional[str] = None
+    current_project_package_version: Optional[Version] = None
+    current_project_package_version_range_str: Optional[list[str]] = None
+    current_project_package_version_range: Optional[list[Version]] = None
+    require_dbt_version: Optional[list[str]] = None
+    min_upgradeable_version: Optional[str] = None
+    max_upgradeable_version: Optional[str] = None
+    lowest_fusion_compatible_version: Optional[str] = None
+    fusion_compatible_versions: Optional[list[Version]] = None
+    git_url: Optional[str] = None
+    installed_version: Optional[DbtInstalledPackage] = None
     opt_in_prerelease: bool = False
+    fusion_dbt_version: str = "2.0.0"
 
     def __post_init__(self):
         self.parse_package_dict()
-
+        self.fusion_dbt_version_semver = Version.parse(self.fusion_dbt_version)
 
     def parse_package_dict(self):
         if "package" in self.package_dict and type(self.package_dict["package"]) == "str":
@@ -63,6 +66,14 @@ class DbtPackage:
 
     def parse_current_package_version_range(self):
         pass
+
+    def is_dbt_version_fusion_compatible(self, dbt_version_range: list[str]) -> bool:
+        dbt_fusion_version = self.fusion_dbt_version_semver
+        try:
+            compatible_versions: list[bool] = [dbt_fusion_version.match(x) for x in dbt_version_range]
+            return all(compatible_versions)
+        except:
+            return False
 
 
 @dataclass
@@ -113,6 +124,12 @@ class DbtPackageFile:
         else:
             self.package_dependencies[package_name] = package
 
+    def set_installed_package_versions(self, installed_packages: dict[str, DbtInstalledPackage]):
+        for package in installed_packages:
+            if package not in self.package_dependencies:
+                continue
+            self.package_dependencies[package].installed_version
+
 
 def find_package_paths(
     root_dir: Path,
@@ -131,7 +148,7 @@ def find_package_paths(
     )
     yml_files_packages_not_integration_tests = yml_files_packages - yml_files_packages_integration_tests
 
-    return [Path(str(path)) for path in yml_files_packages_not_integration_tests]
+    return [Path(str(path)) for path in yml_files_packages_not_integration_tests if path.name == "dbt_project.yml"]
 
 
 def find_package_yml_files(
@@ -165,3 +182,8 @@ def parse_package_files(package_file_paths: list[Path]) -> list[DbtPackageFile]:
         package_files.append(package_file)
     return package_files
 
+
+def add_package_info_from_installed_packages(root_directory: Path, package_file: DbtPackageFile) -> DbtPackageFile:
+    installed_packages: dict[str, DbtInstalledPackage] = get_current_installed_package_versions(root_directory)
+    package_file.set_installed_package_versions(installed_packages)
+    return package_file
