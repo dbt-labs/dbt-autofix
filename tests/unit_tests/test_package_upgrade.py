@@ -1,7 +1,7 @@
 from pprint import pprint
 import tempfile
 from pathlib import Path
-from dbt_autofix.packages.package_upgrade_versions import find_package_yml_files, parse_package_files, DbtPackageFile
+from dbt_autofix.packages.package_upgrade_versions import find_package_yml_files, parse_package_files, DbtPackageFile, find_package_paths
 
 import pytest
 
@@ -112,6 +112,9 @@ models:
 
         yield project_dir
 
+
+def test_find_package_paths(temp_project_dir: Path):
+    print(find_package_paths(temp_project_dir))
 
 def test_find_package_files(temp_project_dir: Path):
     package_files = find_package_yml_files(temp_project_dir)

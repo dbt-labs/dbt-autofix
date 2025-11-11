@@ -48,9 +48,9 @@ class DbtPackage:
     def parse_package_dict(self):
         if "package" in self.package_dict and type(self.package_dict["package"]) == "str":
             self.package_name = str(self.package_dict["package"])
-        if "version" in self.package_dict
+        if "version" in self.package_dict:
             if type(self.package_dict["version"] == "list"):
-                self.package_version_str = [str(version) for version in self.package_dict["version"]
+                self.package_version_str = [str(version) for version in self.package_dict["version"]]
             elif type(self.package_dict["version"] == "str"):
                 self.package_version_str = [str(self.package_dict["version"])]
         if "git" in self.package_dict:
