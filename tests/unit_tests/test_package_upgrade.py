@@ -1,7 +1,7 @@
 from pprint import pprint
 import tempfile
 from pathlib import Path
-from dbt_autofix.packages.DbtPackageFile import DbtPackageFile
+from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.packages.package_upgrade_versions import find_package_yml_files, parse_package_files, find_package_paths
 
 import pytest

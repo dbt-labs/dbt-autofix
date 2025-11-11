@@ -1,30 +1,34 @@
 # borrowed from dbt-core (core/dbt/clients/registry.py)
+import collections.abc
 import functools
 import os
 from typing import Any, Dict, List, Optional
 
 import requests
 
-from dbt import deprecations
-from dbt.events.types import (
-    RegistryIndexProgressGETRequest,
-    RegistryIndexProgressGETResponse,
-    RegistryProgressGETRequest,
-    RegistryProgressGETResponse,
-    RegistryResponseExtraNestedKeys,
-    RegistryResponseMissingNestedKeys,
-    RegistryResponseMissingTopKeys,
-    RegistryResponseUnexpectedType,
-)
-from dbt.utils import memoized
+# from dbt import deprecations
+# from dbt.events.types import (
+#     RegistryIndexProgressGETRequest,
+#     RegistryIndexProgressGETResponse,
+#     RegistryProgressGETRequest,
+#     RegistryProgressGETResponse,
+#     RegistryResponseExtraNestedKeys,
+#     RegistryResponseMissingNestedKeys,
+#     RegistryResponseMissingTopKeys,
+#     RegistryResponseUnexpectedType,
+# )
+# from dbt.utils import memoized
 from dbt_common import semver
-from dbt_common.events.functions import fire_event
+# from dbt_common.events.functions import fire_event
 from dbt_common.utils.connection import connection_exception_retry
+from rich.console import Console
 
 if os.getenv("DBT_PACKAGE_HUB_URL"):
     DEFAULT_REGISTRY_BASE_URL = os.getenv("DBT_PACKAGE_HUB_URL")
 else:
     DEFAULT_REGISTRY_BASE_URL = "https://hub.getdbt.com/"
+
+console = Console()
 
 
 def _get_url(name, registry_base_url=None):
@@ -44,8 +48,9 @@ def _check_package_redirect(package_name: str, response: Dict[str, Any]) -> None
         use_namespace = response.get("redirectnamespace") or response["namespace"]
         use_name = response.get("redirectname") or response["name"]
 
-        new_nwo = f"{use_namespace}/{use_name}"
-        deprecations.warn("package-redirect", old_name=package_name, new_name=new_nwo)
+        new_name = f"{use_namespace}/{use_name}"
+        # deprecations.warn("package-redirect", old_name=package_name, new_name=new_nwo)
+        console.log(f"Package name has changed from {package_name} to {new_name}")
 
 
 def _get_package_with_retries(
@@ -59,10 +64,10 @@ def _get_package_with_retries(
 
 def _get(package_name, registry_base_url=None):
     url = _get_url(package_name, registry_base_url)
-    fire_event(RegistryProgressGETRequest(url=url))
+    # fire_event(RegistryProgressGETRequest(url=url))
     # all exceptions from requests get caught in the retry logic so no need to wrap this here
     resp = requests.get(url, timeout=30)
-    fire_event(RegistryProgressGETResponse(url=url, resp_code=resp.status_code))
+    # fire_event(RegistryProgressGETResponse(url=url, resp_code=resp.status_code))
     resp.raise_for_status()
 
     # The response should always be a dictionary.  Anything else is unexpected, raise error.
@@ -77,7 +82,7 @@ def _get(package_name, registry_base_url=None):
         error_msg = (
             f"Request error: Expected a response type of <dict> but got {type(response)} instead"
         )
-        fire_event(RegistryResponseUnexpectedType(response=response))
+        # fire_event(RegistryResponseUnexpectedType(response=response))
         raise requests.exceptions.ContentDecodingError(error_msg, response=resp)
 
     # check for expected top level keys
@@ -87,7 +92,7 @@ def _get(package_name, registry_base_url=None):
             f"Request error: Expected the response to contain keys {expected_keys} "
             f"but is missing {expected_keys.difference(set(response))}"
         )
-        fire_event(RegistryResponseMissingTopKeys(response=response))
+        # fire_event(RegistryResponseMissingTopKeys(response=response))
         raise requests.exceptions.ContentDecodingError(error_msg, response=resp)
 
     # check for the keys we need nested under each version
@@ -98,7 +103,7 @@ def _get(package_name, registry_base_url=None):
             "Request error: Expected the response for the version to contain keys "
             f"{expected_version_keys} but is missing {expected_version_keys.difference(all_keys)}"
         )
-        fire_event(RegistryResponseMissingNestedKeys(response=response))
+        # fire_event(RegistryResponseMissingNestedKeys(response=response))
         raise requests.exceptions.ContentDecodingError(error_msg, response=resp)
 
     # all version responses should contain identical keys.
@@ -108,11 +113,42 @@ def _get(package_name, registry_base_url=None):
             "Request error: Keys for all versions do not match.  Found extra key(s) "
             f"of {has_extra_keys}."
         )
-        fire_event(RegistryResponseExtraNestedKeys(response=response))
+        # fire_event(RegistryResponseExtraNestedKeys(response=response))
         raise requests.exceptions.ContentDecodingError(error_msg, response=resp)
 
     return response
 
+
+class memoized:
+    """Decorator. Caches a function's return value each time it is called. If
+    called later with the same arguments, the cached value is returned (not
+    reevaluated).
+
+    Taken from https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize"""
+
+    def __init__(self, func) -> None:
+        self.func = func
+        self.cache: Dict[Any, Any] = {}
+
+    def __call__(self, *args):
+        if not isinstance(args, collections.abc.Hashable):
+            # uncacheable. a list, for instance.
+            # better to not cache than blow up.
+            return self.func(*args) # type: ignore
+        if args in self.cache:
+            return self.cache[args]
+        value = self.func(*args)
+        self.cache[args] = value
+        return value
+
+    def __repr__(self):
+        """Return the function's docstring."""
+        return self.func.__doc__
+
+    def __get__(self, obj, objtype):
+        """Support instance methods."""
+        return functools.partial(self.__call__, obj)
+    
 
 _get_cached = memoized(_get_package_with_retries)
 
@@ -164,10 +200,10 @@ def get_compatible_versions(package_name, dbt_version, should_version_check) -> 
 
 def _get_index(registry_base_url=None):
     url = _get_url("index", registry_base_url)
-    fire_event(RegistryIndexProgressGETRequest(url=url))
+    # fire_event(RegistryIndexProgressGETRequest(url=url))
     # all exceptions from requests get caught in the retry logic so no need to wrap this here
     resp = requests.get(url, timeout=30)
-    fire_event(RegistryIndexProgressGETResponse(url=url, resp_code=resp.status_code))
+    # fire_event(RegistryIndexProgressGETResponse(url=url, resp_code=resp.status_code))
     resp.raise_for_status()
 
     # The response should be a list.  Anything else is unexpected, raise an error.
