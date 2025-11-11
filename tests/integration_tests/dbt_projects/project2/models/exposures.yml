@@ -1,8 +1,0 @@
-exposures:
-  - name: my_exposure
-    owner:
-      name: owner_name
-    tags:
-      - my-tag
-    meta:
-      meta_key: meta_value
