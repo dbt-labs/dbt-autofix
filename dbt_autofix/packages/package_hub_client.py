@@ -19,6 +19,7 @@ import requests
 # )
 # from dbt.utils import memoized
 from dbt_common import semver
+
 # from dbt_common.events.functions import fire_event
 from dbt_common.utils.connection import connection_exception_retry
 from rich.console import Console
@@ -53,9 +54,7 @@ def _check_package_redirect(package_name: str, response: Dict[str, Any]) -> None
         console.log(f"Package name has changed from {package_name} to {new_name}")
 
 
-def _get_package_with_retries(
-    package_name: str, registry_base_url: Optional[str] = None
-) -> Dict[str, Any]:
+def _get_package_with_retries(package_name: str, registry_base_url: Optional[str] = None) -> Dict[str, Any]:
     get_fn = functools.partial(_get, package_name, registry_base_url)
     response: Dict[str, Any] = connection_exception_retry(get_fn, 5)
     _check_package_redirect(package_name, response)
@@ -79,9 +78,7 @@ def _get(package_name, registry_base_url=None):
     response = resp.json()
 
     if not isinstance(response, dict):  # This will also catch Nonetype
-        error_msg = (
-            f"Request error: Expected a response type of <dict> but got {type(response)} instead"
-        )
+        error_msg = f"Request error: Expected a response type of <dict> but got {type(response)} instead"
         # fire_event(RegistryResponseUnexpectedType(response=response))
         raise requests.exceptions.ContentDecodingError(error_msg, response=resp)
 
@@ -109,10 +106,7 @@ def _get(package_name, registry_base_url=None):
     # all version responses should contain identical keys.
     has_extra_keys = set().difference(*(response["versions"][d] for d in response["versions"]))
     if has_extra_keys:
-        error_msg = (
-            "Request error: Keys for all versions do not match.  Found extra key(s) "
-            f"of {has_extra_keys}."
-        )
+        error_msg = f"Request error: Keys for all versions do not match.  Found extra key(s) of {has_extra_keys}."
         # fire_event(RegistryResponseExtraNestedKeys(response=response))
         raise requests.exceptions.ContentDecodingError(error_msg, response=resp)
 
@@ -134,7 +128,7 @@ class memoized:
         if not isinstance(args, collections.abc.Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
-            return self.func(*args) # type: ignore
+            return self.func(*args)  # type: ignore
         if args in self.cache:
             return self.cache[args]
         value = self.func(*args)
@@ -148,7 +142,7 @@ class memoized:
     def __get__(self, obj, objtype):
         """Support instance methods."""
         return functools.partial(self.__call__, obj)
-    
+
 
 _get_cached = memoized(_get_package_with_retries)
 
@@ -174,9 +168,7 @@ def is_compatible_version(package_spec, dbt_version) -> bool:
         # determine whether dbt_version satisfies this package's require-dbt-version config
         if not isinstance(require_dbt_version, list):
             require_dbt_version = [require_dbt_version]
-        supported_versions = [
-            semver.VersionSpecifier.from_version_string(v) for v in require_dbt_version
-        ]
+        supported_versions = [semver.VersionSpecifier.from_version_string(v) for v in require_dbt_version]
         return semver.versions_compatible(dbt_version, *supported_versions)
 
 
@@ -191,9 +183,7 @@ def get_compatible_versions(package_name, dbt_version, should_version_check) -> 
     # otherwise, only return versions that are compatible with the installed version of dbt-core
     else:
         compatible_versions = [
-            pkg_version
-            for pkg_version, info in response.items()
-            if is_compatible_version(info, dbt_version)
+            pkg_version for pkg_version, info in response.items() if is_compatible_version(info, dbt_version)
         ]
         return compatible_versions
 
@@ -212,9 +202,7 @@ def _get_index(registry_base_url=None):
     response = resp.json()
 
     if not isinstance(response, list):  # This will also catch Nonetype
-        error_msg = (
-            f"Request error: The response type of {type(response)} is not valid: {resp.text}"
-        )
+        error_msg = f"Request error: The response type of {type(response)} is not valid: {resp.text}"
         raise requests.exceptions.ContentDecodingError(error_msg, response=resp)
 
     return response

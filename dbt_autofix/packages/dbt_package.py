@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 @dataclass
 class DbtPackage:
-    package_dict: dict[str, Union[str,list[str]]]
+    package_dict: dict[str, Union[str, list[str]]]
     package_id: Optional[str] = None
     package_name: Optional[str] = None
     package_version_str: Optional[list[str]] = None

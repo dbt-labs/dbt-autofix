@@ -65,9 +65,7 @@ class RegistryPinnedPackage(RegistryPackageMixin, PinnedPackage):
 
 
 class RegistryUnpinnedPackage(RegistryPackageMixin, UnpinnedPackage[RegistryPinnedPackage]):
-    def __init__(
-        self, package: str, versions: List[semver.VersionSpecifier], install_prerelease: bool
-    ) -> None:
+    def __init__(self, package: str, versions: List[semver.VersionSpecifier], install_prerelease: bool) -> None:
         super().__init__(package)
         self.versions = versions
         self.install_prerelease = install_prerelease
@@ -105,9 +103,7 @@ class RegistryUnpinnedPackage(RegistryPackageMixin, UnpinnedPackage[RegistryPinn
         flags = get_flags()
         should_version_check = bool(flags.VERSION_CHECK)
         dbt_version = get_installed_version()
-        compatible_versions = registry.get_compatible_versions(
-            self.package, dbt_version, should_version_check
-        )
+        compatible_versions = registry.get_compatible_versions(self.package, dbt_version, should_version_check)
         prerelease_version_specified = any(bool(version.prerelease) for version in self.versions)
         installable = semver.filter_installable(
             compatible_versions, self.install_prerelease or prerelease_version_specified
@@ -122,10 +118,6 @@ class RegistryUnpinnedPackage(RegistryPackageMixin, UnpinnedPackage[RegistryPinn
             target = None
         if not target:
             # raise an exception if no installable target version is found
-            raise PackageVersionNotFoundError(
-                self.package, range_, installable, should_version_check
-            )
+            raise PackageVersionNotFoundError(self.package, range_, installable, should_version_check)
         latest_compatible = installable[-1]
-        return RegistryPinnedPackage(
-            package=self.package, version=target, version_latest=latest_compatible
-        )
+        return RegistryPinnedPackage(package=self.package, version=target, version_latest=latest_compatible)

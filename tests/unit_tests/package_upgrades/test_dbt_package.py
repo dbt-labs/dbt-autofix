@@ -5,6 +5,7 @@ from dbt_autofix.packages.dbt_package import DbtPackage
 
 import pytest
 
+
 @pytest.fixture
 def temp_project_dir():
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -28,7 +29,7 @@ models:
   - name: model2
     description: "Second model"
 """)
-        
+
         # Create package YAML file
         project_dir.joinpath("packages.yml").write_text("""
 packages:
@@ -50,7 +51,7 @@ packages:
   - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
     revision: main # use a branch or a tag name
 """)
-        
+
         # Create package lock file
         project_dir.joinpath("package-lock.yml").write_text("""
 packages:
@@ -112,6 +113,7 @@ models:
 
         yield project_dir
 
+
 @pytest.mark.parametrize(
     "version_range,expected_result",
     [
@@ -127,7 +129,7 @@ models:
             [">=2.0.0"],
             True,
         ),
-    ]
+    ],
 )
 def test_fusion_compatible_dbt_version_ranges(version_range: list[str], expected_result: bool):
     package = DbtPackage(package_dict={"package": "test_package"})

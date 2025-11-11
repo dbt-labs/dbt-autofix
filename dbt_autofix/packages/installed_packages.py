@@ -35,6 +35,7 @@ class DbtInstalledPackage:
     version: str
     require_dbt_version: list[str]
 
+
 def parse_package_info_from_package_dbt_project_yml(package_project_yml_path: Path) -> Optional[DbtInstalledPackage]:
     if package_project_yml_path.name != "dbt_project.yml":
         console.log("File must be dbt_project.yml")
@@ -58,13 +59,13 @@ def parse_package_info_from_package_dbt_project_yml(package_project_yml_path: Pa
     else:
         console.log("Package must contain name")
         return
-    
+
     if "version" in parsed_package_file:
         version = str(parsed_package_file["version"])
     else:
         console.log("Package must contain version")
         return
-    
+
     if "require-dbt-version" in parsed_package_file:
         if type(parsed_package_file["require-dbt-version"]) == "list":
             require_dbt_version = [str(key) for key in parsed_package_file["require-dbt-version"]]
@@ -72,9 +73,8 @@ def parse_package_info_from_package_dbt_project_yml(package_project_yml_path: Pa
             require_dbt_version = [str(parsed_package_file["require-dbt-version"])]
     else:
         require_dbt_version = []
-    
-    return DbtInstalledPackage(package_name=package_name, version=version, require_dbt_version=require_dbt_version)
 
+    return DbtInstalledPackage(package_name=package_name, version=version, require_dbt_version=require_dbt_version)
 
 
 def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtInstalledPackage]:

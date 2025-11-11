@@ -7,7 +7,12 @@ import yamllint.linter
 import yamllint.config
 from rich.console import Console
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_autofix.packages.installed_packages import DbtInstalledPackage, find_package_paths, parse_package_info_from_package_dbt_project_yml, get_current_installed_package_versions
+from dbt_autofix.packages.installed_packages import (
+    DbtInstalledPackage,
+    find_package_paths,
+    parse_package_info_from_package_dbt_project_yml,
+    get_current_installed_package_versions,
+)
 
 console = Console()
 
@@ -18,7 +23,8 @@ rules:
 
 yaml_config = yamllint.config.YamlLintConfig(config)
 
-VALID_PACKAGE_YML_NAMES: set[str] = set(['packages.yml', 'dependencies.yml'])
+VALID_PACKAGE_YML_NAMES: set[str] = set(["packages.yml", "dependencies.yml"])
+
 
 def find_package_paths(
     root_dir: Path,
@@ -47,11 +53,10 @@ def find_package_yml_files(
 
     package_yml_files = []
 
-
     for yml_file in yml_files:
         if yml_file.name in VALID_PACKAGE_YML_NAMES:
             package_yml_files.append(yml_file)
-    
+
     if len(package_yml_files) == 0:
         console.log("No package YML files found")
     return package_yml_files
@@ -60,7 +65,7 @@ def find_package_yml_files(
 def parse_package_files(package_file_paths: list[Path]) -> list[DbtPackageFile]:
     if package_file_paths == []:
         return []
-    
+
     package_files: list[DbtPackageFile] = []
     for path in package_file_paths:
         console.log(f"package path: {path}")

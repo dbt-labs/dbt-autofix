@@ -2,9 +2,14 @@ from pprint import pprint
 import tempfile
 from pathlib import Path
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_autofix.packages.package_upgrade_versions import find_package_yml_files, parse_package_files, find_package_paths
+from dbt_autofix.packages.package_upgrade_versions import (
+    find_package_yml_files,
+    parse_package_files,
+    find_package_paths,
+)
 
 import pytest
+
 
 @pytest.fixture
 def temp_project_dir():
@@ -29,7 +34,7 @@ models:
   - name: model2
     description: "Second model"
 """)
-        
+
         # Create package YAML file
         project_dir.joinpath("packages.yml").write_text("""
 packages:
@@ -51,7 +56,7 @@ packages:
   - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
     revision: main # use a branch or a tag name
 """)
-        
+
         # Create package lock file
         project_dir.joinpath("package-lock.yml").write_text("""
 packages:
@@ -117,6 +122,7 @@ models:
 def test_find_package_paths(temp_project_dir: Path):
     print(find_package_paths(temp_project_dir))
 
+
 def test_find_package_files(temp_project_dir: Path):
     package_files = find_package_yml_files(temp_project_dir)
     assert len(package_files) == 1
@@ -131,7 +137,9 @@ def test_parse_file_path_to_string(temp_project_dir: Path):
     assert package_file.file_path is not None
     assert package_file.yml_str != ""
     assert len(package_file.yml_str) > 0
-    assert package_file.yml_str == """
+    assert (
+        package_file.yml_str
+        == """
 packages:
   - package: dbt-labs/dbt_external_tables
     version: [">=0.8.0", "<0.9.0"]
@@ -151,6 +159,7 @@ packages:
   - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
     revision: main # use a branch or a tag name
 """
+    )
 
 
 def test_parse_package_string_to_dict(temp_project_dir: Path):
@@ -161,4 +170,3 @@ def test_parse_package_string_to_dict(temp_project_dir: Path):
     pprint(package_file.yml_dict)
 
     assert len(package_files) == 1
-
