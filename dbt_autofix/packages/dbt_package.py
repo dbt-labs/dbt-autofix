@@ -1,12 +1,11 @@
 from typing import Optional, Union
 from dbt_autofix.packages.installed_packages import DbtInstalledPackage
-
-
 from semver.version import Version
-
-
 from dataclasses import dataclass
+from rich.console import Console
 
+
+console = Console()
 
 @dataclass
 class DbtPackage:

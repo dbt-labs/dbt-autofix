@@ -1,12 +1,14 @@
 from typing import Optional, Union
 from dbt_autofix.packages.dbt_package import DbtPackage
 from dbt_autofix.packages.installed_packages import DbtInstalledPackage
-from dbt_autofix.packages.package_upgrade_versions import console
 from dbt_autofix.refactors.yml import DbtYAML
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
+from rich.console import Console
 
+
+console = Console()
 
 @dataclass
 class DbtPackageFile:

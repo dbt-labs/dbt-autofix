@@ -1,27 +1,13 @@
-from collections import defaultdict
 from pathlib import Path
-from typing import Any, Optional, Union
 import yaml
-import yamllint
-import yamllint.linter
-import yamllint.config
 from rich.console import Console
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.packages.installed_packages import (
     DbtInstalledPackage,
-    find_package_paths,
-    parse_package_info_from_package_dbt_project_yml,
     get_current_installed_package_versions,
 )
 
 console = Console()
-
-config = """
-rules:
-  key-duplicates: enable
-"""
-
-yaml_config = yamllint.config.YamlLintConfig(config)
 
 VALID_PACKAGE_YML_NAMES: set[str] = set(["packages.yml", "dependencies.yml"])
 
