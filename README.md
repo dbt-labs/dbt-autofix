@@ -83,6 +83,7 @@ uv tool install --from git+https://github.com/dbt-labs/dbt-autofix.git dbt-autof
   - add `--json-schema-version v2.0.0-beta.4` to get the JSON schema from a specific Fusion release (by default we pick the latest)
   - add `--select <path>` to only select files in a given path (by default the tool will look at all files of the dbt project)
   - add `--include-packages` to also autofix the packages installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with Fusion.
+  - add `--incude-private-packages` to autofix just the _private_ packages installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with Fusion.
   - add `--behavior-change` to run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
   - add `--all` to run all of the fixes possible - both fixes that potentially require behavior changes as well as not. Additionally, `--all` will apply fixes to as many files as possible, even if some files are unfixable (e.g. due to invalid yaml syntax).
 

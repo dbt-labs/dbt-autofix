@@ -5,7 +5,7 @@ import yamllint.linter
 from rich.console import Console
 from yaml import safe_load
 
-from dbt_autofix.hub_packages import fetch_hub_packages, should_skip_package
+from dbt_autofix.hub_packages import should_skip_package
 from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_flip_behavior_flags,
     changeset_dbt_project_flip_test_arguments_behavior_flag,
@@ -419,15 +419,10 @@ def get_dbt_files_paths(
         packages_dir = root_path / packages_path
 
         if packages_dir.exists():
-            hub_packages = None
-            if include_private_packages:
-                # Fetch hub packages for filtering
-                hub_packages = fetch_hub_packages()
-
             for package_folder in packages_dir.iterdir():
                 if package_folder.is_dir():
                     # Check if we should skip this package based on hub status
-                    if should_skip_package(package_folder, hub_packages, include_private_packages):
+                    if should_skip_package(package_folder, include_private_packages):
                         continue
 
                     package_dbt_project = package_folder / "dbt_project.yml"
@@ -475,14 +470,11 @@ def get_dbt_roots_paths(
     dbt_roots_paths = {str(root_path)}
     dbt_packages_path = root_path / "dbt_packages"
 
-    if include_packages and dbt_packages_path.exists() and dbt_packages_path.is_dir():
-        # Fetch hub packages for filtering
-        hub_packages = fetch_hub_packages()
-
+    if (include_packages or include_private_packages) and dbt_packages_path.exists() and dbt_packages_path.is_dir():
         for package_folder in dbt_packages_path.iterdir():
             if package_folder.is_dir():
                 # Check if we should skip this package based on hub status
-                if should_skip_package(package_folder, hub_packages, include_private_packages):
+                if should_skip_package(package_folder, include_private_packages):
                     continue
 
                 dbt_roots_paths.add(str(package_folder))
