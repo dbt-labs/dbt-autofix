@@ -1,7 +1,7 @@
 from pprint import pprint
 import tempfile
 from pathlib import Path
-from dbt_autofix.packages.dbt_package_file import DbtPackageFile
+from dbt_autofix.packages.dbt_package_file import DbtPackageFile, load_yaml_from_packages_yml, parse_package_dependencies_from_yml
 from dbt_autofix.packages.package_upgrade_versions import (
     find_package_yml_files,
     find_package_paths,
@@ -234,7 +234,7 @@ def test_find_package_paths(temp_project_dir_with_packages_yml: Path):
     print(find_package_paths(temp_project_dir_with_packages_yml))
 
 
-def test_find_package_files_project_yml(temp_project_dir_with_packages_yml: Path):
+def test_find_package_files_package_yml(temp_project_dir_with_packages_yml: Path):
     package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
     assert len(package_files) == 1
     assert package_files[0].name == "packages.yml"
@@ -246,6 +246,16 @@ def test_find_package_files_depedencies_yml(temp_project_dir_with_dependencies_y
     assert len(package_files) == 1
     assert package_files[0].name == "dependencies.yml"
     assert package_files[0] == Path(f"{temp_project_dir_with_dependencies_yml}/dependencies.yml")
+
+
+def test_find_package_dependencies_yml(temp_project_dir_with_packages_yml: Path):
+    package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
+    package_yml = load_yaml_from_packages_yml(package_files[0])
+    package_file = parse_package_dependencies_from_yml(package_yml)
+    assert type(package_file) == DbtPackageFile
+    assert package_file.package_dependencies
+    assert package_file.file_path == package_files[0]
+    assert len(package_file.package_dependencies) == 6
 
 
 def test_parse_file_path_to_string(temp_project_dir_with_packages_yml: Path):

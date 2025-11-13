@@ -133,11 +133,21 @@ class DbtPackageFile:
             # self.package_dependencies[package].installed_version
 
 
+def parse_package_dependencies_from_yml(parsed_yml: dict[Any, Any]) -> Optional[DbtPackageFile]:
+    if "packages" not in parsed_yml:
+        console.log("YML must contain packages key")
+        return
+    package_dict: dict[Any, Any] = parsed_yml["packages"]
+    for package in package_dict:
+        print(package)
+
+# I think the parsing should be the same for packages.yml and dependencies.yml,
+# but I'm making separate functions in case they need to be customized
 def parse_package_dependencies_from_packages_yml(parsed_packages_yml: dict[Any, Any]) -> Optional[DbtPackageFile]:
-    return
+    return parse_package_dependencies_from_yml(parsed_packages_yml)
 
 def parse_package_dependencies_from_dependencies_yml(parsed_dependencies_yml: dict[Any, Any]) -> Optional[DbtPackageFile]:
-    return
+    return parse_package_dependencies_from_yml(parsed_dependencies_yml)
 
 # def add_package_info_from_installed_packages(root_directory: Path, package_file: DbtPackageFile) -> DbtPackageFile:
 #     installed_packages: dict[str, DbtInstalledPackage] = get_current_installed_package_versions(root_directory)
