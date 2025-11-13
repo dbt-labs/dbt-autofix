@@ -132,5 +132,5 @@ models:
     ],
 )
 def test_fusion_compatible_dbt_version_ranges(version_range: list[str], expected_result: bool):
-    package = DbtPackage(package_dict={"package": "test_package"})
+    package = DbtPackage(package_name="test_package")
     assert package.is_dbt_version_fusion_compatible(version_range) == expected_result
