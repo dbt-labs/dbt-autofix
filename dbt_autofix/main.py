@@ -1,8 +1,8 @@
+import json
+from importlib.metadata import version
 from pathlib import Path
 from typing import List, Optional
 
-from importlib.metadata import version
-import json
 import typer
 from rich import print
 from rich.console import Console
@@ -13,7 +13,6 @@ from dbt_autofix.duplicate_keys import find_duplicate_keys, print_duplicate_keys
 from dbt_autofix.fields_properties_configs import print_matrix
 from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
-from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 console = Console()
 error_console = Console(stderr=True)
@@ -53,7 +52,18 @@ def refactor_yml(  # noqa: PLR0913
         Optional[List[str]], typer.Option("--select", "-s", help="Select specific paths to refactor")
     ] = None,
     include_packages: Annotated[
-        bool, typer.Option("--include-packages", "-i", help="Include packages in the refactoring")
+        bool,
+        typer.Option(
+            "--include-packages", "-i", help="Include all packages (private or public/hub) in the refactoring"
+        ),
+    ] = False,
+    include_private_packages: Annotated[
+        bool,
+        typer.Option(
+            "--include-private-packages",
+            "-ip",
+            help="Include only private packages (non-hub packages) in the refactoring",
+        ),
     ] = False,
     behavior_change: Annotated[
         bool, typer.Option("--behavior-change", help="Run fixes to deprecations that may require a behavior change")
@@ -78,6 +88,7 @@ def refactor_yml(  # noqa: PLR0913
         exclude_dbt_project_keys,
         select,
         include_packages,
+        include_private_packages,
         behavior_change,
         all,
         semantic_layer,

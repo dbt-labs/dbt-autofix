@@ -1,52 +1,51 @@
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Any, Callable
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
+import yamllint.linter
 from rich.console import Console
 from yaml import safe_load
-import yamllint.linter
 
-from dbt_autofix.semantic_definitions import SemanticDefinitions
-from dbt_autofix.retrieve_schemas import (
-    SchemaSpecs,
-)
-from dbt_autofix.refactors.yml import yaml_config, DbtYAML
-from dbt_autofix.refactors.results import (
-    YMLRefactorResult,
-    YMLRuleRefactorResult,
-    SQLRefactorResult,
-    DbtDeprecationRefactor,
-)
-from dbt_autofix.refactors.changesets.dbt_schema_yml import (
-    changeset_remove_tab_only_lines,
-    changeset_remove_indentation_version,
-    changeset_remove_extra_tabs,
-    changeset_refactor_yml_str,
-    changeset_owner_properties_yml_str,
-    changeset_replace_non_alpha_underscores_in_name_values,
-    changeset_replace_fancy_quotes,
-)
+from dbt_autofix.hub_packages import fetch_hub_packages, should_skip_package
 from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_flip_behavior_flags,
     changeset_dbt_project_flip_test_arguments_behavior_flag,
-    changeset_dbt_project_remove_deprecated_config,
     changeset_dbt_project_prefix_plus_for_config,
+    changeset_dbt_project_remove_deprecated_config,
     changeset_fix_space_after_plus,
+)
+from dbt_autofix.refactors.changesets.dbt_schema_yml import (
+    changeset_owner_properties_yml_str,
+    changeset_refactor_yml_str,
+    changeset_remove_extra_tabs,
+    changeset_remove_indentation_version,
+    changeset_remove_tab_only_lines,
+    changeset_replace_fancy_quotes,
+    changeset_replace_non_alpha_underscores_in_name_values,
 )
 from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
     changeset_add_metrics_for_measures,
-    changeset_merge_semantic_models_with_models,
     changeset_delete_top_level_semantic_models,
-    changeset_merge_simple_metrics_with_models,
     changeset_merge_complex_metrics_with_models,
+    changeset_merge_semantic_models_with_models,
+    changeset_merge_simple_metrics_with_models,
     changeset_migrate_or_delete_top_level_metrics,
 )
-
 from dbt_autofix.refactors.changesets.dbt_sql import (
-    rename_sql_file_names_with_spaces,
-    remove_unmatched_endings,
     refactor_custom_configs_to_meta_sql,
-    move_custom_config_access_to_meta_sql,
+    remove_unmatched_endings,
+    rename_sql_file_names_with_spaces,
 )
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    SQLRefactorResult,
+    YMLRefactorResult,
+    YMLRuleRefactorResult,
+)
+from dbt_autofix.refactors.yml import DbtYAML, yaml_config
+from dbt_autofix.retrieve_schemas import (
+    SchemaSpecs,
+)
+from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 error_console = Console(stderr=True)
 
@@ -158,8 +157,10 @@ def process_yaml_files_except_dbt_project(
 
                 except Exception as e:
                     if all:
-                        error_console.print(f"Warning: Could not apply fixes to {yml_file}: {e.__class__.__name__}: {e}", style="yellow")
-                    else: 
+                        error_console.print(
+                            f"Warning: Could not apply fixes to {yml_file}: {e.__class__.__name__}: {e}", style="yellow"
+                        )
+                    else:
                         error_console.print(
                             f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
                         )
@@ -320,7 +321,9 @@ def process_sql_files(
                 )
             except Exception as e:
                 if all:
-                    error_console.print(f"Warning: Could not apply fixes to {sql_file}: {e.__class__.__name__}: {e}", style="yellow")
+                    error_console.print(
+                        f"Warning: Could not apply fixes to {sql_file}: {e.__class__.__name__}: {e}", style="yellow"
+                    )
                 else:
                     error_console.print(f"Error processing {sql_file}: {e.__class__.__name__}: {e}", style="bold red")
 
@@ -360,12 +363,15 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
     )
 
 
-def get_dbt_files_paths(root_path: Path, include_packages: bool = False) -> Dict[str, str]:
+def get_dbt_files_paths(
+    root_path: Path, include_packages: bool = False, include_private_packages: bool = False
+) -> Dict[str, str]:
     """Get model and macro paths from dbt_project.yml
 
     Args:
-        path: Project root path
+        root_path: Project root path
         include_packages: Whether to include packages in the refactoring
+        include_private_packages: Whether to include private packages (non-hub packages)
 
     Returns:
         A list of paths to the models, macros, tests, analyses, and snapshots
@@ -408,13 +414,22 @@ def get_dbt_files_paths(root_path: Path, include_packages: bool = False) -> Dict
         for path in paths:
             path_to_node_type[str(path)] = key_to_node_type[key]
 
-    if include_packages:
+    if include_packages or include_private_packages:
         packages_path = project_config.get("packages-paths", "dbt_packages")
         packages_dir = root_path / packages_path
 
         if packages_dir.exists():
+            hub_packages = None
+            if include_private_packages:
+                # Fetch hub packages for filtering
+                hub_packages = fetch_hub_packages()
+
             for package_folder in packages_dir.iterdir():
                 if package_folder.is_dir():
+                    # Check if we should skip this package based on hub status
+                    if should_skip_package(package_folder, hub_packages, include_private_packages):
+                        continue
+
                     package_dbt_project = package_folder / "dbt_project.yml"
                     if package_dbt_project.exists():
                         with open(package_dbt_project, "r") as f:
@@ -444,11 +459,15 @@ def get_dbt_files_paths(root_path: Path, include_packages: bool = False) -> Dict
     return path_to_node_type
 
 
-def get_dbt_roots_paths(root_path: Path, include_packages: bool = False) -> Set[str]:
+def get_dbt_roots_paths(
+    root_path: Path, include_packages: bool = False, include_private_packages: bool = False
+) -> Set[str]:
     """Get all dbt root paths, the main one and the ones under dbt_packages directory if we want to include packages.
 
     Args:
         root_path: Project root path
+        include_packages: Whether to include packages
+        include_private_packages: Whether to include private packages (non-hub packages)
 
     Returns:
         Set of package folder paths as strings
@@ -457,8 +476,15 @@ def get_dbt_roots_paths(root_path: Path, include_packages: bool = False) -> Set[
     dbt_packages_path = root_path / "dbt_packages"
 
     if include_packages and dbt_packages_path.exists() and dbt_packages_path.is_dir():
+        # Fetch hub packages for filtering
+        hub_packages = fetch_hub_packages()
+
         for package_folder in dbt_packages_path.iterdir():
             if package_folder.is_dir():
+                # Check if we should skip this package based on hub status
+                if should_skip_package(package_folder, hub_packages, include_private_packages):
+                    continue
+
                 dbt_roots_paths.add(str(package_folder))
 
     return dbt_roots_paths
@@ -471,6 +497,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     exclude_dbt_project_keys: bool = False,
     select: Optional[List[str]] = None,
     include_packages: bool = False,
+    include_private_packages: bool = False,
     behavior_change: bool = False,
     all: bool = False,
     semantic_layer: bool = False,
@@ -484,6 +511,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
         exclude_dbt_project_keys: Whether to exclude dbt project keys
         select: List of paths to select
         include_packages: Whether to include packages in the refactoring
+        include_private_packages: Whether to include private packages (non-hub packages)
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
         semantic_layer: Whether to run fixes to semantic layer
@@ -494,7 +522,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
         - List of SQL refactor results
     """
     # Get dbt root paths first (doesn't parse dbt_project.yml)
-    dbt_roots_paths = get_dbt_roots_paths(path, include_packages)
+    dbt_roots_paths = get_dbt_roots_paths(path, include_packages, include_private_packages)
 
     # Process dbt_project.yml FIRST before we try to read it for paths
     # This ensures fancy quotes and other issues are fixed before parsing
@@ -510,7 +538,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
                 result.update_yaml_file()
 
     # Now we can safely read dbt_project.yml to get paths
-    dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages)
+    dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages, include_private_packages)
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
     sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
