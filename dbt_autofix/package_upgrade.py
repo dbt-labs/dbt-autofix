@@ -3,6 +3,8 @@ from enum import Enum
 from pathlib import Path
 from rich.console import Console
 
+from dbt_autofix.packages.installed_packages import DbtInstalledPackage, get_current_installed_package_versions
+
 
 console = Console()
 
@@ -43,22 +45,50 @@ class PackageUpgradeResult:
     upgrades: list[PackageVersionUpgradeResult]
     unchanged: list[PackageVersionUpgradeResult]
 
+    def print_to_console(self, json_output: bool = True):
+        # if not self.refactored:
+        #     return
+
+        # if json_output:
+        #     flattened_refactors = []
+        #     for refactor in self.refactors:
+        #         if refactor.refactored:
+        #             flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+
+        #     to_print = {
+        #         "mode": "dry_run" if self.dry_run else "applied",
+        #         "file_path": str(self.file_path),
+        #         "refactors": flattened_refactors,
+        #     }
+        #     print(json.dumps(to_print))  # noqa: T201
+        #     return
+
+        # console.print(
+        #     f"\n{'DRY RUN - NOT APPLIED: ' if self.dry_run else ''}Refactored {self.file_path}:",
+        #     style="green",
+        # )
+        # for refactor in self.refactors:
+        #     if refactor.refactored:
+        #         console.print(f"  {refactor.rule_name}", style="yellow")
+        #         for log in refactor.refactor_logs:
+        #             console.print(f"    {log}")
+        return
 
 
-def generate_package_dependencies():
+def generate_package_dependencies(root_dir: Path) -> dict[str, DbtInstalledPackage]:
     # check `dependencies.yml`
     # check `packages.yml`
-    pass
+    return get_current_installed_package_versions(root_dir)
     
 
 
-def check_for_package_upgrades(package_dependencies):
+def check_for_package_upgrades(package_dependencies: dict[str, DbtInstalledPackage]) -> list[PackageUpgradeResult]:
     # check all packages for upgrades
     # if dry run, write out package upgrades and exit
-    pass
+    return []
 
 
-def upgrade_package_versions(package_dependencies_with_upgrades):
+def upgrade_package_versions(package_dependencies_with_upgrades: list[PackageUpgradeResult], json_output: bool):
     # if package dependencies have upgrades:
     # update dependencies.yml
     # update packages.yml
