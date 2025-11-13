@@ -1,0 +1,6 @@
+name: "project_with_packages"
+version: "1.0"
+require-dbt-version: ">=1.6.0"
+config-version: 2
+
+packages-path: "dbt_packages"

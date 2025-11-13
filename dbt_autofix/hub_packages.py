@@ -16,9 +16,12 @@ def should_skip_package(
         include_private_packages: Whether to include private packages
         
     Returns:
-        True if if the package is a public package and include_private_packages is set
+        True if if the package is a public package and include_private_packages is True
     """
-    return include_private_packages and _is_hub_package(package_path)
+    if include_private_packages:
+        return _is_hub_package(package_path)
+    else:
+        return not _is_hub_package(package_path)
 
 
 def _is_hub_package(package_path: Path) -> bool:
