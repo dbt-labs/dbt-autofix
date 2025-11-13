@@ -3,6 +3,7 @@ from enum import Enum
 from pathlib import Path
 from rich.console import Console
 
+from dbt_autofix.packages.dbt_package import DbtPackage
 from dbt_autofix.packages.installed_packages import DbtInstalledPackage, get_current_installed_package_versions
 
 
@@ -75,14 +76,14 @@ class PackageUpgradeResult:
         return
 
 
-def generate_package_dependencies(root_dir: Path) -> dict[str, DbtInstalledPackage]:
+def generate_package_dependencies(root_dir: Path) -> dict[str, DbtPackage]:
     # check `dependencies.yml`
     # check `packages.yml`
     return get_current_installed_package_versions(root_dir)
     
 
 
-def check_for_package_upgrades(package_dependencies: dict[str, DbtInstalledPackage]) -> list[PackageUpgradeResult]:
+def check_for_package_upgrades(package_dependencies: dict[str, DbtPackage]) -> list[PackageUpgradeResult]:
     # check all packages for upgrades
     # if dry run, write out package upgrades and exit
     return []
