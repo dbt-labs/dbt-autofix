@@ -32,7 +32,10 @@ class DbtPackageVersion:
     require_dbt_version: Optional[VersionRange] = field(init=False)
 
     def __post_init__(self):
-        pass
+        try:
+            self.version = VersionSpecifier.from_version_string(self.package_version_str)
+        except:
+            pass
 
     # def convert_version_range_from_list(self, version_range: list[str]) -> VersionRange:
     #     # version_specifiers = []

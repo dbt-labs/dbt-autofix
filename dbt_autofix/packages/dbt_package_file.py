@@ -1,6 +1,6 @@
 from typing import Any, Optional, Union
 from dbt_autofix.packages.dbt_package import DbtPackage
-from dbt_autofix.packages.dbt_package_version import get_versions
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, get_versions
 from dbt_autofix.packages.installed_packages import DbtInstalledPackage
 from dbt_autofix.refactors.yml import DbtYAML
 from dataclasses import dataclass, field
@@ -123,6 +123,12 @@ class DbtPackageFile:
             else:
                 lookup[package_name] = package_id
         return lookup
+    
+    def set_installed_version_for_package(self, package_id: str, package_version: DbtPackageVersion):
+        return self.package_dependencies[package_id].add_package_version(package_version, installed=True)
+    
+    def add_version_for_package(self, package_id: str, package_version: DbtPackageVersion, installed=False):
+        return self.package_dependencies[package_id].add_package_version(package_version, installed=installed)
 
 
 def parse_package_dependencies_from_yml(parsed_yml: dict[Any, Any], package_file_name: str, package_file_path: Optional[Path]) -> Optional[DbtPackageFile]:

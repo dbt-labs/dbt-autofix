@@ -108,6 +108,8 @@ def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPacka
             console.log("Parsing failed on package")
             continue
         package_name = package_info.package_name
+        if package_name in installed_package_versions:
+            console.log(f"Package name {package_name} already installed")
         installed_package_versions[package_name] = package_info
     return installed_package_versions
 

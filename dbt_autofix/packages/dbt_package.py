@@ -3,6 +3,7 @@ from semver.version import Version
 from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, RawVersion
+from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 
 
 console = Console()
@@ -35,6 +36,7 @@ class DbtPackage:
     tarball: bool = False
     git: bool = False
     project_config_raw_version_specifier: Optional[Any] = None
+    installed_package_version: Optional[VersionSpecifier] = None
 
     def __post_init__(self):
         # self.parse_package_dict()
@@ -66,5 +68,15 @@ class DbtPackage:
             return all(compatible_versions)
         except:
             return False
+    
+    def add_package_version(self, new_package_version: DbtPackageVersion, installed=False) -> bool:
+        if new_package_version.package_version_str in self.package_versions:
+            console.log(f"Package version {new_package_version.package_version_str} already exists in package versions")
+            return False
+        else:
+            self.package_versions[new_package_version.package_version_str] = new_package_version
+        if installed:
+            self.installed_package_version = new_package_version.version
+        return True
         
     # def 
