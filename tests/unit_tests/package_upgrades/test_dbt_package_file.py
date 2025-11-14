@@ -1,7 +1,7 @@
 from pprint import pprint
 import tempfile
 from pathlib import Path
-from dbt_autofix.packages.dbt_package_file import DbtPackageFile, load_yaml_from_packages_yml, parse_package_dependencies_from_yml
+from dbt_autofix.packages.dbt_package_file import DbtPackageFile, load_yaml_from_packages_yml, parse_package_dependencies_from_packages_yml, parse_package_dependencies_from_yml
 from dbt_autofix.packages.package_upgrade_versions import (
     find_package_yml_files,
     find_package_paths,
@@ -251,50 +251,8 @@ def test_find_package_files_depedencies_yml(temp_project_dir_with_dependencies_y
 def test_find_package_dependencies_yml(temp_project_dir_with_packages_yml: Path):
     package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
     package_yml = load_yaml_from_packages_yml(package_files[0])
-    package_file = parse_package_dependencies_from_yml(package_yml)
+    package_file = parse_package_dependencies_from_packages_yml(package_yml, package_files[0])
     assert type(package_file) == DbtPackageFile
     assert package_file.package_dependencies
     assert package_file.file_path == package_files[0]
     assert len(package_file.package_dependencies) == 6
-
-
-def test_parse_file_path_to_string(temp_project_dir_with_packages_yml: Path):
-    package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
-    package_file = DbtPackageFile(file_path=package_files[0])
-    package_file.parse_file_path_to_string()
-    assert package_file.file_path is not None
-    assert package_file.yml_str != ""
-    assert len(package_file.yml_str) > 0
-    assert (
-        package_file.yml_str
-        == """
-packages:
-  - package: dbt-labs/dbt_external_tables
-    version: [">=0.8.0", "<0.9.0"]
-  
-  - package: dbt-labs/dbt_utils
-    version: [">=0.9.0", "<1.0.0"]
-
-  - package: dbt-labs/codegen
-    version: [">=0.8.0", "<0.9.0"]
-
-  - package: dbt-labs/audit_helper
-    version: [">=0.6.0", "<0.7.0"]
-
-  - package: metaplane/dbt_expectations
-    version: [">=0.10.8", "<1.0.0"]
-
-  - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
-    revision: main # use a branch or a tag name
-"""
-    )
-
-
-def test_parse_package_string_to_dict(temp_project_dir_with_packages_yml: Path):
-    package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
-    package_file = DbtPackageFile(file_path=package_files[0])
-    package_file.parse_file_path_to_string()
-    package_file.parse_yml_string_to_dict()
-    pprint(package_file.yml_dict)
-
-    assert len(package_files) == 1

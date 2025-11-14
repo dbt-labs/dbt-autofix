@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from semver.version import Version
 from dataclasses import dataclass, field
 from rich.console import Console
@@ -31,6 +31,10 @@ class DbtPackage:
     opt_in_prerelease: bool = False
     fusion_dbt_version: str = "2.0.0"
     package_versions: dict[str, DbtPackageVersion] = field(default_factory=dict)
+    local: bool = False
+    tarball: bool = False
+    git: bool = False
+    project_config_raw_version_specifier: Optional[Any] = None
 
     def __post_init__(self):
         # self.parse_package_dict()
