@@ -2,8 +2,11 @@ from pprint import pprint
 import tempfile
 from pathlib import Path
 from dbt_autofix.packages.dbt_package_file import (
-    DbtPackageFile, load_yaml_from_packages_yml, parse_package_dependencies_from_packages_yml, parse_package_dependencies_from_yml,
-    find_package_yml_files
+    DbtPackageFile,
+    load_yaml_from_packages_yml,
+    parse_package_dependencies_from_packages_yml,
+    parse_package_dependencies_from_yml,
+    find_package_yml_files,
 )
 
 import pytest
@@ -115,7 +118,6 @@ models:
 """)
 
         yield project_dir
-
 
 
 @pytest.fixture

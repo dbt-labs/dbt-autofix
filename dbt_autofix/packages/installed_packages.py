@@ -10,14 +10,29 @@ from dbt_autofix.refactors.yml import DbtYAML, read_file
 
 console = Console()
 
+# Helper functions to find currently installed packages
+# and construct DbtPackageVersions from the package's dbt_project.yml
+
 
 def find_package_paths(
     root_dir: Path,
 ) -> list[Path]:
+    """
+    Find each installed package's root directory and return the file paths
+    for each package's dbt_project.yml
+    Note that this only returns paths for direct dependencies of the project.
+
+    Args:
+        root_dir (Path): the root directory of the project
+
+    Returns:
+        list[Path]: the file path(s) for all dbt_project.yml files for packages
+    """
     packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
         "packages-install-path", "dbt_packages"
     )
 
+    # we only go one level deep here to avoid parsing the dependencies of dependnecies
     yml_files_packages = set((root_dir / packages_path).glob("*/*.yml")).union(
         set((root_dir / packages_path).glob("*/*.yaml"))
     )
@@ -31,24 +46,21 @@ def find_package_paths(
     return [Path(str(path)) for path in yml_files_packages_not_integration_tests if path.name == "dbt_project.yml"]
 
 
-@dataclass
-class DbtInstalledPackage:
-    package_name: str
-    version: str
-    require_dbt_version: list[str]
-
-
 def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) -> dict[Any, Any]:
+    """
+    Parses a dbt_project.yml file for an installed package into an untyped dict
+
+    Args:
+        package_project_yml_path (Path): the path for the package's dbt_project.yml file
+
+    Returns:
+        dict[Any, Any]: the result produced by the YAML parser
+    """
+    
     if package_project_yml_path.name != "dbt_project.yml":
         console.log("File must be dbt_project.yml")
         return {}
-    # try:
-    #     yml_str = package_project_yml_path.read_text()
-    # except:
-    #     console.log(f"Error when parsing package file {package_project_yml_path}")
-    #     return
     try:
-        # parsed_package_file = DbtYAML().load(yml_str) or {}
         parsed_package_file = read_file(package_project_yml_path)
     except:
         console.log(f"Error when parsing package file {package_project_yml_path}")
@@ -61,7 +73,16 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
 
 
 def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[Any, Any]) -> Optional[DbtPackageVersion]:
+    """
+    Constructs a DbtPackageVersion by extracting required attributes from the dict
+    containing the output from a package's parsed dbt_project.yml.
 
+    Args:
+        parsed_package_file (dict[Any, Any]): parsed dbt_project.yml
+
+    Returns:
+        DbtPackageVersion: object representing a single version of a package
+    """
     if "name" in parsed_package_file:
         package_name = str(parsed_package_file["name"])
     else:
@@ -80,22 +101,23 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
         require_dbt_version = []
 
     installed_package_version = DbtPackageVersion(
-        package_name=package_name,
-        package_version_str=version,
-        require_dbt_version_range=require_dbt_version
+        package_name=package_name, package_version_str=version, require_dbt_version_range=require_dbt_version
     )
-
-    # return DbtInstalledPackage(package_name=package_name, version=version, require_dbt_version=require_dbt_version)
-    # installed_package = DbtPackage(
-    #     package_name=package_name,
-    #     current_project_package_version_str=version,
-    #     package_versions={version: installed_package_version}
-    # )
 
     return installed_package_version
 
 
 def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPackageVersion]:
+    """
+    Finds all installed packages from a project's root directory and
+    constructs DbtPackageVersions for each project.
+
+    Args:
+        root_dir (Path): the root directory of the project
+
+    Returns:
+        dict[str, DbtPackageVersion]: maps the name from dbt_project.yml to a specific package version
+    """
     installed_package_paths: list[Path] = find_package_paths(root_dir)
     installed_package_versions: dict[str, DbtPackageVersion] = {}
     if len(installed_package_paths) == 0:
@@ -113,4 +135,3 @@ def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPacka
         installed_package_versions[package_name] = package_info
     return installed_package_versions
 
-# def parse_dbt_package_from_file()
