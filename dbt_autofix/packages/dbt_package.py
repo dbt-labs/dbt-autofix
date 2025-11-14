@@ -2,7 +2,7 @@ from typing import Any, Optional, Union
 from semver.version import Version
 from dataclasses import dataclass, field
 from rich.console import Console
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, RawVersion
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, RawVersion, get_version_specifiers
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 
 
@@ -37,6 +37,7 @@ class DbtPackage:
     git: bool = False
     project_config_raw_version_specifier: Optional[Any] = None
     installed_package_version: Optional[VersionSpecifier] = None
+    latest_package_version: Optional[VersionSpecifier] = None
 
     def __post_init__(self):
         # self.parse_package_dict()
@@ -78,5 +79,12 @@ class DbtPackage:
         if installed:
             self.installed_package_version = new_package_version.version
         return True
+    
+    def set_latest_package_version(self, version_str: str, require_dbt_version_range: list[str] = []):
+        try:
+            return self.add_package_version(DbtPackageVersion(package_name=self.package_name, package_version_str=version_str, require_dbt_version_range=require_dbt_version_range))
+        except:
+            return False
+
         
     # def 

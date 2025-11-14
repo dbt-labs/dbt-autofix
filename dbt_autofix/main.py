@@ -13,6 +13,7 @@ from dbt_autofix.duplicate_keys import find_duplicate_keys, print_duplicate_keys
 from dbt_autofix.fields_properties_configs import print_matrix
 from dbt_autofix.package_upgrade import PackageUpgradeResult, check_for_package_upgrades, generate_package_dependencies, upgrade_package_versions
 from dbt_autofix.packages.dbt_package import DbtPackage
+from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.packages.installed_packages import DbtInstalledPackage
 from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
@@ -54,12 +55,16 @@ def upgrade_packages(
     print(f"[green]Identifying packages with available upgrades in {path}[/green]\n")
     # project_duplicates, package_duplicates = find_duplicate_keys(path)
     # print_duplicate_keys(project_duplicates, package_duplicates)
-    package_dependencies: dict[str, DbtPackage] = generate_package_dependencies(path)
-    if len(package_dependencies) == 0:
+    deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
+    if not deps_file:
+        error_console.print("[red]-- No package dependency config found --[/red]")
+        return
+    
+    if len(deps_file.package_dependencies) == 0:
         error_console.print("[red]-- No package dependencies found --[/red]")
         return
     
-    package_upgrades: list[PackageUpgradeResult] = check_for_package_upgrades(package_dependencies)
+    package_upgrades: list[PackageUpgradeResult] = check_for_package_upgrades(deps_file)
 
     if dry_run:
         if not json_output:
