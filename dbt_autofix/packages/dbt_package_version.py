@@ -1,5 +1,4 @@
 from typing import Optional, Union
-from semver.version import Version
 from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
@@ -36,11 +35,6 @@ class DbtPackageVersion:
             self.version = VersionSpecifier.from_version_string(self.package_version_str)
         except:
             pass
-
-    # def convert_version_range_from_list(self, version_range: list[str]) -> VersionRange:
-    #     # version_specifiers = []
-    #     # return VersionRange
-    #     pass
 
     def is_version_fusion_compatible(self):
         if self.require_dbt_version:

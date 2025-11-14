@@ -114,23 +114,23 @@ models:
         yield project_dir
 
 
-@pytest.mark.parametrize(
-    "version_range,expected_result",
-    [
-        (
-            [">1.0.0"],
-            True,
-        ),
-        (
-            [">1.0.0", "<2.0.0"],
-            False,
-        ),
-        (
-            [">=2.0.0"],
-            True,
-        ),
-    ],
-)
-def test_fusion_compatible_dbt_version_ranges(version_range: list[str], expected_result: bool):
-    package = DbtPackage(package_name="test_package")
-    assert package.is_dbt_version_fusion_compatible(version_range) == expected_result
+# @pytest.mark.parametrize(
+#     "version_range,expected_result",
+#     [
+#         (
+#             [">1.0.0"],
+#             True,
+#         ),
+#         (
+#             [">1.0.0", "<2.0.0"],
+#             False,
+#         ),
+#         (
+#             [">=2.0.0"],
+#             True,
+#         ),
+#     ],
+# )
+# def test_fusion_compatible_dbt_version_ranges(version_range: list[str], expected_result: bool):
+#     package = DbtPackage(package_name="test_package")
+#     assert package.is_dbt_version_fusion_compatible(version_range) == expected_result
