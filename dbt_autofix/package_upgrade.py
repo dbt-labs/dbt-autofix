@@ -51,7 +51,7 @@ class PackageVersionUpgradeResult:
     def to_dict(self) -> dict:
         ret_dict = {
             "id": self.id,
-            "version": self.package_final_version,
+            "version": self.package_final_version(),
             "log": [self.version_reason]
             }
         return ret_dict
