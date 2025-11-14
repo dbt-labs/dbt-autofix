@@ -154,7 +154,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
             package_version_upgrade_results.append(PackageVersionUpgradeResult(id=package, 
                                                                         public_package=public_package, 
                                                                         installed_version=installed_package_version.to_version_string() if installed_package_version else "",
-                                                                        version_reason=PackageVersionUpgradeType.UNKNOWN))
+                                                                        version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY))
     return package_version_upgrade_results
 
 
