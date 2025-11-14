@@ -60,7 +60,7 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
         return parsed_package_file
 
 
-def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[Any, Any]) -> Optional[DbtPackage]:
+def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[Any, Any]) -> Optional[DbtPackageVersion]:
 
     if "name" in parsed_package_file:
         package_name = str(parsed_package_file["name"])
@@ -86,24 +86,24 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
     )
 
     # return DbtInstalledPackage(package_name=package_name, version=version, require_dbt_version=require_dbt_version)
-    installed_package = DbtPackage(
-        package_name=package_name,
-        current_project_package_version_str=version,
-        package_versions={version: installed_package_version}
-    )
+    # installed_package = DbtPackage(
+    #     package_name=package_name,
+    #     current_project_package_version_str=version,
+    #     package_versions={version: installed_package_version}
+    # )
 
-    return installed_package
+    return installed_package_version
 
 
-def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPackage]:
-    installed_package_paths = find_package_paths(root_dir)
-    installed_package_versions: dict[str, DbtPackage] = {}
+def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPackageVersion]:
+    installed_package_paths: list[Path] = find_package_paths(root_dir)
+    installed_package_versions: dict[str, DbtPackageVersion] = {}
     if len(installed_package_paths) == 0:
         console.log("No packages installed. Please run dbt deps first")
         return installed_package_versions
     for package_path in installed_package_paths:
-        loaded_yaml = load_yaml_from_package_dbt_project_yml_path(package_path)
-        package_info = parse_package_info_from_package_dbt_project_yml(loaded_yaml)
+        loaded_yaml: dict[Any, Any] = load_yaml_from_package_dbt_project_yml_path(package_path)
+        package_info: Optional[DbtPackageVersion] = parse_package_info_from_package_dbt_project_yml(loaded_yaml)
         if not package_info:
             console.log("Parsing failed on package")
             continue

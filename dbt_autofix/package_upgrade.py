@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from typing import Any, Optional
 from rich.console import Console
 
 from dbt_autofix.packages.dbt_package import DbtPackage
+from dbt_autofix.packages.dbt_package_file import DbtPackageFile, find_package_yml_files, load_yaml_from_dependencies_yml, load_yaml_from_packages_yml, parse_package_dependencies_from_dependencies_yml, parse_package_dependencies_from_packages_yml
 from dbt_autofix.packages.installed_packages import DbtInstalledPackage, get_current_installed_package_versions
 
 
@@ -79,7 +81,29 @@ class PackageUpgradeResult:
 def generate_package_dependencies(root_dir: Path) -> dict[str, DbtPackage]:
     # check `dependencies.yml`
     # check `packages.yml`
-    return get_current_installed_package_versions(root_dir)
+    package_dependencies_yml_files: list[Path] = find_package_yml_files(root_dir)
+    if len(package_dependencies_yml_files) != 1:
+        console.log(f"Project must contain exactly one projects.yml or dependencies.yml, found {len(package_dependencies_yml_files)}")
+        return {}
+    dependency_path: Path = package_dependencies_yml_files[0]
+    if dependency_path.name == "packages.yml":
+        dependency_yaml: dict[Any, Any] = load_yaml_from_packages_yml(dependency_path)
+        deps_file: Optional[DbtPackageFile] = parse_package_dependencies_from_packages_yml(dependency_yaml, dependency_path)
+    else:
+        dependency_yaml: dict[Any, Any] = load_yaml_from_dependencies_yml(dependency_path)
+        deps_file: Optional[DbtPackageFile] = parse_package_dependencies_from_dependencies_yml(dependency_yaml, dependency_path)
+    if not deps_file:
+        console.log(f"Project depedencies could not be parsed")
+        return {}
+    # check installed packages
+    installed_packages: dict[str, DbtPackage] = get_current_installed_package_versions(root_dir)
+    # merge into dependency configs
+    package_lookup = deps_file.get_reverse_lookup_by_package_name()
+    for package in installed_packages:
+        package_id = package_lookup[package]
+        deps_file.set_installed_version_for_package(package_id, installed_packages[package].installed_package_version)
+    # return get_current_installed_package_versions(root_dir)
+    return deps_file # ?
     
 
 

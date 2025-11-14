@@ -1,10 +1,9 @@
 from pprint import pprint
 import tempfile
 from pathlib import Path
-from dbt_autofix.packages.dbt_package_file import DbtPackageFile, load_yaml_from_packages_yml, parse_package_dependencies_from_packages_yml, parse_package_dependencies_from_yml
-from dbt_autofix.packages.package_upgrade_versions import (
-    find_package_yml_files,
-    find_package_paths,
+from dbt_autofix.packages.dbt_package_file import (
+    DbtPackageFile, load_yaml_from_packages_yml, parse_package_dependencies_from_packages_yml, parse_package_dependencies_from_yml,
+    find_package_yml_files
 )
 
 import pytest
@@ -230,8 +229,8 @@ models:
         yield project_dir
 
 
-def test_find_package_paths(temp_project_dir_with_packages_yml: Path):
-    print(find_package_paths(temp_project_dir_with_packages_yml))
+# def test_find_package_paths(temp_project_dir_with_packages_yml: Path):
+#     print(find_package_paths(temp_project_dir_with_packages_yml))
 
 
 def test_find_package_files_package_yml(temp_project_dir_with_packages_yml: Path):
@@ -256,3 +255,13 @@ def test_find_package_dependencies_yml(temp_project_dir_with_packages_yml: Path)
     assert package_file.package_dependencies
     assert package_file.file_path == package_files[0]
     assert len(package_file.package_dependencies) == 6
+
+
+def test_parse_package_yml(temp_project_dir_with_packages_yml: Path):
+    package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
+    package_yml = load_yaml_from_packages_yml(package_files[0])
+    pprint(package_yml)
+    assert package_yml
+    assert len(package_yml) == 1
+    assert "packages" in package_yml
+    assert len(package_yml["packages"]) == 6
