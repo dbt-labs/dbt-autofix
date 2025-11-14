@@ -57,8 +57,6 @@ def upgrade_packages(
     dry_run = True
 
     print(f"[green]Identifying packages with available upgrades in {path}[/green]\n")
-    # project_duplicates, package_duplicates = find_duplicate_keys(path)
-    # print_duplicate_keys(project_duplicates, package_duplicates)
     deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
     if not deps_file:
         error_console.print("[red]-- No package dependency config found --[/red]")
