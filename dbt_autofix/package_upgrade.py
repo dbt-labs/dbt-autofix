@@ -11,6 +11,7 @@ from dbt_autofix.packages.installed_packages import DbtInstalledPackage, get_cur
 
 
 console = Console()
+error_console = Console(stderr=True)
 
 
 class PackageVersionUpgradeType(str, Enum):
@@ -84,7 +85,7 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
     # check `packages.yml`
     package_dependencies_yml_files: list[Path] = find_package_yml_files(root_dir)
     if len(package_dependencies_yml_files) != 1:
-        console.log(f"Project must contain exactly one projects.yml or dependencies.yml, found {len(package_dependencies_yml_files)}")
+        error_console.log(f"Project must contain exactly one projects.yml or dependencies.yml, found {len(package_dependencies_yml_files)}")
         return
     dependency_path: Path = package_dependencies_yml_files[0]
     if dependency_path.name == "packages.yml":
@@ -94,14 +95,15 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
         dependency_yaml: dict[Any, Any] = load_yaml_from_dependencies_yml(dependency_path)
         deps_file: Optional[DbtPackageFile] = parse_package_dependencies_from_dependencies_yml(dependency_yaml, dependency_path)
     if not deps_file:
-        console.log(f"Project depedencies could not be parsed")
+        error_console.log(f"Project dependencies could not be parsed")
         return
     # check installed packages
     installed_packages: dict[str, DbtPackageVersion] = get_current_installed_package_versions(root_dir)
+
     # merge into dependency configs
     deps_file.merge_installed_versions(installed_packages)
 
-    return deps_file # ?
+    return deps_file
     
 
 

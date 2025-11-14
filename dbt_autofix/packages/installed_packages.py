@@ -18,8 +18,8 @@ def find_package_paths(
         "packages-install-path", "dbt_packages"
     )
 
-    yml_files_packages = set((root_dir / packages_path).glob("**/*.yml")).union(
-        set((root_dir / packages_path).glob("**/*.yaml"))
+    yml_files_packages = set((root_dir / packages_path).glob("*/*.yml")).union(
+        set((root_dir / packages_path).glob("*/*.yaml"))
     )
 
     # this is a hack to avoid checking integration_tests. it won't work everywhere but it's good enough for now

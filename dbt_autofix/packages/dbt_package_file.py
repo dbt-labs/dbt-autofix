@@ -5,7 +5,6 @@ from dbt_autofix.packages.installed_packages import DbtInstalledPackage
 from dbt_autofix.refactors.yml import DbtYAML
 from dataclasses import dataclass, field
 from pathlib import Path
-from pprint import pprint
 from rich.console import Console
 from dbt_autofix.refactors.yml import DbtYAML, read_file
 
@@ -162,6 +161,9 @@ class DbtPackageFile:
         package_lookup: dict[str, str] = self.get_reverse_lookup_by_package_name()
         installed_count: int = 0
         for package in installed_packages:
+            if package not in package_lookup:
+                console.log(f"Installed package name {package} not found in package deps")
+                continue
             package_id = package_lookup[package]
             if self.set_installed_version_for_package(package_id, installed_packages[package]):
                 installed_count += 1

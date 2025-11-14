@@ -1,7 +1,7 @@
 from typing import Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
-from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
+from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible, reduce_versions
 
 
 console = Console()
@@ -22,6 +22,17 @@ def get_version_specifiers(raw_version: list[str]) -> list[VersionSpecifier]:
     return [VersionSpecifier.from_version_string(v) for v in raw_version]
 
 
+def convert_version_specifiers_to_range(specs: list[VersionSpecifier]) -> Optional[VersionRange]:
+    if len(specs) == 0 or len(specs) > 2:
+        return
+    elif len(specs) == 1:
+        return VersionRange(specs[0], specs[0])
+    elif specs[0] < specs[1]:
+        return VersionRange(specs[0], specs[1])
+    else:
+        return VersionRange(specs[1], specs[0])
+
+
 @dataclass
 class DbtPackageVersion:
     package_name: str
@@ -33,6 +44,12 @@ class DbtPackageVersion:
     def __post_init__(self):
         try:
             self.version = VersionSpecifier.from_version_string(self.package_version_str)
+            if self.require_dbt_version_range:
+                raw_versions: list[RawVersion] = [x for x in self.require_dbt_version_range]
+                version_specs: list[VersionSpecifier] = get_version_specifiers(get_versions(raw_versions))
+                self.require_dbt_version = convert_version_specifiers_to_range(version_specs)
+            else:
+                self.require_dbt_version = None
         except:
             pass
 
