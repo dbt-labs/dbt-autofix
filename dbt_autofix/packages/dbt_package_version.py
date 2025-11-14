@@ -12,6 +12,7 @@ FUSION_COMPATIBLE_VERSION: VersionSpecifier = VersionSpecifier.from_version_stri
 # `float` also allows `int`, according to PEP484 (and jsonschema!)
 RawVersion = Union[str, float]
 
+
 def get_versions(version: Union[RawVersion, list[RawVersion]]) -> list[str]:
     if isinstance(version, list):
         return [str(v) for v in version]
@@ -33,9 +34,10 @@ def convert_version_specifiers_to_range(specs: list[VersionSpecifier]) -> Option
     else:
         return VersionRange(specs[1], specs[0])
 
+
 class FusionCompatibilityState(str, Enum):
     """String enum for deprecation types used in DbtDeprecationRefactor."""
-    
+
     NO_DBT_VERSION_RANGE = "Package does not define required dbt version range"
     DBT_VERSION_RANGE_EXCLUDES_2_0 = "Package's DBT version range excludes version 2.0"
     DBT_VERSION_RANGE_INCLUDES_2_0 = "Package's DBT versions range include version 2.0"
@@ -72,13 +74,13 @@ class DbtPackageVersion:
 
     def is_require_dbt_version_defined(self) -> bool:
         return len(self.require_dbt_version_range) > 0
-    
+
     def is_explicitly_disallowed_on_fusion(self) -> bool:
         return False
-    
+
     def is_explicitly_allowed_on_fusion(self) -> bool:
         return False
-    
+
     def get_fusion_compatibility_state(self) -> FusionCompatibilityState:
         if self.is_explicitly_allowed_on_fusion():
             return FusionCompatibilityState.EXPLICIT_ALLOW
@@ -92,4 +94,3 @@ class DbtPackageVersion:
             return FusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
         else:
             return FusionCompatibilityState.UNKNOWN
-

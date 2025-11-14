@@ -61,7 +61,6 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
 
 
 def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[Any, Any]) -> Optional[DbtPackageVersion]:
-
     if "name" in parsed_package_file:
         package_name = str(parsed_package_file["name"])
     else:
@@ -80,9 +79,7 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
         require_dbt_version = []
 
     installed_package_version = DbtPackageVersion(
-        package_name=package_name,
-        package_version_str=version,
-        require_dbt_version_range=require_dbt_version
+        package_name=package_name, package_version_str=version, require_dbt_version_range=require_dbt_version
     )
 
     # return DbtInstalledPackage(package_name=package_name, version=version, require_dbt_version=require_dbt_version)
@@ -112,5 +109,6 @@ def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPacka
             console.log(f"Package name {package_name} already installed")
         installed_package_versions[package_name] = package_info
     return installed_package_versions
+
 
 # def parse_dbt_package_from_file()

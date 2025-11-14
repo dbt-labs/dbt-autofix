@@ -14,7 +14,6 @@ console = Console()
 VALID_PACKAGE_YML_NAMES: set[str] = set(["packages.yml", "dependencies.yml"])
 
 
-
 def find_package_yml_files(
     root_dir: Path,
 ) -> list[Path]:
@@ -39,8 +38,6 @@ def find_package_yml_files(
     if len(package_yml_files) == 0:
         console.log("No package YML files found")
     return package_yml_files
-
-
 
 
 def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
@@ -104,8 +101,6 @@ def load_yaml_from_dependencies_yml(dependencies_yml_path: Path) -> dict[Any, An
         return parsed_package_file
 
 
-
-
 @dataclass
 class DbtPackageFile:
     package_file_name: str
@@ -135,7 +130,7 @@ class DbtPackageFile:
             if package not in self.package_dependencies:
                 continue
             # self.package_dependencies[package].installed_version
-    
+
     # the package dependencies are indexed by package ID, but packages'
     # dbt_project.yml only has the package name - so this reverse lookup
     # lets us match from the installed package to the project's deps.
@@ -150,13 +145,13 @@ class DbtPackageFile:
             else:
                 lookup[package_name] = package_id
         return lookup
-    
+
     def set_installed_version_for_package(self, package_id: str, package_version: DbtPackageVersion) -> bool:
         return self.package_dependencies[package_id].add_package_version(package_version, installed=True)
-    
+
     def add_version_for_package(self, package_id: str, package_version: DbtPackageVersion, installed=False) -> bool:
         return self.package_dependencies[package_id].add_package_version(package_version, installed=installed)
-    
+
     def merge_installed_versions(self, installed_packages: dict[str, DbtPackageVersion]) -> int:
         package_lookup: dict[str, str] = self.get_reverse_lookup_by_package_name()
         installed_count: int = 0
@@ -170,14 +165,17 @@ class DbtPackageFile:
         return installed_count
 
 
-
-def parse_package_dependencies_from_yml(parsed_yml: dict[Any, Any], package_file_name: str, package_file_path: Optional[Path]) -> Optional[DbtPackageFile]:
+def parse_package_dependencies_from_yml(
+    parsed_yml: dict[Any, Any], package_file_name: str, package_file_path: Optional[Path]
+) -> Optional[DbtPackageFile]:
     if "packages" not in parsed_yml:
         console.log("YML must contain packages key")
         return
     package_dict: dict[Any, Any] = parsed_yml["packages"]
-    
-    package_file = DbtPackageFile(package_file_name=package_file_name, file_path=package_file_path, yml_dependencies=package_dict)
+
+    package_file = DbtPackageFile(
+        package_file_name=package_file_name, file_path=package_file_path, yml_dependencies=package_dict
+    )
     for idx, package in enumerate(package_dict):
         if "package" not in package:
             package_id = f"package_{idx}"
@@ -194,23 +192,26 @@ def parse_package_dependencies_from_yml(parsed_yml: dict[Any, Any], package_file
             local=local,
             git=git,
             tarball=tarball,
-            project_config_raw_version_specifier=version
+            project_config_raw_version_specifier=version,
         )
-        package_file.add_package_dependency(
-            package_id,
-            new_package
-        )
-        
+        package_file.add_package_dependency(package_id, new_package)
+
     return package_file
-            
+
 
 # I think the parsing should be the same for packages.yml and dependencies.yml,
 # but I'm making separate functions in case they need to be customized
-def parse_package_dependencies_from_packages_yml(parsed_packages_yml: dict[Any, Any], package_file_path: Optional[Path]) -> Optional[DbtPackageFile]:
+def parse_package_dependencies_from_packages_yml(
+    parsed_packages_yml: dict[Any, Any], package_file_path: Optional[Path]
+) -> Optional[DbtPackageFile]:
     return parse_package_dependencies_from_yml(parsed_packages_yml, "packages.yml", package_file_path)
 
-def parse_package_dependencies_from_dependencies_yml(parsed_dependencies_yml: dict[Any, Any], package_file_path: Optional[Path]) -> Optional[DbtPackageFile]:
+
+def parse_package_dependencies_from_dependencies_yml(
+    parsed_dependencies_yml: dict[Any, Any], package_file_path: Optional[Path]
+) -> Optional[DbtPackageFile]:
     return parse_package_dependencies_from_yml(parsed_dependencies_yml, "dependencies.yml", package_file_path)
+
 
 # def add_package_info_from_installed_packages(root_directory: Path, package_file: DbtPackageFile) -> DbtPackageFile:
 #     installed_packages: dict[str, DbtInstalledPackage] = get_current_installed_package_versions(root_directory)
@@ -231,6 +232,7 @@ def parse_package_dependencies_from_dependencies_yml(parsed_dependencies_yml: di
 #         package_file.parse_package_dependencies()
 #         package_files.append(package_file)
 #     return package_files
+
 
 def merge_installed_version_with_deps(deps_file: DbtPackageFile, installed_packages: dict[str, DbtPackageVersion]):
     package_lookup = deps_file.get_reverse_lookup_by_package_name()

@@ -11,7 +11,13 @@ from typing_extensions import Annotated
 from dbt_autofix.dbt_api import update_jobs
 from dbt_autofix.duplicate_keys import find_duplicate_keys, print_duplicate_keys
 from dbt_autofix.fields_properties_configs import print_matrix
-from dbt_autofix.package_upgrade import PackageUpgradeResult, PackageVersionUpgradeResult, check_for_package_upgrades, generate_package_dependencies, upgrade_package_versions
+from dbt_autofix.package_upgrade import (
+    PackageUpgradeResult,
+    PackageVersionUpgradeResult,
+    check_for_package_upgrades,
+    generate_package_dependencies,
+    upgrade_package_versions,
+)
 from dbt_autofix.packages.dbt_package import DbtPackage
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.packages.installed_packages import DbtInstalledPackage
@@ -59,11 +65,11 @@ def upgrade_packages(
     if not deps_file:
         error_console.print("[red]-- No package dependency config found --[/red]")
         return
-    
+
     if len(deps_file.package_dependencies) == 0:
         error_console.print("[red]-- No package dependencies found --[/red]")
         return
-    
+
     package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
 
     if dry_run:
@@ -74,7 +80,7 @@ def upgrade_packages(
             file_path=deps_file.file_path if deps_file.file_path else path,
             upgraded=False,
             upgrades=[],
-            unchanged=package_upgrades
+            unchanged=package_upgrades,
         )
         upgrade_result.print_to_console(json_output=True)
     else:

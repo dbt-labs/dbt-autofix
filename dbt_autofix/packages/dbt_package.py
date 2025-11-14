@@ -1,11 +1,17 @@
 from typing import Any, Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, FusionCompatibilityState, RawVersion, get_version_specifiers
+from dbt_autofix.packages.dbt_package_version import (
+    DbtPackageVersion,
+    FusionCompatibilityState,
+    RawVersion,
+    get_version_specifiers,
+)
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 
 
 console = Console()
+
 
 @dataclass
 class DbtPackage:
@@ -35,7 +41,7 @@ class DbtPackage:
     # check compatibility of latest and installed versions when loading
     latest_version_fusion_compatibility: FusionCompatibilityState = FusionCompatibilityState.UNKNOWN
     installed_version_fusion_compatibility: FusionCompatibilityState = FusionCompatibilityState.UNKNOWN
-    
+
     def add_package_version(self, new_package_version: DbtPackageVersion, installed=False, latest=False) -> bool:
         if latest:
             self.latest_package_version = new_package_version.version
@@ -49,10 +55,17 @@ class DbtPackage:
             self.installed_package_version = new_package_version.version
             self.installed_version_fusion_compatibility = new_package_version.get_fusion_compatibility_state()
         return True
-    
+
     def set_latest_package_version(self, version_str: str, require_dbt_version_range: list[str] = []):
         try:
-            return self.add_package_version(DbtPackageVersion(package_name=self.package_name, package_version_str=version_str, require_dbt_version_range=require_dbt_version_range), latest=True)
+            return self.add_package_version(
+                DbtPackageVersion(
+                    package_name=self.package_name,
+                    package_version_str=version_str,
+                    require_dbt_version_range=require_dbt_version_range,
+                ),
+                latest=True,
+            )
         except:
             return False
 
