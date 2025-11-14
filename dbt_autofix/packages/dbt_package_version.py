@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
@@ -32,6 +33,16 @@ def convert_version_specifiers_to_range(specs: list[VersionSpecifier]) -> Option
     else:
         return VersionRange(specs[1], specs[0])
 
+class FusionCompatibilityState(str, Enum):
+    """String enum for deprecation types used in DbtDeprecationRefactor."""
+    
+    NO_DBT_VERSION_RANGE = "Package does not define required dbt version range"
+    DBT_VERSION_RANGE_EXCLUDES_2_0 = "Package's DBT version range excludes version 2.0"
+    DBT_VERSION_RANGE_INCLUDES_2_0 = "Package's DBT versions range include version 2.0"
+    EXPLICIT_ALLOW = "Package version has been verified as Fusion-compatible"
+    EXPLICIT_DISALLOW = "Package version has been verified as incompatible with Fusion"
+    UNKNOWN = "Package version state unknown"
+
 
 @dataclass
 class DbtPackageVersion:
@@ -53,11 +64,32 @@ class DbtPackageVersion:
         except:
             pass
 
-    def is_version_fusion_compatible(self):
+    def is_version_fusion_compatible(self) -> bool:
         if self.require_dbt_version:
             return versions_compatible(self.require_dbt_version, FUSION_COMPATIBLE_VERSION)
         else:
             return False
 
-    def is_require_dbt_version_defined(self):
+    def is_require_dbt_version_defined(self) -> bool:
         return len(self.require_dbt_version_range) > 0
+    
+    def is_explicitly_disallowed_on_fusion(self) -> bool:
+        return False
+    
+    def is_explicitly_allowed_on_fusion(self) -> bool:
+        return False
+    
+    def get_fusion_compatibility_state(self) -> FusionCompatibilityState:
+        if self.is_explicitly_allowed_on_fusion():
+            return FusionCompatibilityState.EXPLICIT_ALLOW
+        elif self.is_explicitly_disallowed_on_fusion():
+            return FusionCompatibilityState.EXPLICIT_DISALLOW
+        elif not self.is_require_dbt_version_defined():
+            return FusionCompatibilityState.NO_DBT_VERSION_RANGE
+        elif self.is_version_fusion_compatible():
+            return FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+        elif not self.is_version_fusion_compatible():
+            return FusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+        else:
+            return FusionCompatibilityState.UNKNOWN
+
