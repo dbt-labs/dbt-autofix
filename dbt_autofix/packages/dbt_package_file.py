@@ -29,7 +29,7 @@ def find_package_yml_files(
     Returns:
         list[Path]: the file path(s) for packages/dependencies.yml
     """
-    yml_files = set(root_dir.glob("**/*.yml")).union(set(root_dir.glob("**/*.yaml")))
+    yml_files = set(root_dir.glob("*.yml")).union(set(root_dir.glob("*.yaml")))
 
     package_yml_files = []
 
