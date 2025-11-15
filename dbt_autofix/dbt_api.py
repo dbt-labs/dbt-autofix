@@ -12,9 +12,7 @@ HTTP_ERROR_CODE = 400
 
 
 def job_dict_to_payload(job_dict: dict) -> dict:
-    """
-    Convert a job dictionary to a payload dictionary.
-    """
+    """Convert a job dictionary to a payload dictionary."""
 
     fields_to_remove = {
         "raw_dbt_version",
@@ -47,9 +45,7 @@ def job_dict_to_payload(job_dict: dict) -> dict:
 
 
 def job_steps_updated(job_dict: dict, behavior_change: bool) -> tuple[bool, List[str]]:
-    """
-    Check if the job steps need to be updated.
-    """
+    """Check if the job steps need to be updated."""
 
     exec_steps = job_dict.get("execute_steps", [])
 
@@ -80,17 +76,13 @@ def job_steps_updated(job_dict: dict, behavior_change: bool) -> tuple[bool, List
 
 
 def step_regex_replace_m_with_s(step: str) -> str:
-    """
-    Replace -m with -s and --model/--models with --select.
-    """
+    """Replace -m with -s and --model/--models with --select."""
     step = re.sub(r"(\s)-m(\s)", r"\1-s\2", step)
     step = re.sub(r"(\s)--model[s]?(\s)", r"\1--select\2", step)
     return step
 
 def step_remove_source_freshness_output(step: str) -> str:
-    """
-    Remove --output in source freshness commands.
-    """
+    """Remove --output in source freshness commands."""
     if ("dbt source freshness") in step:
         step = re.sub(r"(\s)-o(\s+)\S+", "", step)
         step = re.sub(r"(\s)--output(\s+)\S+", "", step)
@@ -299,9 +291,7 @@ def update_jobs(  # noqa: PLR0913
     json_output: bool = False,
     behavior_change: bool = False,
 ):
-    """
-    Update jobs in dbt Cloud.
-    """
+    """Update jobs in dbt Cloud."""
     dbt_cloud = DBTClient(account_id, api_key, base_url, disable_ssl_verification)
     jobs = dbt_cloud.get_jobs(project_ids, environment_ids)
 

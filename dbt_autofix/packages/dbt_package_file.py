@@ -15,7 +15,8 @@ VALID_PACKAGE_YML_NAMES: set[str] = set(["packages.yml", "dependencies.yml"])
 def find_package_yml_files(
     root_dir: Path,
 ) -> list[Path]:
-    """
+    """Get file paths for YML files that define package dependencies.
+
     Find YML files that define package dependencies for the project
     (packages.yml and dependencies.yml).
 
@@ -39,8 +40,7 @@ def find_package_yml_files(
 
 
 def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
-    """
-    Parse YAML from a packages.yml file
+    """Parse YAML from a packages.yml file.
 
     Args:
         packages_yml_path (Path): file path for packages.yml

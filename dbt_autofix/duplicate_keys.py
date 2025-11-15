@@ -97,9 +97,7 @@ def find_duplicate_keys(
 
 
 def print_duplicate_keys(project_duplicates: List[DuplicateFound], package_duplicates: List[DuplicateFound]) -> None:
-    """
-    Print duplicate keys in the project and packages as well as instructions to fix them.
-    """
+    """Print duplicate keys in the project and packages as well as instructions to fix them."""
     if not project_duplicates and not package_duplicates:
         return
 

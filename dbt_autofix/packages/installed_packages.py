@@ -17,7 +17,8 @@ console = Console()
 def find_package_paths(
     root_dir: Path,
 ) -> list[Path]:
-    """
+    """Find paths to installed packages' dbt_project.yml files.
+
     Find each installed package's root directory and return the file paths
     for each package's dbt_project.yml
     Note that this only returns paths for direct dependencies of the project.
@@ -47,7 +48,8 @@ def find_package_paths(
 
 
 def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) -> dict[Any, Any]:
-    """
+    """Extracts YAML content from a package's dbt_project.yml file.
+
     Parses a dbt_project.yml file for an installed package into an untyped dict
 
     Args:
@@ -73,7 +75,8 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
 
 
 def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[Any, Any]) -> Optional[DbtPackageVersion]:
-    """
+    """Extracts package info from a dict parsed from a package's dbt_project.yml.
+
     Constructs a DbtPackageVersion by extracting required attributes from the dict
     containing the output from a package's parsed dbt_project.yml.
 
@@ -108,7 +111,8 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
 
 
 def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPackageVersion]:
-    """
+    """Extract version metadata for all installed packages in a project.
+    
     Finds all installed packages from a project's root directory and
     constructs DbtPackageVersions for each project.
 

@@ -65,7 +65,7 @@ def process_yaml_files_except_dbt_project(
     all: bool = False,
     semantic_definitions: Optional[SemanticDefinitions] = None,
 ) -> List[YMLRefactorResult]:
-    """Process all YAML files in the project
+    """Process all YAML files in the project.
 
     Args:
         path: Project root path
@@ -180,7 +180,7 @@ def process_dbt_project_yml(
     behavior_change: bool = False,
     all: bool = False,
 ) -> YMLRefactorResult:
-    """Process dbt_project.yml"""
+    """Process dbt_project.yml."""
     if not (root_path / "dbt_project.yml").exists():
         error_console.print(f"Error: dbt_project.yml not found in {root_path}", style="red")
         return YMLRefactorResult(
@@ -331,7 +331,8 @@ def process_sql_files(
 
 
 def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
-    """Removes duplicate keys in the YAML files, keeping the first occurence only
+    """Removes duplicate keys in the YAML files, keeping the first occurence only.
+
     The drawback of keeping the first occurence is that we need to use PyYAML and then lose all the comments that were in the file
     """
     refactored = False
@@ -366,7 +367,7 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
 def get_dbt_files_paths(
     root_path: Path, include_packages: bool = False, include_private_packages: bool = False
 ) -> Dict[str, str]:
-    """Get model and macro paths from dbt_project.yml
+    """Get model and macro paths from dbt_project.yml.
 
     Args:
         root_path: Project root path
@@ -494,7 +495,7 @@ def changeset_all_sql_yml_files(  # noqa: PLR0913
     all: bool = False,
     semantic_layer: bool = False,
 ) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult]]:
-    """Process all YAML files and SQL files in the project
+    """Process all YAML files and SQL files in the project.
 
     Args:
         path: Project root path
@@ -549,7 +550,7 @@ def apply_changesets(
     sql_results: List[SQLRefactorResult],
     json_output: bool = False,
 ) -> None:
-    """Apply both YAML and SQL refactoring changes
+    """Apply both YAML and SQL refactoring changes.
 
     Args:
         yaml_results: List of YAML refactoring results
