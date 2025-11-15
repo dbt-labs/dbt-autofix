@@ -31,6 +31,9 @@ test = [
     "pre-commit>=4.2.0",
     "nox",
 ]
+docs = [
+    "pydocstyle>=6.3.0",
+]
 
 [tool.pdm.build]
 # Include pre_commit_hooks/ directory in distribution
@@ -79,3 +82,15 @@ reportMissingImports = false
 pythonpath = [
   "."
 ]
+
+[tool.pydocstyle]
+convention = "google"
+# D100: Missing docstring in public module
+# D101: Missing docstring in public class
+# D102: Missing docstring in public method
+# D103: Missing docstring in public function
+# D104: Missing docstring in public package
+# D105: Missing docstring in magic method
+# D107: Missing docstring in __init__
+# D202: No blank lines allowed after function docstring
+add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
