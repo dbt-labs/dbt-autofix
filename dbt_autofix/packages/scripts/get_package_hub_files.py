@@ -203,7 +203,7 @@ def reload_packages_from_file(
 
 
 def main():
-    file_count_limit = 100
+    file_count_limit = 0
     results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
     print(f"Downloaded {len(results)} packages from hub.getdbt.com")
     output_path: Path = Path.cwd() / "dbt_autofix" / "packages" / "scripts" / "output"
