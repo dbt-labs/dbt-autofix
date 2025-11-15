@@ -46,13 +46,15 @@ class FusionCompatibilityState(str, Enum):
     UNKNOWN = "Package version state unknown"
 
 
-@dataclass
+@dataclass  
 class DbtPackageVersion:
     package_name: str
     package_version_str: str
     require_dbt_version_range: list[str] = field(default_factory=list)
     version: VersionSpecifier = field(init=False)
     require_dbt_version: Optional[VersionRange] = field(init=False)
+    package_id_with_version: Optional[str] = None
+    package_id: Optional[str] = None
 
     def __post_init__(self):
         try:

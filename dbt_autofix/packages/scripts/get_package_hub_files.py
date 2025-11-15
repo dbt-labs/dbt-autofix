@@ -1,23 +1,12 @@
-from __future__ import annotations
-
+from collections import defaultdict
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 import warnings
 
 import requests
 from requests import HTTPError
-
-
-@dataclass
-class PackageJSON:
-    """Dataclass wrapper for parsed package JSON content.
-
-    The content of each package JSON file can vary; we keep a single `data`
-    field containing the parsed JSON as a dictionary (or other JSON value).
-    """
-
-    data: Any
 
 
 def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> Any:
@@ -38,13 +27,93 @@ def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: 
         raise RuntimeError(f"Network error when fetching {url}: {exc}")
 
 
+# Example package index path:
+# data/packages/Aaron-Zhou/synapse_statistic/index.json
+def is_package_index_file(file_path: str) -> bool:
+    file_path_split = file_path.split("/")
+    if len(file_path_split) != 5:
+        return False
+    return file_path_split[-1] == "index.json"
+
+
+# Example package version path:
+# data/packages/Aaron-Zhou/synapse_statistic/versions/v0.1.0.json
+def is_package_version_file(file_path: str) -> bool:
+    file_path_split = file_path.split("/")
+    if len(file_path_split) != 6:
+        return False
+    return file_path_split[-2] == "versions"
+
+
+# Example paths that resolve to Aaron-Zhou/synapse_statistic
+# data/packages/Aaron-Zhou/synapse_statistic/index.json
+# data/packages/Aaron-Zhou/synapse_statistic/versions/v0.1.0.json
+def extract_package_id_from_path(file_path: str) -> str:
+    file_path_split = file_path.split("/")
+    if file_path_split[0] != "data" or file_path_split[1] != "packages" or len(file_path_split) < 4:
+        return ""
+    return f"{file_path_split[2]}/{file_path_split[3]}"
+
+
+def clean_version(version_str: Optional[str]) -> str:
+    """Remove leading 'v' or 'V' from version strings, if present."""
+    if version_str is None:
+        return ""
+    elif version_str.startswith(("v", "V")):
+        return version_str[1:]
+    return version_str
+
+
+def process_json(file_path: str, parsed_json: Any) -> dict[str, Any]:
+    package_id = extract_package_id_from_path(file_path)
+    if package_id == "":
+        return {}
+    if is_package_index_file(file_path):
+        return {
+            "package_id_from_path": package_id,
+            "package_latest_version_index_json": clean_version(parsed_json.get("latest")),
+            "package_name_index_json": parsed_json.get("name"),
+            "package_namespace_index_json": parsed_json.get("namespace"),
+            "package_redirect_name": parsed_json.get("redirectname"),
+            "package_redirect_namespace": parsed_json.get("redirectnamespace"),
+        }
+    elif is_package_version_file(file_path):
+        if "_source" in parsed_json:
+            github_url = parsed_json["_source"].get("url", "")
+        else:
+            github_url = None
+        if "downloads" in parsed_json:
+            tarball_url = parsed_json["downloads"].get("tarball")
+        else:
+            tarball_url = None
+        return {
+            "package_id_from_path": package_id,
+            "package_id_with_version": parsed_json.get("id"),
+            "package_name_version_json": parsed_json.get("name"),
+            "package_version_string": clean_version(parsed_json.get("version")),
+            "package_version_require_dbt_version": parsed_json.get("require_dbt_version"),
+            "package_version_github_url": github_url,
+            "package_version_download_url": tarball_url,
+        }
+    else:
+        return {}
+
+
+def write_dict_to_json(data: Dict[str, Any], dest_dir: Path, *, indent: int = 2, sort_keys: bool = True) -> None:
+    out_file = dest_dir / "package_output.json"
+    with out_file.open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
+
+
 def download_package_jsons_from_hub_repo(
     owner: str = "dbt-labs",
     repo: str = "hub.getdbt.com",
     path: str = "data/packages",
-    branch: Optional[str] = None,
+    branch: Optional[str] = "master",
     github_token: Optional[str] = None,
-) -> List[PackageJSON]:
+    file_count_limit: int = 0,
+    # ) -> List[PackageJSON]:
+) -> defaultdict[str, list[dict[str, Any]]]:
     """Download and parse all JSON files under `data/packages` in a GitHub repo.
 
     This function performs the following steps:
@@ -100,12 +169,16 @@ def download_package_jsons_from_hub_repo(
         p = entry.get("path", "")
         if p.startswith(prefix) and p.endswith(".json"):
             files.append(entry)
+        if file_count_limit > 0 and len(files) >= file_count_limit:
+            break
 
-    results: List[PackageJSON] = []
+    # results: List[PackageJSON] = []
+    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     if not files:
         # No files found; return empty list rather than error.
-        return results
+        return packages
 
+    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     # 3) Download each JSON using raw.githubusercontent.com
     for entry in files:
         file_path = entry["path"]
@@ -113,11 +186,32 @@ def download_package_jsons_from_hub_repo(
         # Use simple GET; raw.githubusercontent does not require auth for public repos.
         try:
             parsed = _http_get_json(raw_url, headers={"User-Agent": headers["User-Agent"]})
-            results.append(PackageJSON(parsed))
-        except Exception as exc:  # pragma: no cover - network/file parsing issues
+            output = process_json(file_path, parsed)
+            if output != {}:
+                packages[output["package_id_from_path"]].append(output)
+        except Exception as exc:  # network/file parsing issues
             warnings.warn(f"Failed to fetch/parse {file_path}: {exc}")
 
-    return results
+    return packages
 
 
-__all__ = ["download_package_jsons_from_hub_repo", "PackageJSON"]
+def reload_packages_from_file(
+    file_path: Path,
+) -> defaultdict[str, list[dict[str, Any]]]:
+    with file_path.open("r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def main():
+    file_count_limit = 100
+    results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
+    print(f"Downloaded {len(results)} packages from hub.getdbt.com")
+    output_path: Path = Path.cwd() / "dbt_autofix" / "packages" / "scripts" / "output"
+    write_dict_to_json(results, output_path)
+    print(f"Output written to {output_path / 'package_output.json'}")
+    reload_packages = reload_packages_from_file(output_path / "package_output.json")
+    print(f"Reloaded {len(reload_packages)} packages from file")
+
+
+if __name__ == "__main__":
+    main()
