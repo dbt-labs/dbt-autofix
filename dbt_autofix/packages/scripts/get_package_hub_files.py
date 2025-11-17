@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import warnings
+import time
 
 import requests
 from requests import HTTPError
@@ -189,8 +190,10 @@ def download_package_jsons_from_hub_repo(
             output = process_json(file_path, parsed)
             if output != {}:
                 packages[output["package_id_from_path"]].append(output)
+            time.sleep(1)
         except Exception as exc:  # network/file parsing issues
             warnings.warn(f"Failed to fetch/parse {file_path}: {exc}")
+            time.sleep(5)
 
     return packages
 

@@ -20,6 +20,17 @@ def get_versions(version: Union[RawVersion, list[RawVersion]]) -> list[str]:
         return [str(version)]
 
 
+def construct_version_list(raw_versions: Union[str, list[str], None]) -> list[str]:
+    if raw_versions is None:
+        return []
+    elif type(raw_versions) == str:
+        return [raw_versions]
+    elif type(raw_versions) == list:
+        return raw_versions
+    else:
+        return []
+
+
 def get_version_specifiers(raw_version: list[str]) -> list[VersionSpecifier]:
     return [VersionSpecifier.from_version_string(v) for v in raw_version]
 
@@ -46,7 +57,7 @@ class FusionCompatibilityState(str, Enum):
     UNKNOWN = "Package version state unknown"
 
 
-@dataclass  
+@dataclass
 class DbtPackageVersion:
     package_name: str
     package_version_str: str
@@ -55,18 +66,32 @@ class DbtPackageVersion:
     require_dbt_version: Optional[VersionRange] = field(init=False)
     package_id_with_version: Optional[str] = None
     package_id: Optional[str] = None
+    raw_require_dbt_version_range: Union[str, list[str], None] = None
 
     def __post_init__(self):
         try:
             self.version = VersionSpecifier.from_version_string(self.package_version_str)
-            if self.require_dbt_version_range:
+            if self.raw_require_dbt_version_range is not None:
+                self.require_dbt_version_range = construct_version_list(self.raw_require_dbt_version_range)
+            if self.require_dbt_version_range and len(self.require_dbt_version_range) > 0:
                 raw_versions: list[RawVersion] = [x for x in self.require_dbt_version_range]
                 version_specs: list[VersionSpecifier] = get_version_specifiers(get_versions(raw_versions))
                 self.require_dbt_version = convert_version_specifiers_to_range(version_specs)
             else:
                 self.require_dbt_version = None
         except:
-            pass
+            self.require_dbt_version = None
+
+    def __lt__(self, other) -> bool:
+        if self.package_name != other.package_name:
+            return False
+        return self.version < other.version
+
+    def __eq__(self, other) -> bool:
+        return self.package_name != other.package_name or self.version != other.version
+
+    def is_prerelease_version(self) -> bool:
+        return self.version.prerelease is not None
 
     def is_version_fusion_compatible(self) -> bool:
         if self.require_dbt_version:
@@ -75,7 +100,7 @@ class DbtPackageVersion:
             return False
 
     def is_require_dbt_version_defined(self) -> bool:
-        return len(self.require_dbt_version_range) > 0
+        return self.require_dbt_version_range != None and len(self.require_dbt_version_range) > 0
 
     def is_explicitly_disallowed_on_fusion(self) -> bool:
         return False

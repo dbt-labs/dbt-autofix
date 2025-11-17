@@ -58,7 +58,7 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
     Returns:
         dict[Any, Any]: the result produced by the YAML parser
     """
-    
+
     if package_project_yml_path.name != "dbt_project.yml":
         console.log("File must be dbt_project.yml")
         return {}
@@ -112,7 +112,7 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
 
 def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPackageVersion]:
     """Extract version metadata for all installed packages in a project.
-    
+
     Finds all installed packages from a project's root directory and
     constructs DbtPackageVersions for each project.
 
@@ -138,4 +138,3 @@ def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPacka
             console.log(f"Package name {package_name} already installed")
         installed_package_versions[package_name] = package_info
     return installed_package_versions
-
