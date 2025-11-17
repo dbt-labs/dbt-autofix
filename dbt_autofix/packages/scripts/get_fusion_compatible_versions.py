@@ -4,7 +4,6 @@ from typing import Any, Optional
 from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible, reduce_versions
 
-
 def read_package_output_json(file_path: Path) -> dict[str, Any]:
     """Read a JSON file containing package output data.
 
@@ -159,6 +158,8 @@ def main():
     print(f"Read {len(packages_with_versions)} packages from file")
     write_dict_to_json(packages_with_versions, input)
     print("Output written to fusion_version_compatibility_output.json")
+    with open(Path.cwd() / "dbt_autofix" / "packages" / "fusion_version_compatibility_output.py", 'w') as output_py_file:
+        output_py_file.write(f"from typing import Any\n\nFUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {packages_with_versions}")
 
 
 if __name__ == "__main__":
