@@ -1,0 +1,11 @@
+# This is your packages.yml file. This is where you declare packages that your project depends on. 
+# For full documentation: https://docs.getdbt.com/docs/building-a-dbt-project/package-management
+
+packages:
+
+# The dbt_utils package is a package we recommend everyone installs. This package solves common questions of `How do I do this in SQL?`. 
+# To learn more, check out the docs: https://hub.getdbt.com/dbt-labs/dbt_utils/latest/
+  - package: dbt-labs/dbt_utils
+    version: 0.8.5
+  - package: dbt-labs/codegen
+    version: 0.7.0
