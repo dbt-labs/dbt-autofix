@@ -82,7 +82,7 @@ class DbtPackage:
 
     def is_public_package(self) -> bool:
         return not (self.git or self.tarball or self.local)
-    
+
     def is_installed_version_fusion_compatible(self) -> FusionCompatibilityState:
         if self.installed_package_version is None:
             return FusionCompatibilityState.UNKNOWN
@@ -90,25 +90,29 @@ class DbtPackage:
             installed_version_string = self.installed_package_version.to_version_string()
             if installed_version_string not in self.package_versions:
                 return FusionCompatibilityState.UNKNOWN
-            else: 
+            else:
                 return self.package_versions[installed_version_string].get_fusion_compatibility_state()
-            
+
     def find_fusion_compatible_versions_in_requested_range(self) -> list[VersionSpecifier]:
         compatible_versions = []
         if self.fusion_compatible_versions is None or len(self.fusion_compatible_versions) == 0:
             return compatible_versions
         for version in self.fusion_compatible_versions:
-            if versions_compatible(version, self.project_config_version_range.start, self.project_config_version_range.end):
+            if versions_compatible(
+                version, self.project_config_version_range.start, self.project_config_version_range.end
+            ):
                 compatible_versions.append(version)
         sorted_versions = sorted(compatible_versions, reverse=True)
         return sorted_versions
-    
+
     def find_fusion_compatible_versions_outside_requested_range(self) -> list[VersionSpecifier]:
         compatible_versions = []
         if self.fusion_compatible_versions is None or len(self.fusion_compatible_versions) == 0:
             return compatible_versions
         for version in self.fusion_compatible_versions:
-            if not versions_compatible(version, self.project_config_version_range.start, self.project_config_version_range.end):
+            if not versions_compatible(
+                version, self.project_config_version_range.start, self.project_config_version_range.end
+            ):
                 compatible_versions.append(version)
         sorted_versions = sorted(compatible_versions, reverse=True)
         return sorted_versions
@@ -118,32 +122,39 @@ class DbtPackage:
         if self.fusion_incompatible_versions is None or len(self.fusion_incompatible_versions) == 0:
             return incompatible_versions
         for version in self.fusion_incompatible_versions:
-            if versions_compatible(version, self.project_config_version_range.start, self.project_config_version_range.end):
+            if versions_compatible(
+                version, self.project_config_version_range.start, self.project_config_version_range.end
+            ):
                 incompatible_versions.append(version)
         sorted_versions = sorted(incompatible_versions, reverse=True)
         return sorted_versions
-    
+
     def find_fusion_unknown_versions_in_requested_range(self) -> list[VersionSpecifier]:
         unknown_compatibility_versions = []
         if self.unknown_compatibility_versions is None or len(self.unknown_compatibility_versions) == 0:
             return unknown_compatibility_versions
         for version in self.unknown_compatibility_versions:
-            if versions_compatible(version, self.project_config_version_range.start, self.project_config_version_range.end):
+            if versions_compatible(
+                version, self.project_config_version_range.start, self.project_config_version_range.end
+            ):
                 unknown_compatibility_versions.append(version)
         sorted_versions = sorted(unknown_compatibility_versions, reverse=True)
         return sorted_versions
-    
+
     def get_installed_package_version(self) -> str:
         if self.installed_package_version:
             return self.installed_package_version.to_version_string()
         else:
             return "unknown"
-        
+
     def get_fusion_compatibility_state(self) -> FusionCompatibilityState:
         if not self.is_public_package():
             return FusionCompatibilityState.UNKNOWN
         installed_version_fusion_compatibility = self.is_installed_version_fusion_compatible()
-        if installed_version_fusion_compatibility == FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0 or installed_version_fusion_compatibility == FusionCompatibilityState.EXPLICIT_ALLOW:
+        if (
+            installed_version_fusion_compatibility == FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+            or installed_version_fusion_compatibility == FusionCompatibilityState.EXPLICIT_ALLOW
+        ):
             return installed_version_fusion_compatibility
         if self.fusion_compatible_versions is not None and len(self.fusion_compatible_versions) > 0:
             return FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0

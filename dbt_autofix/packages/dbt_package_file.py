@@ -1,7 +1,12 @@
 from collections import defaultdict
 from typing import Any, Optional
 from dbt_autofix.packages.dbt_package import DbtPackage
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, FusionCompatibilityState, convert_optional_version_string_to_spec, convert_version_string_list_to_spec
+from dbt_autofix.packages.dbt_package_version import (
+    DbtPackageVersion,
+    FusionCompatibilityState,
+    convert_optional_version_string_to_spec,
+    convert_version_string_list_to_spec,
+)
 from dataclasses import dataclass, field
 from pathlib import Path
 from rich.console import Console
@@ -158,14 +163,16 @@ class DbtPackageFile:
             if self.set_installed_version_for_package(package_id, installed_packages[package]):
                 installed_count += 1
         return installed_count
-    
+
     def merge_fusion_compatibility_output(self) -> int:
         package_compat_count = 0
         for package in self.package_dependencies:
             output = FUSION_VERSION_COMPATIBILITY_OUTPUT.get(package)
             if output is None:
                 continue
-            oldest_fusion_compatible_version = convert_optional_version_string_to_spec(output["oldest_fusion_compatible_version"])
+            oldest_fusion_compatible_version = convert_optional_version_string_to_spec(
+                output["oldest_fusion_compatible_version"]
+            )
             # latest_fusion_compatible_version = convert_optional_version_string_to_spec(output["latest_fusion_compatible_version"])
             fusion_compatible_versions = convert_version_string_list_to_spec(output["fusion_compatible_versions"])
             fusion_incompatible_versions = convert_version_string_list_to_spec(output["fusion_incompatible_versions"])
@@ -177,15 +184,17 @@ class DbtPackageFile:
             self.package_dependencies[package].unknown_compatibility_versions = unknown_compatibility_versions
             package_compat_count += 1
         return package_compat_count
-    
+
     def get_private_package_names(self) -> list[str]:
-        return [package for package in self.package_dependencies if not self.package_dependencies[package].is_public_package]
-    
+        return [
+            package for package in self.package_dependencies if not self.package_dependencies[package].is_public_package
+        ]
+
     def get_installed_version_fusion_compatible(self) -> list[str]:
         package_names = []
         for package in self.package_dependencies:
             installed_version_compatibility: FusionCompatibilityState = self.package_dependencies[
-            package
+                package
             ].installed_version_fusion_compatibility
             if (
                 installed_version_compatibility == FusionCompatibilityState.EXPLICIT_ALLOW
@@ -193,15 +202,13 @@ class DbtPackageFile:
             ):
                 package_names.append(package)
         return package_names
-    
+
     def get_package_fusion_compatibility(self) -> dict[FusionCompatibilityState, list[str]]:
         compatibility: dict[FusionCompatibilityState, list[str]] = defaultdict(list)
         for package in self.package_dependencies:
             fusion_compatibility = self.package_dependencies[package].get_fusion_compatibility_state()
             compatibility[fusion_compatibility].append(package)
         return compatibility
-            
-
 
 
 def parse_package_dependencies_from_yml(
@@ -258,4 +265,3 @@ def merge_installed_version_with_deps(deps_file: DbtPackageFile, installed_packa
     for package in installed_packages:
         package_id = package_lookup[package]
         deps_file.set_installed_version_for_package(package_id, installed_packages[package])
-

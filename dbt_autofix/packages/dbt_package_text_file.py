@@ -1,17 +1,16 @@
-
 from dataclasses import dataclass, field
 from pathlib import Path
 import re
 
 
-@dataclass 
+@dataclass
 class DbtPackageTextFileLine:
     line: str
     line_with_package: bool = field(init=False)
     line_with_version: bool = field(init=False)
     line_with_key: bool = field(init=False)
     modified: bool = False
-    
+
     def __post_init__(self):
         self.line_with_key = "-" in self.line
         self.line_with_package = "package" in self.line
@@ -41,18 +40,18 @@ class DbtPackageTextFile:
     lines_with_new_key: list[int] = field(init=False, default_factory=list)
     key_blocks: list[DbtPackageTextFileBlock] = field(init=False, default_factory=list)
     key_blocks_by_start: dict[int, int] = field(init=False, default_factory=dict)
-    key_blocks_by_end: dict[int, int] = field(init=False, default_factory=dict)          
-    lines_modified: set[int] = field(init=False, default_factory=set)     
-    def __post_init__(self):
+    key_blocks_by_end: dict[int, int] = field(init=False, default_factory=dict)
+    lines_modified: set[int] = field(init=False, default_factory=set)
 
+    def __post_init__(self):
         self.parse_file_as_text_by_line()
-    
+
     def parse_file_as_text_by_line(self) -> int:
         current_line: int = -1
         self.lines = []
         key_block = DbtPackageTextFileBlock(0)
         try:
-            with open(self.file_path, 'r') as file:
+            with open(self.file_path, "r") as file:
                 for line in file:
                     current_line += 1
                     new_line = DbtPackageTextFileLine(line)
@@ -75,7 +74,6 @@ class DbtPackageTextFile:
         except Exception as e:
             print(f"An error occurred: {e}")
         return lines_parsed
-    
 
     def find_package_in_file(self, package_name: str) -> list[int]:
         lines_with_package_name: list[int] = []
@@ -84,7 +82,6 @@ class DbtPackageTextFile:
                 lines_with_package_name.append(line_number)
         return lines_with_package_name
 
-
     def find_key_blocks_for_packages(self, package_names: list[str]) -> list[int]:
         # Create a set of blocks to check so we don't check ones already identiifed
         candidates: set[int] = set()
@@ -92,7 +89,7 @@ class DbtPackageTextFile:
         for i, block in enumerate(self.key_blocks):
             if block.package_line > -1:
                 candidates.add(i)
-        
+
         for i, package_name in enumerate(package_names):
             for candidate in candidates:
                 candidate_package_line = self.key_blocks[candidate].package_line
@@ -104,9 +101,10 @@ class DbtPackageTextFile:
                 candidates.remove(package_block)
 
         return blocks_for_packages
-    
 
-    def change_package_version_in_block(self, block_number: int, original_version_string: str, new_version_string: str) -> int:
+    def change_package_version_in_block(
+        self, block_number: int, original_version_string: str, new_version_string: str
+    ) -> int:
         if block_number < 0 or block_number > len(self.key_blocks):
             return -1
         block_version_line = self.key_blocks[block_number].version_line
@@ -118,12 +116,11 @@ class DbtPackageTextFile:
             return block_version_line
         else:
             return -1
-    
 
     def write_output_to_file(self) -> int:
         lines_written: int = 0
         try:
-            with open(self.file_path, 'w') as file:
+            with open(self.file_path, "w") as file:
                 for file_line in self.lines:
                     file.write(file_line.line)
                     lines_written += 1

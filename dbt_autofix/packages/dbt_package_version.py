@@ -56,7 +56,7 @@ def convert_optional_version_string_to_spec(version_string: Optional[str]) -> Op
             return None
     except:
         return None
-    
+
 
 def convert_version_string_list_to_spec(version_string: list[str]) -> list[VersionSpecifier]:
     if len(version_string) == 0:
