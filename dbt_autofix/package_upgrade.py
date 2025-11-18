@@ -108,10 +108,18 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
     # check `packages.yml`
     package_dependencies_yml_files: list[Path] = find_package_yml_files(root_dir)
     if len(package_dependencies_yml_files) != 1:
-        error_console.log(
+        package_yml_count = len([x for x in package_dependencies_yml_files if x.name == "packages.yml"])
+        dependencies_yml_count = len([x for x in package_dependencies_yml_files if x.name == "dependencies.yml"])
+        if package_yml_count > 1 or dependencies_yml_count > 1:
+            error_console.log(
             f"Project must contain exactly one projects.yml or dependencies.yml, found {len(package_dependencies_yml_files)}"
-        )
-        return
+            )
+            return  
+        if package_yml_count == 1 and dependencies_yml_count == 1:
+            error_console.log(
+                f"Project contains both packages.yml and dependencies.yml, package dependencies will only be loaded from packages.yml"
+            )
+            package_dependencies_yml_files = [x for x in package_dependencies_yml_files if x.name == "packages.yml"]
     dependency_path: Path = package_dependencies_yml_files[0]
     if dependency_path.name == "packages.yml":
         dependency_yaml: dict[Any, Any] = load_yaml_from_packages_yml(dependency_path)
@@ -261,10 +269,23 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     return package_version_upgrade_results
 
 
-def upgrade_package_versions(package_dependencies_with_upgrades: list[PackageUpgradeResult], json_output: bool):
+def upgrade_package_versions(deps_file: DbtPackageFile, package_dependencies_with_upgrades: list[PackageVersionUpgradeResult], dry_run: bool, override_pinned_version: bool, json_output: bool) -> int:
     # if package dependencies have upgrades:
     # update dependencies.yml
     # update packages.yml
     # write out dependencies.yml (unless dry run)
     # write out packages.yml (unless dry run)
-    pass
+    packages_with_upgrades = []
+    packages_with_forced_upgrades = []
+    packages_with_no_change = []
+    for package in package_dependencies_with_upgrades:
+        if package.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE:
+            packages_with_upgrades.append(package)
+        elif package.version_reason == PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG:
+            packages_with_forced_upgrades.append(package)
+        else:
+            packages_with_no_change.append(package)
+    
+    for package in packages_with_upgrades:
+        pass
+    return 0
