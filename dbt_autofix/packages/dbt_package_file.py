@@ -91,6 +91,7 @@ def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
 
 # Same as load_yaml_from_packages_yml
 def load_yaml_from_dependencies_yml(dependencies_yml_path: Path) -> dict[Any, Any]:
+    """Same as `load_yaml_from_packages_yml` but dependencies.yml"""
     if dependencies_yml_path.name != "dependencies.yml":
         console.log("File must be dependencies.yml")
         return {}
@@ -275,9 +276,3 @@ def parse_package_dependencies_from_dependencies_yml(
 ) -> Optional[DbtPackageFile]:
     return parse_package_dependencies_from_yml(parsed_dependencies_yml, "dependencies.yml", package_file_path)
 
-
-def merge_installed_version_with_deps(deps_file: DbtPackageFile, installed_packages: dict[str, DbtPackageVersion]):
-    package_lookup = deps_file.get_reverse_lookup_by_package_name()
-    for package in installed_packages:
-        package_id = package_lookup[package]
-        deps_file.set_installed_version_for_package(package_id, installed_packages[package])
