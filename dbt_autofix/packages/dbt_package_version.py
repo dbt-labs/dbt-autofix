@@ -3,6 +3,7 @@ from typing import Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible, reduce_versions
+from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
 
 
 console = Console()
@@ -122,9 +123,13 @@ class DbtPackageVersion:
         return self.require_dbt_version_range != None and len(self.require_dbt_version_range) > 0
 
     def is_explicitly_disallowed_on_fusion(self) -> bool:
+        if self.package_id is not None and self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
+            return True
         return False
 
     def is_explicitly_allowed_on_fusion(self) -> bool:
+        if self.package_id is not None and self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
+            return True
         return False
 
     def get_fusion_compatibility_state(self) -> FusionCompatibilityState:

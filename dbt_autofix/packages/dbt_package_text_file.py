@@ -90,6 +90,7 @@ class DbtPackageTextFile:
             if block.package_line > -1:
                 candidates.add(i)
 
+        # TODO: this is O(n^2) which sucks so make it better
         for i, package_name in enumerate(package_names):
             for candidate in candidates:
                 candidate_package_line = self.key_blocks[candidate].package_line

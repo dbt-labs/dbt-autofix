@@ -191,11 +191,19 @@ class DbtPackageFile:
         ]
 
     def get_installed_version_fusion_compatible(self) -> list[str]:
+        """List packages where the installed version is already compatible with Fusion.
+
+        A version is Fusion compatible if `is_installed_version_fusion_compatible()`
+        on the package returns EXPLICIT_ALLOW or DBT_VERSION_RANGE_INCLUDES_2_0.
+
+        Returns:
+            list[str]: package IDs
+        """
         package_names = []
         for package in self.package_dependencies:
             installed_version_compatibility: FusionCompatibilityState = self.package_dependencies[
                 package
-            ].installed_version_fusion_compatibility
+            ].is_installed_version_fusion_compatible()
             if (
                 installed_version_compatibility == FusionCompatibilityState.EXPLICIT_ALLOW
                 or installed_version_compatibility == FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
@@ -204,6 +212,14 @@ class DbtPackageFile:
         return package_names
 
     def get_package_fusion_compatibility(self) -> dict[FusionCompatibilityState, list[str]]:
+        """Get Fusion compatibility status for all packages in file.
+
+        The package's compatibility state is returned by `get_fusion_compatibility_state`.
+        All packages in the file will fall into exactly one of the compatibility states.
+
+        Returns:
+            dict[FusionCompatibilityState, list[str]]: _description_
+        """
         compatibility: dict[FusionCompatibilityState, list[str]] = defaultdict(list)
         for package in self.package_dependencies:
             fusion_compatibility = self.package_dependencies[package].get_fusion_compatibility_state()

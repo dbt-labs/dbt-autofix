@@ -10,6 +10,7 @@ from dbt_autofix.packages.dbt_package_version import (
     get_version_specifiers,
 )
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
+from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS, EXPLICIT_ALLOW_ALL_VERSIONS
 
 
 console = Console()
@@ -84,6 +85,10 @@ class DbtPackage:
         return not (self.git or self.tarball or self.local)
 
     def is_installed_version_fusion_compatible(self) -> FusionCompatibilityState:
+        if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
+            return FusionCompatibilityState.EXPLICIT_DISALLOW
+        if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
+            return FusionCompatibilityState.EXPLICIT_ALLOW
         if self.installed_package_version is None:
             return FusionCompatibilityState.UNKNOWN
         else:
@@ -94,6 +99,13 @@ class DbtPackage:
                 return self.package_versions[installed_version_string].get_fusion_compatibility_state()
 
     def find_fusion_compatible_versions_in_requested_range(self) -> list[VersionSpecifier]:
+        """Find package versions that are compatible with Fusion AND the version range specified in the project config.
+
+        A project can upgrade to one of these version without updating their project's packages.yml.
+
+        Returns:
+            list[VersionSpecifier]: Fusion-compatible versions
+        """
         compatible_versions = []
         if self.fusion_compatible_versions is None or len(self.fusion_compatible_versions) == 0:
             return compatible_versions
@@ -106,6 +118,13 @@ class DbtPackage:
         return sorted_versions
 
     def find_fusion_compatible_versions_outside_requested_range(self) -> list[VersionSpecifier]:
+        """Find package versions that are compatible with Fusion but NOT the version range specified in the project config.
+
+        The project's packages.yml/dependencies.yml MUST be updated in order to upgrade to one of these version.
+
+        Returns:
+            list[VersionSpecifier]: Fusion-compatible versions
+        """
         compatible_versions = []
         if self.fusion_compatible_versions is None or len(self.fusion_compatible_versions) == 0:
             return compatible_versions
@@ -150,6 +169,10 @@ class DbtPackage:
     def get_fusion_compatibility_state(self) -> FusionCompatibilityState:
         if not self.is_public_package():
             return FusionCompatibilityState.UNKNOWN
+        if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
+            return FusionCompatibilityState.EXPLICIT_DISALLOW
+        if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
+            return FusionCompatibilityState.EXPLICIT_ALLOW
         installed_version_fusion_compatibility = self.is_installed_version_fusion_compatible()
         if (
             installed_version_fusion_compatibility == FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0

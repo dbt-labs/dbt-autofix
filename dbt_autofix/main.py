@@ -55,6 +55,10 @@ def upgrade_packages(
     print("[yellow]This command is still under development and will only operate in dry-run mode[/yellow]\n")
     dry_run = True
 
+    if not path.is_dir() or not path.exists():
+        error_console.print("[red]-- The directory specified in --path does not exist --[/red]")
+        return
+
     print(f"[green]Identifying packages with available upgrades in {path}[/green]\n")
     deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
     if not deps_file:
