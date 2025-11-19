@@ -8,12 +8,13 @@ This directory contains code used by the `packages` option in the CLI that upgra
 
 ## How the CLI works
 The `packages` command calls the `upgrade_packages` function in `main.py`. This then calls:
-* `generate_package_dependencies`
-  * Returns `DbtPackageFile` or None
-* `check_for_package_upgrades`
-  * Returns list of `PackageVersionUpgradeResult`
-* `upgrade_package_versions`
-  * Returns `PackageUpgradeResult`
+* `generate_package_dependencies`: extracts dependencies from project's packages.yml/dependencies.yml file and identifies installed package versions in `dbt_packages`
+  * Returns `DbtPackageFile` if a packages.yml/dependencies.yml file is found and specifies at least one package; otherwise, None
+* `check_for_package_upgrades`: traverses the dependencies in `DbtPackageFile` and for each package, determines if the current installed versions is Fusion compatible; if not, it looks for any Fusion-compatible versions of the package
+  * Returns list of `PackageVersionUpgradeResult` 
+    * Length should exactly match the number of packages in the `DbtPackageFile`'s dependencies
+* `upgrade_package_versions`: takes the `PackageVersionUpgradeResult` list and if any packages need updates, it identifies the required changes in packages.yml. For a dry run, it prints out the new packages.yml; otherwise, it actually makes the changes in the file.
+  * Returns a single `PackageUpgradeResult`
 * `print_to_console` on the `PackageUpgradeResult`
 
 `upgrade_packages` will generate an error if:
@@ -35,3 +36,12 @@ The `packages` command calls the `upgrade_packages` function in `main.py`. This 
 `get_package_hub_files.py` and `get_fusion_compatible_version.py` are used to pull data from the public package registry (hub.getdbt.com) and extract Fusion compatibility information from available versions. This is basically a local cache of package information to bootstrap autofix. We need to know the lower bound of Fusion-compatible versions for a package but we also know that older versions of packages will not change, so caching this locally removes a lot of repetitive network calls and text parsing. Which means faster run times and fewer failures due to network issues. 
 
 The output from these two scripts produces `fusion_version_compatibility_output.py` that contains a single constant, `FUSION_VERSION_COMPATIBILITY_OUTPUT`. This is then used in `DbtPackageFile`'s `merge_fusion_compatibility_output` to populate compatible versions within all package dependencies.
+
+## TODO
+* Private packages
+  * Check require_dbt_version in installed private packages
+  * Need a way to match the dependency in packages.yml (since it doesn't have the name which is used for public packages)
+* Match the version specifier type when upgrading packages
+  * Currently if the package config specifies a version like ">1.0.1" and we need to upgrade to 1.0.2, it gets replaced with "1.0.2"
+  * Should instead replace with same format like ">1.0.2"
+* Get latest versions from package hub instead of using cache
