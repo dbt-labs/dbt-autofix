@@ -86,7 +86,6 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
     Returns:
         DbtPackageVersion: object representing a single version of a package
     """
-    print(parsed_package_file)
     if "name" in parsed_package_file:
         package_name = str(parsed_package_file["name"])
     else:

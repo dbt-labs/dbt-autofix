@@ -69,7 +69,7 @@ class PackageVersionUpgradeResult:
 @dataclass
 class PackageUpgradeResult:
     dry_run: bool
-    file_path: Path
+    file_path: Optional[Path]
     upgraded: bool
     upgrades: list[PackageVersionUpgradeResult]
     unchanged: list[PackageVersionUpgradeResult]
@@ -325,14 +325,20 @@ def upgrade_package_versions(
     dry_run: bool,
     override_pinned_version: bool,
     json_output: bool,
-) -> int:
+) -> PackageUpgradeResult:
     # if package dependencies have upgrades:
     # update dependencies.yml
     # update packages.yml
     # write out dependencies.yml (unless dry run)
     # write out packages.yml (unless dry run)
     if deps_file.file_path is None or len(package_dependencies_with_upgrades):
-        return 0
+        return PackageUpgradeResult(
+            dry_run=dry_run,
+            file_path=deps_file.file_path,
+            upgraded=False,
+            upgrades=[],
+            unchanged=[],
+        )
 
     packages_with_upgrades: list[PackageVersionUpgradeResult] = []
     packages_with_forced_upgrades: list[PackageVersionUpgradeResult] = []
@@ -359,7 +365,13 @@ def upgrade_package_versions(
             packages_to_update[package.id] = package.compatible_version
 
     if len(packages_to_update) == 0:
-        return 0
+        return PackageUpgradeResult(
+            dry_run=dry_run,
+            file_path=deps_file.file_path,
+            upgraded=False,
+            upgrades=[],
+            unchanged=[],
+        )
 
     package_text_file = DbtPackageTextFile(file_path=deps_file.file_path)
     updated_packages: set[str] = package_text_file.update_config_file(
@@ -384,4 +396,4 @@ def upgrade_package_versions(
     )
     upgrade_result.print_to_console(json_output)
 
-    return len(updated_packages)
+    return upgrade_result

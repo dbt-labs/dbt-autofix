@@ -6,6 +6,21 @@ This directory contains code used by the `packages` option in the CLI that upgra
 * DbtPackageVersion: represents a specific version of a package
 * DbtPackageTextFile: contains the raw lines of text from package dependency files. This is used when upgrading packages so we can replace just the version strings within a file without affecting the rest of the file layout (such as comments).
 
+## How the CLI works
+The `packages` command calls the `upgrade_packages` function in `main.py`. This then calls:
+* `generate_package_dependencies`
+  * Returns `DbtPackageFile` or None
+* `check_for_package_upgrades`
+  * Returns list of `PackageVersionUpgradeResult`
+* `upgrade_package_versions`
+  * Returns `PackageUpgradeResult`
+* `print_to_console` on the `PackageUpgradeResult`
+
+`upgrade_packages` will generate an error if:
+* the path specified in `--path` does not exist or isn't a directory
+* `generate_package_dependencies` can't find a packages.yml or dependencies.yml
+* `generate_package_dependencies` found a packages.yml or dependencies.yml but it didn't contain any package dependencies
+
 ## Scripts
 
 * Used to extract info used in package upgrade CLI:

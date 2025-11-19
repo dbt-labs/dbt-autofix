@@ -77,25 +77,14 @@ def upgrade_packages(
 
     package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
 
-    if dry_run:
-        if not json_output:
-            error_console.print("[red]-- Dry run mode, not applying changes --[/red]")
-        upgrade_result = PackageUpgradeResult(
-            dry_run=True,
-            file_path=deps_file.file_path if deps_file.file_path else path,
-            upgraded=False,
-            upgrades=[],
-            unchanged=package_upgrades,
-        )
-        upgrade_result.print_to_console(json_output=True)
-
-    packages_upgraded: int = upgrade_package_versions(
+    packages_upgraded: PackageUpgradeResult = upgrade_package_versions(
         deps_file=deps_file,
         package_dependencies_with_upgrades=package_upgrades,
         dry_run=dry_run,
         override_pinned_version=force_upgrade,
         json_output=json_output,
     )
+    packages_upgraded.print_to_console(json_output=json_output)
 
     if json_output:
         print(json.dumps({"mode": "complete"}))  # noqa: T201
