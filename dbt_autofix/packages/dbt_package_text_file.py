@@ -164,8 +164,6 @@ class DbtPackageTextFile:
                 unchanged_packages.add(package_name)
                 continue
 
-            if package_version[0] == "=":
-                package_version = package_version[1:]
             block_version_line = self.change_package_version_in_block(block, package_version)
             if block_version_line > -1 and block_version_line < len(self.lines):
                 updated_packages.add(package_name)

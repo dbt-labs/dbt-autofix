@@ -283,7 +283,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     id=package,
                     public_package=True,
                     installed_version=installed_package_versions[package],
-                    compatible_version=versions_within_config[0].to_version_string(),
+                    compatible_version=versions_within_config[0].to_version_string(skip_matcher=True),
                     version_reason=PackageVersionUpgradeType.UPGRADE_AVAILABLE,
                 )
             )
@@ -295,7 +295,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     id=package,
                     public_package=True,
                     installed_version=installed_package_versions[package],
-                    compatible_version=versions_outside_config[0].to_version_string(),
+                    compatible_version=versions_outside_config[0].to_version_string(skip_matcher=True),
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG,
                 )
             )

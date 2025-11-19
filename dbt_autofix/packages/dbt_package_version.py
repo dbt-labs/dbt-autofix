@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible, reduce_versions
 from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
-
+from ruamel.yaml.comments import CommentedSeq
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
 console = Console()
 
@@ -35,12 +36,14 @@ def construct_version_list(raw_versions: Union[str, list[str], None]) -> list[st
 def construct_version_list_from_raw(raw_versions: Any) -> list[str]:
     if raw_versions is None:
         return []
-    elif type(raw_versions) == str:
-        return [raw_versions]
-    elif type(raw_versions) == list:
+    # isinstance is needed here because when ruyaml parses the YAML,
+    # sometimes it stores it as an instance of a class that extend str or list
+    elif isinstance(raw_versions, str):
+        return [str(raw_versions)]
+    elif isinstance(raw_versions, list):
         versions = []
         for version in raw_versions:
-            if type(version) == str or type(version) == float:
+            if isinstance(version, str) or isinstance(version, float):
                 versions.append(str(version))
         return versions
     else:
@@ -107,10 +110,9 @@ class DbtPackageVersion:
         try:
             self.version = VersionSpecifier.from_version_string(self.package_version_str)
             if self.raw_require_dbt_version_range is not None:
-                self.require_dbt_version_range = construct_version_list(self.raw_require_dbt_version_range)
+                self.require_dbt_version_range = construct_version_list_from_raw(self.raw_require_dbt_version_range)
             if self.require_dbt_version_range and len(self.require_dbt_version_range) > 0:
-                raw_versions: list[RawVersion] = [x for x in self.require_dbt_version_range]
-                version_specs: list[VersionSpecifier] = get_version_specifiers(get_versions(raw_versions))
+                version_specs: list[VersionSpecifier] = get_version_specifiers(self.require_dbt_version_range)
                 self.require_dbt_version = convert_version_specifiers_to_range(version_specs)
             else:
                 self.require_dbt_version = None

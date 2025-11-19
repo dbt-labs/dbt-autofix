@@ -6,6 +6,7 @@ from dbt_autofix.packages.dbt_package_version import (
     FusionCompatibilityState,
     RawVersion,
     construct_version_list,
+    construct_version_list_from_raw,
     convert_version_specifiers_to_range,
     get_version_specifiers,
 )
@@ -23,8 +24,9 @@ class DbtPackage:
     # org/package_name used in deps and package hub
     package_id: str
     # version range specified in deps config (packages.yml)
-    project_config_raw_version_specifier: Union[str, list[str], None]
-    project_config_version_range: VersionRange = field(init=False)
+    project_config_raw_version_specifier: Any
+    project_config_version_range_list: list[str] = field(default_factory=list)
+    project_config_version_range: Optional[VersionRange] = field(init=False)
     # package versions indexed by version string
     package_versions: dict[str, DbtPackageVersion] = field(default_factory=dict)
     installed_package_version: Optional[VersionSpecifier] = None
@@ -50,9 +52,17 @@ class DbtPackage:
     installed_version_fusion_compatibility: FusionCompatibilityState = FusionCompatibilityState.UNKNOWN
 
     def __post_init__(self):
-        project_config_raw_version_specifier_parsed = construct_version_list(self.project_config_raw_version_specifier)
-        version_specs: list[VersionSpecifier] = get_version_specifiers(project_config_raw_version_specifier_parsed)
-        self.project_config_version_range = convert_version_specifiers_to_range(version_specs)
+        try:
+            if self.project_config_raw_version_specifier is not None:
+                self.project_config_version_range_list = construct_version_list_from_raw(self.project_config_raw_version_specifier)
+            if self.project_config_version_range_list and len(self.project_config_version_range_list) > 0:
+                version_specs: list[VersionSpecifier] = get_version_specifiers(self.project_config_version_range_list)
+                self.project_config_version_range = convert_version_specifiers_to_range(version_specs)
+            else:
+                self.project_config_version_range = None
+        except:
+            self.project_config_version_range = None
+            print("exception calculating config version range ")
 
     def add_package_version(self, new_package_version: DbtPackageVersion, installed=False, latest=False) -> bool:
         if latest:
@@ -92,7 +102,7 @@ class DbtPackage:
         if self.installed_package_version is None:
             return FusionCompatibilityState.UNKNOWN
         else:
-            installed_version_string = self.installed_package_version.to_version_string()
+            installed_version_string = self.installed_package_version.to_version_string(skip_matcher=True)
             if installed_version_string not in self.package_versions:
                 return FusionCompatibilityState.UNKNOWN
             else:
@@ -106,6 +116,8 @@ class DbtPackage:
         Returns:
             list[VersionSpecifier]: Fusion-compatible versions
         """
+        if self.project_config_version_range is None:
+            return []
         compatible_versions = []
         if self.fusion_compatible_versions is None or len(self.fusion_compatible_versions) == 0:
             return compatible_versions
@@ -125,6 +137,8 @@ class DbtPackage:
         Returns:
             list[VersionSpecifier]: Fusion-compatible versions
         """
+        if self.project_config_version_range is None:
+            return []
         compatible_versions = []
         if self.fusion_compatible_versions is None or len(self.fusion_compatible_versions) == 0:
             return compatible_versions
@@ -138,6 +152,8 @@ class DbtPackage:
 
     def find_fusion_incompatible_versions_in_requested_range(self) -> list[VersionSpecifier]:
         incompatible_versions = []
+        if self.project_config_version_range is None:
+            return []
         if self.fusion_incompatible_versions is None or len(self.fusion_incompatible_versions) == 0:
             return incompatible_versions
         for version in self.fusion_incompatible_versions:
@@ -150,6 +166,8 @@ class DbtPackage:
 
     def find_fusion_unknown_versions_in_requested_range(self) -> list[VersionSpecifier]:
         unknown_compatibility_versions = []
+        if self.project_config_version_range is None:
+            return []
         if self.unknown_compatibility_versions is None or len(self.unknown_compatibility_versions) == 0:
             return unknown_compatibility_versions
         for version in self.unknown_compatibility_versions:
@@ -162,7 +180,7 @@ class DbtPackage:
 
     def get_installed_package_version(self) -> str:
         if self.installed_package_version:
-            return self.installed_package_version.to_version_string()
+            return self.installed_package_version.to_version_string(skip_matcher=True)
         else:
             return "unknown"
 
