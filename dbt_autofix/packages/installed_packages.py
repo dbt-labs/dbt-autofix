@@ -101,13 +101,11 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
 
     if "require-dbt-version" in parsed_package_file:
         require_dbt_version_raw: Any = parsed_package_file["require-dbt-version"]
-        require_dbt_version = get_versions(parsed_package_file["require-dbt-version"])
     else:
-        require_dbt_version = []
         require_dbt_version_raw = None
 
     installed_package_version = DbtPackageVersion(
-        package_name=package_name, package_version_str=version, require_dbt_version_range=require_dbt_version, raw_require_dbt_version_range=require_dbt_version_raw
+        package_name=package_name, package_version_str=version, raw_require_dbt_version_range=require_dbt_version_raw
     )
 
     return installed_package_version

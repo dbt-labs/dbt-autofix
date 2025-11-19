@@ -1,6 +1,6 @@
 from typing import Any, Optional
 import pytest
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, construct_version_list_from_raw
 from dbt_common.semver import VersionSpecifier, VersionRange, Matchers, versions_compatible, UnboundedVersionSpecifier
 
 
@@ -91,13 +91,6 @@ def test_convert_require_dbt_version_range_raw(input_yaml: dict[Any, Any], expec
     
     extracted_version: Optional[VersionRange] = package_version.require_dbt_version
     assert extracted_version == expected_match
-    # assert extracted_version.major == expected_match.major
-    # assert extracted_version.minor == expected_match.minor
-    # assert extracted_version.patch == expected_match.patch
-    # assert extracted_version.prerelease == expected_match.prerelease
-    # assert extracted_version.matcher == expected_match.matcher
-    # assert extracted_version.is_exact == True
-    # assert versions_compatible(extracted_version, input_str) == True
 
 @pytest.mark.parametrize(
     "input_yaml,expected_match",
@@ -156,3 +149,32 @@ def test_fusion_compatible_from_raw(input_yaml: dict[Any, Any], expected_match: 
     
     fusion_compatible: bool = package_version.is_require_dbt_version_fusion_compatible()
     assert fusion_compatible == expected_match
+
+@pytest.mark.parametrize(
+    "input_yaml,expected_match",
+    [
+        (
+            ['>=1.1.0', '<2.0.0'],
+            ['>=1.1.0', '<2.0.0']
+        ),
+        (
+            None,
+            []
+        ),
+        (
+            ['>=1.1.0'],
+            ['>=1.1.0'],
+        ),
+        (
+            ">=1.1.0",
+            ['>=1.1.0'],
+        ),
+    ]
+)
+def test_convert_version_string_from_raw(input_yaml: Any, expected_match: list[str]):
+    version_list = construct_version_list_from_raw(input_yaml)
+    
+    assert version_list == expected_match
+    if input_yaml is not None:
+        for i, version in enumerate(version_list):
+            assert version == expected_match[i]

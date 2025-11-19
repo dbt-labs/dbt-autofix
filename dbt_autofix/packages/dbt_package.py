@@ -68,13 +68,13 @@ class DbtPackage:
             self.installed_version_fusion_compatibility = new_package_version.get_fusion_compatibility_state()
         return True
 
-    def set_latest_package_version(self, version_str: str, require_dbt_version_range: list[str] = []):
+    def set_latest_package_version(self, version_str: str, raw_require_dbt_version: Any = None):
         try:
             return self.add_package_version(
                 DbtPackageVersion(
                     package_name=self.package_name,
                     package_version_str=version_str,
-                    require_dbt_version_range=require_dbt_version_range,
+                    raw_require_dbt_version_range=raw_require_dbt_version,
                 ),
                 latest=True,
             )
