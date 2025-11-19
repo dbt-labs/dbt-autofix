@@ -1,6 +1,8 @@
 name: 'snowplow'
 version: '0.9.0'
 
+require-dbt-version: ">=0.16.0"
+
 config-version: 2
 
 target-path: "target"

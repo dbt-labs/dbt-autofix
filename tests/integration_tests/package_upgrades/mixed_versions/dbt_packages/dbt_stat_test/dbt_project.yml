@@ -1,5 +1,5 @@
-name: "dbt_set_similarity"
-version: "0.2.1"
+name: "dbt_stat_test"
+version: "0.1.1"
 
 require-dbt-version: [">=1.1.0", "<2.0.0"]
 config-version: 2

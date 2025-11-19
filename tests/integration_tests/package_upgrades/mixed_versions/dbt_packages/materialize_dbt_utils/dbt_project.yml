@@ -1,0 +1,5 @@
+name: 'materialize_dbt_utils'
+version: '0.6.0'
+config-version: 2
+
+require-dbt-version: [">=1.3.0", "<2.0.0"]

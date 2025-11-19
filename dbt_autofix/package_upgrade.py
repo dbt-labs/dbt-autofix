@@ -75,9 +75,6 @@ class PackageUpgradeResult:
     unchanged: list[PackageVersionUpgradeResult]
 
     def print_to_console(self, json_output: bool = True):
-        if not self.upgraded and not self.dry_run:
-            return
-
         if json_output:
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
@@ -95,13 +92,13 @@ class PackageUpgradeResult:
         for result in self.upgrades:
             console.print(f"  package {result.id} upgraded to version {result.package_final_version()}", style="yellow")
             for log in result.package_upgrade_logs:
-                console.print(f"    {log}")
+                console.print(f"    {log.value}")
         for result in self.unchanged:
             console.print(
                 f"  package {result.id} unchanged from installed version {result.installed_version}", style="yellow"
             )
             for log in result.package_upgrade_logs:
-                console.print(f"    {log}")
+                console.print(f"    {log.value}")
         return
 
 
@@ -322,22 +319,22 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
 def upgrade_package_versions(
     deps_file: DbtPackageFile,
     package_dependencies_with_upgrades: list[PackageVersionUpgradeResult],
-    dry_run: bool,
-    override_pinned_version: bool,
-    json_output: bool,
+    dry_run: bool=True,
+    override_pinned_version: bool=False,
+    json_output: bool=False,
 ) -> PackageUpgradeResult:
     # if package dependencies have upgrades:
     # update dependencies.yml
     # update packages.yml
     # write out dependencies.yml (unless dry run)
     # write out packages.yml (unless dry run)
-    if deps_file.file_path is None or len(package_dependencies_with_upgrades):
+    if deps_file.file_path is None or len(package_dependencies_with_upgrades) == 0:
         return PackageUpgradeResult(
             dry_run=dry_run,
             file_path=deps_file.file_path,
             upgraded=False,
             upgrades=[],
-            unchanged=[],
+            unchanged=package_dependencies_with_upgrades,
         )
 
     packages_with_upgrades: list[PackageVersionUpgradeResult] = []
@@ -370,7 +367,7 @@ def upgrade_package_versions(
             file_path=deps_file.file_path,
             upgraded=False,
             upgrades=[],
-            unchanged=[],
+            unchanged=package_dependencies_with_upgrades,
         )
 
     package_text_file = DbtPackageTextFile(file_path=deps_file.file_path)
