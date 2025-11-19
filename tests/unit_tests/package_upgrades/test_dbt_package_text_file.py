@@ -122,18 +122,10 @@ models:
 
         yield project_dir
 
+
 @pytest.mark.parametrize(
     "input_str,expected_match",
-    [
-        (
-            "    version: 0.8.7",
-            ["    version", ": 0.8.7"]
-        ),
-        (
-            "  - version: 0.10.9",
-            ["  - version", ": 0.10.9"]
-        )
-    ]
+    [("    version: 0.8.7", ["    version", ": 0.8.7"]), ("  - version: 0.10.9", ["  - version", ": 0.10.9"])],
 )
 def test_extract_version_from_line(input_str, expected_match):
     file_line = DbtPackageTextFileLine(input_str)

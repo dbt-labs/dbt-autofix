@@ -7,6 +7,7 @@ from rich.console import Console
 
 console = Console()
 
+
 @dataclass
 class DbtPackageTextFileLine:
     line: str
@@ -19,9 +20,9 @@ class DbtPackageTextFileLine:
         self.line_with_key = "-" in self.line
         self.line_with_package = "package" in self.line
         self.line_with_version = "version" in self.line
-    
+
     def extract_version_from_line(self) -> list[str]:
-        matched: Optional[re.Match[str]] = re.search(r'\bversion\b', self.line)
+        matched: Optional[re.Match[str]] = re.search(r"\bversion\b", self.line)
         if not matched:
             return []
         end_pos = matched.end()
@@ -32,7 +33,7 @@ class DbtPackageTextFileLine:
         if sub_count > 0:
             self.modified = True
         return sub_count
-    
+
     def replace_version_string_in_line(self, new_string: str) -> bool:
         extracted_version = self.extract_version_from_line()
         if len(extracted_version) != 2:
@@ -122,9 +123,7 @@ class DbtPackageTextFile:
 
         return blocks_for_packages
 
-    def change_package_version_in_block(
-        self, block_number: int, new_version_string: str
-    ) -> int:
+    def change_package_version_in_block(self, block_number: int, new_version_string: str) -> int:
         if block_number < 0 or block_number > len(self.key_blocks):
             return -1
         block_version_line = self.key_blocks[block_number].version_line
@@ -148,10 +147,12 @@ class DbtPackageTextFile:
             print(f"An error occurred: {e}")
         return lines_written
 
-    def update_config_file(self, packages_with_versions: dict[str, str], dry_run: bool=False, print_to_console: bool=True) -> set[str]:
+    def update_config_file(
+        self, packages_with_versions: dict[str, str], dry_run: bool = False, print_to_console: bool = True
+    ) -> set[str]:
         if len(packages_with_versions) == 0:
             return set()
-        
+
         packages_to_update: list[str] = [x for x in packages_with_versions]
         updated_packages: set[str] = set()
         unchanged_packages: set[str] = set()
@@ -162,7 +163,7 @@ class DbtPackageTextFile:
             if block == -1:
                 unchanged_packages.add(package_name)
                 continue
-            
+
             if package_version[0] == "=":
                 package_version = package_version[1:]
             block_version_line = self.change_package_version_in_block(block, package_version)
@@ -173,7 +174,10 @@ class DbtPackageTextFile:
         if len(updated_packages) == 0:
             return updated_packages
         if dry_run and print_to_console:
-            console.print(f"\n'DRY RUN - NOT APPLIED: ",style="green",)
+            console.print(
+                f"\n'DRY RUN - NOT APPLIED: ",
+                style="green",
+            )
             for line in self.lines:
                 if line.modified:
                     console.print(line, style="green")

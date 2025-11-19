@@ -47,7 +47,7 @@ class PackageVersionUpgradeResult:
     upgraded_version: Optional[str] = None
     compatible_version: Optional[str] = None
     version_range_config: Optional[str] = None
-    
+
     def package_should_upgrade(self):
         return self.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE
 
@@ -114,7 +114,7 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
         dependencies_yml_count = len([x for x in package_dependencies_yml_files if x.name == "dependencies.yml"])
         if package_yml_count > 1 or dependencies_yml_count > 1:
             error_console.log(
-                f"Project must contain exactly one projects.yml or dependencies.yml, found {len(package_dependencies_yml_files)}"
+                f"Project must contain exactly one packages.yml or dependencies.yml, found {len(package_dependencies_yml_files)}"
             )
             return
         if package_yml_count == 1 and dependencies_yml_count == 1:
@@ -333,7 +333,7 @@ def upgrade_package_versions(
     # write out packages.yml (unless dry run)
     if deps_file.file_path is None or len(package_dependencies_with_upgrades):
         return 0
-    
+
     packages_with_upgrades: list[PackageVersionUpgradeResult] = []
     packages_with_forced_upgrades: list[PackageVersionUpgradeResult] = []
     packages_with_no_change: list[PackageVersionUpgradeResult] = []
@@ -349,20 +349,22 @@ def upgrade_package_versions(
             packages_with_no_change.append(package)
 
     packages_to_update: dict[str, str] = {}
-    
+
     if override_pinned_version:
         for package in packages_with_forced_upgrades:
-                if package.compatible_version:
-                    packages_to_update[package.id] = package.compatible_version
+            if package.compatible_version:
+                packages_to_update[package.id] = package.compatible_version
     for package in packages_with_upgrades:
         if package.compatible_version:
             packages_to_update[package.id] = package.compatible_version
-    
+
     if len(packages_to_update) == 0:
         return 0
-    
+
     package_text_file = DbtPackageTextFile(file_path=deps_file.file_path)
-    updated_packages: set[str] = package_text_file.update_config_file(packages_to_update, dry_run=dry_run, print_to_console=True)
+    updated_packages: set[str] = package_text_file.update_config_file(
+        packages_to_update, dry_run=dry_run, print_to_console=True
+    )
 
     upgraded_package_results: list[PackageVersionUpgradeResult] = []
     unchanged_package_results: list[PackageVersionUpgradeResult] = []

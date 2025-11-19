@@ -275,4 +275,3 @@ def parse_package_dependencies_from_dependencies_yml(
     parsed_dependencies_yml: dict[Any, Any], package_file_path: Optional[Path]
 ) -> Optional[DbtPackageFile]:
     return parse_package_dependencies_from_yml(parsed_dependencies_yml, "dependencies.yml", package_file_path)
-

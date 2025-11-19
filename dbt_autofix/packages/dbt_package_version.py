@@ -45,7 +45,7 @@ def construct_version_list_from_raw(raw_versions: Any) -> list[str]:
         return versions
     else:
         return []
-    
+
 
 def get_version_specifiers(raw_version: list[str]) -> list[VersionSpecifier]:
     return [VersionSpecifier.from_version_string(v) for v in raw_version]
