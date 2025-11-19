@@ -1,0 +1,9 @@
+name: 'dbt_set_similarity'
+version: '0.2.1'
+
+config-version: 2
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+macro-paths: ["macros"]
+log-path: "logs"

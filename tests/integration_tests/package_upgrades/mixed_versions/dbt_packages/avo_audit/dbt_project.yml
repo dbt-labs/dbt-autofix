@@ -1,0 +1,9 @@
+name: 'avo_audit'
+version: '1.0.1'
+
+config-version: 2
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+macro-paths: ["macros"]
+log-path: "logs"

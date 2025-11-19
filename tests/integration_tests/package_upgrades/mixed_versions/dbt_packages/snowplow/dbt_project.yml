@@ -1,0 +1,9 @@
+name: 'snowplow'
+version: '0.9.0'
+
+config-version: 2
+
+target-path: "target"
+clean-targets: ["target", "dbt_modules", "dbt_packages"]
+macro-paths: ["macros"]
+log-path: "logs"

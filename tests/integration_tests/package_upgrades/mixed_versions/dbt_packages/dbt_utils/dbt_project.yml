@@ -1,0 +1,10 @@
+name: 'dbt_utils'
+version: '0.8.5'
+
+
+config-version: 2
+
+target-path: "target"
+clean-targets: ["target", "dbt_modules", "dbt_packages"]
+macro-paths: ["macros"]
+log-path: "logs"
