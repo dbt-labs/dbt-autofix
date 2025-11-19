@@ -45,11 +45,12 @@ def identify_duplicate_keys(
     print_duplicate_keys(project_duplicates, package_duplicates)
 
 
-@app.command(name="upgrade-packages")
+@app.command(name="packages")
 def upgrade_packages(
     path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
     dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
+    force_upgrade: Annotated[bool, typer.Option("--force-upgrade", "-f", help="Override package version config when upgrading to Fusion-compatible versions")] = False,
 ):
     # TODO: remove this when full package upgrade is available
     print("[yellow]This command is still under development and will only operate in dry-run mode[/yellow]\n")
@@ -82,8 +83,8 @@ def upgrade_packages(
             unchanged=package_upgrades,
         )
         upgrade_result.print_to_console(json_output=True)
-    else:
-        upgrade_package_versions(package_upgrades, json_output)
+
+    packages_upgraded: int = upgrade_package_versions(deps_file=deps_file, package_dependencies_with_upgrades=package_upgrades, dry_run=dry_run, override_pinned_version=force_upgrade, json_output=json_output)
 
     if json_output:
         print(json.dumps({"mode": "complete"}))  # noqa: T201

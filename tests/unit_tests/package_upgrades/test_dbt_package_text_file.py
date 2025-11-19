@@ -11,6 +11,8 @@ from dbt_autofix.packages.dbt_package_file import (
 
 import pytest
 
+from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFileLine
+
 
 @pytest.fixture
 def temp_project_dir_with_packages_yml():
@@ -76,6 +78,7 @@ packages:
   - name: dbt_expectations
     package: metaplane/dbt_expectations
     version: 0.10.9
+  - version: 0.10.9
   - git: https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git
     name: gmi_common_dbt_utils
     revision: 067b588343e9c19dc8593b6b3cb06cc5b47822e1
@@ -118,3 +121,23 @@ models:
 """)
 
         yield project_dir
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [
+        (
+            "    version: 0.8.7",
+            ["    version", ": 0.8.7"]
+        ),
+        (
+            "  - version: 0.10.9",
+            ["  - version", ": 0.10.9"]
+        )
+    ]
+)
+def test_extract_version_from_line(input_str, expected_match):
+    file_line = DbtPackageTextFileLine(input_str)
+    extracted_version = file_line.extract_version_from_line()
+    assert len(extracted_version) == len(expected_match)
+    assert extracted_version[0] == expected_match[0]
+    assert extracted_version[1] == expected_match[1]

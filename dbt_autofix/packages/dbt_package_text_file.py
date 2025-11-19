@@ -1,7 +1,11 @@
+from collections import namedtuple
 from dataclasses import dataclass, field
 from pathlib import Path
 import re
+from typing import Optional
+from rich.console import Console
 
+console = Console()
 
 @dataclass
 class DbtPackageTextFileLine:
@@ -15,12 +19,27 @@ class DbtPackageTextFileLine:
         self.line_with_key = "-" in self.line
         self.line_with_package = "package" in self.line
         self.line_with_version = "version" in self.line
+    
+    def extract_version_from_line(self) -> list[str]:
+        matched: Optional[re.Match[str]] = re.search(r'\bversion\b', self.line)
+        if not matched:
+            return []
+        end_pos = matched.end()
+        return [self.line[:end_pos], self.line[end_pos:]]
 
     def replace_string_in_line(self, old_string: str, new_string: str) -> int:
         _, sub_count = re.subn(r"{original_version_string}", new_string, old_string)
         if sub_count > 0:
             self.modified = True
         return sub_count
+    
+    def replace_version_string_in_line(self, new_string: str) -> bool:
+        extracted_version = self.extract_version_from_line()
+        if len(extracted_version) != 2:
+            return False
+        self.line = f"{extracted_version[0]}: {new_string}\n"
+        self.modified = True
+        return True
 
 
 @dataclass
@@ -104,15 +123,15 @@ class DbtPackageTextFile:
         return blocks_for_packages
 
     def change_package_version_in_block(
-        self, block_number: int, original_version_string: str, new_version_string: str
+        self, block_number: int, new_version_string: str
     ) -> int:
         if block_number < 0 or block_number > len(self.key_blocks):
             return -1
         block_version_line = self.key_blocks[block_number].version_line
         if block_version_line == -1:
             return -1
-        result = self.lines[block_version_line].replace_string_in_line(original_version_string, new_version_string)
-        if result > 0:
+        result: bool = self.lines[block_version_line].replace_version_string_in_line(new_version_string)
+        if result:
             self.lines_modified.add(block_version_line)
             return block_version_line
         else:
@@ -128,3 +147,41 @@ class DbtPackageTextFile:
         except Exception as e:
             print(f"An error occurred: {e}")
         return lines_written
+
+    def update_config_file(self, packages_with_versions: dict[str, str], dry_run: bool=False, print_to_console: bool=True) -> set[str]:
+        if len(packages_with_versions) == 0:
+            return set()
+        
+        packages_to_update: list[str] = [x for x in packages_with_versions]
+        updated_packages: set[str] = set()
+        unchanged_packages: set[str] = set()
+        key_blocks: list[int] = self.find_key_blocks_for_packages(packages_to_update)
+        for i, block in enumerate(key_blocks):
+            package_name = packages_to_update[i]
+            package_version = packages_with_versions[package_name]
+            if block == -1:
+                unchanged_packages.add(package_name)
+                continue
+            
+            if package_version[0] == "=":
+                package_version = package_version[1:]
+            block_version_line = self.change_package_version_in_block(block, package_version)
+            if block_version_line > -1 and block_version_line < len(self.lines):
+                updated_packages.add(package_name)
+            else:
+                unchanged_packages.add(package_name)
+        if len(updated_packages) == 0:
+            return updated_packages
+        if dry_run and print_to_console:
+            console.print(f"\n'DRY RUN - NOT APPLIED: ",style="green",)
+            for line in self.lines:
+                if line.modified:
+                    console.print(line, style="green")
+                else:
+                    console.print(line)
+        else:
+            lines_written = self.write_output_to_file()
+            if lines_written == 0 and print_to_console:
+                console.print(f"Error: No output written to {self.file_path.name}")
+            return set()
+        return updated_packages

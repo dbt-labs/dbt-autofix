@@ -14,6 +14,7 @@ from dbt_autofix.packages.dbt_package_file import (
     parse_package_dependencies_from_dependencies_yml,
     parse_package_dependencies_from_packages_yml,
 )
+from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
 from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, FusionCompatibilityState
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
@@ -45,7 +46,8 @@ class PackageVersionUpgradeResult:
     version_reason: PackageVersionUpgradeType
     upgraded_version: Optional[str] = None
     compatible_version: Optional[str] = None
-
+    version_range_config: Optional[str] = None
+    
     def package_should_upgrade(self):
         return self.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE
 
@@ -329,9 +331,12 @@ def upgrade_package_versions(
     # update packages.yml
     # write out dependencies.yml (unless dry run)
     # write out packages.yml (unless dry run)
-    packages_with_upgrades = []
-    packages_with_forced_upgrades = []
-    packages_with_no_change = []
+    if deps_file.file_path is None or len(package_dependencies_with_upgrades):
+        return 0
+    
+    packages_with_upgrades: list[PackageVersionUpgradeResult] = []
+    packages_with_forced_upgrades: list[PackageVersionUpgradeResult] = []
+    packages_with_no_change: list[PackageVersionUpgradeResult] = []
     for package in package_dependencies_with_upgrades:
         if package.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE:
             packages_with_upgrades.append(package)
@@ -343,6 +348,38 @@ def upgrade_package_versions(
         else:
             packages_with_no_change.append(package)
 
+    packages_to_update: dict[str, str] = {}
+    
+    if override_pinned_version:
+        for package in packages_with_forced_upgrades:
+                if package.compatible_version:
+                    packages_to_update[package.id] = package.compatible_version
     for package in packages_with_upgrades:
-        pass
-    return 0
+        if package.compatible_version:
+            packages_to_update[package.id] = package.compatible_version
+    
+    if len(packages_to_update) == 0:
+        return 0
+    
+    package_text_file = DbtPackageTextFile(file_path=deps_file.file_path)
+    updated_packages: set[str] = package_text_file.update_config_file(packages_to_update, dry_run=dry_run, print_to_console=True)
+
+    upgraded_package_results: list[PackageVersionUpgradeResult] = []
+    unchanged_package_results: list[PackageVersionUpgradeResult] = []
+    for package in package_dependencies_with_upgrades:
+        if package.id in updated_packages:
+            package.upgraded_version = package.compatible_version
+            upgraded_package_results.append(package)
+        else:
+            unchanged_package_results.append(package)
+
+    upgrade_result = PackageUpgradeResult(
+        dry_run=dry_run,
+        file_path=deps_file.file_path,
+        upgraded=len(updated_packages) > 0,
+        upgrades=upgraded_package_results,
+        unchanged=unchanged_package_results,
+    )
+    upgrade_result.print_to_console(json_output)
+
+    return len(updated_packages)
