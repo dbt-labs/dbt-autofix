@@ -58,7 +58,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         )
         versions.append(version)
         dbt_version_defined = package_version.is_require_dbt_version_defined()
-        fusion_compatible_version = dbt_version_defined and package_version.is_version_fusion_compatible()
+        fusion_compatible_version = dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
         if fusion_compatible_version:
             fusion_compatible_versions.append(package_version.version)
             if not latest_fusion_version or package_version.version > latest_fusion_version:
