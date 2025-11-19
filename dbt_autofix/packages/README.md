@@ -8,6 +8,15 @@ This directory contains code used by the `packages` option in the CLI that upgra
 
 ## Scripts
 
-Two scripts are used to pull data from the public package registry (hub.getdbt.com) and extract Fusion compatibility information from available versions. This is basically a local cache of package information to bootstrap autofix. We need to know the lower bound of Fusion-compatible versions for a package but we also know that older versions of packages will not change, so caching this locally removes a lot of repetitive network calls and text parsing. Which means faster run times and fewer failures due to network issues. 
+* Used to extract info used in package upgrade CLI:
+  * `get_package_hub_files.py`: download package information from package hub (hub.getdbt.com) for all versions of all packages
+    * Output: `package_output.json`
+  * `get_fusion_compatible_versions.py`: loads `package_output.json` and summarizes Fusion compatibility across all versions for each package
+    * Output: `fusion_version_compatibility_output.json` and `fusion_version_compatibility_output.py`
+* Not used as an input to the package upgrade CLI:
+  * `packages_with_fusion_compatibility_changes.py`: reads `fusion_version_compatibility_output.py` and generates a CSV summary of packages for analytics use
+    * Output: `packages.csv`
+
+`get_package_hub_files.py` and `get_fusion_compatible_version.py` are used to pull data from the public package registry (hub.getdbt.com) and extract Fusion compatibility information from available versions. This is basically a local cache of package information to bootstrap autofix. We need to know the lower bound of Fusion-compatible versions for a package but we also know that older versions of packages will not change, so caching this locally removes a lot of repetitive network calls and text parsing. Which means faster run times and fewer failures due to network issues. 
 
 The output from these two scripts produces `fusion_version_compatibility_output.py` that contains a single constant, `FUSION_VERSION_COMPATIBILITY_OUTPUT`. This is then used in `DbtPackageFile`'s `merge_fusion_compatibility_output` to populate compatible versions within all package dependencies.
