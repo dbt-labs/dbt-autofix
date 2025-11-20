@@ -45,3 +45,8 @@ The output from these two scripts produces `fusion_version_compatibility_output.
   * Currently if the package config specifies a version like ">1.0.1" and we need to upgrade to 1.0.2, it gets replaced with "1.0.2"
   * Should instead replace with same format like ">1.0.2"
 * Get latest versions from package hub instead of using cache
+* Better handling for version in package's dbt_project.yml
+  * Sometimes the version number in the package's dbt_project.yml doesn't actually match the release version because package hub only checks the release tag on Github, so the installed version check will set an incorrect version
+  * Could instead refer to the package lock file to find the exact version
+  * But probably not a huge problem since we are only looking for the require dbt version anyway and only look for upgrades if it's missing/incompatible
+* Move package parsing logic to hubcap or package hub where appropriate
