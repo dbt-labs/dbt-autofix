@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any, Optional
 from rich.console import Console
@@ -10,6 +11,23 @@ console = Console()
 
 # Helper functions to find currently installed packages
 # and construct DbtPackageVersions from the package's dbt_project.yml
+
+
+def find_packages_within_directory(installed_packages_path: Path) -> list[Path]:
+    if not installed_packages_path.exists() or not installed_packages_path.is_dir():
+        return []
+    # we only go one level deep here to avoid parsing the dependencies of dependnecies
+    yml_files_packages = set((installed_packages_path).glob("*/*.yml")).union(
+        set((installed_packages_path).glob("*/*.yaml"))
+    )
+
+    # this is a hack to avoid checking integration_tests. it won't work everywhere but it's good enough for now
+    yml_files_packages_integration_tests = set((installed_packages_path).glob("**/integration_tests/**/*.yml")).union(
+        set((installed_packages_path).glob("**/integration_tests/**/*.yaml"))
+    )
+    yml_files_packages_not_integration_tests = yml_files_packages - yml_files_packages_integration_tests
+
+    return [Path(str(path)) for path in yml_files_packages_not_integration_tests if path.name == "dbt_project.yml"]
 
 
 def find_package_paths(
@@ -31,18 +49,20 @@ def find_package_paths(
         "packages-install-path", "dbt_packages"
     )
 
-    # we only go one level deep here to avoid parsing the dependencies of dependnecies
-    yml_files_packages = set((root_dir / packages_path).glob("*/*.yml")).union(
-        set((root_dir / packages_path).glob("*/*.yaml"))
-    )
+    # check package path from project or default package path first
+    installed_packages = find_packages_within_directory(packages_path)
 
-    # this is a hack to avoid checking integration_tests. it won't work everywhere but it's good enough for now
-    yml_files_packages_integration_tests = set((root_dir / packages_path).glob("**/integration_tests/**/*.yml")).union(
-        set((root_dir / packages_path).glob("**/integration_tests/**/*.yaml"))
-    )
-    yml_files_packages_not_integration_tests = yml_files_packages - yml_files_packages_integration_tests
+    # if we don't find any, fall back to default package directory
+    if len(installed_packages) == 0:
+        installed_packages = find_packages_within_directory((root_dir / "dbt_packages"))
+    
+    # if still don't have any, check for env var
+    if len(installed_packages) == 0:
+        package_dir_envvar = os.getenv("DBT_PACKAGE_DIR")
+        if package_dir_envvar is not None:
+            installed_packages = find_packages_within_directory((root_dir / package_dir_envvar))
 
-    return [Path(str(path)) for path in yml_files_packages_not_integration_tests if path.name == "dbt_project.yml"]
+    return installed_packages
 
 
 def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) -> dict[Any, Any]:
