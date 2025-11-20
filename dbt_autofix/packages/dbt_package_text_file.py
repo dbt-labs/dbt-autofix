@@ -11,37 +11,82 @@ console = Console()
 @dataclass
 class DbtPackageTextFileLine:
     line: str
-    line_with_package: bool = field(init=False)
-    line_with_version: bool = field(init=False)
-    line_with_key: bool = field(init=False)
     modified: bool = False
 
-    def __post_init__(self):
-        self.line_with_key = "-" in self.line
-        self.line_with_package = "package" in self.line
-        self.line_with_version = "version" in self.line
-
     def extract_version_from_line(self) -> list[str]:
-        matched: Optional[re.Match[str]] = re.search(r"\bversion\b", self.line)
-        if not matched:
+        """Extracts a version string while retaining the key and line ending.
+
+        Returns:
+            list[str]: [beginning of line, version, end of line]
+        """
+        if not self.line_contains_version():
             return []
-        end_pos = matched.end()
-        return [self.line[:end_pos], self.line[end_pos:]]
+        prefix_re = re.compile(r'^\s*(?:-\s*)?version:\s*')
+        m = prefix_re.match(self.line)
+        if not m:
+            return []
 
-    def replace_string_in_line(self, old_string: str, new_string: str) -> int:
-        _, sub_count = re.subn(r"{original_version_string}", new_string, old_string)
-        if sub_count > 0:
-            self.modified = True
-        return sub_count
+        # Preserve the original line ending (CRLF, LF, or CR)
+        if self.line.endswith('\r\n'):
+            eol = '\r\n'
+        elif self.line.endswith('\n'):
+            eol = '\n'
+        elif self.line.endswith('\r'):
+            eol = '\r'
+        else:
+            eol = ''
 
+        rest = self.line[m.end():]
+        # Extract version up to first whitespace, '#' or line ending
+        version_match = re.match(r"\s*(?P<version>[^\s#\r\n]+)", rest)
+        if not version_match:
+            return []
+        version = version_match.group('version')
+        return [self.line[:m.end()], version, eol]
+
+
+    def extract_package_from_line(self) -> str:
+        """Extract the package name from a line containing a `package:` key.
+
+        Returns:
+            str: package ID
+        """
+        if not self.line_contains_package():
+            return ""
+        prefix_re = re.compile(r'^\s*(?:-\s*)?package:\s*')
+        m = prefix_re.match(self.line)
+        if not m:
+            return ""
+
+        rest = self.line[m.end():]
+        # Extract package id up to first whitespace, '#' or line ending
+        pkg_match = re.match(r"\s*(?P<pkg>[^\s#\r\n]+)", rest)
+        if not pkg_match:
+            return ""
+        pkg = pkg_match.group('pkg')
+        return pkg
+    
     def replace_version_string_in_line(self, new_string: str) -> bool:
-        extracted_version = self.extract_version_from_line()
-        if len(extracted_version) != 2:
+        if not self.line_contains_version():
             return False
-        self.line = f"{extracted_version[0]}: {new_string}\n"
+        extracted_version = self.extract_version_from_line()
+        if len(extracted_version) != 3:
+            return False
+        self.line = f"{extracted_version[0]}{new_string}{extracted_version[2]}"
         self.modified = True
         return True
 
+    def line_contains_key(self) -> bool:
+        key_pattern: re.Pattern = re.compile(r"^\s*-")
+        return bool(key_pattern.match(self.line))
+    
+    def line_contains_package(self) -> bool:
+        package_pattern: re.Pattern = re.compile(r'^\s*(?:-\s*)?package:')
+        return bool(package_pattern.match(self.line))
+    
+    def line_contains_version(self) -> bool:
+        version_pattern: re.Pattern = re.compile(r'^\s*(?:-\s*)?version:')
+        return bool(version_pattern.match(self.line))
 
 @dataclass
 class DbtPackageTextFileBlock:
@@ -76,19 +121,18 @@ class DbtPackageTextFile:
                     current_line += 1
                     new_line = DbtPackageTextFileLine(line)
                     # if line contains "-", start a new block
-                    if new_line.line_with_key:
+                    if new_line.line_contains_key():
                         self.lines_with_new_key.append(current_line)
                         key_block.end_line = current_line - 1
                         self.key_blocks.append(key_block)
                         key_block = DbtPackageTextFileBlock(current_line)
-                    if new_line.line_with_package:
+                    if new_line.line_contains_package():
                         self.lines_with_package.append(current_line)
                         key_block.package_line = current_line
-                    if new_line.line_with_version:
+                    elif new_line.line_contains_version():
                         self.lines_with_version.append(current_line)
                         key_block.version_line = current_line
                     self.lines.append(DbtPackageTextFileLine(line))
-                    current_line += 1
         except FileNotFoundError:
             print(f"Error: The file '{self.file_path}' was not found.")
         except Exception as e:
@@ -150,6 +194,7 @@ class DbtPackageTextFile:
     def update_config_file(
         self, packages_with_versions: dict[str, str], dry_run: bool = False, print_to_console: bool = True
     ) -> set[str]:
+        print("update config file", packages_with_versions)
         if len(packages_with_versions) == 0:
             return set()
 
@@ -157,6 +202,7 @@ class DbtPackageTextFile:
         updated_packages: set[str] = set()
         unchanged_packages: set[str] = set()
         key_blocks: list[int] = self.find_key_blocks_for_packages(packages_to_update)
+        # print(key_blocks)
         for i, block in enumerate(key_blocks):
             package_name = packages_to_update[i]
             package_version = packages_with_versions[package_name]

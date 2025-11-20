@@ -162,15 +162,12 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     # packages where the currently installed version is compatible with Fusion
     # includes both manual overrides and require dbt version
     installed_version_compatible: set[str] = set(deps_file.get_installed_version_fusion_compatible())
-    print(f"packages with compatible installed version: {installed_version_compatible}")
 
     # check package level compatibility
     package_fusion_compatibility: dict[PackageFusionCompatibilityState, set[str]] = (
         deps_file.get_package_fusion_compatibility()
     )
-    print(f"package_fusion_compatibility:")
-    for compat_state in package_fusion_compatibility:
-        print(f"{compat_state}: {package_fusion_compatibility[compat_state]}")
+
     # packages that are fully incompatible, either explicitly or from require dbt version
     all_versions_compatible = package_fusion_compatibility.get(
         PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE, set()
@@ -354,7 +351,6 @@ def upgrade_package_versions(
     packages_with_forced_upgrades: list[PackageVersionUpgradeResult] = []
     packages_with_no_change: list[PackageVersionUpgradeResult] = []
     for package in package_dependencies_with_upgrades:
-        print(f"{package.id}, {package.version_reason}")
         if package.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE:
             packages_with_upgrades.append(package)
         elif (
@@ -365,6 +361,8 @@ def upgrade_package_versions(
         else:
             packages_with_no_change.append(package)
 
+    print(f"package with upgrades: {[x.id for x in packages_with_upgrades]}")
+    print(f"package with forced upgrades: {[x.id for x in packages_with_forced_upgrades]}")
     packages_to_update: dict[str, str] = {}
 
     if override_pinned_version:
@@ -374,6 +372,8 @@ def upgrade_package_versions(
     for package in packages_with_upgrades:
         if package.compatible_version:
             packages_to_update[package.id] = package.compatible_version
+
+    print(f"package to update: {[x for x in packages_to_update]}")
 
     if len(packages_to_update) == 0:
         return PackageUpgradeResult(

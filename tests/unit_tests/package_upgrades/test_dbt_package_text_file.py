@@ -125,7 +125,10 @@ models:
 
 @pytest.mark.parametrize(
     "input_str,expected_match",
-    [("    version: 0.8.7", ["    version", ": 0.8.7"]), ("  - version: 0.10.9", ["  - version", ": 0.10.9"])],
+    [("    version: 0.8.7", ["    version: ", "0.8.7", ""]),
+     ("  - version: 0.10.9", ["  - version: ", "0.10.9", ""]),
+     ("    version: 0.8.7\n", ["    version: ", "0.8.7", "\n"]),
+     ("  - version: 0.10.9\n", ["  - version: ", "0.10.9", "\n"])],
 )
 def test_extract_version_from_line(input_str, expected_match):
     file_line = DbtPackageTextFileLine(input_str)
@@ -133,3 +136,93 @@ def test_extract_version_from_line(input_str, expected_match):
     assert len(extracted_version) == len(expected_match)
     assert extracted_version[0] == expected_match[0]
     assert extracted_version[1] == expected_match[1]
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [("  - package: dbt-labs/dbt_utils", True), 
+     ("    version: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("", False),
+     ("                  ", False),
+     ("  - version: [\">=0.9.0\", \"<1.0.0\"]", True),
+     ("# test comment - version: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("# test comment - package: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("# test comment version: test", False),
+     ("# test comment package: test", False),
+     ],
+)
+def test_match_key_in_line(input_str, expected_match):
+    package_line = DbtPackageTextFileLine(line=input_str)
+    assert package_line.line_contains_key() == expected_match
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [("  - package: dbt-labs/dbt_utils", True), 
+     ("    version: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("    package: dbt-labs/dbt_utils", True),
+     ("", False),
+     ("                  ", False),
+     ("  - version: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("# test comment - version: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("# test comment - package: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("# test comment version: test", False),
+     ("# test comment package: test", False),
+     ],
+)
+def test_match_package_in_line(input_str, expected_match):
+    package_line = DbtPackageTextFileLine(line=input_str)
+    assert package_line.line_contains_package() == expected_match
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [("  - package: dbt-labs/dbt_utils", False), 
+     ("    version: [\">=0.9.0\", \"<1.0.0\"]", True),
+     ("    package: dbt-labs/dbt_utils", False),
+     ("", False),
+     ("                  ", False),
+     ("  - version: [\">=0.9.0\", \"<1.0.0\"]", True),
+     ("# test comment - version: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("# test comment - package: [\">=0.9.0\", \"<1.0.0\"]", False),
+     ("# test comment version: test", False),
+     ("# test comment package: test", False),
+     ],
+)
+def test_match_version_in_line(input_str, expected_match):
+    package_line = DbtPackageTextFileLine(line=input_str)
+    assert package_line.line_contains_version() == expected_match
+
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [("  - package: dbt-labs/dbt_utils", "dbt-labs/dbt_utils"), 
+     ("    version: [\">=0.9.0\", \"<1.0.0\"]", ""),
+     ("    package: dbt-labs/dbt_utils", "dbt-labs/dbt_utils"),
+     ("", ""),
+     ("                  ", ""),
+     ("  - version: [\">=0.9.0\", \"<1.0.0\"]", ""),
+     ("# test comment - version: [\">=0.9.0\", \"<1.0.0\"]", ""),
+     ("# test comment - package: [\">=0.9.0\", \"<1.0.0\"]", ""),
+     ("# test comment version: test", ""),
+     ("# test comment package: test", ""),
+     ("    package: dbt-labs/dbt_utils # trailing comment", "dbt-labs/dbt_utils"),
+     ("    package: dbt-labs/dbt_utils\n", "dbt-labs/dbt_utils"),
+     ("    package: dbt-labs/dbt_utils  \n", "dbt-labs/dbt_utils"),
+     ],
+)
+def test_extract_package_in_line(input_str, expected_match):
+    package_line = DbtPackageTextFileLine(line=input_str)
+    assert package_line.extract_package_from_line() == expected_match
+
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [("    version: 0.8.7", "    version: 0.0.0"),
+     ("  - version: 0.10.9", "  - version: 0.0.0"),
+     ("    version: 0.8.7\n", "    version: 0.0.0\n"),
+     ("  - version: 0.10.9\n", "  - version: 0.0.0\n")],
+)
+def test_replace_version_in_line(input_str, expected_match):
+    file_line = DbtPackageTextFileLine(input_str)
+    replaced = file_line.replace_version_string_in_line("0.0.0")
+    assert replaced
+    assert len(file_line.line) == len(expected_match)
+    assert file_line.line == expected_match
