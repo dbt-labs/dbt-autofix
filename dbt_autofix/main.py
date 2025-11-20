@@ -66,7 +66,6 @@ def upgrade_packages(
     else:
         dry_run = True
 
-
     if not path.is_dir() or not path.exists():
         error_console.print("[red]-- The directory specified in --path does not exist --[/red]")
         return
