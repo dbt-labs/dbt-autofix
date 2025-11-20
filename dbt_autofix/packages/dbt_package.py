@@ -17,6 +17,7 @@ from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS
 
 console = Console()
 
+
 class PackageFusionCompatibilityState(str, Enum):
     """String enum for Fusion compatibility at the package level."""
 
@@ -25,6 +26,7 @@ class PackageFusionCompatibilityState(str, Enum):
     NO_VERSIONS_COMPATIBLE = "No versions are Fusion compatible"
     MISSING_COMPATIBILITY = "All package versions are missing require dbt version"
     UNKNOWN = "Package version state unknown"
+
 
 @dataclass
 class DbtPackage:
@@ -63,7 +65,9 @@ class DbtPackage:
     def __post_init__(self):
         try:
             if self.project_config_raw_version_specifier is not None:
-                self.project_config_version_range_list = construct_version_list_from_raw(self.project_config_raw_version_specifier)
+                self.project_config_version_range_list = construct_version_list_from_raw(
+                    self.project_config_raw_version_specifier
+                )
             if self.project_config_version_range_list and len(self.project_config_version_range_list) > 0:
                 version_specs: list[VersionSpecifier] = get_version_specifiers(self.project_config_version_range_list)
                 self.project_config_version_range = convert_version_specifiers_to_range(version_specs)
@@ -138,7 +142,7 @@ class DbtPackage:
         sorted_versions = sorted(compatible_versions, reverse=True)
         return sorted_versions
 
-    def find_fusion_compatible_versions_outside_requested_range(self) -> list[VersionSpecifier]:
+    def find_fusion_compatible_versions_above_requested_range(self) -> list[VersionSpecifier]:
         """Find package versions that are compatible with Fusion but NOT the version range specified in the project config.
 
         The project's packages.yml/dependencies.yml MUST be updated in order to upgrade to one of these version.
@@ -152,8 +156,15 @@ class DbtPackage:
         if self.fusion_compatible_versions is None or len(self.fusion_compatible_versions) == 0:
             return compatible_versions
         for version in self.fusion_compatible_versions:
-            if not versions_compatible(
-                version, self.project_config_version_range.start, self.project_config_version_range.end
+            if (
+                not versions_compatible(
+                    version,
+                    self.project_config_version_range.start,
+                    self.project_config_version_range.end,
+                    # make sure we only count versions newer than the current version
+                    # so we don't recommend downgrades
+                )
+                and version > self.project_config_version_range.start
             ):
                 compatible_versions.append(version)
         sorted_versions = sorted(compatible_versions, reverse=True)
@@ -192,12 +203,7 @@ class DbtPackage:
             return self.installed_package_version.to_version_string(skip_matcher=True)
         else:
             return "unknown"
-        
-            ALL_VERSIONS_COMPATIBLE = "All package versions are Fusion compatible"
-    # SOME_VERSIONS_COMPATIBLE = "A subset of package versions are Fusion compatible"
-    # NO_VERSIONS_COMPATIBLE = "No versions are Fusion compatible"
-    # MISSING_COMPATIBILITY = "All package versions are missing require dbt version"
-    # UNKNOWN = "Package version state unknown"
+
     def get_package_fusion_compatibility_state(self) -> PackageFusionCompatibilityState:
         if not self.is_public_package():
             return PackageFusionCompatibilityState.UNKNOWN
@@ -205,11 +211,19 @@ class DbtPackage:
             return PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE
         if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
             return PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
-        
-        fusion_compatible_version_count = 0 if self.fusion_compatible_versions is None else len(self.fusion_compatible_versions)
-        fusion_incompatible_version_count = 0 if self.fusion_incompatible_versions is None else len(self.fusion_incompatible_versions)
-        unknown_compatibility_version_count = 0 if self.unknown_compatibility_versions is None else len(self.unknown_compatibility_versions)
-        total_version_count = fusion_compatible_version_count + fusion_incompatible_version_count + unknown_compatibility_version_count
+
+        fusion_compatible_version_count = (
+            0 if self.fusion_compatible_versions is None else len(self.fusion_compatible_versions)
+        )
+        fusion_incompatible_version_count = (
+            0 if self.fusion_incompatible_versions is None else len(self.fusion_incompatible_versions)
+        )
+        unknown_compatibility_version_count = (
+            0 if self.unknown_compatibility_versions is None else len(self.unknown_compatibility_versions)
+        )
+        total_version_count = (
+            fusion_compatible_version_count + fusion_incompatible_version_count + unknown_compatibility_version_count
+        )
         # cases where we can determine compatibility across all versions
         if total_version_count == 0:
             return PackageFusionCompatibilityState.UNKNOWN
@@ -228,23 +242,3 @@ class DbtPackage:
         # hopefully nothing is left but if so
         else:
             return PackageFusionCompatibilityState.UNKNOWN
-
-    def get_fusion_compatibility_state(self) -> FusionCompatibilityState:
-        if not self.is_public_package():
-            return FusionCompatibilityState.UNKNOWN
-        if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            return FusionCompatibilityState.EXPLICIT_DISALLOW
-        if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
-            return FusionCompatibilityState.EXPLICIT_ALLOW
-        installed_version_fusion_compatibility = self.is_installed_version_fusion_compatible()
-        if (
-            installed_version_fusion_compatibility == FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
-            or installed_version_fusion_compatibility == FusionCompatibilityState.EXPLICIT_ALLOW
-        ):
-            return installed_version_fusion_compatibility
-        if self.fusion_compatible_versions is not None and len(self.fusion_compatible_versions) > 0:
-            return FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
-        elif self.fusion_incompatible_versions is not None and len(self.fusion_incompatible_versions) > 0:
-            if self.unknown_compatibility_versions is None or len(self.unknown_compatibility_versions) == 0:
-                return FusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
-        return FusionCompatibilityState.NO_DBT_VERSION_RANGE

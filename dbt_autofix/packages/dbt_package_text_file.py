@@ -77,23 +77,23 @@ class DbtPackageTextFile:
                     new_line = DbtPackageTextFileLine(line)
                     # if line contains "-", start a new block
                     if new_line.line_with_key:
-                        self.lines_with_new_key.append(lines_parsed)
+                        self.lines_with_new_key.append(current_line)
                         key_block.end_line = current_line - 1
                         self.key_blocks.append(key_block)
                         key_block = DbtPackageTextFileBlock(current_line)
                     if new_line.line_with_package:
-                        self.lines_with_package.append(lines_parsed)
+                        self.lines_with_package.append(current_line)
                         key_block.package_line = current_line
                     if new_line.line_with_version:
-                        self.lines_with_version.append(lines_parsed)
+                        self.lines_with_version.append(current_line)
                         key_block.version_line = current_line
                     self.lines.append(DbtPackageTextFileLine(line))
-                    lines_parsed += 1
+                    current_line += 1
         except FileNotFoundError:
             print(f"Error: The file '{self.file_path}' was not found.")
         except Exception as e:
             print(f"An error occurred: {e}")
-        return lines_parsed
+        return current_line + 1
 
     def find_package_in_file(self, package_name: str) -> list[int]:
         lines_with_package_name: list[int] = []

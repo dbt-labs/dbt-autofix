@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import Any, Optional
-from dbt_autofix.packages.dbt_package import DbtPackage
+from dbt_autofix.packages.dbt_package import DbtPackage, PackageFusionCompatibilityState
 from dbt_autofix.packages.dbt_package_version import (
     DbtPackageVersion,
     FusionCompatibilityState,
@@ -177,7 +177,9 @@ class DbtPackageFile:
             # latest_fusion_compatible_version = convert_optional_version_string_to_spec(output["latest_fusion_compatible_version"])
             fusion_compatible_versions = convert_version_string_list_to_spec(output["fusion_compatible_versions"])
             fusion_incompatible_versions = convert_version_string_list_to_spec(output["fusion_incompatible_versions"])
-            unknown_compatibility_versions = convert_version_string_list_to_spec(output["fusion_incompatible_versions"])
+            unknown_compatibility_versions = convert_version_string_list_to_spec(
+                output["unknown_compatibility_versions"]
+            )
             self.package_dependencies[package].lowest_fusion_compatible_version = oldest_fusion_compatible_version
             # self.package_dependencies[package].latest_fusion_compatible_version = latest_fusion_compatible_version
             self.package_dependencies[package].fusion_compatible_versions = fusion_compatible_versions
@@ -212,19 +214,19 @@ class DbtPackageFile:
                 package_names.append(package)
         return package_names
 
-    def get_package_fusion_compatibility(self) -> dict[FusionCompatibilityState, list[str]]:
+    def get_package_fusion_compatibility(self) -> dict[PackageFusionCompatibilityState, set[str]]:
         """Get Fusion compatibility status for all packages in file.
 
-        The package's compatibility state is returned by `get_fusion_compatibility_state`.
+        The package's compatibility state is returned by `get_package_fusion_compatibility_state`.
         All packages in the file will fall into exactly one of the compatibility states.
 
         Returns:
-            dict[FusionCompatibilityState, list[str]]: _description_
+            dict[FusionCompatibilityState, list[str]]: list of package names in each state
         """
-        compatibility: dict[FusionCompatibilityState, list[str]] = defaultdict(list)
+        compatibility: dict[PackageFusionCompatibilityState, set[str]] = defaultdict(set)
         for package in self.package_dependencies:
-            fusion_compatibility = self.package_dependencies[package].get_fusion_compatibility_state()
-            compatibility[fusion_compatibility].append(package)
+            fusion_compatibility = self.package_dependencies[package].get_package_fusion_compatibility_state()
+            compatibility[fusion_compatibility].add(package)
         return compatibility
 
 

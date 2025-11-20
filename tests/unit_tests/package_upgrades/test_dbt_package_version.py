@@ -335,7 +335,7 @@ def test_fusion_compatible_from_raw(input_yaml: dict[Any, Any], expected_match: 
             ">=1.1.0",
             [">=1.1.0"],
         ),
-        (">0.2.1", [">0.2.1"])
+        (">0.2.1", [">0.2.1"]),
     ],
 )
 def test_convert_version_string_from_raw(input_yaml: Any, expected_match: list[str]):
