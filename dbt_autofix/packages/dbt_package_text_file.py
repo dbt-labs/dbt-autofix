@@ -107,9 +107,18 @@ class DbtPackageTextFile:
     key_blocks_by_start: dict[int, int] = field(init=False, default_factory=dict)
     key_blocks_by_end: dict[int, int] = field(init=False, default_factory=dict)
     lines_modified: set[int] = field(init=False, default_factory=set)
+    packages_by_line: dict[str, int] = field(init=False, default_factory=dict)
+    packages_by_block: dict[str, int] = field(init=False, default_factory=dict)
+    blocks_by_line: list[int] = field(init=False, default_factory=list)
 
     def __post_init__(self):
         self.parse_file_as_text_by_line()
+        self.packages_by_line = {}
+        self.packages_by_block = {}
+        self.extract_packages_from_lines()
+        print("packages_by_line", self.packages_by_line)
+        print("packages_by_block", self.packages_by_block)
+        print("blocks_by_line", self.blocks_by_line)
 
     def parse_file_as_text_by_line(self) -> int:
         current_line: int = -1
@@ -132,12 +141,21 @@ class DbtPackageTextFile:
                     elif new_line.line_contains_version():
                         self.lines_with_version.append(current_line)
                         key_block.version_line = current_line
+                    self.blocks_by_line.append(len(self.key_blocks))
                     self.lines.append(DbtPackageTextFileLine(line))
         except FileNotFoundError:
             print(f"Error: The file '{self.file_path}' was not found.")
         except Exception as e:
             print(f"An error occurred: {e}")
         return current_line + 1
+
+    def extract_packages_from_lines(self):
+        for i, line in enumerate(self.lines):
+            if line.line_contains_package():
+                package_name = line.extract_package_from_line()
+                self.packages_by_line[package_name] = i
+                self.packages_by_block[package_name] = self.blocks_by_line[i]
+
 
     def find_package_in_file(self, package_name: str) -> list[int]:
         lines_with_package_name: list[int] = []
@@ -148,23 +166,28 @@ class DbtPackageTextFile:
 
     def find_key_blocks_for_packages(self, package_names: list[str]) -> list[int]:
         # Create a set of blocks to check so we don't check ones already identiifed
-        candidates: set[int] = set()
-        blocks_for_packages: list[int] = [-1 * len(package_names)]
-        for i, block in enumerate(self.key_blocks):
-            if block.package_line > -1:
-                candidates.add(i)
+        # candidates: set[int] = set()
+        # blocks_for_packages: list[int] = [-1 * len(package_names)]
+        # for i, block in enumerate(self.key_blocks):
+        #     if block.package_line > -1:
+        #         candidates.add(i)
 
-        # TODO: this is O(n^2) which sucks so make it better
-        for i, package_name in enumerate(package_names):
-            for candidate in candidates:
-                candidate_package_line = self.key_blocks[candidate].package_line
-                if package_name in self.lines[candidate_package_line].line:
-                    blocks_for_packages[i] = candidate
-                    break
-            package_block = blocks_for_packages[i]
-            if package_block > -1:
-                candidates.remove(package_block)
+        # # TODO: this is O(n^2) which sucks so make it better
+        # for i, package_name in enumerate(package_names):
+        #     for candidate in candidates:
+        #         candidate_package_line = self.key_blocks[candidate].package_line
+        #         if package_name in self.lines[candidate_package_line].line:
+        #             blocks_for_packages[i] = candidate
+        #             break
+        #     package_block = blocks_for_packages[i]
+        #     if package_block > -1:
+        #         candidates.remove(package_block)
 
+        # return blocks_for_packages
+        blocks_for_packages: list[int] = []
+        for package in package_names:
+            package_block: int = self.packages_by_block.get(package, -1)
+            blocks_for_packages.append(package_block)
         return blocks_for_packages
 
     def change_package_version_in_block(self, block_number: int, new_version_string: str) -> int:
@@ -224,9 +247,9 @@ class DbtPackageTextFile:
             )
             for line in self.lines:
                 if line.modified:
-                    console.print(line, style="green")
+                    console.print(line.line, style="green")
                 else:
-                    console.print(line)
+                    console.print(line.line)
         else:
             lines_written = self.write_output_to_file()
             if lines_written == 0 and print_to_console:
