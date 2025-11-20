@@ -1,8 +1,6 @@
-from collections import namedtuple
 from dataclasses import dataclass, field
 from pathlib import Path
 import re
-from typing import Optional
 from rich.console import Console
 
 console = Console()

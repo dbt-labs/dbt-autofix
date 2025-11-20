@@ -71,26 +71,28 @@ def upgrade_packages(
         return
 
     print(f"[green]Identifying packages with available upgrades in {path}[/green]\n")
-    deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
-    if not deps_file:
-        error_console.print("[red]-- No package dependency config found --[/red]")
-        return
+    try:
+        deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
+        if not deps_file:
+            error_console.print("[red]-- No package dependency config found --[/red]")
+            return
 
-    if len(deps_file.package_dependencies) == 0:
-        error_console.print("[red]-- No package dependencies found --[/red]")
-        return
+        if len(deps_file.package_dependencies) == 0:
+            error_console.print("[red]-- No package dependencies found --[/red]")
+            return
 
-    package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
+        package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
 
-    packages_upgraded: PackageUpgradeResult = upgrade_package_versions(
-        deps_file=deps_file,
-        package_dependencies_with_upgrades=package_upgrades,
-        dry_run=dry_run,
-        override_pinned_version=force_upgrade,
-        json_output=json_output,
-    )
-    packages_upgraded.print_to_console(json_output=json_output)
-
+        packages_upgraded: PackageUpgradeResult = upgrade_package_versions(
+            deps_file=deps_file,
+            package_dependencies_with_upgrades=package_upgrades,
+            dry_run=dry_run,
+            override_pinned_version=force_upgrade,
+            json_output=json_output,
+        )
+        packages_upgraded.print_to_console(json_output=json_output)
+    except:
+        error_console.print("[red]-- Package upgrade failed, please check logs for details --[/red]")
     if json_output:
         print(json.dumps({"mode": "complete"}))  # noqa: T201
 

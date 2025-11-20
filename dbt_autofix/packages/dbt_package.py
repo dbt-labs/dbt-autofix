@@ -1,31 +1,18 @@
-from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, Optional
 from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_autofix.packages.dbt_package_version import (
     DbtPackageVersion,
-    FusionCompatibilityState,
-    RawVersion,
-    construct_version_list,
     construct_version_list_from_raw,
     convert_version_specifiers_to_range,
     get_version_specifiers,
 )
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS, EXPLICIT_ALLOW_ALL_VERSIONS
+from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
 
 
 console = Console()
-
-
-class PackageFusionCompatibilityState(str, Enum):
-    """String enum for Fusion compatibility at the package level."""
-
-    ALL_VERSIONS_COMPATIBLE = "All package versions are Fusion compatible"
-    SOME_VERSIONS_COMPATIBLE = "A subset of package versions are Fusion compatible"
-    NO_VERSIONS_COMPATIBLE = "No versions are Fusion compatible"
-    MISSING_COMPATIBILITY = "All package versions are missing require dbt version"
-    UNKNOWN = "Package version state unknown"
 
 
 @dataclass
@@ -59,8 +46,12 @@ class DbtPackage:
     unknown_compatibility_versions: Optional[list[VersionSpecifier]] = None
 
     # check compatibility of latest and installed versions when loading
-    latest_version_fusion_compatibility: FusionCompatibilityState = FusionCompatibilityState.UNKNOWN
-    installed_version_fusion_compatibility: FusionCompatibilityState = FusionCompatibilityState.UNKNOWN
+    latest_version_fusion_compatibility: PackageVersionFusionCompatibilityState = (
+        PackageVersionFusionCompatibilityState.UNKNOWN
+    )
+    installed_version_fusion_compatibility: PackageVersionFusionCompatibilityState = (
+        PackageVersionFusionCompatibilityState.UNKNOWN
+    )
 
     def __post_init__(self):
         try:
@@ -107,17 +98,17 @@ class DbtPackage:
     def is_public_package(self) -> bool:
         return not (self.git or self.tarball or self.local)
 
-    def is_installed_version_fusion_compatible(self) -> FusionCompatibilityState:
+    def is_installed_version_fusion_compatible(self) -> PackageVersionFusionCompatibilityState:
         if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            return FusionCompatibilityState.EXPLICIT_DISALLOW
+            return PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
         if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
-            return FusionCompatibilityState.EXPLICIT_ALLOW
+            return PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
         if self.installed_package_version is None:
-            return FusionCompatibilityState.UNKNOWN
+            return PackageVersionFusionCompatibilityState.UNKNOWN
         else:
             installed_version_string = self.installed_package_version.to_version_string(skip_matcher=True)
             if installed_version_string not in self.package_versions:
-                return FusionCompatibilityState.UNKNOWN
+                return PackageVersionFusionCompatibilityState.UNKNOWN
             else:
                 return self.package_versions[installed_version_string].get_fusion_compatibility_state()
 

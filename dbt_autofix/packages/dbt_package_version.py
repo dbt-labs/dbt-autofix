@@ -1,11 +1,10 @@
-from enum import Enum
 from typing import Any, Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
-from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible, reduce_versions
+from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
-from ruamel.yaml.comments import CommentedSeq
-from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+
+from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
 
 console = Console()
 
@@ -84,18 +83,6 @@ def convert_version_string_list_to_spec(version_string: list[str]) -> list[Versi
         return [VersionSpecifier.from_version_string(x) for x in version_string]
 
 
-# really should be VersionFusionCompatibilityState
-class FusionCompatibilityState(str, Enum):
-    """String enum for Fusion compatibility of a specific version of a package."""
-
-    NO_DBT_VERSION_RANGE = "Package does not define required dbt version range"
-    DBT_VERSION_RANGE_EXCLUDES_2_0 = "Package's dbt version range excludes version 2.0"
-    DBT_VERSION_RANGE_INCLUDES_2_0 = "Package's dbt versions range include version 2.0"
-    EXPLICIT_ALLOW = "Package version has been verified as Fusion-compatible"
-    EXPLICIT_DISALLOW = "Package version has been verified as incompatible with Fusion"
-    UNKNOWN = "Package version state unknown"
-
-
 @dataclass
 class DbtPackageVersion:
     package_name: str
@@ -150,16 +137,16 @@ class DbtPackageVersion:
             return True
         return False
 
-    def get_fusion_compatibility_state(self) -> FusionCompatibilityState:
+    def get_fusion_compatibility_state(self) -> PackageVersionFusionCompatibilityState:
         if self.is_explicitly_allowed_on_fusion():
-            return FusionCompatibilityState.EXPLICIT_ALLOW
+            return PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
         elif self.is_explicitly_disallowed_on_fusion():
-            return FusionCompatibilityState.EXPLICIT_DISALLOW
+            return PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
         elif not self.is_require_dbt_version_defined():
-            return FusionCompatibilityState.NO_DBT_VERSION_RANGE
+            return PackageVersionFusionCompatibilityState.NO_DBT_VERSION_RANGE
         elif self.is_require_dbt_version_fusion_compatible():
-            return FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+            return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
         elif not self.is_require_dbt_version_fusion_compatible():
-            return FusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+            return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
         else:
-            return FusionCompatibilityState.UNKNOWN
+            return PackageVersionFusionCompatibilityState.UNKNOWN

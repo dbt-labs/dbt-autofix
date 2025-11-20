@@ -1,11 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
 import json
 from pathlib import Path
 from typing import Any, Optional
 from rich.console import Console
 
-from dbt_autofix.packages.dbt_package import DbtPackage, PackageFusionCompatibilityState
 from dbt_autofix.packages.dbt_package_file import (
     DbtPackageFile,
     find_package_yml_files,
@@ -15,27 +13,15 @@ from dbt_autofix.packages.dbt_package_file import (
     parse_package_dependencies_from_packages_yml,
 )
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, FusionCompatibilityState
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
-from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
+from dbt_common.semver import VersionSpecifier
+
+from dbt_autofix.packages.upgrade_status import PackageFusionCompatibilityState, PackageVersionUpgradeType
 
 
 console = Console()
 error_console = Console(stderr=True)
-
-
-class PackageVersionUpgradeType(str, Enum):
-    """String enum for package upgrade types"""
-
-    NO_UPGRADE_REQUIRED = "Package is already compatible with Fusion"
-    UPGRADE_AVAILABLE = "Package has Fusion-compatible version available"
-    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = "Public package has not defined Fusion eligibility"
-    PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION = "Public package is not compatible with Fusion"
-    PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG = (
-        "Public package has Fusion-compatible version that is outside the project's requested version range"
-    )
-    PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION = "Private package requires a compatible require-dbt-version (>=2.0.0, <3.0.0) to be available on Fusion. https://docs.getdbt.com/reference/project-configs/require-dbt-version"
-    UNKNOWN = "Package's Fusion eligibility unknown"
 
 
 @dataclass

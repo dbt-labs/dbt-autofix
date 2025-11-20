@@ -5,14 +5,13 @@ import pytest
 from dbt_autofix.package_upgrade import (
     PackageUpgradeResult,
     PackageVersionUpgradeResult,
-    PackageVersionUpgradeType,
     check_for_package_upgrades,
     generate_package_dependencies,
     upgrade_package_versions,
 )
-from dbt_autofix.packages.dbt_package import PackageFusionCompatibilityState
+from dbt_autofix.packages.upgrade_status import PackageFusionCompatibilityState, PackageVersionUpgradeType
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_autofix.packages.dbt_package_version import FusionCompatibilityState
+from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
 
 
 PROJECT_WITH_PACKAGES_PATH = Path("tests/integration_tests/package_upgrades/mixed_versions")
@@ -62,25 +61,25 @@ def test_generate_package_dependencies():
             package
         ].get_package_fusion_compatibility_state()
         if package == "dbt-labs/dbt_utils":
-            assert fusion_compatibility_state == FusionCompatibilityState.EXPLICIT_ALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
         elif package == "dbt-labs/snowplow":
-            assert fusion_compatibility_state == FusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         elif package == "dbt-labs/logging":
-            assert fusion_compatibility_state == FusionCompatibilityState.EXPLICIT_DISALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE
         elif package == "Matts52/dbt_set_similarity":
-            assert fusion_compatibility_state == FusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         elif package == "Matts52/dbt_stat_test":
-            assert fusion_compatibility_state == FusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         elif package == "avohq/avo_audit":
-            assert fusion_compatibility_state == FusionCompatibilityState.NO_DBT_VERSION_RANGE
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.NO_DBT_VERSION_RANGE
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.MISSING_COMPATIBILITY
         elif package == "MaterializeInc/materialize_dbt_utils":
-            assert fusion_compatibility_state == FusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
 
 

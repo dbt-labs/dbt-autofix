@@ -1,12 +1,10 @@
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional
 from rich.console import Console
 import yaml
 
-from dbt_autofix.packages.dbt_package import DbtPackage
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, get_versions
-from dbt_autofix.refactors.yml import DbtYAML, read_file
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
+from dbt_autofix.refactors.yml import read_file
 
 console = Console()
 
