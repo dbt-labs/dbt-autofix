@@ -29,12 +29,12 @@ class PackageVersionUpgradeType(str, Enum):
 
     NO_UPGRADE_REQUIRED = "Package is already compatible with Fusion"
     UPGRADE_AVAILABLE = "Package has Fusion-compatible version available"
-    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = "Public package has not defined fusion eligibility"
-    PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION = "Public package is not compatible with fusion"
+    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = "Public package has not defined Fusion eligibility"
+    PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION = "Public package is not compatible with Fusion"
     PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG = (
         "Public package has Fusion-compatible version that is outside the project's requested version range"
     )
-    PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION = "Private package requires a compatible require-dbt-version (>=2.0.0, <3.0.0) to be available on fusion. https://docs.getdbt.com/reference/project-configs/require-dbt-version"
+    PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION = "Private package requires a compatible require-dbt-version (>=2.0.0, <3.0.0) to be available on Fusion. https://docs.getdbt.com/reference/project-configs/require-dbt-version"
     UNKNOWN = "Package's Fusion eligibility unknown"
 
 
@@ -86,7 +86,7 @@ class PackageUpgradeResult:
             return
 
         console.print(
-            f"\n{'DRY RUN - NOT APPLIED: ' if self.dry_run else ''}Refactored {self.file_path}:",
+            f"\n{'DRY RUN - NOT APPLIED: ' if self.dry_run else ''}Packages updated in {self.file_path}:",
             style="green",
         )
         for result in self.upgrades:
@@ -95,7 +95,7 @@ class PackageUpgradeResult:
                 console.print(f"    {log.value}")
         for result in self.unchanged:
             console.print(
-                f"  package {result.id} unchanged from installed version {result.installed_version}", style="yellow"
+                f"  package {result.id} unchanged from installed version {result.installed_version}", style="green" if result.version_reason == PackageVersionUpgradeType.NO_UPGRADE_REQUIRED else "bold red"
             )
             for log in result.package_upgrade_logs:
                 console.print(f"    {log.value}")
@@ -361,8 +361,6 @@ def upgrade_package_versions(
         else:
             packages_with_no_change.append(package)
 
-    print(f"package with upgrades: {[x.id for x in packages_with_upgrades]}")
-    print(f"package with forced upgrades: {[x.id for x in packages_with_forced_upgrades]}")
     packages_to_update: dict[str, str] = {}
 
     if override_pinned_version:
@@ -372,8 +370,6 @@ def upgrade_package_versions(
     for package in packages_with_upgrades:
         if package.compatible_version:
             packages_to_update[package.id] = package.compatible_version
-
-    print(f"package to update: {[x for x in packages_to_update]}")
 
     if len(packages_to_update) == 0:
         return PackageUpgradeResult(

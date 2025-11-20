@@ -161,25 +161,6 @@ class DbtPackageTextFile:
         return lines_with_package_name
 
     def find_key_blocks_for_packages(self, package_names: list[str]) -> list[int]:
-        # Create a set of blocks to check so we don't check ones already identiifed
-        # candidates: set[int] = set()
-        # blocks_for_packages: list[int] = [-1 * len(package_names)]
-        # for i, block in enumerate(self.key_blocks):
-        #     if block.package_line > -1:
-        #         candidates.add(i)
-
-        # # TODO: this is O(n^2) which sucks so make it better
-        # for i, package_name in enumerate(package_names):
-        #     for candidate in candidates:
-        #         candidate_package_line = self.key_blocks[candidate].package_line
-        #         if package_name in self.lines[candidate_package_line].line:
-        #             blocks_for_packages[i] = candidate
-        #             break
-        #     package_block = blocks_for_packages[i]
-        #     if package_block > -1:
-        #         candidates.remove(package_block)
-
-        # return blocks_for_packages
         blocks_for_packages: list[int] = []
         for package in package_names:
             package_block: int = self.packages_by_block.get(package, -1)
@@ -236,7 +217,7 @@ class DbtPackageTextFile:
             return updated_packages
         if dry_run and print_to_console:
             console.print(
-                f"\n'DRY RUN - NOT APPLIED: ",
+                f"\nDRY RUN - CHANGES NOT APPLIED TO {self.file_path.name}",
                 style="green",
             )
             for line in self.lines:
