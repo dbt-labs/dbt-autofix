@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from rich.console import Console
 import yaml
 
@@ -13,9 +13,17 @@ console = Console()
 # and construct DbtPackageVersions from the package's dbt_project.yml
 
 
-def find_packages_within_directory(installed_packages_path: Path) -> list[Path]:
+def find_packages_within_directory(installed_packages_dir: Union[Path, str]) -> list[Path]:
+    print(installed_packages_dir)
+    if type(installed_packages_dir) == str:
+        installed_packages_path = Path(installed_packages_dir)
+    elif isinstance(installed_packages_dir, Path): 
+        installed_packages_path = installed_packages_dir
+    else:
+        return []
     if not installed_packages_path.exists() or not installed_packages_path.is_dir():
         return []
+
     # we only go one level deep here to avoid parsing the dependencies of dependnecies
     yml_files_packages = set((installed_packages_path).glob("*/*.yml")).union(
         set((installed_packages_path).glob("*/*.yaml"))
@@ -50,7 +58,7 @@ def find_package_paths(
     )
 
     # check package path from project or default package path first
-    installed_packages = find_packages_within_directory(packages_path)
+    installed_packages = find_packages_within_directory((root_dir / packages_path))
 
     # if we don't find any, fall back to default package directory
     if len(installed_packages) == 0:
