@@ -405,6 +405,5 @@ def upgrade_package_versions(
         upgrades=upgraded_package_results,
         unchanged=unchanged_package_results,
     )
-    upgrade_result.print_to_console(json_output)
 
     return upgrade_result
