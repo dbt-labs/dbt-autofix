@@ -84,8 +84,9 @@ def convert_version_string_list_to_spec(version_string: list[str]) -> list[Versi
         return [VersionSpecifier.from_version_string(x) for x in version_string]
 
 
+# really should be VersionFusionCompatibilityState
 class FusionCompatibilityState(str, Enum):
-    """String enum for deprecation types used in DbtDeprecationRefactor."""
+    """String enum for Fusion compatibility of a specific version of a package."""
 
     NO_DBT_VERSION_RANGE = "Package does not define required dbt version range"
     DBT_VERSION_RANGE_EXCLUDES_2_0 = "Package's dbt version range excludes version 2.0"

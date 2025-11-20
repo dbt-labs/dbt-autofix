@@ -162,11 +162,15 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     # packages where the currently installed version is compatible with Fusion
     # includes both manual overrides and require dbt version
     installed_version_compatible: set[str] = set(deps_file.get_installed_version_fusion_compatible())
+    print(f"packages with compatible installed version: {installed_version_compatible}")
 
     # check package level compatibility
     package_fusion_compatibility: dict[FusionCompatibilityState, list[str]] = (
         deps_file.get_package_fusion_compatibility()
     )
+    print(f"package_fusion_compatibility:")
+    for compat_state in package_fusion_compatibility:
+        print(f"{compat_state}: {package_fusion_compatibility[compat_state]}")
     # packages that are fully incompatible, either explicitly or from require dbt version
     all_versions_incompatible: set[str] = set(
         package_fusion_compatibility.get(FusionCompatibilityState.EXPLICIT_DISALLOW, [])
@@ -341,6 +345,7 @@ def upgrade_package_versions(
     packages_with_forced_upgrades: list[PackageVersionUpgradeResult] = []
     packages_with_no_change: list[PackageVersionUpgradeResult] = []
     for package in package_dependencies_with_upgrades:
+        print(f"{package.id}, {package.version_reason}")
         if package.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE:
             packages_with_upgrades.append(package)
         elif (

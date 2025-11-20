@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
@@ -16,6 +17,14 @@ from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS
 
 console = Console()
 
+class PackageFusionCompatibilityState(str, Enum):
+    """String enum for Fusion compatibility at the package level."""
+
+    ALL_VERSIONS_COMPATIBLE = "All package versions are Fusion compatible"
+    SOME_VERSIONS_COMPATIBLE = "A subset of package versions are Fusion compatible"
+    NO_VERSIONS_COMPATIBLE = "No versions are Fusion compatible"
+    MISSING_COMPATIBILITY = "All package versions are missing require dbt version"
+    UNKNOWN = "Package version state unknown"
 
 @dataclass
 class DbtPackage:
@@ -183,6 +192,42 @@ class DbtPackage:
             return self.installed_package_version.to_version_string(skip_matcher=True)
         else:
             return "unknown"
+        
+            ALL_VERSIONS_COMPATIBLE = "All package versions are Fusion compatible"
+    # SOME_VERSIONS_COMPATIBLE = "A subset of package versions are Fusion compatible"
+    # NO_VERSIONS_COMPATIBLE = "No versions are Fusion compatible"
+    # MISSING_COMPATIBILITY = "All package versions are missing require dbt version"
+    # UNKNOWN = "Package version state unknown"
+    def get_package_fusion_compatibility_state(self) -> PackageFusionCompatibilityState:
+        if not self.is_public_package():
+            return PackageFusionCompatibilityState.UNKNOWN
+        if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
+            return PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE
+        if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
+            return PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
+        
+        fusion_compatible_version_count = 0 if self.fusion_compatible_versions is None else len(self.fusion_compatible_versions)
+        fusion_incompatible_version_count = 0 if self.fusion_incompatible_versions is None else len(self.fusion_incompatible_versions)
+        unknown_compatibility_version_count = 0 if self.unknown_compatibility_versions is None else len(self.unknown_compatibility_versions)
+        total_version_count = fusion_compatible_version_count + fusion_incompatible_version_count + unknown_compatibility_version_count
+        # cases where we can determine compatibility across all versions
+        if total_version_count == 0:
+            return PackageFusionCompatibilityState.UNKNOWN
+        elif fusion_compatible_version_count == total_version_count:
+            return PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
+        elif unknown_compatibility_version_count == total_version_count:
+            return PackageFusionCompatibilityState.MISSING_COMPATIBILITY
+        elif fusion_incompatible_version_count == total_version_count:
+            return PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE
+        # case where we have to look at individual versions to determine compatibility
+        elif total_version_count > 0 and fusion_compatible_version_count > 0:
+            return PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
+        # fallback case where some versions have incompatible version and some have no version defined
+        elif total_version_count > 0 and fusion_compatible_version_count == 0:
+            return PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE
+        # hopefully nothing is left but if so
+        else:
+            return PackageFusionCompatibilityState.UNKNOWN
 
     def get_fusion_compatibility_state(self) -> FusionCompatibilityState:
         if not self.is_public_package():
