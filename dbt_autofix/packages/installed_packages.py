@@ -66,9 +66,9 @@ def find_package_paths(
     
     # if still don't have any, check for env var
     if len(installed_packages) == 0:
-        package_dir_envvar = os.getenv("DBT_PACKAGE_DIR")
+        package_dir_envvar = os.getenv("DBT_PACKAGES_INSTALL_PATH")
         if package_dir_envvar is not None:
-            installed_packages = find_packages_within_directory((root_dir / package_dir_envvar))
+            installed_packages = find_packages_within_directory((package_dir_envvar))
 
     return installed_packages
 
