@@ -138,7 +138,7 @@ class DbtPackageTextFile:
                         key_block.version_line = current_line
                     self.blocks_by_line.append(len(self.key_blocks))
                     self.lines.append(DbtPackageTextFileLine(line))
-                if key_block.end_line is None:
+                if key_block.end_line == -1:
                     key_block.end_line = current_line - 1
                     self.key_blocks.append(key_block)
         except FileNotFoundError:
