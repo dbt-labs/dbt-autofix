@@ -195,14 +195,24 @@ def changeset_dbt_project_prefix_plus_for_config(
                 new_k = f"+{k}"
                 yml_dict[node_type][new_k] = v
                 del yml_dict[node_type][k]
+            elif k in node_fields.allowed_config_fields_dbt_project_with_plus:
+                yml_dict[node_type][k] = v
+                del yml_dict[node_type][k]
 
-            # otherwise, treat it as a package
-            # TODO: if this is not valid, we could delete it as well
-            else:
+            # only process as package if v is a dict (not a scalar like bool, string, etc.)
+            elif isinstance(v, dict):
                 packages_path = path / Path(yml_dict.get("packages-paths", "dbt_packages"))
                 new_dict, refactor_logs = rec_check_yaml_path(v, packages_path / k / node_type, node_fields)
                 yml_dict[node_type][k] = new_dict
                 all_refactor_logs.extend(refactor_logs)
+            
+            # otherwise, treat non-dict values as custom config and move to +meta
+            else:
+                all_refactor_logs.append(f"Moved custom config '{k}' to '+meta'")
+                meta = yml_dict[node_type].get("+meta", {})
+                meta.update({k: v})
+                yml_dict[node_type]["+meta"] = meta
+                del yml_dict[node_type][k]
 
     refactored = len(all_refactor_logs) > 0
     deprecation_refactors = [
