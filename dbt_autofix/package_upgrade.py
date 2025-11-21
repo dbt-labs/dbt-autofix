@@ -374,7 +374,6 @@ def upgrade_package_versions(
     updated_packages: set[str] = package_text_file.update_config_file(
         packages_to_update, dry_run=dry_run, print_to_console=True
     )
-    print(updated_packages)
 
     upgraded_package_results: list[PackageVersionUpgradeResult] = []
     unchanged_package_results: list[PackageVersionUpgradeResult] = []
