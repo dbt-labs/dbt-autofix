@@ -189,7 +189,7 @@ class DbtPackageFile:
 
     def get_private_package_names(self) -> list[str]:
         return [
-            package for package in self.package_dependencies if not self.package_dependencies[package].is_public_package
+            package for package in self.package_dependencies if not self.package_dependencies[package].is_public_package()
         ]
 
     def get_installed_version_fusion_compatible(self) -> list[str]:
@@ -243,7 +243,14 @@ def parse_package_dependencies_from_yml(
     )
     for idx, package in enumerate(package_dict):
         if "package" not in package:
-            package_id = f"package_{idx}"
+            if "private" in package:
+                package_id = package["private"]
+            elif "local" in package:
+                package_id = package["local"]
+            elif "git" in package:
+                package_id = package["git"]
+            else:
+                package_id = f"package_{idx}"
         else:
             package_id: str = str(package["package"])
         package_name: str = package_id.split("/")[-1]
@@ -251,12 +258,14 @@ def parse_package_dependencies_from_yml(
         local: bool = "local" in package
         git: bool = "git" in package
         tarball = "tarball" in package
+        private: bool = "private" in package
         new_package = DbtPackage(
             package_name=package_name,
             package_id=package_id,
             local=local,
             git=git,
             tarball=tarball,
+            private=private,
             project_config_raw_version_specifier=version,
         )
         package_file.add_package_dependency(package_id, new_package)

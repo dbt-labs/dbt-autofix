@@ -36,6 +36,7 @@ class DbtPackage:
     local: bool = False
     tarball: bool = False
     git: bool = False
+    private: bool = False
 
     # fields for hardcoding Fusion-specific info
     min_upgradeable_version: Optional[str] = None
@@ -96,7 +97,7 @@ class DbtPackage:
             return False
 
     def is_public_package(self) -> bool:
-        return not (self.git or self.tarball or self.local)
+        return not (self.git or self.tarball or self.local or self.private)
 
     def is_installed_version_fusion_compatible(self) -> PackageVersionFusionCompatibilityState:
         if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
