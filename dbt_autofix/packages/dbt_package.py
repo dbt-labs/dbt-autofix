@@ -193,6 +193,8 @@ class DbtPackage:
     def get_installed_package_version(self) -> str:
         if self.installed_package_version:
             return self.installed_package_version.to_version_string(skip_matcher=True)
+        elif self.installed_package_version is None and self.project_config_version_range is not None:
+            return self.project_config_version_range.start.to_version_string(skip_matcher=True)
         else:
             return "unknown"
 
