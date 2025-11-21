@@ -215,6 +215,7 @@ def test_match_version_in_line(input_str, expected_match):
         ("    package: dbt-labs/dbt_utils # trailing comment", "dbt-labs/dbt_utils"),
         ("    package: dbt-labs/dbt_utils\n", "dbt-labs/dbt_utils"),
         ("    package: dbt-labs/dbt_utils  \n", "dbt-labs/dbt_utils"),
+        ("    package: \"dbt-labs/dbt_utils\"  \n", "dbt-labs/dbt_utils"),
     ],
 )
 def test_extract_package_in_line(input_str, expected_match):
