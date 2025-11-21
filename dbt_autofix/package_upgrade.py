@@ -387,6 +387,7 @@ def upgrade_package_versions(
 
     for result in upgraded_package_results:
         result.upgraded = True
+        result.version_reason = PackageVersionUpgradeType.UPGRADE_AVAILABLE
     
     upgrade_result = PackageUpgradeResult(
         dry_run=dry_run,
