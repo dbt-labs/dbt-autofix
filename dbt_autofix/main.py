@@ -58,14 +58,6 @@ def upgrade_packages(
         ),
     ] = False,
 ):
-    # TODO: remove this when full package upgrade is available
-    print("[yellow]This command is still under development and operates in dry run mode by default[/yellow]\n")
-    if os.getenv("UPGRADE_PACKAGES") == "1" and not dry_run:
-        console.print("[red]Overriding dry run[red]\n")
-        dry_run = False
-    else:
-        dry_run = True
-
     if not path.is_dir() or not path.exists():
         error_console.print("[red]-- The directory specified in --path does not exist --[/red]")
         return
