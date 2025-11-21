@@ -81,7 +81,7 @@ class PackageUpgradeResult:
                 console.print(f"    {log.value}")
         for result in self.unchanged:
             console.print(
-                f"  package {result.id} unchanged from installed version {result.installed_version}",
+                f"  package {result.id} unchanged",
                 style="green" if result.version_reason == PackageVersionUpgradeType.NO_UPGRADE_REQUIRED else "bold red",
             )
             for log in result.package_upgrade_logs:
