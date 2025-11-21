@@ -61,6 +61,9 @@ class DbtPackageTextFileLine:
         if not pkg_match:
             return ""
         pkg = pkg_match.group("pkg")
+        if pkg is not None:
+            pkg = pkg.strip('"')
+            pkg = pkg.strip("'")
         return pkg
 
     def replace_version_string_in_line(self, new_string: str) -> bool:
