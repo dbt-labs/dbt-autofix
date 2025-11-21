@@ -33,12 +33,15 @@ class PackageVersionUpgradeResult:
     upgraded_version: Optional[str] = None
     compatible_version: Optional[str] = None
     version_range_config: Optional[str] = None
+    upgraded: bool = False
 
     def package_should_upgrade(self):
         return self.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE
 
     def package_final_version(self):
         if self.package_should_upgrade() and self.upgraded_version:
+            return self.upgraded_version
+        elif self.upgraded and self.upgraded_version:
             return self.upgraded_version
         else:
             return self.installed_version
@@ -382,6 +385,9 @@ def upgrade_package_versions(
         else:
             unchanged_package_results.append(package)
 
+    for result in upgraded_package_results:
+        result.upgraded = True
+    
     upgrade_result = PackageUpgradeResult(
         dry_run=dry_run,
         file_path=deps_file.file_path,
