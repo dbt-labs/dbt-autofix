@@ -226,10 +226,10 @@ class DbtPackageTextFile:
                     console.print(line.line, style="green")
                 else:
                     console.print(line.line)
-            return updated_packages
+            # return updated_packages
         else:
             lines_written = self.write_output_to_file()
             if lines_written == 0 and print_to_console:
                 console.print(f"Error: No output written to {self.file_path.name}")
-            return set()
+            # return set()
         return updated_packages
