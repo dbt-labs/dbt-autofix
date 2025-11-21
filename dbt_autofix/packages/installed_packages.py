@@ -14,7 +14,6 @@ console = Console()
 
 
 def find_packages_within_directory(installed_packages_dir: Union[Path, str]) -> list[Path]:
-    print(installed_packages_dir)
     if type(installed_packages_dir) == str:
         installed_packages_path = Path(installed_packages_dir)
     elif isinstance(installed_packages_dir, Path): 
