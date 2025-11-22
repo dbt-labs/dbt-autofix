@@ -108,7 +108,7 @@ Please review the suggested changes to your dbt project before merging to `main`
   - add `--dry-run` for running in dry run mode
   - add `--json` to get resulting data in a JSONL format
 
-If any packages are upgraded, you must run `dbt deps` in your prowject to install the new versions and update your lock file.
+If any packages are upgraded, you must run `dbt deps` in your project to install the new versions and update your lock file.
 
 Each JSON object will have the following keys:
 
