@@ -1,5 +1,5 @@
 [project]
-name = "dbt-autofix"
+name = "dbt-autofix-workspace"
 description = "CLI to autofix deprecations in dbt projects"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -20,8 +20,13 @@ dynamic = ["version"]
 [tool.uv]
 package = true
 
-[project.scripts]
-dbt-autofix = "dbt_autofix.main:app"
+[tool.uv.workspace]
+members = [
+    "packages/test-package-1",
+    "packages/test-package-2",
+    "dbt_autofix"
+]
+
 
 
 [project.optional-dependencies]

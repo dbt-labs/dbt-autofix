@@ -1,0 +1,27 @@
+[project]
+name = "dbt-autofix"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "test-package-1",
+]
+
+[project.scripts]
+dbt-autofix = "dbt_autofix.main:app"
+
+[tool.pdm.build]
+# Include pre_commit_hooks/ directory in distribution
+# To enable .pre-commit-hooks.yaml functionality
+includes = ["dbt_autofix", "pre_commit_hooks"]
+
+[tool.pdm.version]
+source = "scm"
+
+[tool.uv.sources]
+test-package-1 = { workspace = true }
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
