@@ -13,8 +13,10 @@ dependencies = [
 members = [
     "packages/test-package-1",
     "packages/test-package-2",
-    "dbt_autofix"
+    "packages/dbt-autofix"
 ]
+
+[]
 
 
 
@@ -46,7 +48,7 @@ ignore = []
 
 [tool.pyright]
 include = [
-    "dbt_autofix",
+    "packages/*",
     "tests",
 ]
 exclude = []

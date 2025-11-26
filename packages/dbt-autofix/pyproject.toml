@@ -23,12 +23,8 @@ dynamic = ["version"]
 package = true
 
 [project.scripts]
-main = "dbt_autofix.main:app"
+dbt-autofix = "dbt_autofix.main:app"
 
-[tool.pdm.build]
-# Include pre_commit_hooks/ directory in distribution
-# To enable .pre-commit-hooks.yaml functionality
-includes = ["dbt_autofix", "pre_commit_hooks"]
 
 [tool.pdm.version]
 source = "scm"
