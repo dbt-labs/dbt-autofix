@@ -88,6 +88,7 @@ uv tool install --from git+https://github.com/dbt-labs/dbt-autofix.git dbt-autof
   - add `--include-private-packages` to autofix just the _private_ packages (those not on [hub.getdbt.com](https://hub.getdbt.com/)) installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with Fusion.
   - add `--behavior-change` to run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
   - add `--all` to run all of the fixes possible - both fixes that potentially require behavior changes as well as not. Additionally, `--all` will apply fixes to as many files as possible, even if some files are unfixable (e.g. due to invalid yaml syntax).
+  - add `--semantic-layer` to migrate semantic models and metrics into your dbt models. This merges top-level semantic models with their corresponding dbt models and moves metrics into the model definitions. Note: This option cannot be used with `--include-packages`.
 
 Each JSON object will have the following keys:
 
