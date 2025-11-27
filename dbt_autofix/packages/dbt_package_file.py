@@ -189,7 +189,9 @@ class DbtPackageFile:
 
     def get_private_package_names(self) -> list[str]:
         return [
-            package for package in self.package_dependencies if not self.package_dependencies[package].is_public_package()
+            package
+            for package in self.package_dependencies
+            if not self.package_dependencies[package].is_public_package()
         ]
 
     def get_installed_version_fusion_compatible(self) -> list[str]:
