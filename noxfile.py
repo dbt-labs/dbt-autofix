@@ -49,4 +49,4 @@ def run_cli_deprecations(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    session.run("dbt-autofix deprecations")
+    session.run("dbt-autofix", "deprecations")
