@@ -38,3 +38,15 @@ def pytest(session):
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
     session.run("pytest", *session.posargs)
+
+
+@nox.session(python=["3.9", "3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
+def run_cli_deprecations(session):
+    """Make sure the deperecations CLI runs (but fails)"""
+    session.run_install(
+        "uv",
+        "sync",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+    session.run("dbt-autofix deprecations")
