@@ -26,6 +26,8 @@ jobs:
   release:
     name: PyPI - ${{ inputs.deploy-to || 'PypiProd' }}
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.deploy-to == 'PypiTest' && 'pypitest' || 'pypiprod'}}
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
