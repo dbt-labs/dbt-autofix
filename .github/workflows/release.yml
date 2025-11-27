@@ -39,7 +39,7 @@ jobs:
         uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # astral-sh/setup-uv@v3
 
       - name: Build artifacts
-        run: uv build
+        run: uv build --package dbt-autofix
 
       - name: Publish artifacts to PyPI Test
         if: inputs.deploy-to == 'PypiTest'
