@@ -1,0 +1,21 @@
+[project]
+name = "test-package-1"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Chaya Carey", email = "chaya.carey@dbtlabs.com" }
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.pdm.version]
+source = "scm"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[project.scripts]
+test-package-1 = "test_package_1.main:app"

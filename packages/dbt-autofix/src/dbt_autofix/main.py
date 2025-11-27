@@ -23,6 +23,8 @@ from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
+import test_package_1.main
+
 console = Console()
 error_console = Console(stderr=True)
 
@@ -220,6 +222,7 @@ def version_callback(show_version: bool):
 
 
 if __name__ == "__main__":
+    test_package_1.main.app()
     app()
 
 
@@ -230,5 +233,7 @@ def main(
     ),
     version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
 ):
+    print("hello")
+    print(test_package_1.main.app())
     if debug:
         app.pretty_exceptions_enable = True

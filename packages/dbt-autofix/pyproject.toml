@@ -1,18 +1,49 @@
-
-
-[tool.uv.workspace]
-members = [
-    "packages/test-package-1",
-    "packages/test-package-2",
-    "packages/dbt-autofix"
+[project]
+name = "dbt-autofix"
+description = "CLI to autofix deprecations in dbt projects"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "test-package-1",
+    "pyyaml>=6.0.2",
+    "typer>=0.15.2",
+    "yamllint>=1.37.0",
+    "rich>=13.7.0",
+    "click<8.2.0",
+    "ruamel-yaml>=0.18.10,<0.18.15",
+    "httpx>=0.27.0",
+    "dbt-common>=1.27,<2",
+    "dbt-extractor>=0.5.0,<=0.6",
 ]
 
-[tool.uv.sources]
-test-package-1 = { workspace = true }
-test-package-2 = { workspace = true }
-dbt-autofix = { workspace = true }
+dynamic = ["version"]
 
 
+[tool.uv]
+package = true
+
+[project.scripts]
+dbt-autofix = "dbt_autofix.main:app"
+
+
+[tool.pdm.version]
+source = "scm"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.2.0",
+    "pytest-cov>=4.1.0",
+    "pre-commit>=4.2.0",
+    "nox",
+]
+docs = [
+    "pydocstyle>=6.3.0",
+]
 
 
 
@@ -28,16 +59,9 @@ select = ["E4", "E7", "E9", "F", "I", "RUF", "PL", "TID", "T20"]
 ignore = []
 
 
-[tool.pdm.version]
-source = "scm"
-
-[build-system]
-requires = ["pdm-backend"]
-
-
 [tool.pyright]
 include = [
-    "packages/*",
+    "dbt_autofix",
     "tests",
 ]
 exclude = []
@@ -55,11 +79,7 @@ reportMissingImports = false
 
 [tool.pytest.ini_options]
 pythonpath = [
-  ".",
-  "packages"
-]
-testpaths = [
-    "tests"
+  "."
 ]
 
 [tool.pydocstyle]

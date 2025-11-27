@@ -25,6 +25,19 @@ GOLDIE_UPDATE=1 pytest tests/integration_tests
 
 to automatically update the expected *.stdout files.
 
+### Running Tests in VS Code
+Add this snippet to `.vscode/settings.json`:
+```
+{
+    "python.testing.pytestArgs": [
+        "tests",
+        "-s", // show stdout in output
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}
+```
+
 
 ## Releasing
 
