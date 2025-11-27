@@ -29,9 +29,67 @@ dbt-autofix = "dbt_autofix.main:app"
 [tool.pdm.version]
 source = "scm"
 
-[tool.uv.sources]
-test-package-1 = { workspace = true }
-
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.2.0",
+    "pytest-cov>=4.1.0",
+    "pre-commit>=4.2.0",
+    "nox",
+]
+docs = [
+    "pydocstyle>=6.3.0",
+]
+
+
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = ["E4", "E7", "E9", "F", "I", "RUF", "PL", "TID", "T20"]
+ignore = []
+
+
+[tool.pyright]
+include = [
+    "dbt_autofix",
+    "tests",
+]
+exclude = []
+pythonVersion = "3.9"
+
+typeCheckingMode = "basic"
+reportPrivateUsage = false
+reportUnusedVariable = true
+reportUnusedFunction = true
+reportUnusedExpression = true
+reportMissingImports = false
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = ["PLR2004", "T201"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
+
+[tool.pydocstyle]
+convention = "google"
+# D100: Missing docstring in public module
+# D101: Missing docstring in public class
+# D102: Missing docstring in public method
+# D103: Missing docstring in public function
+# D104: Missing docstring in public package
+# D105: Missing docstring in magic method
+# D107: Missing docstring in __init__
+# D202: No blank lines allowed after function docstring
+add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
