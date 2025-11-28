@@ -12,6 +12,7 @@ from rich.console import Console
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
 from dbt_autofix.refactors.yml import read_file
 from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from dbt_common.semver import Matchers
 
 console = Console()
 
@@ -160,6 +161,17 @@ class DbtPackageFile:
                 console.log(f"Installed package name {package} not found in package deps")
                 continue
             package_id = package_lookup[package]
+            # kind of hacky - try to correct installed version if package's dbt project yml
+            # has an incorrect version
+            package_version_range = self.package_dependencies[package_id].project_config_version_range
+            installed_version = installed_packages[package].version
+            if (
+                package_version_range is not None
+                and installed_version is not None
+                and installed_version < package_version_range.start
+            ):
+                installed_packages[package].version = package_version_range.start
+                installed_packages[package].version.matcher = Matchers.EXACT
             if self.set_installed_version_for_package(package_id, installed_packages[package]):
                 installed_count += 1
         return installed_count

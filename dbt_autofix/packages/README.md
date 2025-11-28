@@ -47,6 +47,7 @@ The output from these two scripts produces `fusion_version_compatibility_output.
 * Get latest versions from package hub instead of using cache
 * Better handling for version in package's dbt_project.yml
   * Sometimes the version number in the package's dbt_project.yml doesn't actually match the release version because package hub only checks the release tag on Github, so the installed version check will set an incorrect version
+  * Added logic in DbtPackageFile will override the installed version if it's less than the config's version range, but this isn't 100% reliable
   * Could instead refer to the package lock file to find the exact version
   * But probably not a huge problem since we are only looking for the require dbt version anyway and only look for upgrades if it's missing/incompatible
 * Move package parsing logic to hubcap or package hub where appropriate
