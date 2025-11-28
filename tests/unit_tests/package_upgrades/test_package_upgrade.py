@@ -16,7 +16,7 @@ from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilit
 
 PROJECT_WITH_PACKAGES_PATH = Path("tests/integration_tests/package_upgrades/mixed_versions")
 # update if count changes
-PROJECT_DEPENDENCY_COUNT = 7
+PROJECT_DEPENDENCY_COUNT = 8
 
 # cases to test:
 
@@ -47,6 +47,9 @@ PROJECT_DEPENDENCY_COUNT = 7
 # dbt_project.yml require-dbt-version: [">=1.3.0", "<2.0.0"]
 # "fusion_compatible_versions": ["=0.1.0", "=0.3.0", "=0.4.0", "=0.5.0"],
 # "fusion_incompatible_versions": ["=0.6.0", "=0.7.0"],
+
+# version is compatible based on require dbt version but has version override
+# dbt_project_evaluator: upgrade to 1.1.1
 
 
 def test_generate_package_dependencies():
@@ -81,6 +84,9 @@ def test_generate_package_dependencies():
         elif package == "MaterializeInc/materialize_dbt_utils":
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
+        elif package == "dbt-labs/dbt_project_evaluator":
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+            assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
 
 
 def test_check_for_package_upgrades():
@@ -109,6 +115,8 @@ def test_check_for_package_upgrades():
             assert fusion_compatibility_state == PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY
         elif package == "MaterializeInc/materialize_dbt_utils":
             assert fusion_compatibility_state == PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION
+        elif package == "dbt-labs/dbt_project_evaluator":
+            assert fusion_compatibility_state == PackageVersionUpgradeType.UPGRADE_AVAILABLE
 
 
 def test_upgrade_package_versions_no_force_update():
@@ -122,7 +130,7 @@ def test_upgrade_package_versions_no_force_update():
     assert output
     assert output.upgraded
     assert len(output.upgrades) == 1
-    assert len(output.unchanged) == 6
+    assert len(output.unchanged) == 7
     assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT
     output.print_to_console(json_output=False)
     output.print_to_console(json_output=True)
@@ -138,7 +146,7 @@ def test_upgrade_package_versions_with_force_update():
     )
     assert output
     assert output.upgraded
-    assert len(output.upgrades) == 2
+    assert len(output.upgrades) == 3
     assert len(output.unchanged) == 5
     assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT
     output.print_to_console(json_output=False)

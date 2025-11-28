@@ -23,3 +23,6 @@ packages:
 # versions up to 0.5.0 have require dbt version > 1.0, higher versions have <2.0
   - package: MaterializeInc/materialize_dbt_utils
     version: 0.6.0
+# version 1.1.0 has a manual override as incompatible
+  - package: "dbt-labs/dbt_project_evaluator"
+    version: "1.1.0"
