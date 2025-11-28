@@ -16,7 +16,6 @@ EXPLICIT_DISALLOW_ALL_VERSIONS: set[str] = set(
 # https://docs.getdbt.com/docs/fusion/supported-features#package-support
 EXPLICIT_ALLOW_ALL_VERSIONS: set[str] = set(
     [
-        "dbt-labs/dbt_project_evaluator",
         "fivetran/fivetran_utils",
         "fivetran/hubspot",
         "fivetran/linkedin",
@@ -47,3 +46,13 @@ EXPLICIT_ALLOW_ALL_VERSIONS: set[str] = set(
         "dbt-labs/codegen",
     ]
 )
+
+# TODO: Currently this is used in scripts/get_fusion_compatible_versions
+# to set compatibility when parsing the raw package files,
+# but should be incorporated into other logic
+EXPLICIT_DISALLOW_VERSIONS: dict[str, set[str]] = {
+    # dbt_project_evaluator version 1.1.0 has compatible
+    # require dbt version but actually has bug that makes
+    # package incompatible until fixed in 1.1.1
+    "dbt-labs/dbt_project_evaluator": set("1.1.0")
+}
