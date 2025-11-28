@@ -48,11 +48,12 @@ EXPLICIT_ALLOW_ALL_VERSIONS: set[str] = set(
 )
 
 # TODO: Currently this is used in scripts/get_fusion_compatible_versions
-# to set compatibility when parsing the raw package files,
-# but should be incorporated into other logic
+# to set compatibility when parsing the raw package files and also in
+# DbtPackageVersion.is_version_explicitly_disallowed_on_fusion,
+# but need to refine logic
 EXPLICIT_DISALLOW_VERSIONS: dict[str, set[str]] = {
     # dbt_project_evaluator version 1.1.0 has compatible
     # require dbt version but actually has bug that makes
     # package incompatible until fixed in 1.1.1
-    "dbt-labs/dbt_project_evaluator": set("1.1.0")
+    "dbt-labs/dbt_project_evaluator": set(["1.1.0"])
 }

@@ -51,4 +51,4 @@ The output from these two scripts produces `fusion_version_compatibility_output.
   * But probably not a huge problem since we are only looking for the require dbt version anyway and only look for upgrades if it's missing/incompatible
 * Move package parsing logic to hubcap or package hub where appropriate
 * Explicit overrides at version level
-  * Currently in scripts/get_fusion_compatible_versions but should be at query time instead
+  * Currently in scripts/get_fusion_compatible_versions and DbtPackageVersion.is_version_explicitly_disallowed_on_fusion, but should refine logic

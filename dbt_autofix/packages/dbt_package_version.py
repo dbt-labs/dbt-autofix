@@ -2,7 +2,11 @@ from typing import Any, Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
-from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
+from dbt_autofix.packages.manual_overrides import (
+    EXPLICIT_ALLOW_ALL_VERSIONS,
+    EXPLICIT_DISALLOW_ALL_VERSIONS,
+    EXPLICIT_DISALLOW_VERSIONS,
+)
 
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
 
@@ -127,9 +131,19 @@ class DbtPackageVersion:
     def is_require_dbt_version_defined(self) -> bool:
         return self.require_dbt_version_range != None and len(self.require_dbt_version_range) > 0
 
+    def is_version_explicitly_disallowed_on_fusion(self) -> bool:
+        return (
+            self.package_id is not None
+            and self.package_id in EXPLICIT_DISALLOW_VERSIONS
+            and self.package_version_str in EXPLICIT_DISALLOW_VERSIONS[self.package_id]
+        )
+
     def is_explicitly_disallowed_on_fusion(self) -> bool:
-        if self.package_id is not None and self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            return True
+        if self.package_id is not None:
+            if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
+                return True
+            elif self.is_version_explicitly_disallowed_on_fusion():
+                return True
         return False
 
     def is_explicitly_allowed_on_fusion(self) -> bool:

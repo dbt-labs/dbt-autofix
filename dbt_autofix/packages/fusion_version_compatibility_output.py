@@ -1621,9 +1621,9 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
     },
     "dbt-labs/dbt_project_evaluator": {
         "latest_version": "=1.1.2",
-        "oldest_fusion_compatible_version": "=1.1.0",
+        "oldest_fusion_compatible_version": "=1.1.1",
         "latest_fusion_compatible_version": "=1.1.2",
-        "fusion_compatible_versions": ["=1.1.0", "=1.1.1", "=1.1.2"],
+        "fusion_compatible_versions": ["=1.1.1", "=1.1.2"],
         "fusion_incompatible_versions": [
             "=0.2.1",
             "=0.5.0",
@@ -1662,6 +1662,7 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=1.0.0",
             "=1.0.1",
             "=1.0.2",
+            "=1.1.0",
         ],
         "unknown_compatibility_versions": ["=0.1.0"],
         "package_latest_version_index_json": "=1.1.2",

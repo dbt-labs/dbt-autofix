@@ -2,8 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
-from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible, reduce_versions
-from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_VERSIONS
+from dbt_common.semver import VersionSpecifier
 
 
 def read_package_output_json(file_path: Path) -> dict[str, Any]:
@@ -69,7 +68,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         versions.append(version)
         dbt_version_defined = package_version.is_require_dbt_version_defined()
         fusion_compatible_version: bool = dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
-        if version["package_id_from_path"] in EXPLICIT_DISALLOW_VERSIONS and version["package_version_string"] in EXPLICIT_DISALLOW_VERSIONS["package_id_from_path"]:
+        if package_version.is_version_explicitly_disallowed_on_fusion():
             fusion_compatible_version = False
         if fusion_compatible_version:
             fusion_compatible_versions.append(package_version.version)
