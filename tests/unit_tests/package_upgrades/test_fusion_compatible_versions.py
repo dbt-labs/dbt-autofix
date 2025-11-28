@@ -25,3 +25,22 @@ def test_check_renames(old_package_id, new_package_id):
         package_redirect_namespace = package["package_redirect_namespace"]
     package_redirect_id = f"{package_redirect_namespace}/{package_redirect_name}"
     assert package_redirect_id == new_package_id
+
+
+@pytest.mark.parametrize(
+    "package_id,version,expected",
+    [
+        ("dbt-labs/dbt_project_evaluator", "=0.9.0", False),
+        ("dbt-labs/dbt_project_evaluator", "=1.0.0", False),
+        ("dbt-labs/dbt_project_evaluator", "=1.1.0", False),
+        ("dbt-labs/dbt_project_evaluator", "=1.1.1", True),
+        ("dbt-labs/dbt_project_evaluator", "=1.1.2", True),
+    ],
+)
+def test_check_explicit_override_version(package_id, version, expected):
+    package = FUSION_VERSION_COMPATIBILITY_OUTPUT[package_id]
+    fusion_compatibility = version in package["fusion_compatible_versions"]
+    assert fusion_compatibility == expected
+    if not expected:
+        assert package["oldest_fusion_compatible_version"] != version
+        assert package["latest_fusion_compatible_version"] != version
