@@ -92,15 +92,23 @@ class DbtPackageVersion:
     package_name: str
     package_version_str: str
     require_dbt_version_range: list[str] = field(default_factory=list)
-    version: VersionSpecifier = field(init=False)
+    # version: VersionSpecifier = field(init=False)
     require_dbt_version: Optional[VersionRange] = field(init=False)
     package_id_with_version: Optional[str] = None
     package_id: Optional[str] = None
     raw_require_dbt_version_range: Any = None
 
+    @property
+    def version(self) -> VersionSpecifier:
+        return VersionSpecifier.from_version_string(self.package_version_str)
+
+    @version.setter
+    def version(self, new_version: VersionSpecifier) -> None:
+        self.package_version_str = new_version.to_version_string(skip_matcher=True)
+
     def __post_init__(self):
         try:
-            self.version = VersionSpecifier.from_version_string(self.package_version_str)
+            # self.version = VersionSpecifier.from_version_string(self.package_version_str)
             if self.raw_require_dbt_version_range is not None:
                 self.require_dbt_version_range = construct_version_list_from_raw(self.raw_require_dbt_version_range)
             if self.require_dbt_version_range and len(self.require_dbt_version_range) > 0:

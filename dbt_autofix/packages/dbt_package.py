@@ -70,6 +70,7 @@ class DbtPackage:
             print("exception calculating config version range ")
 
     def add_package_version(self, new_package_version: DbtPackageVersion, installed=False, latest=False) -> bool:
+        new_package_version.package_id = self.package_id
         if latest:
             self.latest_package_version = new_package_version.version
             self.latest_version_fusion_compatibility = new_package_version.get_fusion_compatibility_state()
@@ -100,10 +101,6 @@ class DbtPackage:
         return not (self.git or self.tarball or self.local or self.private)
 
     def is_installed_version_fusion_compatible(self) -> PackageVersionFusionCompatibilityState:
-        if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            return PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
-        if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
-            return PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
         if self.installed_package_version is None:
             return PackageVersionFusionCompatibilityState.UNKNOWN
         else:

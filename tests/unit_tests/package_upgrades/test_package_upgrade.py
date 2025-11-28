@@ -116,7 +116,10 @@ def test_check_for_package_upgrades():
         elif package == "MaterializeInc/materialize_dbt_utils":
             assert fusion_compatibility_state == PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION
         elif package == "dbt-labs/dbt_project_evaluator":
-            assert fusion_compatibility_state == PackageVersionUpgradeType.UPGRADE_AVAILABLE
+            assert (
+                fusion_compatibility_state
+                == PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG
+            )
 
 
 def test_upgrade_package_versions_no_force_update():
