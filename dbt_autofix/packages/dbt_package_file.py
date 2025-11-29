@@ -179,24 +179,8 @@ class DbtPackageFile:
     def merge_fusion_compatibility_output(self) -> int:
         package_compat_count = 0
         for package in self.package_dependencies:
-            output = FUSION_VERSION_COMPATIBILITY_OUTPUT.get(package)
-            if output is None:
-                continue
-            oldest_fusion_compatible_version = convert_optional_version_string_to_spec(
-                output["oldest_fusion_compatible_version"]
-            )
-            # latest_fusion_compatible_version = convert_optional_version_string_to_spec(output["latest_fusion_compatible_version"])
-            fusion_compatible_versions = convert_version_string_list_to_spec(output["fusion_compatible_versions"])
-            fusion_incompatible_versions = convert_version_string_list_to_spec(output["fusion_incompatible_versions"])
-            unknown_compatibility_versions = convert_version_string_list_to_spec(
-                output["unknown_compatibility_versions"]
-            )
-            self.package_dependencies[package].lowest_fusion_compatible_version = oldest_fusion_compatible_version
-            # self.package_dependencies[package].latest_fusion_compatible_version = latest_fusion_compatible_version
-            self.package_dependencies[package].fusion_compatible_versions = fusion_compatible_versions
-            self.package_dependencies[package].fusion_incompatible_versions = fusion_incompatible_versions
-            self.package_dependencies[package].unknown_compatibility_versions = unknown_compatibility_versions
-            package_compat_count += 1
+            merged: bool = self.package_dependencies[package].merge_fusion_compatibility_output()
+            package_compat_count += 1 if merged else 0
         return package_compat_count
 
     def get_private_package_names(self) -> list[str]:

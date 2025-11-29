@@ -4,12 +4,15 @@ from rich.console import Console
 from dbt_autofix.packages.dbt_package_version import (
     DbtPackageVersion,
     construct_version_list_from_raw,
+    convert_optional_version_string_to_spec,
     convert_version_specifiers_to_range,
+    convert_version_string_list_to_spec,
     get_version_specifiers,
 )
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS, EXPLICIT_ALLOW_ALL_VERSIONS
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
+from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 
 
 console = Console()
@@ -38,13 +41,12 @@ class DbtPackage:
     git: bool = False
     private: bool = False
 
-    # fields for hardcoding Fusion-specific info
-    min_upgradeable_version: Optional[str] = None
-    max_upgradeable_version: Optional[str] = None
+    # fields from FUSION_VERSION_COMPATIBILITY_OUTPUT
+    package_redirect_id: Optional[str] = None
     lowest_fusion_compatible_version: Optional[VersionSpecifier] = None
-    fusion_compatible_versions: Optional[list[VersionSpecifier]] = None
-    fusion_incompatible_versions: Optional[list[VersionSpecifier]] = None
-    unknown_compatibility_versions: Optional[list[VersionSpecifier]] = None
+    fusion_compatible_versions: list[VersionSpecifier] = field(default_factory=list)
+    fusion_incompatible_versions: list[VersionSpecifier] = field(default_factory=list)
+    unknown_compatibility_versions: list[VersionSpecifier] = field(default_factory=list)
 
     # check compatibility of latest and installed versions when loading
     latest_version_fusion_compatibility: PackageVersionFusionCompatibilityState = (
@@ -53,6 +55,23 @@ class DbtPackage:
     installed_version_fusion_compatibility: PackageVersionFusionCompatibilityState = (
         PackageVersionFusionCompatibilityState.UNKNOWN
     )
+
+    def merge_fusion_compatibility_output(self) -> bool:
+        output = FUSION_VERSION_COMPATIBILITY_OUTPUT.get(self.package_id)
+        if output is None:
+            return False
+        self.package_redirect_id = output.get("package_redirect_id")
+        oldest_fusion_compatible_version = convert_optional_version_string_to_spec(
+            output["oldest_fusion_compatible_version"]
+        )
+        fusion_compatible_versions = convert_version_string_list_to_spec(output["fusion_compatible_versions"])
+        fusion_incompatible_versions = convert_version_string_list_to_spec(output["fusion_incompatible_versions"])
+        unknown_compatibility_versions = convert_version_string_list_to_spec(output["unknown_compatibility_versions"])
+        self.lowest_fusion_compatible_version = oldest_fusion_compatible_version
+        self.fusion_compatible_versions = fusion_compatible_versions
+        self.fusion_incompatible_versions = fusion_incompatible_versions
+        self.unknown_compatibility_versions = unknown_compatibility_versions
+        return True
 
     def __post_init__(self):
         try:
