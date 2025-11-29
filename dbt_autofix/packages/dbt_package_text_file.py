@@ -45,7 +45,7 @@ class DbtPackageTextFileLine:
         version = version_match.group("version")
         return [self.line[: m.end()], version, eol]
 
-    def extract_package_from_line(self) -> str:
+    def extract_package_name_from_line(self) -> str:
         """Extract the package name from a line containing a `package:` key.
 
         Returns:
@@ -69,6 +69,40 @@ class DbtPackageTextFileLine:
             pkg = pkg.strip("'")
         return pkg
 
+    def extract_package_from_line(self) -> list[str]:
+        """Extract the package name from a line containing a `package:` key.
+
+        Returns:
+            str: package ID
+        """
+        if not self.line_contains_package():
+            return []
+        prefix_re = re.compile(r"^\s*(?:-\s*)?package:\s*")
+        m = prefix_re.match(self.line)
+        if not m:
+            return []
+
+        # Preserve the original line ending (CRLF, LF, or CR)
+        if self.line.endswith("\r\n"):
+            eol = "\r\n"
+        elif self.line.endswith("\n"):
+            eol = "\n"
+        elif self.line.endswith("\r"):
+            eol = "\r"
+        else:
+            eol = ""
+
+        rest = self.line[m.end() :]
+        # Extract package id up to first whitespace, '#' or line ending
+        pkg_match = re.match(r"\s*(?P<pkg>[^\s#\r\n]+)", rest)
+        if not pkg_match:
+            return []
+        pkg = pkg_match.group("pkg")
+        if pkg is not None:
+            pkg = pkg.strip('"')
+            pkg = pkg.strip("'")
+        return [self.line[: m.end()], pkg, eol]
+
     def replace_package_name_in_line(self, new_string: str) -> bool:
         if not self.line_contains_package():
             return False
@@ -78,7 +112,7 @@ class DbtPackageTextFileLine:
         self.line = f"{extracted_version[0]}{new_string}{extracted_version[2]}"
         self.modified = True
         return True
-    
+
     def replace_version_string_in_line(self, new_string: str) -> bool:
         if not self.line_contains_version():
             return False
@@ -166,7 +200,7 @@ class DbtPackageTextFile:
     def extract_packages_from_lines(self):
         for i, line in enumerate(self.lines):
             if line.line_contains_package():
-                package_name = line.extract_package_from_line()
+                package_name = line.extract_package_name_from_line()
                 self.packages_by_line[package_name] = i
                 self.packages_by_block[package_name] = self.blocks_by_line[i]
 

@@ -221,7 +221,7 @@ def test_match_version_in_line(input_str, expected_match):
 )
 def test_extract_package_in_line(input_str, expected_match):
     package_line = DbtPackageTextFileLine(line=input_str)
-    assert package_line.extract_package_from_line() == expected_match
+    assert package_line.extract_package_name_from_line() == expected_match
 
 
 @pytest.mark.parametrize(
@@ -239,6 +239,7 @@ def test_replace_version_in_line(input_str, expected_match):
     assert replaced
     assert len(file_line.line) == len(expected_match)
     assert file_line.line == expected_match
+
 
 @pytest.mark.parametrize(
     "input_str,expected_match",
