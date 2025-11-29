@@ -26,3 +26,6 @@ packages:
 # version 1.1.0 has a manual override as incompatible
   - package: "dbt-labs/dbt_project_evaluator"
     version: "1.1.0"
+# version is incompatible, but compatible version has different name
+  - package: calogica/dbt_date
+    version: 0.10.1

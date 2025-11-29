@@ -1,7 +1,10 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 import re
+from typing import Any, Optional
 from rich.console import Console
+
+from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 
 console = Console()
 
@@ -195,6 +198,16 @@ class DbtPackageTextFile:
             print(f"An error occurred: {e}")
         return lines_written
 
+    def update_package_name_if_redirect(self, current_name: str) -> bool:
+        updated_name: Optional[str] = (FUSION_VERSION_COMPATIBILITY_OUTPUT.get(current_name, {})).get(
+            "package_redirect_id"
+        )
+        if updated_name is None:
+            return False
+        else:
+            print(f"current name: {current_name}, updated name: {updated_name}")
+        return True
+
     def update_config_file(
         self, packages_with_versions: dict[str, str], dry_run: bool = False, print_to_console: bool = True
     ) -> set[str]:
@@ -214,6 +227,8 @@ class DbtPackageTextFile:
 
             block_version_line = self.change_package_version_in_block(block, package_version)
             if block_version_line > -1 and block_version_line < len(self.lines):
+                # only update package name if version has changed
+                self.update_package_name_if_redirect(package_name)
                 updated_packages.add(package_name)
             else:
                 unchanged_packages.add(package_name)
