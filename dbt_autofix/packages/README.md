@@ -35,7 +35,7 @@ The `packages` command calls the `upgrade_packages` function in `main.py`. This 
 
 `get_package_hub_files.py` and `get_fusion_compatible_version.py` are used to pull data from the public package registry (hub.getdbt.com) and extract Fusion compatibility information from available versions. This is basically a local cache of package information to bootstrap autofix. We need to know the lower bound of Fusion-compatible versions for a package but we also know that older versions of packages will not change, so caching this locally removes a lot of repetitive network calls and text parsing. Which means faster run times and fewer failures due to network issues. 
 
-The output from these two scripts produces `fusion_version_compatibility_output.py` that contains a single constant, `FUSION_VERSION_COMPATIBILITY_OUTPUT`. This is then used in `DbtPackageFile`'s `merge_fusion_compatibility_output` to populate compatible versions within all package dependencies.
+The output from these two scripts produces `fusion_version_compatibility_output.py` that contains a single constant, `FUSION_VERSION_COMPATIBILITY_OUTPUT`. This is then used in `DbtPackage`'s `merge_fusion_compatibility_output` to populate compatible versions.
 
 ## TODO
 * Private packages

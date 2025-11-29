@@ -1,17 +1,12 @@
 from collections import defaultdict
 from typing import Any, Optional
 from dbt_autofix.packages.dbt_package import DbtPackage
-from dbt_autofix.packages.dbt_package_version import (
-    DbtPackageVersion,
-    convert_optional_version_string_to_spec,
-    convert_version_string_list_to_spec,
-)
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dataclasses import dataclass, field
 from pathlib import Path
 from rich.console import Console
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
 from dbt_autofix.refactors.yml import read_file
-from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 from dbt_common.semver import Matchers
 
 console = Console()
@@ -176,13 +171,6 @@ class DbtPackageFile:
                 installed_count += 1
         return installed_count
 
-    def merge_fusion_compatibility_output(self) -> int:
-        package_compat_count = 0
-        for package in self.package_dependencies:
-            merged: bool = self.package_dependencies[package].merge_fusion_compatibility_output()
-            package_compat_count += 1 if merged else 0
-        return package_compat_count
-
     def get_private_package_names(self) -> list[str]:
         return [
             package
@@ -267,7 +255,6 @@ def parse_package_dependencies_from_yml(
             project_config_raw_version_specifier=version,
         )
         package_file.add_package_dependency(package_id, new_package)
-    package_file.merge_fusion_compatibility_output()
 
     return package_file
 

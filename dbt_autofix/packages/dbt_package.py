@@ -87,6 +87,7 @@ class DbtPackage:
         except:
             self.project_config_version_range = None
             print("exception calculating config version range ")
+        self.merge_fusion_compatibility_output()
 
     def add_package_version(self, new_package_version: DbtPackageVersion, installed=False, latest=False) -> bool:
         new_package_version.package_id = self.package_id
