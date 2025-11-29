@@ -69,6 +69,16 @@ class DbtPackageTextFileLine:
             pkg = pkg.strip("'")
         return pkg
 
+    def replace_package_name_in_line(self, new_string: str) -> bool:
+        if not self.line_contains_package():
+            return False
+        extracted_version = self.extract_package_from_line()
+        if len(extracted_version) != 3:
+            return False
+        self.line = f"{extracted_version[0]}{new_string}{extracted_version[2]}"
+        self.modified = True
+        return True
+    
     def replace_version_string_in_line(self, new_string: str) -> bool:
         if not self.line_contains_version():
             return False
@@ -198,7 +208,7 @@ class DbtPackageTextFile:
             print(f"An error occurred: {e}")
         return lines_written
 
-    def update_package_name_if_redirect(self, current_name: str) -> bool:
+    def update_package_name_if_redirect(self, block_number: int, current_name: str) -> bool:
         updated_name: Optional[str] = (FUSION_VERSION_COMPATIBILITY_OUTPUT.get(current_name, {})).get(
             "package_redirect_id"
         )
@@ -206,7 +216,18 @@ class DbtPackageTextFile:
             return False
         else:
             print(f"current name: {current_name}, updated name: {updated_name}")
-        return True
+
+        if block_number < 0 or block_number > len(self.key_blocks):
+            return False
+        block_package_line = self.key_blocks[block_number].package_line
+        if block_package_line == -1:
+            return False
+        result: bool = self.lines[block_package_line].replace_package_name_in_line(updated_name)
+        if result:
+            self.lines_modified.add(block_package_line)
+            return True
+        else:
+            return False
 
     def update_config_file(
         self, packages_with_versions: dict[str, str], dry_run: bool = False, print_to_console: bool = True
@@ -228,7 +249,7 @@ class DbtPackageTextFile:
             block_version_line = self.change_package_version_in_block(block, package_version)
             if block_version_line > -1 and block_version_line < len(self.lines):
                 # only update package name if version has changed
-                self.update_package_name_if_redirect(package_name)
+                self.update_package_name_if_redirect(block, package_name)
                 updated_packages.add(package_name)
             else:
                 unchanged_packages.add(package_name)

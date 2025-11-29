@@ -239,3 +239,19 @@ def test_replace_version_in_line(input_str, expected_match):
     assert replaced
     assert len(file_line.line) == len(expected_match)
     assert file_line.line == expected_match
+
+@pytest.mark.parametrize(
+    "input_str,expected_match",
+    [
+        ("    package: calogica/dbt_date", "    package: godatadriven/dbt_date"),
+        ("  - package: calogica/dbt_date", "  - package: godatadriven/dbt_date"),
+        ("    package: calogica/dbt_date\n", "    package: godatadriven/dbt_date\n"),
+        ("  - package: calogica/dbt_date\n", "  - package: godatadriven/dbt_date\n"),
+    ],
+)
+def test_replace_package_name_in_line(input_str, expected_match):
+    file_line = DbtPackageTextFileLine(input_str)
+    replaced = file_line.replace_package_name_in_line("godatadriven/dbt_date")
+    assert replaced
+    assert len(file_line.line) == len(expected_match)
+    assert file_line.line == expected_match
