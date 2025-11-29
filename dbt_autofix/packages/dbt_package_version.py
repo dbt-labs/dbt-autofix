@@ -2,7 +2,11 @@ from typing import Any, Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
-from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
+from dbt_autofix.packages.manual_overrides import (
+    EXPLICIT_ALLOW_ALL_VERSIONS,
+    EXPLICIT_DISALLOW_ALL_VERSIONS,
+    EXPLICIT_DISALLOW_VERSIONS,
+)
 
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
 
@@ -88,15 +92,23 @@ class DbtPackageVersion:
     package_name: str
     package_version_str: str
     require_dbt_version_range: list[str] = field(default_factory=list)
-    version: VersionSpecifier = field(init=False)
+    # version: VersionSpecifier = field(init=False)
     require_dbt_version: Optional[VersionRange] = field(init=False)
     package_id_with_version: Optional[str] = None
     package_id: Optional[str] = None
     raw_require_dbt_version_range: Any = None
 
+    @property
+    def version(self) -> VersionSpecifier:
+        return VersionSpecifier.from_version_string(self.package_version_str)
+
+    @version.setter
+    def version(self, new_version: VersionSpecifier) -> None:
+        self.package_version_str = new_version.to_version_string(skip_matcher=True)
+
     def __post_init__(self):
         try:
-            self.version = VersionSpecifier.from_version_string(self.package_version_str)
+            # self.version = VersionSpecifier.from_version_string(self.package_version_str)
             if self.raw_require_dbt_version_range is not None:
                 self.require_dbt_version_range = construct_version_list_from_raw(self.raw_require_dbt_version_range)
             if self.require_dbt_version_range and len(self.require_dbt_version_range) > 0:
@@ -127,9 +139,19 @@ class DbtPackageVersion:
     def is_require_dbt_version_defined(self) -> bool:
         return self.require_dbt_version_range != None and len(self.require_dbt_version_range) > 0
 
+    def is_version_explicitly_disallowed_on_fusion(self) -> bool:
+        return (
+            self.package_id is not None
+            and self.package_id in EXPLICIT_DISALLOW_VERSIONS
+            and self.package_version_str in EXPLICIT_DISALLOW_VERSIONS[self.package_id]
+        )
+
     def is_explicitly_disallowed_on_fusion(self) -> bool:
-        if self.package_id is not None and self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            return True
+        if self.package_id is not None:
+            if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
+                return True
+            elif self.is_version_explicitly_disallowed_on_fusion():
+                return True
         return False
 
     def is_explicitly_allowed_on_fusion(self) -> bool:

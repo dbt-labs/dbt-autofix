@@ -1,17 +1,13 @@
 from collections import defaultdict
 from typing import Any, Optional
 from dbt_autofix.packages.dbt_package import DbtPackage
-from dbt_autofix.packages.dbt_package_version import (
-    DbtPackageVersion,
-    convert_optional_version_string_to_spec,
-    convert_version_string_list_to_spec,
-)
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dataclasses import dataclass, field
 from pathlib import Path
 from rich.console import Console
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
 from dbt_autofix.refactors.yml import read_file
-from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from dbt_common.semver import Matchers
 
 console = Console()
 
@@ -160,36 +156,26 @@ class DbtPackageFile:
                 console.log(f"Installed package name {package} not found in package deps")
                 continue
             package_id = package_lookup[package]
+            # kind of hacky - try to correct installed version if package's dbt project yml
+            # has an incorrect version
+            package_version_range = self.package_dependencies[package_id].project_config_version_range
+            installed_version = installed_packages[package].version
+            if (
+                package_version_range is not None
+                and installed_version is not None
+                and installed_version < package_version_range.start
+            ):
+                installed_packages[package].version = package_version_range.start
+                installed_packages[package].version.matcher = Matchers.EXACT
             if self.set_installed_version_for_package(package_id, installed_packages[package]):
                 installed_count += 1
         return installed_count
 
-    def merge_fusion_compatibility_output(self) -> int:
-        package_compat_count = 0
-        for package in self.package_dependencies:
-            output = FUSION_VERSION_COMPATIBILITY_OUTPUT.get(package)
-            if output is None:
-                continue
-            oldest_fusion_compatible_version = convert_optional_version_string_to_spec(
-                output["oldest_fusion_compatible_version"]
-            )
-            # latest_fusion_compatible_version = convert_optional_version_string_to_spec(output["latest_fusion_compatible_version"])
-            fusion_compatible_versions = convert_version_string_list_to_spec(output["fusion_compatible_versions"])
-            fusion_incompatible_versions = convert_version_string_list_to_spec(output["fusion_incompatible_versions"])
-            unknown_compatibility_versions = convert_version_string_list_to_spec(
-                output["unknown_compatibility_versions"]
-            )
-            self.package_dependencies[package].lowest_fusion_compatible_version = oldest_fusion_compatible_version
-            # self.package_dependencies[package].latest_fusion_compatible_version = latest_fusion_compatible_version
-            self.package_dependencies[package].fusion_compatible_versions = fusion_compatible_versions
-            self.package_dependencies[package].fusion_incompatible_versions = fusion_incompatible_versions
-            self.package_dependencies[package].unknown_compatibility_versions = unknown_compatibility_versions
-            package_compat_count += 1
-        return package_compat_count
-
     def get_private_package_names(self) -> list[str]:
         return [
-            package for package in self.package_dependencies if not self.package_dependencies[package].is_public_package()
+            package
+            for package in self.package_dependencies
+            if not self.package_dependencies[package].is_public_package()
         ]
 
     def get_installed_version_fusion_compatible(self) -> list[str]:
@@ -269,7 +255,6 @@ def parse_package_dependencies_from_yml(
             project_config_raw_version_specifier=version,
         )
         package_file.add_package_dependency(package_id, new_package)
-    package_file.merge_fusion_compatibility_output()
 
     return package_file
 

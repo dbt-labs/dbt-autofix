@@ -35,7 +35,7 @@ The `packages` command calls the `upgrade_packages` function in `main.py`. This 
 
 `get_package_hub_files.py` and `get_fusion_compatible_version.py` are used to pull data from the public package registry (hub.getdbt.com) and extract Fusion compatibility information from available versions. This is basically a local cache of package information to bootstrap autofix. We need to know the lower bound of Fusion-compatible versions for a package but we also know that older versions of packages will not change, so caching this locally removes a lot of repetitive network calls and text parsing. Which means faster run times and fewer failures due to network issues. 
 
-The output from these two scripts produces `fusion_version_compatibility_output.py` that contains a single constant, `FUSION_VERSION_COMPATIBILITY_OUTPUT`. This is then used in `DbtPackageFile`'s `merge_fusion_compatibility_output` to populate compatible versions within all package dependencies.
+The output from these two scripts produces `fusion_version_compatibility_output.py` that contains a single constant, `FUSION_VERSION_COMPATIBILITY_OUTPUT`. This is then used in `DbtPackage`'s `merge_fusion_compatibility_output` to populate compatible versions.
 
 ## TODO
 * Private packages
@@ -47,6 +47,9 @@ The output from these two scripts produces `fusion_version_compatibility_output.
 * Get latest versions from package hub instead of using cache
 * Better handling for version in package's dbt_project.yml
   * Sometimes the version number in the package's dbt_project.yml doesn't actually match the release version because package hub only checks the release tag on Github, so the installed version check will set an incorrect version
+  * Added logic in DbtPackageFile will override the installed version if it's less than the config's version range, but this isn't 100% reliable
   * Could instead refer to the package lock file to find the exact version
   * But probably not a huge problem since we are only looking for the require dbt version anyway and only look for upgrades if it's missing/incompatible
 * Move package parsing logic to hubcap or package hub where appropriate
+* Explicit overrides at version level
+  * Currently in scripts/get_fusion_compatible_versions and DbtPackageVersion.is_version_explicitly_disallowed_on_fusion, but should refine logic

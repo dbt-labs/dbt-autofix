@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
-from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible, reduce_versions
+from dbt_common.semver import VersionSpecifier
 
 
 def read_package_output_json(file_path: Path) -> dict[str, Any]:
@@ -26,6 +26,15 @@ def convert_version_spec_to_string(version_spec: Optional[VersionSpecifier]) -> 
     else:
         return version_spec.to_version_string()
 
+
+def new_name_from_redirect(redirect_name, redirect_namespace, current_name, current_namespace) -> str:
+    if redirect_name and redirect_namespace:
+        return f"{redirect_namespace}/{redirect_name}"
+    elif redirect_namespace == None:
+        return f"{current_namespace}/{redirect_name}"
+    else:
+        return f"{redirect_namespace}/{current_name}"
+    
 
 def get_versions_for_package(package_versions) -> dict[str, Any]:
     versions: list[DbtPackageVersion] = []
@@ -58,7 +67,9 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         )
         versions.append(version)
         dbt_version_defined = package_version.is_require_dbt_version_defined()
-        fusion_compatible_version = dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
+        fusion_compatible_version: bool = dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
+        if package_version.is_version_explicitly_disallowed_on_fusion():
+            fusion_compatible_version = False
         if fusion_compatible_version:
             fusion_compatible_versions.append(package_version.version)
             if not latest_fusion_version or package_version.version > latest_fusion_version:
@@ -108,22 +119,13 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
     }
 
 
-def new_name_from_redirect(redirect_name, redirect_namespace, current_name, current_namespace) -> str:
-    if redirect_name and redirect_namespace:
-        return f"{redirect_namespace}/{redirect_name}"
-    elif redirect_namespace == None:
-        return f"{current_namespace}/{redirect_name}"
-    else:
-        return f"{redirect_namespace}/{current_name}"
-
-
 def get_versions(packages):
     # skip over renamed packages and come back once the new package is done
     renamed_packages: list[tuple[str, str]] = []
     packages_with_versions: dict[str, dict[str, Any]] = {}
     for package in packages:
         versions = get_versions_for_package(packages[package])
-        if versions["package_redirect_name"] != None or versions["package_redirect_namespace"] != None:
+        if versions["package_redirect_name"] is not None or versions["package_redirect_namespace"] is not None:
             old_package_namespace = package.split("/")[0]
             old_package_name = package.split("/")[1]
             new_name = new_name_from_redirect(
@@ -141,6 +143,10 @@ def get_versions(packages):
         old_package_name = package[0]
         new_package_name = package[1]
         packages_with_versions[old_package_name] = packages_with_versions[new_package_name]
+        redirect_namespace, redirect_name = new_package_name.split("/")
+        packages_with_versions[old_package_name]["package_redirect_name"] = redirect_name
+        packages_with_versions[old_package_name]["package_redirect_namespace"] = redirect_namespace
+        packages_with_versions[old_package_name]["package_redirect_id"] = new_package_name
     assert len(packages_with_versions) == len(packages)
     return packages_with_versions
 
