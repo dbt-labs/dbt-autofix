@@ -22,17 +22,20 @@ packages:
   - package: dbt-labs/codegen
     version: [">=0.8.0", "<0.9.0"]
 
-  - package: dbt-labs/audit_helper
+  - package: "dbt-labs/audit_helper"
     version: [">=0.6.0", "<0.7.0"]
+  
+  - version: 0.9.6
+    package: Datavault-UK/dbtvault  # example comment
 
   - package: metaplane/dbt_expectations
-    version: [">=0.10.8", "<1.0.0"]
+    version: [">=0.10.8", "<1.0.0"]                                       
+                                                        
+  - package: "elementary-data/elementary"
+    version: "0.7.0"
 
   - git: "https://github.com/PrivateGitRepoPackage/gmi_common_dbt_utils.git"
     revision: main # use a branch or a tag name
-                                                        
-  - version: "0.10.1"
-    package: calogica/dbt_date
 """)
 
         yield project_dir
@@ -146,6 +149,7 @@ def test_extract_package_in_line(input_str, expected_match):
         ("  - version: 0.10.9", "  - version: 0.0.0"),
         ("    version: 0.8.7\n", "    version: 0.0.0\n"),
         ("  - version: 0.10.9\n", "  - version: 0.0.0\n"),
+        ("  - version: 0.10.9 # example comment\n", "  - version: 0.0.0 # example comment\n"),
     ],
 )
 def test_replace_version_in_line(input_str, expected_match):
@@ -163,6 +167,10 @@ def test_replace_version_in_line(input_str, expected_match):
         ("  - package: calogica/dbt_date", "  - package: godatadriven/dbt_date"),
         ("    package: calogica/dbt_date\n", "    package: godatadriven/dbt_date\n"),
         ("  - package: calogica/dbt_date\n", "  - package: godatadriven/dbt_date\n"),
+        (
+            "  - package: calogica/dbt_date # example comment\n",
+            "  - package: godatadriven/dbt_date # example comment\n",
+        ),
     ],
 )
 def test_replace_package_name_in_line(input_str, expected_match):
@@ -174,6 +182,9 @@ def test_replace_package_name_in_line(input_str, expected_match):
 
 
 def test_rename_package(temp_project_dir_with_packages_yml):
-    package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
-    file = DbtPackageTextFile(package_files[0])
-    file.update_config_file({"calogica/dbt_date": "0.17.0"}, dry_run=True, print_to_console=True)
+    file = DbtPackageTextFile(temp_project_dir_with_packages_yml / "packages.yml")
+    file.update_config_file(
+        {"calogica/dbt_date": "0.17.0", "Datavault-UK/dbtvault": "0.9.7", "dbt-labs/dbt_utils": "1.3.1"},
+        dry_run=True,
+        print_to_console=True,
+    )
