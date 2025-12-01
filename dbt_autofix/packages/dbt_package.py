@@ -16,6 +16,7 @@ from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERS
 
 
 console = Console()
+error_console = Console(stderr=True)
 
 
 @dataclass
@@ -86,7 +87,7 @@ class DbtPackage:
                 self.project_config_version_range = None
         except:
             self.project_config_version_range = None
-            print("exception calculating config version range ")
+            error_console.print("exception calculating config version range ")
         self.merge_fusion_compatibility_output()
 
     def add_package_version(self, new_package_version: DbtPackageVersion, installed=False, latest=False) -> bool:

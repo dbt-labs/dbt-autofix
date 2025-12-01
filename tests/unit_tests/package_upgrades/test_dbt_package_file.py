@@ -231,10 +231,6 @@ models:
         yield project_dir
 
 
-# def test_find_package_paths(temp_project_dir_with_packages_yml: Path):
-#     print(find_package_paths(temp_project_dir_with_packages_yml))
-
-
 def test_find_package_files_package_yml(temp_project_dir_with_packages_yml: Path):
     package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
     assert len(package_files) == 1

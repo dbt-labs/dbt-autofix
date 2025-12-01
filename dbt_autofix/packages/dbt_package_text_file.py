@@ -7,6 +7,7 @@ from rich.console import Console
 from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 
 console = Console()
+error_console = Console(stderr=True)
 
 
 @dataclass
@@ -17,8 +18,19 @@ class DbtPackageTextFileLine:
     def extract_version_from_line(self) -> list[str]:
         """Extracts a version string while retaining the key and line ending.
 
+        If a line contains a version string, this function will always return a list
+        of length 3 where the extracted version is the second entry in the list.
+        This makes it easy to replace a version only while not altering the rest of the line
+        (which retains any inline comments and original line endings).
+
+        Example:
+            The line " - version: 0.1.1 # inline comment" is deconstructed
+            into three parts: [" - version: ", "0.1.1", " # inline comment"].
+
         Returns:
-            list[str]: [beginning of line, version, end of line]
+            list[str]: the deconstructed line or [] if no package name found
+        Returns:
+            list[str]: [beginning of line, version, end of line] or [] if no package name found
         """
         if not self.line_contains_version():
             return []
@@ -36,35 +48,20 @@ class DbtPackageTextFileLine:
         eol = rest[version_match.end("version") :]
         return [self.line[: m.end()], version, eol]
 
-    def extract_package_name_from_line(self) -> str:
-        """Extract the package name from a line containing a `package:` key.
-
-        Returns:
-            str: package ID
-        """
-        if not self.line_contains_package():
-            return ""
-        prefix_re = re.compile(r"^\s*(?:-\s*)?package:\s*")
-        m = prefix_re.match(self.line)
-        if not m:
-            return ""
-
-        rest = self.line[m.end() :]
-        # Extract package id up to first whitespace, '#' or line ending
-        pkg_match = re.match(r"\s*(?P<pkg>[^\s#\r\n]+)", rest)
-        if not pkg_match:
-            return ""
-        pkg = pkg_match.group("pkg")
-        if pkg is not None:
-            pkg = pkg.strip('"')
-            pkg = pkg.strip("'")
-        return pkg
-
     def extract_package_from_line(self) -> list[str]:
-        """Extract the package name from a line containing a `package:` key.
+        """Extracts a package string while retaining the key and line ending.
+
+        If a line contains a package name, this function will always return a list
+        of length 3 where the extracted package name is the second entry in the list.
+        This makes it easy to replace a package name only while not altering the rest of the line
+        (which retains any inline comments and original line endings).
+
+        Example:
+            The line " - package: dbt-labs/dbt-utils # inline comment" is deconstructed
+            into three parts: [" - package: ", "dbt-labs/dbt-utils", " # inline comment"].
 
         Returns:
-            str: package ID
+            list[str]: the deconstructed line or [] if no package name found
         """
         if not self.line_contains_package():
             return []
@@ -84,6 +81,20 @@ class DbtPackageTextFileLine:
             pkg = pkg.strip("'")
         eol = rest[pkg_match.end("pkg") :]
         return [self.line[: m.end()], pkg, eol]
+
+    def extract_package_name_from_line(self) -> str:
+        """Extract the package name from a line containing a `package:` key.
+
+        Returns:
+            str: package ID
+        """
+        if not self.line_contains_package():
+            return ""
+        extracted_line: list[str] = self.extract_package_from_line()
+        if len(extracted_line) < 3:
+            return ""
+        else:
+            return extracted_line[1]
 
     def replace_package_name_in_line(self, new_string: str) -> bool:
         if not self.line_contains_package():
@@ -174,9 +185,9 @@ class DbtPackageTextFile:
                     key_block.end_line = current_line - 1
                     self.key_blocks.append(key_block)
         except FileNotFoundError:
-            print(f"Error: The file '{self.file_path}' was not found.")
+            error_console.print(f"Error: The file '{self.file_path}' was not found.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            error_console.print(f"An error occurred: {e}")
         return current_line + 1
 
     def extract_packages_from_lines(self):
@@ -221,17 +232,24 @@ class DbtPackageTextFile:
                     file.write(file_line.line)
                     lines_written += 1
         except Exception as e:
-            print(f"An error occurred: {e}")
+            error_console.print(f"An error occurred: {e}")
         return lines_written
 
     def update_package_name_if_redirect(self, block_number: int, current_name: str) -> bool:
+        """Replace a package name if that package has been renamed according to Package Hub.
+
+        Args:
+            block_number (int): the block in the parsed file that contains the package
+            current_name (str): the package name currently specified in the config
+
+        Returns:
+            bool: True if the package name has been updated, otherwise False
+        """
         updated_name: Optional[str] = (FUSION_VERSION_COMPATIBILITY_OUTPUT.get(current_name, {})).get(
             "package_redirect_id"
         )
         if updated_name is None:
             return False
-        else:
-            print(f"current name: {current_name}, updated name: {updated_name}")
 
         if block_number < 0 or block_number > len(self.key_blocks):
             return False

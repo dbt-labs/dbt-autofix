@@ -108,7 +108,6 @@ class DbtPackageVersion:
 
     def __post_init__(self):
         try:
-            # self.version = VersionSpecifier.from_version_string(self.package_version_str)
             if self.raw_require_dbt_version_range is not None:
                 self.require_dbt_version_range = construct_version_list_from_raw(self.raw_require_dbt_version_range)
             if self.require_dbt_version_range and len(self.require_dbt_version_range) > 0:

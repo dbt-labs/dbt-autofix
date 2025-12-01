@@ -53,7 +53,7 @@ packages:
 def test_extract_version_from_line(input_str, expected_match):
     file_line = DbtPackageTextFileLine(input_str)
     extracted_version = file_line.extract_version_from_line()
-    assert len(extracted_version) == len(expected_match)
+    assert len(extracted_version) == 3
     assert extracted_version[0] == expected_match[0]
     assert extracted_version[1] == expected_match[1]
 
