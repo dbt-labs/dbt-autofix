@@ -16,7 +16,7 @@ packages:
     version: ">0.2.1"
 # package is compatible from version 0.1.2
   - package: Matts52/dbt_stat_test
-    version: "0.1.1"
+    version: "0.1.1" # inline comment
 # package has unknown require dbt version
   - package: avohq/avo_audit
     version: 1.0.1

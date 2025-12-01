@@ -27,22 +27,13 @@ class DbtPackageTextFileLine:
         if not m:
             return []
 
-        # Preserve the original line ending (CRLF, LF, or CR)
-        if self.line.endswith("\r\n"):
-            eol = "\r\n"
-        elif self.line.endswith("\n"):
-            eol = "\n"
-        elif self.line.endswith("\r"):
-            eol = "\r"
-        else:
-            eol = ""
-
         rest = self.line[m.end() :]
         # Extract version up to first whitespace, '#' or line ending
         version_match = re.match(r"\s*(?P<version>[^\s#\r\n]+)", rest)
         if not version_match:
             return []
         version = version_match.group("version")
+        eol = rest[version_match.end("version") :]
         return [self.line[: m.end()], version, eol]
 
     def extract_package_name_from_line(self) -> str:
@@ -82,16 +73,6 @@ class DbtPackageTextFileLine:
         if not m:
             return []
 
-        # Preserve the original line ending (CRLF, LF, or CR)
-        if self.line.endswith("\r\n"):
-            eol = "\r\n"
-        elif self.line.endswith("\n"):
-            eol = "\n"
-        elif self.line.endswith("\r"):
-            eol = "\r"
-        else:
-            eol = ""
-
         rest = self.line[m.end() :]
         # Extract package id up to first whitespace, '#' or line ending
         pkg_match = re.match(r"\s*(?P<pkg>[^\s#\r\n]+)", rest)
@@ -101,6 +82,7 @@ class DbtPackageTextFileLine:
         if pkg is not None:
             pkg = pkg.strip('"')
             pkg = pkg.strip("'")
+        eol = rest[pkg_match.end("pkg") :]
         return [self.line[: m.end()], pkg, eol]
 
     def replace_package_name_in_line(self, new_string: str) -> bool:

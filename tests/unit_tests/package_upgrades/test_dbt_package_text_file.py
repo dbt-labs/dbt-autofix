@@ -150,6 +150,7 @@ def test_extract_package_in_line(input_str, expected_match):
         ("    version: 0.8.7\n", "    version: 0.0.0\n"),
         ("  - version: 0.10.9\n", "  - version: 0.0.0\n"),
         ("  - version: 0.10.9 # example comment\n", "  - version: 0.0.0 # example comment\n"),
+        ('  - version: "0.10.9" # example comment\n', "  - version: 0.0.0 # example comment\n"),
     ],
 )
 def test_replace_version_in_line(input_str, expected_match):
