@@ -2212,6 +2212,41 @@ exposures:
 
         exposure_special_chars_refactored = refactored_dict["exposures"][1]
         assert exposure_special_chars_refactored["name"] == "exposure_with_special_chars"
+    
+    def test_changeset_replace_non_alpha_ignore_jinja(self, schema_specs: SchemaSpecs):
+        """Test that YAML with Jinja is not modified.
+        
+        Autofix does not expand environment variables when applying fixes, so
+        we should avoid changing names when the non-alpha characters are within a Jinja block.
+
+        Example:
+          "{{ env_var('DBT_ENV_EXPOSURE_NAME_PREFIX') }}_my_exposure" should not be changed
+        """
+        input_yaml = """
+version: 2
+models:
+  - name: model with spaces
+  - name: model_with_no_spaces
+
+exposures: 
+  - name: "{{ env_var('DBT_ENV_EXPOSURE_NAME_PREFIX') }}_my_exposure"
+  - name: exposure_with)(*!#$&)# special chars
+"""
+        result = changeset_replace_non_alpha_underscores_in_name_values(input_yaml, schema_specs)
+        assert result.refactored
+        refactored_dict = safe_load(result.refactored_yaml)
+
+        model_refactored = refactored_dict["models"][0]
+        assert model_refactored["name"] == "model_with_spaces"
+
+        model_not_refactored = refactored_dict["models"][1]
+        assert model_not_refactored["name"] == "model_with_no_spaces"
+
+        model_with_jinja = refactored_dict["exposures"][0]
+        assert model_with_jinja["name"] == "{{ env_var('DBT_ENV_EXPOSURE_NAME_PREFIX') }}_my_exposure"
+
+        exposure_special_chars_refactored = refactored_dict["exposures"][1]
+        assert exposure_special_chars_refactored["name"] == "exposure_with_special_chars"
 
 
 @pytest.mark.parametrize(
