@@ -13,6 +13,8 @@ from dbt_autofix.packages.upgrade_status import PackageFusionCompatibilityState,
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
 
+from dbt_fusion_package_tools import main
+
 
 PROJECT_WITH_PACKAGES_PATH = Path("tests/integration_tests/package_upgrades/mixed_versions")
 # update if count changes
@@ -50,6 +52,9 @@ PROJECT_DEPENDENCY_COUNT = 9
 
 # version is compatible based on require dbt version but has version override
 # dbt_project_evaluator: upgrade to 1.1.1
+
+def test_run():
+    main()
 
 
 def test_generate_package_dependencies():
