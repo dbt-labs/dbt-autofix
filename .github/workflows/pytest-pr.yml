@@ -9,9 +9,14 @@ permissions:
 
 jobs:
   test:
+    name: test on ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
 
@@ -21,5 +26,5 @@ jobs:
           enable-cache: true
           cache-suffix: test
 
-      - run: uv sync --extra=test
+      - run: uv sync --all-extras --all-packages 
       - run: uv run pytest
