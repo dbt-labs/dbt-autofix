@@ -6,6 +6,12 @@ resolution-markers = [
     "python_full_version < '3.10'",
 ]
 
+[manifest]
+members = [
+    "dbt-autofix",
+    "dbt-fusion-package-tools",
+]
+
 [[package]]
 name = "agate"
 version = "1.9.1"
@@ -299,7 +305,7 @@ toml = [
 
 [[package]]
 name = "dbt-autofix"
-source = { editable = "." }
+source = { editable = "dbt_autofix" }
 dependencies = [
     { name = "click" },
     { name = "dbt-common", version = "1.34.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -419,6 +425,52 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/de/d1492ab6beaf0a18aee17c7a9562592ac2981e962b4058262f5eb6dabfc5/dbt_extractor-0.6.0-cp39-abi3-win32.whl", hash = "sha256:369dcc3499f160256756585783f1308868076d5a65d0a051348d22da8b90e67d", size = 252721, upload-time = "2025-04-07T16:46:27.295Z" },
     { url = "https://files.pythonhosted.org/packages/60/36/f5b1c4159fa911607f3a49fcbc535e4783870fd887bc0a1b3ad42587cb73/dbt_extractor-0.6.0-cp39-abi3-win_amd64.whl", hash = "sha256:a79a570fdcb672505ac2bdc12360a2a7aec622ef604d8c607225854ff862518c", size = 277146, upload-time = "2025-04-07T16:46:28.991Z" },
 ]
+
+[[package]]
+name = "dbt-fusion-package-tools"
+source = { editable = "dbt_autofix/dbt_fusion_package_tools" }
+dependencies = [
+    { name = "click" },
+    { name = "dbt-common", version = "1.34.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "dbt-common", version = "1.36.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "dbt-extractor" },
+    { name = "httpx" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "ruamel-yaml" },
+    { name = "typer" },
+    { name = "yamllint" },
+]
+
+[package.optional-dependencies]
+docs = [
+    { name = "pydocstyle" },
+]
+test = [
+    { name = "nox" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = "<8.2.0" },
+    { name = "dbt-common", specifier = ">=1.27,<2" },
+    { name = "dbt-extractor", specifier = ">=0.5.0,<=0.6" },
+    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "nox", marker = "extra == 'test'" },
+    { name = "pre-commit", marker = "extra == 'test'", specifier = ">=4.2.0" },
+    { name = "pydocstyle", marker = "extra == 'docs'", specifier = ">=6.3.0" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=7.2.0" },
+    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=4.1.0" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "rich", specifier = ">=13.7.0" },
+    { name = "ruamel-yaml", specifier = ">=0.18.10,<0.18.15" },
+    { name = "typer", specifier = ">=0.15.2" },
+    { name = "yamllint", specifier = ">=1.37.0" },
+]
+provides-extras = ["test", "docs"]
 
 [[package]]
 name = "dbt-protos"
