@@ -20,6 +20,11 @@ dynamic = ["version"]
 [tool.uv]
 package = true
 
+[tool.uv.workspace]
+members = [
+    "packages/dbt-fusion-package-tools",
+]
+
 [project.scripts]
 dbt-autofix = "dbt_autofix.main:app"
 

@@ -1,0 +1,25 @@
+[project]
+name = "dbt-fusion-package-tools"
+dynamic = ["version"]
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "dbt-autofix",
+]
+
+[project.scripts]
+dbt-fusion-package-tools = "dbt_fusion_package_tools:main"
+
+[tool.uv.sources]
+dbt-autofix = { workspace = true }
+
+[tool.uv]
+package = true
+
+[tool.pdm.version]
+source = "scm"
+
+[build-system]
+requires = ["pdm-backend", "uv-dynamic-versioning>=0.7.0"]
+build-backend = "pdm.backend"

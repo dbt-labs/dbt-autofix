@@ -6,6 +6,12 @@ resolution-markers = [
     "python_full_version < '3.10'",
 ]
 
+[manifest]
+members = [
+    "dbt-autofix",
+    "dbt-fusion-package-tools",
+]
+
 [[package]]
 name = "agate"
 version = "1.9.1"
@@ -419,6 +425,16 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/de/d1492ab6beaf0a18aee17c7a9562592ac2981e962b4058262f5eb6dabfc5/dbt_extractor-0.6.0-cp39-abi3-win32.whl", hash = "sha256:369dcc3499f160256756585783f1308868076d5a65d0a051348d22da8b90e67d", size = 252721, upload-time = "2025-04-07T16:46:27.295Z" },
     { url = "https://files.pythonhosted.org/packages/60/36/f5b1c4159fa911607f3a49fcbc535e4783870fd887bc0a1b3ad42587cb73/dbt_extractor-0.6.0-cp39-abi3-win_amd64.whl", hash = "sha256:a79a570fdcb672505ac2bdc12360a2a7aec622ef604d8c607225854ff862518c", size = 277146, upload-time = "2025-04-07T16:46:28.991Z" },
 ]
+
+[[package]]
+name = "dbt-fusion-package-tools"
+source = { editable = "packages/dbt-fusion-package-tools" }
+dependencies = [
+    { name = "dbt-autofix" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "dbt-autofix", editable = "." }]
 
 [[package]]
 name = "dbt-protos"
