@@ -37,3 +37,7 @@ To kick off a new release:
 6. Hit 'Publish Release' ensuring that `Set as the latest release` is checked.
 
 That's it! The Github release triggers an automated release to pypi which can be observed at: https://github.com/dbt-labs/dbt-autofix/actions/workflows/release.yml
+
+## Troubleshooting
+
+If you're not getting autocomplete in VSCode for `dbt-fusion-package-tools`, open VSC settings and enable "Python > Terminal: Activate Env in Current Terminal."

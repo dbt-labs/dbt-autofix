@@ -13,12 +13,21 @@ dependencies = [
     "httpx>=0.27.0",
     "dbt-common>=1.27,<2",
     "dbt-extractor>=0.5.0,<=0.6",
+    "dbt-fusion-package-tools",
 ]
 
 dynamic = ["version"]
 
 [tool.uv]
 package = true
+
+[tool.uv.workspace]
+members = [
+    "packages/dbt_fusion_package_tools",
+]
+
+[tool.uv.sources]
+dbt-fusion-package-tools = { workspace = true }
 
 [project.scripts]
 dbt-autofix = "dbt_autofix.main:app"
@@ -38,15 +47,15 @@ docs = [
 [tool.pdm.build]
 # Include pre_commit_hooks/ directory in distribution
 # To enable .pre-commit-hooks.yaml functionality
-includes = ["src/dbt_autofix", "pre_commit_hooks"]
+includes = ["src/dbt_autofix", "pre_commit_hooks", "packages/dbt_fusion_package_tools"]
 
 [tool.pdm.version]
 source = "scm"
+version_format = "pdm_build:format_version"
 
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
-
 
 [tool.ruff]
 line-length = 120
@@ -94,3 +103,9 @@ convention = "google"
 # D107: Missing docstring in __init__
 # D202: No blank lines allowed after function docstring
 add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

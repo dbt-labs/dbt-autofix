@@ -22,6 +22,7 @@ from dbt_autofix.package_upgrade import (
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_fusion_package_tools.package_example import output_package_name
 
 console = Console()
 error_console = Console(stderr=True)
@@ -35,6 +36,10 @@ app = typer.Typer(
 )
 
 current_dir = Path.cwd()
+
+
+def print_package():
+    output_package_name()
 
 
 @app.command(name="list-yaml-duplicates")
