@@ -1,19 +1,50 @@
-"""Interface for objects useful to processing hub entries"""
-
-import hashlib
-import json
-import logging
 import os
-import requests
+from pathlib import Path
 import subprocess
 
-from abc import ABC, abstractmethod
-from pathlib import Path
 
-from hubcap import git_helper
-from hubcap import helper
-from hubcap import package
-from hubcap import version
+def check_multiple_version_tags(repo_path: Path) -> bool:
+    git_tags_output = subprocess.run(
+        [
+            "git",
+            "tag",
+        ],
+        capture_output=True,
+        timeout=60,
+        cwd=repo_path,
+        text=True,
+    )
+    git_tags = git_tags_output.stdout.splitlines()
+
+    for tag in git_tags:
+        checkout_tag_output = subprocess.run(
+            [
+                "git",
+                "checkout",
+                tag,
+            ],
+            capture_output=True,
+            timeout=60,
+            cwd=repo_path,
+            text=True,
+        )
+        if checkout_tag_output.returncode != 0:
+            print(checkout_tag_output.stderr)
+        print(f"version: {tag}")
+        check_fusion_schema_compatibility(repo_path)
+        subprocess.run(
+            [
+                "git",
+                "stash",
+                "-u",
+            ],
+            capture_output=True,
+            timeout=60,
+            cwd=repo_path,
+            text=True,
+        )
+
+    return True
 
 
 def check_fusion_schema_compatibility(repo_path: Path) -> bool:
@@ -33,6 +64,17 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
             f.write(
                 "\n"
                 "test_schema_compat:\n"
+                "  target: dev\n"
+                "  outputs:\n"
+                "    dev:\n"
+                "      type: postgres\n"
+                "      host: localhost\n"
+                "      port: 5432\n"
+                "      user: postgres\n"
+                "      password: postgres\n"
+                "      dbname: postgres\n"
+                "      schema: public\n"
+                "integration_tests:\n"
                 "  target: dev\n"
                 "  outputs:\n"
                 "    dev:\n"
@@ -64,21 +106,30 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
                 timeout=60,
             )
             # If dbtf command exists but returns error mentioning it's not found, fall back to dbt
-            if (
-                result.returncode != 0
-                and result.stderr
-                and b"not found" in result.stderr
-            ):
+            if result.returncode != 0 and result.stderr and b"not found" in result.stderr:
+                print("dbtf not found")
                 raise FileNotFoundError("dbtf command not found")
         except FileNotFoundError:
             # Fall back to dbt command, but validate that this is dbt-fusion
-            version_result = subprocess.run(
-                ["dbt", "--version"], capture_output=True, timeout=60
-            )
+            version_result = subprocess.run(["dbt", "--version"], capture_output=True, timeout=60)
+            # print(version_result)
             if b"dbt-fusion" not in version_result.stdout:
-                raise FileNotFoundError(
-                    "dbt-fusion command not found - regular dbt-core detected instead"
-                )
+                raise FileNotFoundError("dbt-fusion command not found - regular dbt-core detected instead")
+
+            dbt_deps_output = subprocess.run(
+                [
+                    "dbt",
+                    "deps",
+                    "--profile",
+                    "test_schema_compat"
+                ],
+                capture_output=True,
+                timeout=60,
+                cwd=repo_path,
+                text=True,
+            )
+            if dbt_deps_output.returncode != 0:
+                print(dbt_deps_output.stderr)
 
             # Run dbt parse since we have dbt-fusion
             result = subprocess.run(
@@ -92,15 +143,17 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
                 ],
                 capture_output=True,
                 timeout=60,
+                text=True,
             )
 
         # Return True if exit code is 0 (success)
         is_compatible = result.returncode == 0
 
         if is_compatible:
-            logging.info(f"Package at {repo_path} is fusion schema compatible")
+            print(f"Package at {repo_path} is fusion schema compatible")
         else:
-            logging.info(f"Package at {repo_path} is not fusion schema compatible")
+            print(f"Package at {repo_path} is not fusion schema compatible")
+            print(result.stderr)
 
         # Remove the test profile
         os.remove(profiles_path)
@@ -108,25 +161,21 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
         return is_compatible
 
     except subprocess.TimeoutExpired:
-        logging.warning(f"dbtf parse timed out for package at {repo_path}")
+        print(f"dbtf parse timed out for package at {repo_path}")
         try:
             os.remove(profiles_path)
         except Exception:
             pass
         return False
     except FileNotFoundError:
-        logging.warning(
-            f"dbtf command not found - skipping fusion compatibility check for {repo_path}"
-        )
+        print(f"dbtf command not found - skipping fusion compatibility check for {repo_path}")
         try:
             os.remove(profiles_path)
         except Exception:
             pass
         return False
     except Exception as e:
-        logging.warning(
-            f"Error checking fusion compatibility for {repo_path}: {str(e)}"
-        )
+        print(f"Error checking fusion compatibility for {repo_path}: {str(e)}")
         try:
             os.remove(profiles_path)
         except Exception:
@@ -135,7 +184,10 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
 
 
 def main():
-    check_fusion_schema_compatibility(Path.cwd())
+    print("Hello from parse conformance!")
+    check_fusion_schema_compatibility(Path("/Users/chaya/workplace/packages/calogica/dbt-date"))
+    # check_multiple_version_tags(Path("/Users/chaya/workplace/packages/calogica/dbt-date"))
+    check_multiple_version_tags(Path("/Users/chaya/workplace/packages/dbt-labs/dbt-project-evaluator"))
 
 
 if __name__ == "__main__":
