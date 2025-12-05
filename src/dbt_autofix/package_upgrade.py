@@ -51,10 +51,14 @@ class PackageVersionUpgradeResult:
 
     @property
     def package_upgrade_logs(self):
+        logs: list[str] = [self.version_reason]
+        logs.append(f"Current version: {self.installed_version_compatibility_state}")
+        if self.upgraded and self.upgraded_version:
+            logs.append(f"Upgraded version: {self.upgraded_version_compatibility_state}")
         return [self.version_reason]
 
     def to_dict(self) -> dict:
-        ret_dict = {"id": self.id, "version": self.package_final_version(), "log": [self.version_reason]}
+        ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
         return ret_dict
 
 
@@ -182,11 +186,26 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     for package in deps_file.package_dependencies:
         if package not in packages_to_check:
             continue
-        private_package: bool = not deps_file.package_dependencies[package].is_public_package()
+        public_package: bool = deps_file.package_dependencies[package].is_public_package()
         installed_version: str = deps_file.package_dependencies[package].get_installed_package_version()
         installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[package].is_installed_version_fusion_compatible()
         
-        if private_package:
+        # if version is compatible based on version range, include private packages
+        if installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    public_package=public_package,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=None,
+                )
+            )
+            packages_to_check.remove(package)
+        # otherwise skip private packages
+        elif not public_package:
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(
                     id=package,
@@ -350,12 +369,21 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         if package not in packages_to_check or package not in some_versions_compatible:
             continue
         dbt_package = deps_file.package_dependencies[package]
-        versions_within_config: list[VersionSpecifier] = (
+        installed_version: str = deps_file.package_dependencies[package].get_installed_package_version()
+        installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[package].is_installed_version_fusion_compatible()
+
+        # need to correct 
+        installed_version_spec = dbt_package.installed_package_version
+        if installed_version_spec is None:
+            installed_version_spec = VersionSpecifier("0","0","0")
+
+        versions_within_config: list[VersionSpecifier] = [x for x in
             dbt_package.find_fusion_compatible_versions_in_requested_range()
-        )
-        versions_outside_config: list[VersionSpecifier] = (
+        if x > installed_version_spec]
+        versions_outside_config: list[VersionSpecifier] = [x for x in 
             dbt_package.find_fusion_compatible_versions_above_requested_range()
-        )
+        if x > installed_version_spec]
+        
         # package has compatible version within config file range
         if len(versions_within_config) > 0:
             package_version_upgrade_results.append(
@@ -365,9 +393,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     installed_version=installed_package_versions[package],
                     compatible_version=versions_within_config[0].to_version_string(skip_matcher=True),
                     version_reason=PackageVersionUpgradeType.UPGRADE_AVAILABLE,
-                    # not right
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
-                    upgraded_version_compatibility_state=None,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW if package in EXPLICIT_ALLOW_ALL_VERSIONS else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
                 )
             )
             packages_to_check.remove(package)
@@ -381,9 +408,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     installed_version=installed_package_versions[package],
                     compatible_version=versions_outside_config[0].to_version_string(skip_matcher=True),
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG,
-                    # not right
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
-                    upgraded_version_compatibility_state=None,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW if package in EXPLICIT_ALLOW_ALL_VERSIONS else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
                 )
             )
             packages_to_check.remove(package)
@@ -397,9 +423,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     public_package=True,
                     installed_version=installed_package_versions[package],
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-                    # not right
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
-                    upgraded_version_compatibility_state=None,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
                 )
             )
             packages_to_check.remove(package)
