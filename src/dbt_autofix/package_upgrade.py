@@ -33,6 +33,7 @@ class PackageVersionUpgradeResult:
     version_reason: PackageVersionUpgradeType
     installed_version_compatibility_state: PackageVersionFusionCompatibilityState
     upgraded_version_compatibility_state: Optional[PackageVersionFusionCompatibilityState]
+    already_compatible: bool = False
     upgraded_version: Optional[str] = None
     compatible_version: Optional[str] = None
     version_range_config: Optional[str] = None
@@ -51,11 +52,19 @@ class PackageVersionUpgradeResult:
 
     @property
     def package_upgrade_logs(self):
-        logs: list[str] = [self.version_reason]
-        logs.append(f"Current version: {self.installed_version_compatibility_state}")
-        if self.upgraded and self.upgraded_version:
-            logs.append(f"Upgraded version: {self.upgraded_version_compatibility_state}")
-        return [self.version_reason]
+        logs: list[str] = [self.version_reason.value]
+        if self.already_compatible:
+            current_version_compat = f"Current version is compatible: {self.installed_version_compatibility_state.value}"
+        elif self.installed_version_compatibility_state == PackageVersionFusionCompatibilityState.UNKNOWN:
+            current_version_compat = "Current version compatibility unknown"
+        else:
+            current_version_compat = f"Current version is not compatible: {self.installed_version_compatibility_state.value}"
+        logs.append(current_version_compat)
+        if self.upgraded and self.upgraded_version and self.upgraded_version_compatibility_state is not None:
+            logs.append(f"Upgraded version is compatible: {self.upgraded_version_compatibility_state.value}")
+        elif self.compatible_version is not None:
+            logs.append(f"Compatible version is available ({self.compatible_version}): {self.upgraded_version_compatibility_state}")
+        return logs
 
     def to_dict(self) -> dict:
         ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
@@ -88,14 +97,14 @@ class PackageUpgradeResult:
         for result in self.upgrades:
             console.print(f"  package {result.id} upgraded to version {result.package_final_version()}", style="yellow")
             for log in result.package_upgrade_logs:
-                console.print(f"    {log.value}")
+                console.print(f"    {log}")
         for result in self.unchanged:
             console.print(
                 f"  package {result.id} unchanged",
                 style="green" if result.version_reason == PackageVersionUpgradeType.NO_UPGRADE_REQUIRED else "bold red",
             )
             for log in result.package_upgrade_logs:
-                console.print(f"    {log.value}")
+                console.print(f"    {log}")
         return
 
 
@@ -196,6 +205,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 PackageVersionUpgradeResult(
                     id=package,
                     upgraded=False,
+                    already_compatible=True,
                     public_package=public_package,
                     installed_version=installed_version,
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
@@ -223,6 +233,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 PackageVersionUpgradeResult(
                     id=package,
                     upgraded=False,
+                    already_compatible=True,
                     public_package=True,
                     installed_version=installed_version,
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
@@ -236,6 +247,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 PackageVersionUpgradeResult(
                     id=package,
                     upgraded=False,
+                    already_compatible=True,
                     public_package=True,
                     installed_version=installed_version,
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
@@ -408,7 +420,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     installed_version=installed_package_versions[package],
                     compatible_version=versions_outside_config[0].to_version_string(skip_matcher=True),
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+                    installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW if package in EXPLICIT_ALLOW_ALL_VERSIONS else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
                 )
             )
@@ -423,7 +435,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     public_package=True,
                     installed_version=installed_package_versions[package],
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+                    installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
                 )
             )

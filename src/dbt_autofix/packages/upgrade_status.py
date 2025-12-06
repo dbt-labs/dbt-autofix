@@ -4,12 +4,12 @@ from enum import Enum
 class PackageVersionFusionCompatibilityState(str, Enum):
     """String enum for Fusion compatibility of a specific version of a package."""
 
-    NO_DBT_VERSION_RANGE = "Package does not define required dbt version range"
-    DBT_VERSION_RANGE_EXCLUDES_2_0 = "Package's dbt version range excludes version 2.0"
-    DBT_VERSION_RANGE_INCLUDES_2_0 = "Package's dbt versions range include version 2.0"
-    EXPLICIT_ALLOW = "Package version has been verified as Fusion-compatible"
-    EXPLICIT_DISALLOW = "Package version has been verified as incompatible with Fusion"
-    UNKNOWN = "Package version state unknown"
+    NO_DBT_VERSION_RANGE = "require-dbt-version is not defined"
+    DBT_VERSION_RANGE_EXCLUDES_2_0 = "require-dbt-version excludes version 2.0"
+    DBT_VERSION_RANGE_INCLUDES_2_0 = "require-dbt-version includes version 2.0"
+    EXPLICIT_ALLOW = "Version has been verified as Fusion-compatible"
+    EXPLICIT_DISALLOW = "Version has been verified as incompatible with Fusion"
+    UNKNOWN = "Version state unknown"
 
 
 class PackageFusionCompatibilityState(str, Enum):
