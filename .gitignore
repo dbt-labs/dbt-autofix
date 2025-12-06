@@ -22,4 +22,4 @@ project2/*
 .DS_Store
 
 # raw package hub output (because big)
-dbt_autofix/packages/scripts/output/*
+src/dbt_autofix/packages/scripts/output/*

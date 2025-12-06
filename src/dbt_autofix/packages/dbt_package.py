@@ -3,16 +3,12 @@ from dataclasses import dataclass, field
 from rich.console import Console
 from dbt_autofix.packages.dbt_package_version import (
     DbtPackageVersion,
-    construct_version_list_from_raw,
-    convert_optional_version_string_to_spec,
-    convert_version_specifiers_to_range,
-    convert_version_string_list_to_spec,
-    get_version_specifiers,
 )
 from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS, EXPLICIT_ALLOW_ALL_VERSIONS
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
 from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from dbt_autofix.packages.version_utils import construct_version_list_from_raw, convert_optional_version_string_to_spec, convert_version_specifiers_to_range, convert_version_string_list_to_spec, get_version_specifiers
 
 
 console = Console()
@@ -149,7 +145,7 @@ class DbtPackage:
                 version, self.project_config_version_range.start, self.project_config_version_range.end
             ):
                 compatible_versions.append(version)
-        sorted_versions = sorted(compatible_versions, reverse=True)
+        sorted_versions = sorted(compatible_versions)
         return sorted_versions
 
     def find_fusion_compatible_versions_above_requested_range(self) -> list[VersionSpecifier]:
@@ -177,7 +173,7 @@ class DbtPackage:
                 and version > self.project_config_version_range.start
             ):
                 compatible_versions.append(version)
-        sorted_versions = sorted(compatible_versions, reverse=True)
+        sorted_versions = sorted(compatible_versions)
         return sorted_versions
 
     def find_fusion_incompatible_versions_in_requested_range(self) -> list[VersionSpecifier]:
@@ -191,7 +187,7 @@ class DbtPackage:
                 version, self.project_config_version_range.start, self.project_config_version_range.end
             ):
                 incompatible_versions.append(version)
-        sorted_versions = sorted(incompatible_versions, reverse=True)
+        sorted_versions = sorted(incompatible_versions)
         return sorted_versions
 
     def find_fusion_unknown_versions_in_requested_range(self) -> list[VersionSpecifier]:
@@ -205,7 +201,7 @@ class DbtPackage:
                 version, self.project_config_version_range.start, self.project_config_version_range.end
             ):
                 unknown_compatibility_versions.append(version)
-        sorted_versions = sorted(unknown_compatibility_versions, reverse=True)
+        sorted_versions = sorted(unknown_compatibility_versions)
         return sorted_versions
 
     def get_installed_package_version(self) -> str:

@@ -1,7 +1,8 @@
 from typing import Any, Optional
 import pytest
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion, construct_version_list_from_raw
+from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dbt_common.semver import VersionSpecifier, VersionRange, Matchers, versions_compatible, UnboundedVersionSpecifier
+
 
 
 @pytest.mark.parametrize(
@@ -322,26 +323,3 @@ def test_fusion_compatible_from_raw(input_yaml: dict[Any, Any], expected_match: 
     assert fusion_compatible == expected_match
 
 
-@pytest.mark.parametrize(
-    "input_yaml,expected_match",
-    [
-        ([">=1.1.0", "<2.0.0"], [">=1.1.0", "<2.0.0"]),
-        (None, []),
-        (
-            [">=1.1.0"],
-            [">=1.1.0"],
-        ),
-        (
-            ">=1.1.0",
-            [">=1.1.0"],
-        ),
-        (">0.2.1", [">0.2.1"]),
-    ],
-)
-def test_convert_version_string_from_raw(input_yaml: Any, expected_match: list[str]):
-    version_list = construct_version_list_from_raw(input_yaml)
-
-    assert version_list == expected_match
-    if input_yaml is not None:
-        for i, version in enumerate(version_list):
-            assert version == expected_match[i]

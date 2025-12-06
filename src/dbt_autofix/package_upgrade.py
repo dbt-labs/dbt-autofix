@@ -17,7 +17,8 @@ from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
 from dbt_common.semver import VersionSpecifier
 
-from dbt_autofix.packages.upgrade_status import PackageFusionCompatibilityState, PackageVersionUpgradeType
+from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
+from dbt_autofix.packages.upgrade_status import PackageFusionCompatibilityState, PackageVersionUpgradeType, PackageVersionFusionCompatibilityState
 
 
 console = Console()
@@ -30,6 +31,9 @@ class PackageVersionUpgradeResult:
     public_package: bool
     installed_version: str
     version_reason: PackageVersionUpgradeType
+    installed_version_compatibility_state: PackageVersionFusionCompatibilityState
+    upgraded_version_compatibility_state: Optional[PackageVersionFusionCompatibilityState]
+    already_compatible: bool = False
     upgraded_version: Optional[str] = None
     compatible_version: Optional[str] = None
     version_range_config: Optional[str] = None
@@ -48,10 +52,22 @@ class PackageVersionUpgradeResult:
 
     @property
     def package_upgrade_logs(self):
-        return [self.version_reason]
+        logs: list[str] = [self.version_reason.value]
+        if self.already_compatible:
+            current_version_compat = f"Current version is compatible: {self.installed_version_compatibility_state.value}"
+        elif self.installed_version_compatibility_state == PackageVersionFusionCompatibilityState.UNKNOWN:
+            current_version_compat = "Current version compatibility unknown"
+        else:
+            current_version_compat = f"Current version is not compatible: {self.installed_version_compatibility_state.value}"
+        logs.append(current_version_compat)
+        if self.upgraded and self.upgraded_version and self.upgraded_version_compatibility_state is not None:
+            logs.append(f"Upgraded version is compatible: {self.upgraded_version_compatibility_state.value}")
+        elif self.compatible_version is not None:
+            logs.append(f"Compatible version is available ({self.compatible_version}): {self.upgraded_version_compatibility_state}")
+        return logs
 
     def to_dict(self) -> dict:
-        ret_dict = {"id": self.id, "version": self.package_final_version(), "log": [self.version_reason]}
+        ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
         return ret_dict
 
 
@@ -81,14 +97,14 @@ class PackageUpgradeResult:
         for result in self.upgrades:
             console.print(f"  package {result.id} upgraded to version {result.package_final_version()}", style="yellow")
             for log in result.package_upgrade_logs:
-                console.print(f"    {log.value}")
+                console.print(f"    {log}")
         for result in self.unchanged:
             console.print(
                 f"  package {result.id} unchanged",
                 style="green" if result.version_reason == PackageVersionUpgradeType.NO_UPGRADE_REQUIRED else "bold red",
             )
             for log in result.package_upgrade_logs:
-                console.print(f"    {log.value}")
+                console.print(f"    {log}")
         return
 
 
@@ -140,18 +156,18 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     # create a set of all packages in file - packages will be removed once checked
     packages_to_check: set[str] = set([package for package in deps_file.package_dependencies])
 
-    # the currently installed version fo each package
+    # the currently installed version of each package
     installed_package_versions: dict[str, str] = {
         package: deps_file.package_dependencies[package].get_installed_package_version()
         for package in deps_file.package_dependencies
     }
 
     # all private packages in file
-    private_packages: set[str] = set(deps_file.get_private_package_names())
+    # private_packages: set[str] = set(deps_file.get_private_package_names())
 
     # packages where the currently installed version is compatible with Fusion
     # includes both manual overrides and require dbt version
-    installed_version_compatible: set[str] = set(deps_file.get_installed_version_fusion_compatible())
+    # installed_version_compatible: set[str] = set(deps_file.get_installed_version_fusion_compatible())
 
     # check package level compatibility
     package_fusion_compatibility: dict[PackageFusionCompatibilityState, set[str]] = (
@@ -159,9 +175,9 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     )
 
     # packages that are fully incompatible, either explicitly or from require dbt version
-    all_versions_compatible = package_fusion_compatibility.get(
-        PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE, set()
-    )
+    # all_versions_compatible = package_fusion_compatibility.get(
+    #     PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE, set()
+    # )
     some_versions_compatible = package_fusion_compatibility.get(
         PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE, set()
     )
@@ -175,77 +191,186 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
 
     # now, the actual work begins
 
-    # private packages
-    for package in private_packages:
+    # handle private packages + already compatible first
+    for package in deps_file.package_dependencies:
         if package not in packages_to_check:
             continue
-        package_version_upgrade_results.append(
-            PackageVersionUpgradeResult(
-                id=package,
-                public_package=False,
-                installed_version=installed_package_versions[package],
-                version_reason=PackageVersionUpgradeType.PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION,
+        public_package: bool = deps_file.package_dependencies[package].is_public_package()
+        installed_version: str = deps_file.package_dependencies[package].get_installed_package_version()
+        installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[package].is_installed_version_fusion_compatible()
+        
+        # if version is compatible based on version range, include private packages
+        if installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    already_compatible=True,
+                    public_package=public_package,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=None,
+                )
             )
-        )
-        packages_to_check.remove(package)
+            packages_to_check.remove(package)
+        # otherwise skip private packages
+        elif not public_package:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    public_package=False,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION,
+                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
+                    upgraded_version_compatibility_state=None,
+                )
+            )
+            packages_to_check.remove(package)
+        elif installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0 or installed_version_compat == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    already_compatible=True,
+                    public_package=True,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=None,
+                )
+            )
+            packages_to_check.remove(package)
+        elif package in EXPLICIT_ALLOW_ALL_VERSIONS:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    already_compatible=True,
+                    public_package=True,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
+                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
+                    upgraded_version_compatibility_state=None,
+                )
+            )
+            packages_to_check.remove(package)
+        elif package in EXPLICIT_DISALLOW_ALL_VERSIONS:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    public_package=True,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
+                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW,
+                    upgraded_version_compatibility_state=None,
+                )
+            )
+            packages_to_check.remove(package)
+        elif package in no_versions_compatible:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    public_package=True,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
+                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
+                    upgraded_version_compatibility_state=None,
+                )
+            )
+            packages_to_check.remove(package)
+        elif package in missing_compatibility:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    upgraded=False,
+                    public_package=True,
+                    installed_version=installed_version,
+                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
+                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
+                    upgraded_version_compatibility_state=None,
+                )
+            )
+            packages_to_check.remove(package)
+
+
+
+    # private packages
+    # for package in private_packages:
+    #     if package not in packages_to_check:
+    #         continue
+    #     package_version_upgrade_results.append(
+    #         PackageVersionUpgradeResult(
+    #             id=package,
+    #             public_package=False,
+    #             installed_version=installed_package_versions[package],
+    #             version_reason=PackageVersionUpgradeType.PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION,
+    #             version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN
+    #         )
+    #     )
+    #     packages_to_check.remove(package)
 
     # already compatible
 
     # installed version is compatible
-    for package in installed_version_compatible:
-        if package not in packages_to_check:
-            continue
-        package_version_upgrade_results.append(
-            PackageVersionUpgradeResult(
-                id=package,
-                public_package=True,
-                installed_version=installed_package_versions[package],
-                version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
-            )
-        )
-        packages_to_check.remove(package)
+    # for package in installed_version_compatible:
+    #     if package not in packages_to_check:
+    #         continue
+    #     package_version_upgrade_results.append(
+    #         PackageVersionUpgradeResult(
+    #             id=package,
+    #             public_package=True,
+    #             installed_version=installed_package_versions[package],
+    #             version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
+    #             version_compatibility_state=deps_file.package_dependencies[package].is_installed_version_fusion_compatible()
+    #         )
+    #     )
+    #     packages_to_check.remove(package)
 
     # all public versions are compatible
-    for package in all_versions_compatible:
-        if package not in packages_to_check:
-            continue
-        package_version_upgrade_results.append(
-            PackageVersionUpgradeResult(
-                id=package,
-                public_package=True,
-                installed_version=installed_package_versions[package],
-                version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
-            )
-        )
-        packages_to_check.remove(package)
+    # for package in all_versions_compatible:
+    #     if package not in packages_to_check:
+    #         continue
+    #     package_version_upgrade_results.append(
+    #         PackageVersionUpgradeResult(
+    #             id=package,
+    #             public_package=True,
+    #             installed_version=installed_package_versions[package],
+    #             version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
+    #         )
+    #     )
+    #     packages_to_check.remove(package)
 
     # all public versions are incompatible with Fusion
-    for package in no_versions_compatible:
-        if package not in packages_to_check:
-            continue
-        package_version_upgrade_results.append(
-            PackageVersionUpgradeResult(
-                id=package,
-                public_package=True,
-                installed_version=installed_package_versions[package],
-                version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-            )
-        )
-        packages_to_check.remove(package)
+    # for package in no_versions_compatible:
+    #     if package not in packages_to_check:
+    #         continue
+    #     package_version_upgrade_results.append(
+    #         PackageVersionUpgradeResult(
+    #             id=package,
+    #             public_package=True,
+    #             installed_version=installed_package_versions[package],
+    #             version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
+    #         )
+    #     )
+    #     packages_to_check.remove(package)
 
     # all public versions don't define dbt version range
-    for package in missing_compatibility:
-        if package not in packages_to_check:
-            continue
-        package_version_upgrade_results.append(
-            PackageVersionUpgradeResult(
-                id=package,
-                public_package=True,
-                installed_version=installed_package_versions[package],
-                version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
-            )
-        )
-        packages_to_check.remove(package)
+    # for package in missing_compatibility:
+    #     if package not in packages_to_check:
+    #         continue
+    #     package_version_upgrade_results.append(
+    #         PackageVersionUpgradeResult(
+    #             id=package,
+    #             public_package=True,
+    #             installed_version=installed_package_versions[package],
+    #             version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
+    #         )
+    #     )
+    #     packages_to_check.remove(package)
 
     # exit if all packages are accounted for (optimistic)
     if len(packages_to_check) == 0:
@@ -256,12 +381,21 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         if package not in packages_to_check or package not in some_versions_compatible:
             continue
         dbt_package = deps_file.package_dependencies[package]
-        versions_within_config: list[VersionSpecifier] = (
+        installed_version: str = deps_file.package_dependencies[package].get_installed_package_version()
+        installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[package].is_installed_version_fusion_compatible()
+
+        # need to correct 
+        installed_version_spec = dbt_package.installed_package_version
+        if installed_version_spec is None:
+            installed_version_spec = VersionSpecifier("0","0","0")
+
+        versions_within_config: list[VersionSpecifier] = [x for x in
             dbt_package.find_fusion_compatible_versions_in_requested_range()
-        )
-        versions_outside_config: list[VersionSpecifier] = (
+        if x > installed_version_spec]
+        versions_outside_config: list[VersionSpecifier] = [x for x in 
             dbt_package.find_fusion_compatible_versions_above_requested_range()
-        )
+        if x > installed_version_spec]
+        
         # package has compatible version within config file range
         if len(versions_within_config) > 0:
             package_version_upgrade_results.append(
@@ -271,6 +405,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     installed_version=installed_package_versions[package],
                     compatible_version=versions_within_config[0].to_version_string(skip_matcher=True),
                     version_reason=PackageVersionUpgradeType.UPGRADE_AVAILABLE,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW if package in EXPLICIT_ALLOW_ALL_VERSIONS else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
                 )
             )
             packages_to_check.remove(package)
@@ -284,6 +420,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     installed_version=installed_package_versions[package],
                     compatible_version=versions_outside_config[0].to_version_string(skip_matcher=True),
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW if package in EXPLICIT_ALLOW_ALL_VERSIONS else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
                 )
             )
             packages_to_check.remove(package)
@@ -297,6 +435,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     public_package=True,
                     installed_version=installed_package_versions[package],
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
                 )
             )
             packages_to_check.remove(package)
@@ -311,6 +451,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     public_package=True,
                     installed_version=installed_package_versions[package],
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
+                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
+                    upgraded_version_compatibility_state=None,
                 )
             )
     return package_version_upgrade_results
