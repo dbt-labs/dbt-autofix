@@ -15,7 +15,7 @@ from dbt_autofix.packages.dbt_package_file import (
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
 from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
-from dbt_common.semver import VersionSpecifier
+from dbt_common.semver import VersionSpecifier, Matchers, VersionRange
 
 from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
 from dbt_autofix.packages.upgrade_status import (
@@ -172,22 +172,11 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         for package in deps_file.package_dependencies
     }
 
-    # all private packages in file
-    # private_packages: set[str] = set(deps_file.get_private_package_names())
-
-    # packages where the currently installed version is compatible with Fusion
-    # includes both manual overrides and require dbt version
-    # installed_version_compatible: set[str] = set(deps_file.get_installed_version_fusion_compatible())
-
     # check package level compatibility
     package_fusion_compatibility: dict[PackageFusionCompatibilityState, set[str]] = (
         deps_file.get_package_fusion_compatibility()
     )
 
-    # packages that are fully incompatible, either explicitly or from require dbt version
-    # all_versions_compatible = package_fusion_compatibility.get(
-    #     PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE, set()
-    # )
     some_versions_compatible = package_fusion_compatibility.get(
         PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE, set()
     )
@@ -201,7 +190,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
 
     # now, the actual work begins
 
-    # handle private packages + already compatible first
+    # handle cases where we know we can't upgrade first
     for package in deps_file.package_dependencies:
         if package not in packages_to_check:
             continue
@@ -240,6 +229,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 )
             )
             packages_to_check.remove(package)
+        # already compatible version - don't upgrade
         elif (
             installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
             or installed_version_compat == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
@@ -257,6 +247,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 )
             )
             packages_to_check.remove(package)
+        # package has manual override for all versions - don't upgrade
         elif package in EXPLICIT_ALLOW_ALL_VERSIONS:
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(
@@ -271,6 +262,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 )
             )
             packages_to_check.remove(package)
+        # package has manual override for all versions so can't upgrade
         elif package in EXPLICIT_DISALLOW_ALL_VERSIONS:
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(
@@ -284,6 +276,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 )
             )
             packages_to_check.remove(package)
+        # all versions have require-dbt-version < 2.0
         elif package in no_versions_compatible:
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(
@@ -297,6 +290,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 )
             )
             packages_to_check.remove(package)
+        # all versions don't have require-dbt-version defined
         elif package in missing_compatibility:
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(
@@ -311,80 +305,6 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
             )
             packages_to_check.remove(package)
 
-    # private packages
-    # for package in private_packages:
-    #     if package not in packages_to_check:
-    #         continue
-    #     package_version_upgrade_results.append(
-    #         PackageVersionUpgradeResult(
-    #             id=package,
-    #             public_package=False,
-    #             installed_version=installed_package_versions[package],
-    #             version_reason=PackageVersionUpgradeType.PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION,
-    #             version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN
-    #         )
-    #     )
-    #     packages_to_check.remove(package)
-
-    # already compatible
-
-    # installed version is compatible
-    # for package in installed_version_compatible:
-    #     if package not in packages_to_check:
-    #         continue
-    #     package_version_upgrade_results.append(
-    #         PackageVersionUpgradeResult(
-    #             id=package,
-    #             public_package=True,
-    #             installed_version=installed_package_versions[package],
-    #             version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
-    #             version_compatibility_state=deps_file.package_dependencies[package].is_installed_version_fusion_compatible()
-    #         )
-    #     )
-    #     packages_to_check.remove(package)
-
-    # all public versions are compatible
-    # for package in all_versions_compatible:
-    #     if package not in packages_to_check:
-    #         continue
-    #     package_version_upgrade_results.append(
-    #         PackageVersionUpgradeResult(
-    #             id=package,
-    #             public_package=True,
-    #             installed_version=installed_package_versions[package],
-    #             version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
-    #         )
-    #     )
-    #     packages_to_check.remove(package)
-
-    # all public versions are incompatible with Fusion
-    # for package in no_versions_compatible:
-    #     if package not in packages_to_check:
-    #         continue
-    #     package_version_upgrade_results.append(
-    #         PackageVersionUpgradeResult(
-    #             id=package,
-    #             public_package=True,
-    #             installed_version=installed_package_versions[package],
-    #             version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-    #         )
-    #     )
-    #     packages_to_check.remove(package)
-
-    # all public versions don't define dbt version range
-    # for package in missing_compatibility:
-    #     if package not in packages_to_check:
-    #         continue
-    #     package_version_upgrade_results.append(
-    #         PackageVersionUpgradeResult(
-    #             id=package,
-    #             public_package=True,
-    #             installed_version=installed_package_versions[package],
-    #             version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
-    #         )
-    #     )
-    #     packages_to_check.remove(package)
-
     # exit if all packages are accounted for (optimistic)
     if len(packages_to_check) == 0:
         return package_version_upgrade_results
@@ -398,11 +318,16 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[
             package
         ].is_installed_version_fusion_compatible()
+        package_version_range: Optional[VersionRange] = deps_file.package_dependencies[package].project_config_version_range
 
-        # need to correct
         installed_version_spec = dbt_package.installed_package_version
+        # in case the user hadn't run dbt deps, estimate version
         if installed_version_spec is None:
-            installed_version_spec = VersionSpecifier("0", "0", "0")
+            if package_version_range is not None:
+                installed_version_spec = package_version_range.start
+            else:
+                installed_version_spec = VersionSpecifier("0", "0", "0")
+        installed_version_spec = Matchers.EXACT
 
         versions_within_config: list[VersionSpecifier] = [
             x for x in dbt_package.find_fusion_compatible_versions_in_requested_range() if x > installed_version_spec
