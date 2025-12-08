@@ -4,7 +4,6 @@ from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dbt_common.semver import VersionSpecifier, VersionRange, Matchers, versions_compatible, UnboundedVersionSpecifier
 
 
-
 @pytest.mark.parametrize(
     "input_str,expected_match",
     [
@@ -321,5 +320,3 @@ def test_fusion_compatible_from_raw(input_yaml: dict[Any, Any], expected_match: 
 
     fusion_compatible: bool = package_version.is_require_dbt_version_fusion_compatible()
     assert fusion_compatible == expected_match
-
-

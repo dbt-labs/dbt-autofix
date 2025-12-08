@@ -9,9 +9,15 @@ from dbt_autofix.packages.manual_overrides import (
 )
 
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
-from dbt_autofix.packages.version_utils import FUSION_COMPATIBLE_VERSION, construct_version_list_from_raw, convert_version_specifiers_to_range, get_version_specifiers
+from dbt_autofix.packages.version_utils import (
+    FUSION_COMPATIBLE_VERSION,
+    construct_version_list_from_raw,
+    convert_version_specifiers_to_range,
+    get_version_specifiers,
+)
 
 console = Console()
+
 
 @dataclass
 class DbtPackageVersion:

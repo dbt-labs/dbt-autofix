@@ -5,14 +5,12 @@ FUSION_COMPATIBLE_VERSION: VersionSpecifier = VersionSpecifier.from_version_stri
 # `float` also allows `int`, according to PEP484 (and jsonschema!)
 RawVersion = Union[str, float]
 
+
 def get_versions(version: Union[RawVersion, list[RawVersion]]) -> list[str]:
     if isinstance(version, list):
         return [str(v) for v in version]
     else:
         return [str(version)]
-
-
-
 
 
 def construct_version_list(raw_versions: Union[str, list[str], None]) -> list[str]:

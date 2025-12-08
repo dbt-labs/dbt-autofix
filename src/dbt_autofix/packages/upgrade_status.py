@@ -27,7 +27,9 @@ class PackageVersionUpgradeType(str, Enum):
 
     NO_UPGRADE_REQUIRED = "Package is already compatible with Fusion"
     UPGRADE_AVAILABLE = "Package has Fusion-compatible version available"
-    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = "Public package has not defined require-dbt-version so Fusion eligibility cannot be determined"
+    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = (
+        "Public package has not defined require-dbt-version so Fusion eligibility cannot be determined"
+    )
     PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION = "Public package is not compatible with Fusion"
     PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG = (
         "Public package has Fusion-compatible version that is outside the project's requested version range"
