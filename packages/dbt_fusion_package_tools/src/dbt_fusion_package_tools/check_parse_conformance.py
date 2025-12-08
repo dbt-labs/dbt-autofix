@@ -1,6 +1,5 @@
 """Interface for objects useful to processing hub entries"""
 
-import logging
 import os
 from typing import Optional
 import subprocess
@@ -9,6 +8,7 @@ from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
 
 from pathlib import Path
 
+console = Console()
 error_console = Console(stderr=True)
 
 
@@ -59,7 +59,7 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
     for valid_binary_name in binary_names_found:
         version_result = subprocess.run(
             [
-                "dbtf",
+                valid_binary_name,
                 "--version",
             ],
             capture_output=True,
@@ -74,7 +74,7 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
     return None
 
 
-def check_fusion_schema_compatibility(repo_path: Path) -> bool:
+def check_fusion_schema_compatibility(repo_path: Path=Path.cwd(), show_fusion_output=True) -> bool:
     """
     Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
 
@@ -122,6 +122,8 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
                     "--project-dir",
                     str(repo_path),
                 ],
+                text=True,
+                capture_output=(not show_fusion_output),
                 timeout=60,
             )
             # Now try parse
@@ -134,8 +136,8 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
                     "--project-dir",
                     str(repo_path),
                 ],
-                capture_output=True,
                 text=True,
+                capture_output=(not show_fusion_output),
                 timeout=60,
             )
         except Exception as e:
@@ -146,9 +148,9 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
         is_compatible = parse_result.returncode == 0
 
         if is_compatible:
-            logging.info(f"Package at {repo_path} is fusion schema compatible")
+            console.log(f"Package at {repo_path} is fusion schema compatible")
         else:
-            logging.info(f"Package at {repo_path} is not fusion schema compatible")
+            console.log(f"Package at {repo_path} is not fusion schema compatible")
 
         # Clean up deps
         subprocess.run(
@@ -161,6 +163,8 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
                 str(repo_path),
             ],
             timeout=60,
+            text=True,
+            capture_output=(not show_fusion_output),
         )
         # Remove the test profile
         os.remove(profiles_path)
