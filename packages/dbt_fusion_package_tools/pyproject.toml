@@ -3,12 +3,15 @@ name = "dbt-fusion-package-tools"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "mashumaro>=3.17",
+]
 
 dynamic = ["version"]
 
 [project.scripts]
 dbt-fusion-package-tools = "dbt_fusion_package_tools:main"
+dbt-fusion-package-schema-compat = "dbt_fusion_package_tools.check_parse_conformance:main"
 
 [tool.uv]
 package = true

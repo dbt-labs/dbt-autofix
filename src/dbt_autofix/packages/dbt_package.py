@@ -4,16 +4,18 @@ from rich.console import Console
 from dbt_autofix.packages.dbt_package_version import (
     DbtPackageVersion,
 )
-from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 from dbt_autofix.packages.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS, EXPLICIT_ALLOW_ALL_VERSIONS
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
 from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
-from dbt_autofix.packages.version_utils import (
+from dbt_fusion_package_tools.version_utils import (
     construct_version_list_from_raw,
     convert_optional_version_string_to_spec,
     convert_version_specifiers_to_range,
     convert_version_string_list_to_spec,
     get_version_specifiers,
+    VersionSpecifier,
+    VersionRange,
+    versions_compatible,
 )
 
 

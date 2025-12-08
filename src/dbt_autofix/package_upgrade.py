@@ -15,7 +15,7 @@ from dbt_autofix.packages.dbt_package_file import (
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
 from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
-from dbt_common.semver import VersionSpecifier, Matchers, VersionRange
+from dbt_fusion_package_tools.version_utils import VersionSpecifier, Matchers, VersionRange
 
 from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
 from dbt_autofix.packages.upgrade_status import (
@@ -318,7 +318,9 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[
             package
         ].is_installed_version_fusion_compatible()
-        package_version_range: Optional[VersionRange] = deps_file.package_dependencies[package].project_config_version_range
+        package_version_range: Optional[VersionRange] = deps_file.package_dependencies[
+            package
+        ].project_config_version_range
 
         installed_version_spec = dbt_package.installed_package_version
         # in case the user hadn't run dbt deps, estimate version
