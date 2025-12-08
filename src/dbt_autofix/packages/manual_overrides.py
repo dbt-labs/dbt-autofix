@@ -39,11 +39,11 @@ EXPLICIT_ALLOW_ALL_VERSIONS: set[str] = set(
         "metaplane/dbt_expectations",
         "Montreal-Analytics/snowflake_utils",
         "Snowflake-Labs/dbt_semantic_view",
-        "elementary-data/elementary",
         "dbt-labs/dbt_utils",
         "dbt-labs/audit_helper",
         "GJMcClintock/dbt_tld",
         "dbt-labs/codegen",
+        "calogica/dbt_date",
     ]
 )
 
@@ -54,6 +54,6 @@ EXPLICIT_ALLOW_ALL_VERSIONS: set[str] = set(
 EXPLICIT_DISALLOW_VERSIONS: dict[str, set[str]] = {
     # dbt_project_evaluator version 1.1.0 has compatible
     # require dbt version but actually has bug that makes
-    # package incompatible until fixed in 1.1.1
-    "dbt-labs/dbt_project_evaluator": set(["1.1.0"])
+    # package incompatible until fixed in 1.1.2
+    "dbt-labs/dbt_project_evaluator": set(["1.1.0", "1.1.1"])
 }

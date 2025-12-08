@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from importlib.metadata import version
 import json
 from pathlib import Path
 from typing import Any, Optional
@@ -84,6 +85,7 @@ class PackageVersionUpgradeResult:
 @dataclass
 class PackageUpgradeResult:
     dry_run: bool
+    force_upgrade: bool
     file_path: Optional[Path]
     upgraded: bool
     upgrades: list[PackageVersionUpgradeResult]
@@ -92,10 +94,13 @@ class PackageUpgradeResult:
     def print_to_console(self, json_output: bool = True):
         if json_output:
             to_print = {
+                "command": "packages",
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
+                "force_upgrade": self.force_upgrade,
                 "upgrades": [result.to_dict() for result in self.upgrades],
                 "unchanged": [result.to_dict() for result in self.unchanged],
+                "autofix_version": version("dbt-autofix"),
             }
             print(json.dumps(to_print))  # noqa: T201
             return
@@ -318,7 +323,9 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[
             package
         ].is_installed_version_fusion_compatible()
-        package_version_range: Optional[VersionRange] = deps_file.package_dependencies[package].project_config_version_range
+        package_version_range: Optional[VersionRange] = deps_file.package_dependencies[
+            package
+        ].project_config_version_range
 
         installed_version_spec = dbt_package.installed_package_version
         # in case the user hadn't run dbt deps, estimate version
@@ -418,6 +425,7 @@ def upgrade_package_versions(
         return PackageUpgradeResult(
             dry_run=dry_run,
             file_path=deps_file.file_path,
+            force_upgrade=override_pinned_version,
             upgraded=False,
             upgrades=[],
             unchanged=package_dependencies_with_upgrades,
@@ -451,6 +459,7 @@ def upgrade_package_versions(
         return PackageUpgradeResult(
             dry_run=dry_run,
             file_path=deps_file.file_path,
+            force_upgrade=override_pinned_version,
             upgraded=False,
             upgrades=[],
             unchanged=package_dependencies_with_upgrades,
@@ -477,6 +486,7 @@ def upgrade_package_versions(
     upgrade_result = PackageUpgradeResult(
         dry_run=dry_run,
         file_path=deps_file.file_path,
+        force_upgrade=override_pinned_version,
         upgraded=len(updated_packages) > 0,
         upgrades=upgraded_package_results,
         unchanged=unchanged_package_results,

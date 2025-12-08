@@ -158,7 +158,7 @@ def write_dict_to_json(data: dict[str, Any], dest_dir: Path, *, indent: int = 2,
 
 
 def main():
-    input: Path = Path.cwd() / "dbt_autofix" / "packages" / "scripts" / "output"
+    input: Path = Path.cwd() / "src" / "dbt_autofix" / "packages" / "scripts" / "output"
     data = read_package_output_json(input / "package_output.json")
     # check_package_names(data)
     packages_with_versions: dict[str, dict[str, Any]] = get_versions(data)
@@ -166,7 +166,7 @@ def main():
     write_dict_to_json(packages_with_versions, input)
     print("Output written to fusion_version_compatibility_output.json")
     with open(
-        Path.cwd() / "dbt_autofix" / "packages" / "fusion_version_compatibility_output.py", "w"
+        Path.cwd() / "src" / "dbt_autofix" / "packages" / "fusion_version_compatibility_output.py", "w"
     ) as output_py_file:
         output_py_file.write(
             f"from typing import Any\n\nFUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {packages_with_versions}"

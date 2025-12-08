@@ -110,6 +110,7 @@ class DbtPackageFile:
     yml_dependencies: dict[Any, Any]
     # this is indexed by package id for uniqueness (hopefully)
     package_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
+    unknown_packages: set[str] = field(default_factory=set)
 
     def parse_file_path_to_string(self):
         if not self.file_path:
@@ -152,8 +153,9 @@ class DbtPackageFile:
         package_lookup: dict[str, str] = self.get_reverse_lookup_by_package_name()
         installed_count: int = 0
         for package in installed_packages:
+            # skip packages that don't have a corresponding packages.yml config
             if package not in package_lookup:
-                console.log(f"Installed package name {package} not found in package deps")
+                self.unknown_packages.add(package)
                 continue
             package_id = package_lookup[package]
             # kind of hacky - try to correct installed version if package's dbt project yml
