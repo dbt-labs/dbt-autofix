@@ -7,8 +7,8 @@ class PackageVersionFusionCompatibilityState(str, Enum):
     NO_DBT_VERSION_RANGE = "require-dbt-version is not defined"
     DBT_VERSION_RANGE_EXCLUDES_2_0 = "require-dbt-version excludes version 2.0"
     DBT_VERSION_RANGE_INCLUDES_2_0 = "require-dbt-version includes version 2.0"
-    EXPLICIT_ALLOW = "Version has been verified as Fusion-compatible"
-    EXPLICIT_DISALLOW = "Version has been verified as incompatible with Fusion"
+    EXPLICIT_ALLOW = "Version has been verified by dbt as Fusion-compatible even though its declared require-dbt-version may not include 2.0"
+    EXPLICIT_DISALLOW = "Version has been verified by dbt as incompatible with Fusion"
     UNKNOWN = "Version state unknown"
 
 
@@ -27,7 +27,7 @@ class PackageVersionUpgradeType(str, Enum):
 
     NO_UPGRADE_REQUIRED = "Package is already compatible with Fusion"
     UPGRADE_AVAILABLE = "Package has Fusion-compatible version available"
-    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = "Public package has not defined Fusion eligibility"
+    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = "Public package has not defined require-dbt-version so Fusion eligibility cannot be determined"
     PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION = "Public package is not compatible with Fusion"
     PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG = (
         "Public package has Fusion-compatible version that is outside the project's requested version range"
