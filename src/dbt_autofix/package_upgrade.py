@@ -327,7 +327,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 installed_version_spec = package_version_range.start
             else:
                 installed_version_spec = VersionSpecifier("0", "0", "0")
-        installed_version_spec = Matchers.EXACT
+        installed_version_spec.matcher = Matchers.EXACT
 
         versions_within_config: list[VersionSpecifier] = [
             x for x in dbt_package.find_fusion_compatible_versions_in_requested_range() if x > installed_version_spec
