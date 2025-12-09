@@ -91,6 +91,7 @@ reportMissingImports = false
 pythonpath = [
   "."
 ]
+addopts = "--ignore-glob=**/dbt_packages/**"
 
 [tool.pydocstyle]
 convention = "google"

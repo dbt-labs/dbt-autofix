@@ -5,6 +5,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "mashumaro>=3.17",
+    "pyyaml>=6.0.2",
 ]
 
 dynamic = ["version"]
@@ -25,12 +26,6 @@ source = "scm"
 version_format = "pdm_build:format_version"
 
 [project.optional-dependencies]
-test = [
-    "pytest>=7.2.0",
-    "pytest-cov>=4.1.0",
-    "pre-commit>=4.2.0",
-    "nox",
-]
 docs = [
     "pydocstyle>=6.3.0",
 ]

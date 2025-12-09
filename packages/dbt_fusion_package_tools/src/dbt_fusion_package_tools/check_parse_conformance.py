@@ -74,7 +74,7 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
     return None
 
 
-def check_fusion_schema_compatibility(repo_path: Path=Path.cwd(), show_fusion_output=True) -> bool:
+def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_output=True) -> bool:
     """
     Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
 
