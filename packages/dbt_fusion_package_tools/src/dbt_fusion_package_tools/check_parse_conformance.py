@@ -5,11 +5,31 @@ from typing import Optional
 import subprocess
 from rich.console import Console
 from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
+from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
+from tempfile import TemporaryDirectory
 
 from pathlib import Path
 
 console = Console()
 error_console = Console(stderr=True)
+
+
+def checkout_repo_and_run_conformance(github_organization: str, github_repo_name: str, package_name: str, limit: int=0):
+    with TemporaryDirectory() as tmpdir:
+        print(f"writing to {tmpdir}")
+        repo = DbtPackageRepo(
+            repo_name=package_name,
+            github_organization=github_organization,
+            github_repo_name=github_repo_name,
+            local_path=tmpdir,
+        )
+        tags = repo.get_tags()
+        for i, tag in enumerate(tags):
+            if limit > 0 and i > limit:
+                break
+            checked_out = repo.checkout_tag(tag, stash_changes=True)
+            print(f"tag {tag.name} checked out: {checked_out}")
+            check_fusion_schema_compatibility(tmpdir, show_fusion_output=True)
 
 
 def check_binary_name(binary_name: str) -> bool:
@@ -26,7 +46,6 @@ def check_binary_name(binary_name: str) -> bool:
         return True
     # indicates that the binary name is not found
     except FileNotFoundError:
-        error_console.log(f"FileNotFoundError: {binary_name} not found on system path")
         return False
     # indicates that an error occurred when running command
     except subprocess.CalledProcessError as process_error:
@@ -52,6 +71,7 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
             binary_names_found.add(binary_name)
 
     if len(binary_names_found) == 0:
+        error_console.log(f"No fusion binaries found on system path, please install first")
         return None
 
     # now check version returned by each and use first one
@@ -113,6 +133,8 @@ def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_
 
         try:
             # Run dbt deps to install package dependencies
+            if show_fusion_output:
+                console.log("\n\nRunning dbt deps", style="green")
             subprocess.run(
                 [
                     fusion_binary_name,
@@ -127,6 +149,8 @@ def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_
                 timeout=60,
             )
             # Now try parse
+            if show_fusion_output:
+                console.log("\n\nRunning dbt parse", style="green")
             parse_result = subprocess.run(
                 [
                     fusion_binary_name,
@@ -153,6 +177,8 @@ def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_
             console.log(f"Package at {repo_path} is not fusion schema compatible")
 
         # Clean up deps
+        if show_fusion_output:
+            console.log("\n\nRunning dbt clean", style="green")
         subprocess.run(
             [
                 fusion_binary_name,
