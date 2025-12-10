@@ -7,7 +7,7 @@ from pathlib import Path
 from rich.console import Console
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
 from dbt_autofix.refactors.yml import read_file
-from dbt_common.semver import Matchers
+from dbt_fusion_package_tools.version_utils import Matchers
 
 console = Console()
 

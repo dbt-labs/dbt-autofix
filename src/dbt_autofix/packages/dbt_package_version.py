@@ -1,7 +1,6 @@
 from typing import Any, Optional, Union
 from dataclasses import dataclass, field
 from rich.console import Console
-from dbt_common.semver import VersionSpecifier, VersionRange, versions_compatible
 from dbt_autofix.packages.manual_overrides import (
     EXPLICIT_ALLOW_ALL_VERSIONS,
     EXPLICIT_DISALLOW_ALL_VERSIONS,
@@ -9,11 +8,14 @@ from dbt_autofix.packages.manual_overrides import (
 )
 
 from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
-from dbt_autofix.packages.version_utils import (
+from dbt_fusion_package_tools.version_utils import (
     FUSION_COMPATIBLE_VERSION,
     construct_version_list_from_raw,
     convert_version_specifiers_to_range,
     get_version_specifiers,
+    VersionSpecifier,
+    VersionRange,
+    versions_compatible,
 )
 
 console = Console()
