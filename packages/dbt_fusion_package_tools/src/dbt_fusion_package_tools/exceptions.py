@@ -18,3 +18,9 @@ class FusionBinaryNotAvailable(Exception):
     def __init__(self, message="Fusion binary not found on system, please install Fusion first"):
         self.message = message
         super().__init__(self.message)
+
+
+class GitOperationError(Exception):
+    """Custom exception for git operation failures"""
+
+    pass
