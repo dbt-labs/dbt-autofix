@@ -171,5 +171,8 @@ repos:
       - id: dbt-autofix-fix # Automatically fix deprecations
       # OR
       - id: dbt-autofix-fix # Pass in multiple args
-        args: [--semantic-layer, --include-packages, --behavior-change]      
+        args: [--semantic-layer, --include-packages, --behavior-change]
+      # OR
+      - id: dbt-autofix-fix # Specify dbt project path
+        args: [--path=jaffle-shop]
 ```
