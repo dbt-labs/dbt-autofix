@@ -71,9 +71,9 @@ class PackageVersionUpgradeResult:
         logs.append(current_version_compat)
         if self.upgraded and self.upgraded_version and self.upgraded_version_compatibility_state is not None:
             logs.append(f"Upgraded version is compatible: {self.upgraded_version_compatibility_state.value}")
-        elif self.compatible_version is not None:
+        elif self.compatible_version is not None and self.upgraded_version_compatibility_state is not None:
             logs.append(
-                f"Compatible version is available ({self.compatible_version}): {self.upgraded_version_compatibility_state}"
+                f"Compatible version is available ({self.compatible_version}): {self.upgraded_version_compatibility_state.value}"
             )
         return logs
 
