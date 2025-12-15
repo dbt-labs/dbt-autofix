@@ -19,15 +19,14 @@ from dbt_autofix.refactor import (
     remove_unmatched_endings,
     skip_file,
 )
-from dbt_autofix.refactors.changesets.dbt_schema_yml import (
-    changeset_replace_fancy_quotes,
-    changeset_remove_duplicate_models,
-)
-from dbt_autofix.retrieve_schemas import SchemaSpecs
-
-from dbt_autofix.refactors.yml import dict_to_yaml_str
-from dbt_autofix.refactors.changesets.dbt_sql import CONFIG_MACRO_PATTERN, refactor_custom_configs_to_meta_sql
 from dbt_autofix.refactors.changesets.dbt_project_yml import rec_check_yaml_path
+from dbt_autofix.refactors.changesets.dbt_schema_yml import (
+    changeset_remove_duplicate_models,
+    changeset_replace_fancy_quotes,
+)
+from dbt_autofix.refactors.changesets.dbt_sql import CONFIG_MACRO_PATTERN, refactor_custom_configs_to_meta_sql
+from dbt_autofix.refactors.yml import dict_to_yaml_str
+from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
 @pytest.fixture
@@ -408,6 +407,44 @@ class TestUnmatchedEndingsRemoval:
         assert "{% endmacro %}" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endmacro %}" in result.deprecation_refactors[0].log
+
+    def test_malformed_jinja_comments(self):
+        """Test that malformed Jinja comments don't cause false positives."""
+        
+        # Properly commented block - should not be modified
+        sql_content = """{# if not adapter.check_schema_exists(model.database, model.schema) %}
+    {% do create_schema(model.database, model.schema) %}
+  {% endif #}"""
+        result = remove_unmatched_endings(sql_content)
+        assert result.refactored_content == sql_content
+        assert len(result.deprecation_refactors) == 0
+        
+        # Malformed comment with {#% ... %#} - should not be modified
+        sql_content = """{#% if not adapter.check_schema_exists(model.database, model.schema) %}
+    {% do create_schema(model.database, model.schema) %}
+  {% endif %#}"""
+        result = remove_unmatched_endings(sql_content)
+        assert result.refactored_content == sql_content
+        assert len(result.deprecation_refactors) == 0
+        
+        # Malformed comment with {#% ... %} (opening malformed, closing standard)
+        # The {#% opening indicates intent to comment, so tags inside should be preserved
+        sql_content = """{#% if not adapter.check_schema_exists(model.database, model.schema) %}
+    {% do create_schema(model.database, model.schema) %}
+  {% endif %}"""
+        result = remove_unmatched_endings(sql_content)
+        assert result.refactored_content == sql_content
+        assert len(result.deprecation_refactors) == 0
+        
+        # Mixed - unclosed {# before an endif means it's likely commented out
+        sql_content = """{# commented out:
+  {% if True %}
+    select 1
+  {% endif %}"""
+        result = remove_unmatched_endings(sql_content)
+        # Should not modify because the endif is inside an unclosed {# block
+        assert "{% endif %}" in result.refactored_content
+        assert len(result.deprecation_refactors) == 0
 
     def test_after_other_tags(self):
         # After for loop

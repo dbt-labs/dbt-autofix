@@ -83,18 +83,68 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     - Multi-line tags
     - Whitespace control variants ({%- and -%})
     - Nested blocks
+    - Jinja comments ({# ... #})
+    - Malformed comments ({#% ... %}, {# ... %#}, {#% ... %#})
 
     Args:
         sql_content: The SQL content to process
 
     Returns: SQLRuleRefactorResult
     """
-    # Regex patterns for Jinja tag matching
+    # Regex patterns for Jinja tag and comment matching
     JINJA_TAG_PATTERN = re.compile(r"{%-?\s*((?s:.*?))\s*-?%}", re.DOTALL)
+    # Match proper comments {# ... #}
+    JINJA_COMMENT_PATTERN = re.compile(r"{#.*?#}", re.DOTALL)
     MACRO_START = re.compile(r"^macro\s+([^\s(]+)")  # Captures macro name
     IF_START = re.compile(r"^if[(\s]+.*")  # if blocks can also be {% if(...) %}
     MACRO_END = re.compile(r"^endmacro")
     IF_END = re.compile(r"^endif")
+
+    # First, identify all comment regions to skip them
+    comment_regions: List[Tuple[int, int]] = []
+    for comment_match in JINJA_COMMENT_PATTERN.finditer(sql_content):
+        comment_regions.append((comment_match.start(), comment_match.end()))
+
+    def is_in_comment(pos: int) -> bool:
+        """Check if a position is within a Jinja comment."""
+        for start, end in comment_regions:
+            if start <= pos < end:
+                return True
+        return False
+    
+    def looks_like_commented_out_code(pos: int) -> bool:
+        """
+        Check if a tag at the given position looks like it's part of commented-out code.
+        
+        This handles malformed comment syntax like:
+        - {#% if ... %} where %} should have been #}
+        - Multi-line blocks where the opening has {# but the close tag doesn't
+        
+        Strategy: Look backwards from the tag position to find any unclosed {#
+        that hasn't been properly closed with #}. This indicates the tag might
+        be inside a malformed comment block.
+        """
+        # Look at content before this position
+        content_before = sql_content[:pos]
+        
+        # Find all {# openings and #} closings before this position
+        # We'll track whether there's an unclosed {# 
+        comment_depth = 0
+        i = 0
+        while i < len(content_before):
+            if content_before[i:i+2] == '{#':
+                comment_depth += 1
+                i += 2
+            elif content_before[i:i+2] == '#}':
+                if comment_depth > 0:
+                    comment_depth -= 1
+                i += 2
+            else:
+                i += 1
+        
+        # If comment_depth > 0, there's an unclosed {# before this position
+        # which means this tag might be inside a malformed comment
+        return comment_depth > 0
 
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     # Track macro and if states with their positions
@@ -109,6 +159,10 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
         tag_content = match.group(1)
         start_pos = match.start()
         end_pos = match.end()
+
+        # Skip if this tag is inside a comment (proper or malformed)
+        if is_in_comment(start_pos) or looks_like_commented_out_code(start_pos):
+            continue
 
         # Check for macro start
         macro_match = MACRO_START.match(tag_content)
