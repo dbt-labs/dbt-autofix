@@ -9,6 +9,15 @@ from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERS
 console = Console()
 error_console = Console(stderr=True)
 
+VERSION_PREFIX = re.compile(r"^\s*(?:-\s*)?version:\s*")
+PACKAGE_PREFIX = re.compile(r"^\s*(?:-\s*)?package:\s*")
+KEY_PATTERN = re.compile(r"^\s*-")
+PACKAGE_PATTERN = re.compile(r"^\s*(?:-\s*)?package:")
+VERSION_PATTERN = re.compile(r"^\s*(?:-\s*)?version:")
+VERSION_MATCH_STRING = re.compile(r"\s*(?P<version>[^\s#\r\n]+)")
+VERSION_MATCH_LIST = re.compile(r"(?P<version>\[[^\]]*\])")
+PACKAGE_MATCH = re.compile(r"\s*(?P<pkg>[^\s#\r\n]+)")
+
 
 @dataclass
 class DbtPackageTextFileLine:
@@ -34,14 +43,18 @@ class DbtPackageTextFileLine:
         """
         if not self.line_contains_version():
             return []
-        prefix_re = re.compile(r"^\s*(?:-\s*)?version:\s*")
-        m = prefix_re.match(self.line)
+        m = VERSION_PREFIX.match(self.line)
         if not m:
             return []
 
         rest = self.line[m.end() :]
+        if len(rest) == 0:
+            return []
+        if rest[0] == "[":  # version is a list
+            version_match = VERSION_MATCH_LIST.match(rest)
         # Extract version up to first whitespace, '#' or line ending
-        version_match = re.match(r"\s*(?P<version>[^\s#\r\n]+)", rest)
+        else:
+            version_match = VERSION_MATCH_STRING.match(rest)
         if not version_match:
             return []
         version = version_match.group("version")
@@ -65,14 +78,13 @@ class DbtPackageTextFileLine:
         """
         if not self.line_contains_package():
             return []
-        prefix_re = re.compile(r"^\s*(?:-\s*)?package:\s*")
-        m = prefix_re.match(self.line)
+        m = PACKAGE_PREFIX.match(self.line)
         if not m:
             return []
 
         rest = self.line[m.end() :]
         # Extract package id up to first whitespace, '#' or line ending
-        pkg_match = re.match(r"\s*(?P<pkg>[^\s#\r\n]+)", rest)
+        pkg_match = PACKAGE_MATCH.match(rest)
         if not pkg_match:
             return []
         pkg = pkg_match.group("pkg")
@@ -117,16 +129,13 @@ class DbtPackageTextFileLine:
         return True
 
     def line_contains_key(self) -> bool:
-        key_pattern: re.Pattern = re.compile(r"^\s*-")
-        return bool(key_pattern.match(self.line))
+        return bool(KEY_PATTERN.match(self.line))
 
     def line_contains_package(self) -> bool:
-        package_pattern: re.Pattern = re.compile(r"^\s*(?:-\s*)?package:")
-        return bool(package_pattern.match(self.line))
+        return bool(PACKAGE_PATTERN.match(self.line))
 
     def line_contains_version(self) -> bool:
-        version_pattern: re.Pattern = re.compile(r"^\s*(?:-\s*)?version:")
-        return bool(version_pattern.match(self.line))
+        return bool(VERSION_PATTERN.match(self.line))
 
 
 @dataclass
