@@ -23,7 +23,7 @@ def main():
             }
         )
     field_names = [field for field in package_summary[0]]
-    output_file = Path.cwd() / "dbt_autofix" / "packages" / "scripts" / "output" / "packages.csv"
+    output_file = Path.cwd() / "src" / "dbt_autofix" / "packages" / "scripts" / "output" / "packages.csv"
     with open(output_file, mode="w") as file:
         writer = csv.DictWriter(file, fieldnames=field_names)
         writer.writeheader()

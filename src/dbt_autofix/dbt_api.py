@@ -64,7 +64,6 @@ def job_steps_updated(job_dict: dict, behavior_change: bool) -> tuple[bool, List
 
     for i, step in enumerate(updated_steps):
         if isinstance(step, str):
-
             for update_step_fn in update_step_rules:
                 new_step = update_step_fn(step)
 
@@ -80,6 +79,7 @@ def step_regex_replace_m_with_s(step: str) -> str:
     step = re.sub(r"(\s)-m(\s)", r"\1-s\2", step)
     step = re.sub(r"(\s)--model[s]?(\s)", r"\1--select\2", step)
     return step
+
 
 def step_remove_source_freshness_output(step: str) -> str:
     """Remove --output in source freshness commands."""

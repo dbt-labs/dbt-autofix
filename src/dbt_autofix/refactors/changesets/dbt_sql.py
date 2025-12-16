@@ -15,66 +15,65 @@ CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DO
 def extract_config_macro(sql_content: str) -> Optional[str]:
     """
     Extract the {{ config(...) }} macro from SQL content.
-    
+
     This function properly handles nested Jinja expressions like:
     incremental_predicate="data_date = '{{ var('run_date') }}'"
-    
+
     Args:
         sql_content: The SQL content to search
-        
+
     Returns:
         The full config macro string, or None if not found
     """
     # Find the start of the config macro
-    start_pattern = re.search(r'\{\{\s*config\s*\(', sql_content)
+    start_pattern = re.search(r"\{\{\s*config\s*\(", sql_content)
     if not start_pattern:
         return None
-    
+
     start_pos = start_pattern.start()
     config_start = start_pattern.end()  # Position after "config("
-    
+
     # Track parentheses balance and string state
     paren_depth = 1  # We're already inside the opening "config("
     in_string = False
     string_char = None
     i = config_start
-    
+
     while i < len(sql_content) and paren_depth > 0:
         char = sql_content[i]
-        
+
         # Handle string boundaries
-        if char in ('"', "'") and (i == 0 or sql_content[i-1] != '\\'):
+        if char in ('"', "'") and (i == 0 or sql_content[i - 1] != "\\"):
             if not in_string:
                 in_string = True
                 string_char = char
             elif char == string_char:
                 in_string = False
                 string_char = None
-        
+
         # Track parentheses only when not in a string
         elif not in_string:
-            if char == '(':
+            if char == "(":
                 paren_depth += 1
-            elif char == ')':
+            elif char == ")":
                 paren_depth -= 1
-                
+
                 # If we're back to depth 0, check if this is followed by }}
                 if paren_depth == 0:
                     # Look for closing }}
-                    remaining = sql_content[i+1:i+10]
-                    close_match = re.match(r'\s*\}\}', remaining)
+                    remaining = sql_content[i + 1 : i + 10]
+                    close_match = re.match(r"\s*\}\}", remaining)
                     if close_match:
                         end_pos = i + 1 + close_match.end()
                         return sql_content[start_pos:end_pos]
                     else:
                         # This ) is not the end of config, continue
                         paren_depth = 1
-        
+
         i += 1
-    
+
     # If we get here, we didn't find a proper closing
     return None
-
 
 
 def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa: PLR0912
@@ -137,7 +136,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endmacro %}} near line {line_num}",
-                        deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION
+                        deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
                     )
                 )
             else:
@@ -158,8 +157,8 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endif %}} near line {line_num}",
-                        deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION
-                        )
+                        deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
+                    )
                 )
             else:
                 if_stack.pop()
@@ -178,7 +177,9 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     )
 
 
-def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs, node_type: str) -> SQLRuleRefactorResult:
+def refactor_custom_configs_to_meta_sql(
+    sql_content: str, schema_specs: SchemaSpecs, node_type: str
+) -> SQLRuleRefactorResult:
     """Move custom configs to meta in SQL files.
 
     Args:
@@ -194,21 +195,21 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
     config_macro_str = ""
     config_source_map: Dict[str, str] = {}
     original_sql_configs: Dict[str, Any] = {}
-    
+
     if "config(" in sql_content:
         # Extract the {{ config(...) }} part of sql_content using smart extraction
         # that handles nested Jinja expressions
         config_macro_str = extract_config_macro(sql_content) or ""
-        
+
         if config_macro_str:
             # Use static parsing to get source code (handles Jinja without rendering)
             original_statically_parsed_config = statically_parse_unrendered_config(config_macro_str) or {}
-            
+
             if original_statically_parsed_config:
                 # Use parsed config values as both data and source map
                 original_sql_configs = original_statically_parsed_config
                 config_source_map = original_statically_parsed_config.copy()
-    
+
     if not original_sql_configs:
         # No config found, return early
         return SQLRuleRefactorResult(
@@ -218,14 +219,14 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
             original_content=sql_content,
             deprecation_refactors=[],
         )
-    
+
     refactored_sql_configs = deepcopy(original_sql_configs)
 
     moved_to_meta = []
     renamed_configs = []
-    
+
     allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields
-    
+
     # Special casing snapshots because target_schema and target_database are renamed by another autofix rule
     if node_type == "snapshots":
         allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
@@ -244,7 +245,7 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
         elif sql_config_key not in allowed_config_fields:
             # Config key is not recognized - it's a custom config that should go in meta
             moved_to_meta.append(sql_config_key)
-            
+
             # Get or create meta dict
             if "meta" not in refactored_sql_configs:
                 meta_dict = {}
@@ -254,16 +255,16 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
                 if isinstance(existing_meta, str):
                     # It's a source code string like "{'key': 'value'}" - parse it
                     import ast
+
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)
-                        meta_dict = {k: repr(v) if not isinstance(v, str) else f"'{v}'" 
-                                   for k, v in parsed_meta.items()}
+                        meta_dict = {k: repr(v) if not isinstance(v, str) else f"'{v}'" for k, v in parsed_meta.items()}
                     except (ValueError, SyntaxError):
                         # Parsing failed, skip this meta (might contain Jinja)
                         meta_dict = {}
                 else:
                     meta_dict = existing_meta
-            
+
             # Add the custom config to meta
             meta_dict[sql_config_key] = sql_config_value
             refactored_sql_configs["meta"] = meta_dict
@@ -272,30 +273,30 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
     # Update {{ config(...) }} macro call with new configs if any were moved to meta or renamed
     refactored_content = None
     refactored = False
-    
+
     if refactored_sql_configs != original_sql_configs:
         refactored = True
-        
+
         # Generate deprecation refactors
         for renamed_config in renamed_configs:
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Config '{renamed_config}' is a common misspelling of '{COMMON_CONFIG_MISSPELLINGS[renamed_config]}', it has been renamed.",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                 )
             )
-        
+
         if moved_to_meta:
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to 'meta'",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                 )
             )
-        
+
         # Serialize the refactored config back to string
         new_config_str = _serialize_config_macro_call(refactored_sql_configs, config_source_map)
-        
+
         # Replace the config macro in the SQL content
         # Use extract_config_macro to find the exact location (handles nested Jinja)
         old_config = extract_config_macro(sql_content)
@@ -306,6 +307,7 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
             # Fallback to regex if extraction failed
             def replace_config(match):
                 return f"{{{{ config({new_config_str}\n) }}}}"
+
             refactored_content = CONFIG_MACRO_PATTERN.sub(replace_config, sql_content, count=1)
 
     return SQLRuleRefactorResult(
@@ -320,7 +322,7 @@ def refactor_custom_configs_to_meta_sql(sql_content: str, schema_specs: SchemaSp
 
 def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[Dict[str, str]] = None) -> str:
     """Serialize a config dictionary back to a config macro call string.
-    
+
     Args:
         config_dict: Dictionary of config keys and values
         config_source_map: Optional dictionary mapping config keys to their original source code strings.
@@ -328,9 +330,9 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
     """
     if config_source_map is None:
         config_source_map = {}
-    
-    if any('-' in k for k in config_dict):
-       return str(config_dict) 
+
+    if any("-" in k for k in config_dict):
+        return str(config_dict)
     else:
         items = []
         for k, v in config_dict.items():
@@ -344,7 +346,7 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
                         meta_v_str = config_source_map[meta_k]
                     elif isinstance(meta_v, str):
                         # Check for AST node string representations
-                        if meta_v.startswith(('Keyword', 'Call', 'Const', 'Name', 'List')):
+                        if meta_v.startswith(("Keyword", "Call", "Const", "Name", "List")):
                             raise ValueError(
                                 f"Failed to extract source code for meta key '{meta_k}'. "
                                 f"Got AST representation instead: {meta_v[:100]}... "
@@ -367,9 +369,12 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
                 # But convert simple string literals to double quotes to match expected format
                 source_value = config_source_map[k]
                 # Check if it's a simple quoted string (not a Jinja expression)
-                if (source_value.startswith("'") and source_value.endswith("'") or 
-                    source_value.startswith('"') and source_value.endswith('"')) and \
-                   not any(c in source_value for c in ['(', ')', '[', ']', '{', '}', '+', '-', '*', '/', '%']):
+                if (
+                    source_value.startswith("'")
+                    and source_value.endswith("'")
+                    or source_value.startswith('"')
+                    and source_value.endswith('"')
+                ) and not any(c in source_value for c in ["(", ")", "[", "]", "{", "}", "+", "-", "*", "/", "%"]):
                     # Simple string - convert to double quotes
                     # Extract the content between quotes
                     content = source_value[1:-1]
@@ -380,7 +385,7 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
             elif isinstance(v, str):
                 # Check if it's already a string representation of an AST node
                 # (starts with a class name like "Keyword" or "Call")
-                if v.startswith(('Keyword', 'Call', 'Const', 'Name', 'List')):
+                if v.startswith(("Keyword", "Call", "Const", "Name", "List")):
                     # This is an AST node string representation - this should never happen
                     # It indicates that source extraction failed in construct_static_kwarg_value
                     raise ValueError(
@@ -397,7 +402,9 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
         return ", ".join(items)
 
 
-def move_custom_config_access_to_meta_sql(sql_content: str, schema_specs: SchemaSpecs, node_type: str) -> SQLRuleRefactorResult:
+def move_custom_config_access_to_meta_sql(
+    sql_content: str, schema_specs: SchemaSpecs, node_type: str
+) -> SQLRuleRefactorResult:
     """Move custom config access to meta in SQL files.
 
     Args:
@@ -419,11 +426,9 @@ def move_custom_config_access_to_meta_sql(sql_content: str, schema_specs: Schema
             original_content=sql_content,
             deprecation_refactors=[],
         )
-    
+
     # Find all instances of config.get(<config-key>, <default>) or config.get(<config-key>)
-    pattern = re.compile(
-        r"config\.get\(\s*([\"'])(?P<key>.+?)\1\s*(?:,\s*(?P<default>[^)]+))?\)"
-    )
+    pattern = re.compile(r"config\.get\(\s*([\"'])(?P<key>.+?)\1\s*(?:,\s*(?P<default>[^)]+))?\)")
     # To safely replace multiple matches in a string, collect all replacements first,
     # then apply them in reverse order (from end to start) so indices remain valid.
     matches = list(pattern.finditer(refactored_content))
@@ -460,7 +465,7 @@ def move_custom_config_access_to_meta_sql(sql_content: str, schema_specs: Schema
             DbtDeprecationRefactor(
                 log=f'Refactored "{original}" to "{replacement}"',
                 # Core does not explicitly raise a deprecation for usage of config.get() in SQL files
-                deprecation=None
+                deprecation=None,
             )
         )
 
@@ -483,7 +488,7 @@ def rename_sql_file_names_with_spaces(sql_content: str, sql_file_path: Path):
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f"Renamed '{sql_file_path.name}' to '{new_file_path.name}'",
-                deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION
+                deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
             )
         )
 

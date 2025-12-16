@@ -9,18 +9,17 @@ from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes
 
 console = Console()
 
+
 @dataclass
 class DbtDeprecationRefactor:
     log: str
     deprecation: Optional[str] = None
 
     def to_dict(self) -> dict:
-        ret_dict = {
-            "deprecation": self.deprecation,
-            "log": self.log
-        }
+        ret_dict = {"deprecation": self.deprecation, "log": self.log}
 
         return ret_dict
+
 
 @dataclass
 class YMLRuleRefactorResult:
@@ -36,7 +35,9 @@ class YMLRuleRefactorResult:
 
     def to_dict(self) -> dict:
         ret_dict = {
-            "deprecation_refactors": [deprecation_refactor.to_dict() for deprecation_refactor in self.deprecation_refactors]
+            "deprecation_refactors": [
+                deprecation_refactor.to_dict() for deprecation_refactor in self.deprecation_refactors
+            ]
         }
         return ret_dict
 
@@ -135,7 +136,7 @@ class SQLRefactorResult:
             for refactor in self.refactors:
                 if refactor.refactored:
                     flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
-            
+
             flattened_warnings = []
             for refactor in self.refactors:
                 if refactor.refactor_warnings:

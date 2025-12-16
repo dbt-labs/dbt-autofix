@@ -6,7 +6,4 @@ COMMON_PROPERTY_MISSPELLINGS = {
 }
 
 # Used for schema.yml and SQL files - convert hyphen to underscore
-COMMON_CONFIG_MISSPELLINGS = {
-    "post-hook": "post_hook",
-    "pre-hook": "pre_hook"
-}
+COMMON_CONFIG_MISSPELLINGS = {"post-hook": "post_hook", "pre-hook": "pre_hook"}

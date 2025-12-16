@@ -33,7 +33,7 @@ def test_check_renames(old_package_id, new_package_id):
         ("dbt-labs/dbt_project_evaluator", "=0.9.0", False),
         ("dbt-labs/dbt_project_evaluator", "=1.0.0", False),
         ("dbt-labs/dbt_project_evaluator", "=1.1.0", False),
-        ("dbt-labs/dbt_project_evaluator", "=1.1.1", True),
+        ("dbt-labs/dbt_project_evaluator", "=1.1.1", False),
         ("dbt-labs/dbt_project_evaluator", "=1.1.2", True),
     ],
 )

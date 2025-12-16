@@ -297,17 +297,18 @@ def _maybe_merge_conversion_metric_with_model(
 
     return refactored, refactor_logs, moved_to_model
 
+
 def get_metric_input_dict(metric: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
     if isinstance(metric, str):
         return {"name": metric}
     return metric
 
+
 def change_metrics_to_input_metrics(metric: Dict[str, Any]) -> None:
     """Currently only used for derived metrics."""
     if "metrics" in metric:
-        metric["input_metrics"] = [
-            get_metric_input_dict(input_metric) for input_metric in metric.pop("metrics", [])
-        ]
+        metric["input_metrics"] = [get_metric_input_dict(input_metric) for input_metric in metric.pop("metrics", [])]
+
 
 def _get_metric_from_model_or_top_level(
     metric_name: str,
@@ -315,16 +316,20 @@ def _get_metric_from_model_or_top_level(
     semantic_definitions: SemanticDefinitions,
 ) -> Optional[Dict[str, Any]]:
     """Returns the metric from the model if possible, else falls back to initial top-level metrics."""
-    metric_from_model = next((metric for metric in model_node.get("metrics", []) if metric["name"] == metric_name), None)
+    metric_from_model = next(
+        (metric for metric in model_node.get("metrics", []) if metric["name"] == metric_name), None
+    )
     if metric_from_model:
         return metric_from_model
     return semantic_definitions.initial_metrics.get(metric_name)
+
 
 def _get_metric_name_from_metric_input(metric_input: Union[str, Dict[str, Any]]) -> str:
     if isinstance(metric_input, str):
         return metric_input
     # should be a dict then
     return metric_input["name"]
+
 
 def try_to_merge_complex_metric_with_model_recursive(
     metric: Dict[str, Any],
@@ -346,7 +351,7 @@ def try_to_merge_complex_metric_with_model_recursive(
     # if a cumulative metric, call that function
     if metric["type"] == "cumulative":
         metric_refactored, metric_refactor_logs, moved_to_model = _maybe_merge_cumulative_metric_with_model(
-            metric, 
+            metric,
             model_node,
             semantic_model,
             semantic_definitions,
@@ -372,17 +377,17 @@ def try_to_merge_complex_metric_with_model_recursive(
         input_metric_names: List[str] = []
         for input_metric in metric.get("type_params", {}).get("metrics", []):
             input_metric_names.append(_get_metric_name_from_metric_input(input_metric))
-        
+
         moved_to_model = True
         for input_metric_name in input_metric_names:
             input_metric = _get_metric_from_model_or_top_level(input_metric_name, model_node, semantic_definitions)
             if not input_metric:
                 # we can't merge the derived metric.  Let's just bail.
-                # (We don't need to recurse here; every metric will be iterated over.  We only recurse so we know 
+                # (We don't need to recurse here; every metric will be iterated over.  We only recurse so we know
                 # whether or not we can merge this metric, and that's answered now.)
                 moved_to_model = False
                 break
-                
+
             sub_refactored, sub_refactor_logs, sub_moved_to_model = try_to_merge_complex_metric_with_model_recursive(
                 input_metric,
                 model_node,
@@ -405,9 +410,9 @@ def try_to_merge_complex_metric_with_model_recursive(
             semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
             refactored = True
             refactor_logs.append(f"Added derived metric '{metric_name}' with to model '{model_node['name']}'.")
-        
+
         return refactored, refactor_logs, moved_to_model
-    
+
     if metric["type"] == "ratio":
         moved_to_model = False
         numerator_name = _get_metric_name_from_metric_input(metric.get("type_params", {}).get("numerator"))
@@ -416,20 +421,24 @@ def try_to_merge_complex_metric_with_model_recursive(
         denominator_metric = _get_metric_from_model_or_top_level(denominator_name, model_node, semantic_definitions)
         if not numerator_metric or not denominator_metric:
             # we can't merge the ratio metric.  Let's just bail.
-            # (We don't need to recurse here; every metric will be iterated over.  We only recurse so we know 
+            # (We don't need to recurse here; every metric will be iterated over.  We only recurse so we know
             # whether or not we can merge this metric, and that's answered now.)
             return refactored, refactor_logs, False
-        numerator_refactored, numerator_refactor_logs, numerator_moved_to_model = try_to_merge_complex_metric_with_model_recursive(
-            numerator_metric,
-            model_node,
-            semantic_model,
-            semantic_definitions,
+        numerator_refactored, numerator_refactor_logs, numerator_moved_to_model = (
+            try_to_merge_complex_metric_with_model_recursive(
+                numerator_metric,
+                model_node,
+                semantic_model,
+                semantic_definitions,
+            )
         )
-        denominator_refactored, denominator_refactor_logs, denominator_moved_to_model = try_to_merge_complex_metric_with_model_recursive(
-            denominator_metric,
-            model_node,
-            semantic_model,
-            semantic_definitions,
+        denominator_refactored, denominator_refactor_logs, denominator_moved_to_model = (
+            try_to_merge_complex_metric_with_model_recursive(
+                denominator_metric,
+                model_node,
+                semantic_model,
+                semantic_definitions,
+            )
         )
         refactored = refactored or numerator_refactored or denominator_refactored
         refactor_logs.extend(numerator_refactor_logs)
@@ -448,6 +457,7 @@ def try_to_merge_complex_metric_with_model_recursive(
         return refactored, refactor_logs, moved_to_model
 
     raise ValueError(f"Unknown metric type: {metric['type']}")
+
 
 def merge_complex_metrics_with_model(
     model_node: Dict[str, Any],
@@ -470,7 +480,7 @@ def merge_complex_metrics_with_model(
         # No need to further merge metrics that have already been merged
         if metric_name in semantic_definitions.merged_metrics:
             continue
-    
+
         metric_refactored, metric_refactor_logs, _is_on_model = try_to_merge_complex_metric_with_model_recursive(
             metric,
             model_node,
@@ -773,10 +783,12 @@ def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[
         elif not any(char in entity_col_name for char in (" ", "|", "(")):
             if not node.get("columns"):
                 node["columns"] = []
-            node["columns"].append({
-                "name": entity_col_name,
-                "entity": make_entity_dict(),
-            })
+            node["columns"].append(
+                {
+                    "name": entity_col_name,
+                    "entity": make_entity_dict(),
+                }
+            )
             logs.append(f"Added new column '{entity_col_name}' with '{entity['type']}' entity.")
         # Create entity as derived semantic entity
         else:
@@ -806,10 +818,10 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
         dimension_col_name = dimension.get("expr") or dimension["name"]
         dim_name = dimension["name"]
         dim_expr = dimension.get("expr")
-        
+
         def is_valid_name(name: str) -> bool:
             return not any(char in name for char in (" ", "|", "("))
-        
+
         dimension_time_granularity = dimension.get("type_params", {}).get("time_granularity")
 
         def get_mergeable_dimension_fields() -> Dict[str, Any]:
@@ -824,7 +836,7 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
             if dimension_time_granularity:
                 column_fields["granularity"] = dimension_time_granularity
             return column_fields
-        
+
         # Add dimension to column if column already exists
         if dimension_col_name in model_node_columns:
             model_node_columns[dimension_col_name].update(get_mergeable_dimension_fields())
@@ -846,7 +858,7 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
                 model_node["derived_semantics"] = {"entities": []}
             if "dimensions" not in model_node["derived_semantics"]:
                 model_node["derived_semantics"]["dimensions"] = []
-            
+
             new_dim = {
                 "name": dim_name,
                 "type": dimension["type"],

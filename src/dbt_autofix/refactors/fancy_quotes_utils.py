@@ -17,6 +17,6 @@ def restore_fancy_quotes(yml_str: str) -> str:
     Returns:
         The YAML string with fancy quotes restored
     """
-    restored = yml_str.replace(FANCY_LEFT_PLACEHOLDER, '\u201c')
-    restored = restored.replace(FANCY_RIGHT_PLACEHOLDER, '\u201d')
+    restored = yml_str.replace(FANCY_LEFT_PLACEHOLDER, "\u201c")
+    restored = restored.replace(FANCY_RIGHT_PLACEHOLDER, "\u201d")
     return restored

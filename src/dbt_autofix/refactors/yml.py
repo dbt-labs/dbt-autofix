@@ -13,6 +13,7 @@ rules:
 
 yaml_config = yamllint.config.YamlLintConfig(config)
 
+
 class DbtYAML(YAML):
     """dbt-compatible YAML class."""
 

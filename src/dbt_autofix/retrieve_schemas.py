@@ -29,14 +29,18 @@ class DbtProjectSpecs:
 class SchemaSpecs:
     def __init__(self, version: Optional[str] = None, disable_ssl_verification: bool = False):
         self.disable_ssl_verification = disable_ssl_verification
-        self.yaml_specs_per_node_type, self.dbtproject_specs_per_node_type, self.valid_top_level_yaml_fields = self._get_specs(version)
+        self.yaml_specs_per_node_type, self.dbtproject_specs_per_node_type, self.valid_top_level_yaml_fields = (
+            self._get_specs(version)
+        )
         self.owner_properties = ["name", "email"]
         self.nodes_with_owner = ["groups", "exposures"]
         # Cache dict config analysis
         self._dict_config_cache = None
         self._schema_version = version
 
-    def _get_specs(self, version: Optional[str] = None) -> tuple[dict[str, YAMLSpecs], dict[str, DbtProjectSpecs], list[str]]:
+    def _get_specs(
+        self, version: Optional[str] = None
+    ) -> tuple[dict[str, YAMLSpecs], dict[str, DbtProjectSpecs], list[str]]:
         if os.getenv("DEBUG"):
             logging.basicConfig(level=logging.INFO)
 
@@ -55,12 +59,17 @@ class SchemaSpecs:
             "sources": ["dataset", "project", "data_space"],
         }
 
-        node_type_to_config_key_aliases_with_plus = {node_type: [f"+{alias}" for alias in aliases] for node_type, aliases in node_type_to_config_key_aliases.items()}
+        node_type_to_config_key_aliases_with_plus = {
+            node_type: [f"+{alias}" for alias in aliases]
+            for node_type, aliases in node_type_to_config_key_aliases.items()
+        }
 
         # "models"
         model_property_field_name, model_config_field_name = self._get_yml_schema_fields(yml_schema, "models")
         yaml_specs_models = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][model_config_field_name]["properties"]).union(node_type_to_config_key_aliases["models"]),
+            allowed_config_fields=set(yml_schema["definitions"][model_config_field_name]["properties"]).union(
+                node_type_to_config_key_aliases["models"]
+            ),
             allowed_properties=set(yml_schema["definitions"][model_property_field_name]["properties"]),
         )
         model_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "models")
@@ -74,7 +83,9 @@ class SchemaSpecs:
         source_property_field_name, source_config_field_name = self._get_yml_schema_fields(yml_schema, "sources")
         yaml_specs_sources = YAMLSpecs(
             allowed_config_fields=set(yml_schema["definitions"][source_config_field_name]["properties"]),
-            allowed_properties=set(yml_schema["definitions"][source_property_field_name]["properties"]).union(node_type_to_config_key_aliases["sources"]),
+            allowed_properties=set(yml_schema["definitions"][source_property_field_name]["properties"]).union(
+                node_type_to_config_key_aliases["sources"]
+            ),
         )
         source_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "sources")
         dbtproject_specs_sources = DbtProjectSpecs(
@@ -86,7 +97,9 @@ class SchemaSpecs:
         # "snapshots"
         snapshot_property_field_name, snapshot_config_field_name = self._get_yml_schema_fields(yml_schema, "snapshots")
         yaml_specs_snapshots = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][snapshot_config_field_name]["properties"]).union(node_type_to_config_key_aliases["snapshots"]),
+            allowed_config_fields=set(yml_schema["definitions"][snapshot_config_field_name]["properties"]).union(
+                node_type_to_config_key_aliases["snapshots"]
+            ),
             allowed_properties=set(yml_schema["definitions"][snapshot_property_field_name]["properties"]),
         )
         snapshot_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "snapshots")
@@ -99,7 +112,9 @@ class SchemaSpecs:
         # "seeds"
         seed_property_field_name, seed_config_field_name = self._get_yml_schema_fields(yml_schema, "seeds")
         yaml_specs_seeds = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][seed_config_field_name]["properties"]).union(node_type_to_config_key_aliases["seeds"]),
+            allowed_config_fields=set(yml_schema["definitions"][seed_config_field_name]["properties"]).union(
+                node_type_to_config_key_aliases["seeds"]
+            ),
             allowed_properties=set(yml_schema["definitions"][seed_property_field_name]["properties"]),
         )
         seed_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "seeds")
@@ -115,9 +130,7 @@ class SchemaSpecs:
             allowed_config_fields=set(yml_schema["definitions"][exposure_config_field_name]["properties"]),
             allowed_properties=set(yml_schema["definitions"][exposure_property_field_name]["properties"]),
         )
-        exposure_property_field_name_dbt_project = self._get_dbt_project_schema_fields(
-            dbt_project_schema, "exposures"
-        )
+        exposure_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "exposures")
         dbtproject_specs_exposures = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][exposure_property_field_name_dbt_project]["properties"]
@@ -145,7 +158,9 @@ class SchemaSpecs:
         # "tests" or "data_tests"
         test_property_field_name, test_config_field_name = self._get_yml_schema_fields(yml_schema, "tests")
         yaml_specs_tests = YAMLSpecs(
-            allowed_config_fields=set(yml_schema["definitions"][test_config_field_name]["properties"]).union(node_type_to_config_key_aliases["tests"]),
+            allowed_config_fields=set(yml_schema["definitions"][test_config_field_name]["properties"]).union(
+                node_type_to_config_key_aliases["tests"]
+            ),
             allowed_properties=set(yml_schema["definitions"][test_property_field_name]["properties"]),
         )
         test_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "tests")
@@ -170,12 +185,16 @@ class SchemaSpecs:
         )
 
         # "unit_tests"
-        unit_tests_property_field_name, unit_tests_config_field_name = self._get_yml_schema_fields(yml_schema, "unit_tests")
+        unit_tests_property_field_name, unit_tests_config_field_name = self._get_yml_schema_fields(
+            yml_schema, "unit_tests"
+        )
         yaml_specs_unit_tests = YAMLSpecs(
             allowed_config_fields=set(yml_schema["definitions"][unit_tests_config_field_name]["properties"]),
             allowed_properties=set(yml_schema["definitions"][unit_tests_property_field_name]["properties"]),
         )
-        unit_tests_property_field_name_dbt_project = self._get_dbt_project_schema_fields(dbt_project_schema, "unit_tests")
+        unit_tests_property_field_name_dbt_project = self._get_dbt_project_schema_fields(
+            dbt_project_schema, "unit_tests"
+        )
         dbtproject_specs_unit_tests = DbtProjectSpecs(
             allowed_config_fields_dbt_project_with_plus=set(
                 dbt_project_schema["definitions"][unit_tests_property_field_name_dbt_project]["properties"]
@@ -208,7 +227,7 @@ class SchemaSpecs:
                 "exposures": dbtproject_specs_exposures,
                 "unit-tests": dbtproject_specs_unit_tests,
             },
-            valid_top_level_yaml_fields
+            valid_top_level_yaml_fields,
         )
 
     def _get_yml_schema_fields(self, yml_schema: dict, node_type: str) -> tuple[str, str]:
@@ -289,10 +308,7 @@ class SchemaSpecs:
                                                     open_ended.add(config_name)
                                         break
 
-            self._dict_config_cache = {
-                "specific_properties": specific_properties,
-                "open_ended": open_ended
-            }
+            self._dict_config_cache = {"specific_properties": specific_properties, "open_ended": open_ended}
 
         return self._dict_config_cache
 

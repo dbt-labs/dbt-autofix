@@ -3,7 +3,7 @@ from enum import Enum
 
 class DeprecationType(str, Enum):
     """String enum for deprecation types used in DbtDeprecationRefactor."""
-    
+
     UNEXPECTED_JINJA_BLOCK_DEPRECATION = "UnexpectedJinjaBlockDeprecation"
     RESOURCE_NAMES_WITH_SPACES_DEPRECATION = "ResourceNamesWithSpacesDeprecation"
     PROPERTY_MOVED_TO_CONFIG_DEPRECATION = "PropertyMovedToConfigDeprecation"
