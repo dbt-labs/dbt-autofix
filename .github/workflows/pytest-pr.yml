@@ -28,3 +28,17 @@ jobs:
 
       - run: uv sync --all-extras --all-packages 
       - run: uv run pytest
+
+  format:
+    name: ruff format
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.9"
+          enable-cache: true
+          cache-suffix: format
+      - run: uv tool run ruff format --check --diff . --config pyproject.toml
