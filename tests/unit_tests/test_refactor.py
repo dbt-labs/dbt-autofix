@@ -410,7 +410,7 @@ class TestUnmatchedEndingsRemoval:
 
     def test_malformed_jinja_comments(self):
         """Test that malformed Jinja comments don't cause false positives."""
-        
+
         # Properly commented block - should not be modified
         sql_content = """{# if not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(model.database, model.schema) %}
@@ -418,7 +418,7 @@ class TestUnmatchedEndingsRemoval:
         result = remove_unmatched_endings(sql_content)
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
-        
+
         # Malformed comment with {#% ... %#} - should not be modified
         sql_content = """{#% if not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(model.database, model.schema) %}
@@ -426,7 +426,7 @@ class TestUnmatchedEndingsRemoval:
         result = remove_unmatched_endings(sql_content)
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
-        
+
         # Malformed comment with {#% ... %} (opening malformed, closing standard)
         # The {#% opening indicates intent to comment, so tags inside should be preserved
         sql_content = """{#% if not adapter.check_schema_exists(model.database, model.schema) %}
@@ -435,7 +435,7 @@ class TestUnmatchedEndingsRemoval:
         result = remove_unmatched_endings(sql_content)
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
-        
+
         # Mixed - unclosed {# before an endif means it's likely commented out
         sql_content = """{# commented out:
   {% if True %}

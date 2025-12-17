@@ -10,6 +10,7 @@ from dbt_autofix.fields_properties_configs import models_allowed_config
 
 class MockSchemaSpecs:
     """Mock schema specs for testing."""
+
     def __init__(self):
         self.yaml_specs_per_node_type = {
             "models": models_allowed_config,
@@ -40,9 +41,7 @@ SELECT
     '{{ config.get('materialized') }}' as mat
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -63,9 +62,7 @@ SELECT
     '{{ config.meta_get('another_key', var('my_var')) }}' as another
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -84,9 +81,7 @@ def test_config_require_refactor():
 {% set mat = config.require('materialized') %}
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -103,9 +98,7 @@ def test_config_with_validator():
 {%- set file_format = config.meta_get('custom_format', validator=validation.any[basestring]) -%}
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -123,9 +116,7 @@ def test_variable_shadowing_detection():
     # Expected to remain unchanged due to shadowing
     expected_sql = input_sql
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert not result.refactored
     assert result.refactored_content == expected_sql
@@ -145,9 +136,7 @@ def test_chained_access_warning():
 {% set another = config.meta_get('custom_dict').get('key', 'default') %}
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -169,9 +158,7 @@ def test_mixed_quotes():
 {{ config.meta_get(  "custom_key3"  ) }}
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -192,9 +179,7 @@ def test_complex_defaults():
 {{ config.meta_get('custom_none', none) }}
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -213,9 +198,7 @@ def test_no_refactor_for_dbt_configs():
     # Expected to remain unchanged as these are dbt-native configs
     expected_sql = input_sql
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert not result.refactored
     assert result.refactored_content == expected_sql
@@ -238,9 +221,7 @@ def test_multiline_config_calls():
 ) }}
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql
@@ -265,9 +246,7 @@ def test_config_get_with_named_default_parameter():
 {{ config.meta_get('custom_config', default=dest_columns | map(attribute="quoted") | list) }}
 """
 
-    result = move_custom_config_access_to_meta_sql_improved(
-        input_sql, MockSchemaSpecs(), "models"
-    )
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
 
     assert result.refactored
     assert result.refactored_content == expected_sql

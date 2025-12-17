@@ -111,37 +111,37 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
             if start <= pos < end:
                 return True
         return False
-    
+
     def looks_like_commented_out_code(pos: int) -> bool:
         """
         Check if a tag at the given position looks like it's part of commented-out code.
-        
+
         This handles malformed comment syntax like:
         - {#% if ... %} where %} should have been #}
         - Multi-line blocks where the opening has {# but the close tag doesn't
-        
+
         Strategy: Look backwards from the tag position to find any unclosed {#
         that hasn't been properly closed with #}. This indicates the tag might
         be inside a malformed comment block.
         """
         # Look at content before this position
         content_before = sql_content[:pos]
-        
+
         # Find all {# openings and #} closings before this position
-        # We'll track whether there's an unclosed {# 
+        # We'll track whether there's an unclosed {#
         comment_depth = 0
         i = 0
         while i < len(content_before):
-            if content_before[i:i+2] == '{#':
+            if content_before[i : i + 2] == "{#":
                 comment_depth += 1
                 i += 2
-            elif content_before[i:i+2] == '#}':
+            elif content_before[i : i + 2] == "#}":
                 if comment_depth > 0:
                     comment_depth -= 1
                 i += 2
             else:
                 i += 1
-        
+
         # If comment_depth > 0, there's an unclosed {# before this position
         # which means this tag might be inside a malformed comment
         return comment_depth > 0

@@ -17,12 +17,12 @@ CONFIG_ALIAS_PATTERN = re.compile(r"{%\s*set\s+\w+\s*=\s*config\s*%}")
 # - Optional default parameter
 # - Optional validator parameter
 CONFIG_ACCESS_PATTERN = re.compile(
-    r"config\.(get|require)\s*\("     # config.get( or config.require(
-    r"(?P<pre_ws>\s*)"                 # whitespace before the key
+    r"config\.(get|require)\s*\("  # config.get( or config.require(
+    r"(?P<pre_ws>\s*)"  # whitespace before the key
     r"(?P<quote>[\"'])(?P<key>[^\"']+)(?P=quote)"  # quoted key with captured quote style
-    r"(?P<rest>.*?)"                   # rest of the call including args and whitespace
-    r"\)",                             # closing paren
-    re.DOTALL
+    r"(?P<rest>.*?)"  # rest of the call including args and whitespace
+    r"\)",  # closing paren
+    re.DOTALL,
 )
 
 # Pattern to detect chained config access
@@ -113,7 +113,7 @@ def move_custom_config_access_to_meta_sql_improved(
                 log=f'Refactored "{original}" to "{replacement}"',
                 # Use the existing deprecation type (assuming it exists)
                 # If not, this would need to be added to the DeprecationType enum
-                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
             )
         )
 
