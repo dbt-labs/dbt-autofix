@@ -5,7 +5,10 @@ from dbt_fusion_package_tools.dbt_package_version import (
     DbtPackageVersion,
 )
 from dbt_fusion_package_tools.manual_overrides import EXPLICIT_DISALLOW_ALL_VERSIONS, EXPLICIT_ALLOW_ALL_VERSIONS
-from dbt_fusion_package_tools.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
+from dbt_fusion_package_tools.upgrade_status import (
+    PackageVersionFusionCompatibilityState,
+    PackageFusionCompatibilityState,
+)
 from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 from dbt_fusion_package_tools.version_utils import (
     construct_version_list_from_raw,

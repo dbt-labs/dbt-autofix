@@ -14,7 +14,9 @@ console = Console()
 error_console = Console(stderr=True)
 
 
-def checkout_repo_and_run_conformance(github_organization: str, github_repo_name: str, package_name: str, limit: int=0):
+def checkout_repo_and_run_conformance(
+    github_organization: str, github_repo_name: str, package_name: str, limit: int = 0
+):
     with TemporaryDirectory() as tmpdir:
         print(f"writing to {tmpdir}")
         repo = DbtPackageRepo(

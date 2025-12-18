@@ -5,7 +5,10 @@ from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dataclasses import dataclass, field
 from pathlib import Path
 from rich.console import Console
-from dbt_fusion_package_tools.upgrade_status import PackageVersionFusionCompatibilityState, PackageFusionCompatibilityState
+from dbt_fusion_package_tools.upgrade_status import (
+    PackageVersionFusionCompatibilityState,
+    PackageFusionCompatibilityState,
+)
 from dbt_autofix.refactors.yml import read_file
 from dbt_fusion_package_tools.version_utils import Matchers
 

@@ -10,6 +10,7 @@ from git.exc import GitCommandError
 from dbt_fusion_package_tools.exceptions import GitOperationError
 from tempfile import TemporaryDirectory
 
+
 @dataclass
 class DbtPackageRepo:
     repo_name: Optional[str] = None
@@ -18,11 +19,11 @@ class DbtPackageRepo:
     github_repo_name: Optional[str] = None
     git_repo: Repo = field(init=False)
     local_path: Optional[PathLike] = None
-    overwrite_local_path: bool=False
+    overwrite_local_path: bool = False
 
     def __post_init__(self):
         # set repo name
-        if not self.repo_name: 
+        if not self.repo_name:
             if self.github_repo_name:
                 self.repo_name = self.github_repo_name
             else:
@@ -55,13 +56,13 @@ class DbtPackageRepo:
 
     def _check_if_directory_contains_repo(self, path: Optional[PathLike]):
         return path and is_git_dir(path)
-    
+
     def git_url(self, path: PathLike) -> str:
         if str(path)[-4:] == ".git":
             return str(path)
         else:
             return str(path) + str(".git")
-        
+
     def _check_dir_and_create_if_needed(self, path: PathLike) -> bool:
         exists = Path(path).exists()
         is_dir = Path(path).is_dir()
@@ -70,17 +71,17 @@ class DbtPackageRepo:
             return False
         # if overwriting, delete contents
         elif exists and is_dir and self.overwrite_local_path:
-                try:
-                    shutil.rmtree(Path(path))
-                except:
-                    return False
+            try:
+                shutil.rmtree(Path(path))
+            except:
+                return False
         # now create directory (or leave alone if exists)
         try:
             Path(path).mkdir(exist_ok=True)
             return True
         except:
             return False
-            
+
     def _clone_repo(self):
         """Clone down a github repo to a path and a reference to that directory"""
         if not self.local_path or not self.git_clone_url:
@@ -101,43 +102,43 @@ class DbtPackageRepo:
             raise GitOperationError(f"File system error cloning {self.git_clone_url}: {str(e)}")
         except Exception as e:
             raise GitOperationError(f"Unexpected error cloning {self.git_clone_url}: {str(e)}")
-    
+
     def github_repo_url(self) -> Optional[str]:
         if self.github_organization and self.github_repo_name:
             return f"https://github.com/{self.github_organization}/{self.github_repo_name}"
-    
+
     def get_tags(self) -> IterableList[TagReference]:
         return self.git_repo.tags
-    
-    def checkout_branch_name(self, branch_name: str, stash_changes: bool=False) -> bool:
+
+    def checkout_branch_name(self, branch_name: str, stash_changes: bool = False) -> bool:
         if stash_changes:
             try:
                 self.git_repo.git.stash("--all")
             except:
-                pass # okay if we don't stash
+                pass  # okay if we don't stash
         try:
-            branch  = self.git_repo.heads[branch_name]
+            branch = self.git_repo.heads[branch_name]
             branch.checkout(force=stash_changes)
             assert self.git_repo.active_branch == branch
             return True
         except Exception as e:
             raise GitOperationError(f"Could not check out {branch_name}: {e}")
-        
-    def checkout_tag(self, tag: TagReference, stash_changes: bool=False) -> bool:
+
+    def checkout_tag(self, tag: TagReference, stash_changes: bool = False) -> bool:
         if stash_changes:
             try:
                 self.git_repo.git.stash("--all")
             except:
-                pass # okay if we don't stash
+                pass  # okay if we don't stash
         try:
             self.git_repo.head.reference = tag.commit
             return True
         except Exception as e:
-            raise GitOperationError(f"Could not check out {tag.name}: {e}")   
-        
-    def checkout_tag_name(self, tag_name: str, stash_changes: bool=False) -> bool:
+            raise GitOperationError(f"Could not check out {tag.name}: {e}")
+
+    def checkout_tag_name(self, tag_name: str, stash_changes: bool = False) -> bool:
         try:
             tag = self.git_repo.tag(tag_name)
             return self.checkout_tag(tag, stash_changes)
         except Exception as e:
-            raise GitOperationError(f"Could not check out {tag_name}: {e}")      
+            raise GitOperationError(f"Could not check out {tag_name}: {e}")
