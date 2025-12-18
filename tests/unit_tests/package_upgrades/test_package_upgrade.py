@@ -9,9 +9,9 @@ from dbt_autofix.package_upgrade import (
     generate_package_dependencies,
     upgrade_package_versions,
 )
-from dbt_autofix.packages.upgrade_status import PackageFusionCompatibilityState, PackageVersionUpgradeType
+from dbt_fusion_package_tools.upgrade_status import PackageFusionCompatibilityState, PackageVersionUpgradeType
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_autofix.packages.upgrade_status import PackageVersionFusionCompatibilityState
+from dbt_fusion_package_tools.upgrade_status import PackageVersionFusionCompatibilityState
 
 
 PROJECT_WITH_PACKAGES_PATH = Path("tests/integration_tests/package_upgrades/mixed_versions")

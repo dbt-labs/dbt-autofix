@@ -4,7 +4,7 @@ import re
 from typing import Any, Optional
 from rich.console import Console
 
-from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 
 console = Console()
 error_console = Console(stderr=True)

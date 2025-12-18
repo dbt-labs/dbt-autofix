@@ -209,7 +209,7 @@ def main():
     file_count_limit = 0
     results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
     print(f"Downloaded {len(results)} packages from hub.getdbt.com")
-    output_path: Path = Path.cwd() / "src" / "dbt_autofix" / "packages" / "scripts" / "output"
+    output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
     write_dict_to_json(results, output_path)
     print(f"Output written to {output_path / 'package_output.json'}")
     reload_packages = reload_packages_from_file(output_path / "package_output.json")

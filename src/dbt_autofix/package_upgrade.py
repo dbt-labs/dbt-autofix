@@ -14,12 +14,12 @@ from dbt_autofix.packages.dbt_package_file import (
     parse_package_dependencies_from_packages_yml,
 )
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
+from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
 from dbt_fusion_package_tools.version_utils import VersionSpecifier, Matchers, VersionRange
 
-from dbt_autofix.packages.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
-from dbt_autofix.packages.upgrade_status import (
+from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
+from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
     PackageVersionUpgradeType,
     PackageVersionFusionCompatibilityState,

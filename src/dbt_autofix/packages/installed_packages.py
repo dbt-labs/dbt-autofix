@@ -4,7 +4,7 @@ from typing import Any, Optional, Union
 from rich.console import Console
 import yaml
 
-from dbt_autofix.packages.dbt_package_version import DbtPackageVersion
+from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbt_autofix.refactors.yml import read_file
 
 console = Console()

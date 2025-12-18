@@ -1,7 +1,7 @@
 import csv
 from pathlib import Path
 from typing import Any
-from dbt_autofix.packages.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
             }
         )
     field_names = [field for field in package_summary[0]]
-    output_file = Path.cwd() / "src" / "dbt_autofix" / "packages" / "scripts" / "output" / "packages.csv"
+    output_file = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output" / "packages.csv"
     with open(output_file, mode="w") as file:
         writer = csv.DictWriter(file, fieldnames=field_names)
         writer.writeheader()

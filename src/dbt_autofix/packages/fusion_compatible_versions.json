@@ -1,7 +1,0 @@
-{ 
-   "my_package": {
-            "min_upgradeable": "1.0.0",
-            "max_upgradeable": "1.1.0",
-            "lowest_fusion_compatible_version": "1.2.0"
-   }
-}

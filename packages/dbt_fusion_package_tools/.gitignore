@@ -1,0 +1,25 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.nox
+venv
+
+# IDE files
+.vscode/launch.json
+.vscode/settings.json
+
+# special files
+config_resources.csv
+project2/*
+
+.DS_Store
+
+# raw package hub output (because big)
+src/dbt_fusion_package_tools/scripts/output/*
