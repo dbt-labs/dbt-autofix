@@ -1,6 +1,7 @@
 import csv
 from pathlib import Path
 from typing import Any
+
 from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
 
 

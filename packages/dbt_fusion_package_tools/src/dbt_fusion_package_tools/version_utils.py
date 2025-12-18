@@ -1,11 +1,11 @@
-from typing import Any, Optional, Union
-from dataclasses import dataclass
 import re
-from typing import Any, Iterable, List, Union
+from dataclasses import dataclass
 from enum import Enum
-from dbt_fusion_package_tools.exceptions import SemverError, VersionsNotCompatibleError
+from typing import Any, Iterable, List, Optional, Union
+
 from mashumaro import DataClassDictMixin
-from typing import Optional
+
+from dbt_fusion_package_tools.exceptions import SemverError, VersionsNotCompatibleError
 
 
 class Matchers(str, Enum):
@@ -143,11 +143,10 @@ class VersionSpecifier(VersionSpecification):
                     return prcmp
                 # else is equal and will fall through
 
-            else:  # major/minor/patch, should all be numbers
-                if int(a) > int(b):
-                    return 1
-                elif int(a) < int(b):
-                    return -1
+            elif int(a) > int(b):
+                return 1
+            elif int(a) < int(b):
+                return -1
                 # else is equal and will fall through
 
         equal = (self.matcher == Matchers.GREATER_THAN_OR_EQUAL and other.matcher == Matchers.LESS_THAN_OR_EQUAL) or (
@@ -223,8 +222,7 @@ class VersionSpecifier(VersionSpecification):
             cmp_result = cmp_prerelease_tag(sub_a, sub_b)  # type: ignore
             if cmp_result != 0:
                 return cmp_result
-        else:
-            return _cmp(len(a), len(b))
+        return _cmp(len(a), len(b))
 
 
 @dataclass

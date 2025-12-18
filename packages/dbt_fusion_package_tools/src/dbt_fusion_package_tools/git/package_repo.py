@@ -1,14 +1,14 @@
-from dataclasses import dataclass, field
-import logging
-from pathlib import Path
 import shutil
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
-from git import Repo, PathLike, TagReference
-from git.util import IterableList
-from git.repo.fun import is_git_dir
+
+from git import PathLike, Repo, TagReference
 from git.exc import GitCommandError
+from git.repo.fun import is_git_dir
+from git.util import IterableList
+
 from dbt_fusion_package_tools.exceptions import GitOperationError
-from tempfile import TemporaryDirectory
 
 
 @dataclass
@@ -97,11 +97,11 @@ class DbtPackageRepo:
             elif "Permission denied" in str(e):
                 raise GitOperationError(f"Permission denied for repository: {self.git_clone_url}")
             else:
-                raise GitOperationError(f"Git command failed for {self.git_clone_url}: {str(e)}")
+                raise GitOperationError(f"Git command failed for {self.git_clone_url}: {e!s}")
         except (OSError, IOError) as e:
-            raise GitOperationError(f"File system error cloning {self.git_clone_url}: {str(e)}")
+            raise GitOperationError(f"File system error cloning {self.git_clone_url}: {e!s}")
         except Exception as e:
-            raise GitOperationError(f"Unexpected error cloning {self.git_clone_url}: {str(e)}")
+            raise GitOperationError(f"Unexpected error cloning {self.git_clone_url}: {e!s}")
 
     def github_repo_url(self) -> Optional[str]:
         if self.github_organization and self.github_repo_name:

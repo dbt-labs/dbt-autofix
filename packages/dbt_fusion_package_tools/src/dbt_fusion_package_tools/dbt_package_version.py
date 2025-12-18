@@ -1,20 +1,21 @@
-from typing import Any, Optional, Union
 from dataclasses import dataclass, field
+from typing import Any, Optional
+
 from rich.console import Console
+
 from dbt_fusion_package_tools.manual_overrides import (
     EXPLICIT_ALLOW_ALL_VERSIONS,
     EXPLICIT_DISALLOW_ALL_VERSIONS,
     EXPLICIT_DISALLOW_VERSIONS,
 )
-
 from dbt_fusion_package_tools.upgrade_status import PackageVersionFusionCompatibilityState
 from dbt_fusion_package_tools.version_utils import (
     FUSION_COMPATIBLE_VERSION,
+    VersionRange,
+    VersionSpecifier,
     construct_version_list_from_raw,
     convert_version_specifiers_to_range,
     get_version_specifiers,
-    VersionSpecifier,
-    VersionRange,
     versions_compatible,
 )
 

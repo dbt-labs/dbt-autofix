@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
+
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbt_fusion_package_tools.version_utils import VersionSpecifier
 
@@ -93,8 +94,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         latest_version = latest_version_incl_prerelease
     assert latest_version is not None
     assert latest_version_incl_prerelease is not None
-    if latest_version > latest_version_incl_prerelease:
-        latest_version_incl_prerelease = latest_version
+    latest_version_incl_prerelease = max(latest_version_incl_prerelease, latest_version)
     if not package_redirect_name and not package_redirect_namespace:
         assert package_latest_version_index_json == latest_version
         assert len(fusion_compatible_versions) + len(fusion_incompatible_versions) + len(

@@ -1,14 +1,15 @@
 """Interface for objects useful to processing hub entries"""
 
 import os
-from typing import Optional
 import subprocess
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Optional
+
 from rich.console import Console
+
 from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
 from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
-from tempfile import TemporaryDirectory
-
-from pathlib import Path
 
 console = Console()
 error_console = Console(stderr=True)
@@ -73,7 +74,7 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
             binary_names_found.add(binary_name)
 
     if len(binary_names_found) == 0:
-        error_console.log(f"No fusion binaries found on system path, please install first")
+        error_console.log("No fusion binaries found on system path, please install first")
         return None
 
     # now check version returned by each and use first one
@@ -84,7 +85,7 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
                 valid_binary_name,
                 "--version",
             ],
-            capture_output=True,
+            check=False, capture_output=True,
             timeout=60,
             text=True,
         )
@@ -146,7 +147,7 @@ def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_
                     "--project-dir",
                     str(repo_path),
                 ],
-                text=True,
+                check=False, text=True,
                 capture_output=(not show_fusion_output),
                 timeout=60,
             )
@@ -162,7 +163,7 @@ def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_
                     "--project-dir",
                     str(repo_path),
                 ],
-                text=True,
+                check=False, text=True,
                 capture_output=(not show_fusion_output),
                 timeout=60,
             )
@@ -190,7 +191,7 @@ def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_
                 "--project-dir",
                 str(repo_path),
             ],
-            timeout=60,
+            check=False, timeout=60,
             text=True,
             capture_output=(not show_fusion_output),
         )
@@ -200,7 +201,7 @@ def check_fusion_schema_compatibility(repo_path: Path = Path.cwd(), show_fusion_
         return is_compatible
 
     except Exception as e:
-        error_console.log(f"Error checking fusion compatibility for {repo_path}: {str(e)}")
+        error_console.log(f"Error checking fusion compatibility for {repo_path}: {e!s}")
         try:
             os.remove(profiles_path)
         except Exception:

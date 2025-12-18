@@ -1,9 +1,9 @@
-from yaml.reader import Reader
-from yaml.scanner import Scanner
-from yaml.parser import Parser
 from yaml.composer import Composer
 from yaml.constructor import SafeConstructor
+from yaml.parser import Parser
+from yaml.reader import Reader
 from yaml.resolver import Resolver
+from yaml.scanner import Scanner
 
 
 class SafeConstructorWithOutput(SafeConstructor):

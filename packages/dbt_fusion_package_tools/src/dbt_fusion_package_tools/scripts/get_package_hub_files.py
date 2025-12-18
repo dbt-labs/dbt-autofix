@@ -1,10 +1,9 @@
-from collections import defaultdict
 import json
-from dataclasses import dataclass
+import time
+import warnings
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import warnings
-import time
 
 import requests
 from requests import HTTPError
