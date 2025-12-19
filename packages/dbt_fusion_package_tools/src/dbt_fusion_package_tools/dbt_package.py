@@ -22,6 +22,7 @@ from dbt_fusion_package_tools.version_utils import (
     get_version_specifiers,
     versions_compatible,
 )
+from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
 
 console = Console()
 error_console = Console(stderr=True)
@@ -49,6 +50,8 @@ class DbtPackage:
     tarball: bool = False
     git: bool = False
     private: bool = False
+    # represent git repo if needed (such as for package hub)
+    git_repo: Optional[DbtPackageRepo] = None
 
     # fields from FUSION_VERSION_COMPATIBILITY_OUTPUT
     package_redirect_id: Optional[str] = None

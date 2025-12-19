@@ -45,5 +45,6 @@ def load(stream, Loader):
         loader.dispose()
 
 
+# Returns a tuple where the first entry is the raw mapping node and the second is the document
 def safe_load(stream):
     return load(stream, SafeLoaderWithOutput)

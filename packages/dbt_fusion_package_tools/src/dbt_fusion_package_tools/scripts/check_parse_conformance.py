@@ -50,7 +50,8 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
                     "--project-dir",
                     str(repo_path),
                 ],
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 timeout=60,
             )
             # If dbtf command exists but returns error mentioning it's not found, fall back to dbt
@@ -72,7 +73,8 @@ def check_fusion_schema_compatibility(repo_path: Path) -> bool:
                     "--project-dir",
                     str(repo_path),
                 ],
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 timeout=60,
             )
 
