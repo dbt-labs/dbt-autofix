@@ -2,7 +2,7 @@
 name = "dbt-fusion-package-tools"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "gitpython>=3.1.45",
     "mashumaro>=3.17",

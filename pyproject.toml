@@ -2,7 +2,7 @@
 name = "dbt-autofix"
 description = "CLI to autofix deprecations in dbt projects"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "pyyaml>=6.0.2",
     "typer>=0.15.2",
@@ -75,7 +75,7 @@ include = [
     "tests",
 ]
 exclude = []
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 
 typeCheckingMode = "basic"
 reportPrivateUsage = false
