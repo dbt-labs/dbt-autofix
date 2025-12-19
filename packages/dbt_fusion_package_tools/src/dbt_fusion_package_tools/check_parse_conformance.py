@@ -19,35 +19,10 @@ from dbt_fusion_package_tools.version_utils import VersionSpecifier
 from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
 from dbtlabs.proto.public.v1.events.fusion.log.log_pb2 import LogMessage
 from google.protobuf import json_format
+from dbt_fusion_package_tools.compatibility import FusionConformanceResult, ParseConformanceLogOutput, FusionLogMessage
 
 console = Console()
 error_console = Console(stderr=True)
-
-
-@dataclass
-class FusionLogMessage:
-    body: str
-    message: LogMessage
-
-
-@dataclass
-class ParseConformanceLogOutput:
-    parse_exit_code: int = 0
-    total_errors: int = 0
-    total_warnings: int = 0
-    errors: list[FusionLogMessage] = field(default_factory=list)
-    warnings: list[FusionLogMessage] = field(default_factory=list)
-
-
-@dataclass
-class FusionConformanceResult:
-    version: Optional[str] = None
-    require_dbt_version_defined: Optional[bool] = None
-    require_dbt_version_compatible: Optional[bool] = None
-    parse_compatible: Optional[bool] = None
-    parse_compatibility_result: Optional[ParseConformanceLogOutput] = None
-    manually_verified_compatible: Optional[bool] = None
-    manually_verified_incompatible: Optional[bool] = None
 
 
 def checkout_repo_and_run_conformance(
@@ -93,7 +68,7 @@ def run_conformance_for_version(path, package_name, tag_version, package_id) -> 
             with open(Path(f"{path}/dbt_project.yml"), "a") as f:
                 f.write("\nprofile: test_schema_compat\n")
         except Exception as e:
-            error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag.name}: {e}")
+            error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag_version}: {e}")
     new_version: DbtPackageVersion = DbtPackageVersion(
         package_name, tag_version, package_id=package_id, raw_require_dbt_version_range=require_dbt_version_string
     )
@@ -181,7 +156,7 @@ def parse_log_output(output: str, exit_code: int) -> ParseConformanceLogOutput:
             body = line.get("body")
             log_message = LogMessage()
             json_format.ParseDict(line.get("attributes"), log_message, ignore_unknown_fields=True)
-            fusion_log_message = FusionLogMessage(body, log_message)
+            fusion_log_message = FusionLogMessage(body, str(log_message.SerializeToString()))
             if severity_text == "ERROR":
                 result.errors.append(fusion_log_message)
             elif severity_text == "WARNING":
@@ -233,7 +208,7 @@ def check_fusion_schema_compatibility(
         os.environ["_DBT_FUSION_STRICT_MODE"] = "1"
 
         # Find correct name for Fusion binary
-        fusion_binary_name: Optional[str] = find_fusion_binary()
+        fusion_binary_name: Optional[str] = find_fusion_binary(custom_name="/Users/chaya/.local/bin/dbt")
         if fusion_binary_name is None:
             raise FusionBinaryNotAvailable()
 

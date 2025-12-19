@@ -18,6 +18,7 @@ from dbt_fusion_package_tools.version_utils import (
     get_version_specifiers,
     versions_compatible,
 )
+from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 
 console = Console()
 
@@ -32,6 +33,7 @@ class DbtPackageVersion:
     package_id_with_version: Optional[str] = None
     package_id: Optional[str] = None
     raw_require_dbt_version_range: Any = None
+    fusion_conformance_result: Optional[FusionConformanceResult] = None
 
     @property
     def version(self) -> VersionSpecifier:
