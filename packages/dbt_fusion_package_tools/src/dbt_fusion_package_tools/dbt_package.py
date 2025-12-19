@@ -52,6 +52,7 @@ class DbtPackage:
     private: bool = False
     # represent git repo if needed (such as for package hub)
     git_repo: Optional[DbtPackageRepo] = None
+    github_repo_url: Optional[str] = None
 
     # fields from FUSION_VERSION_COMPATIBILITY_OUTPUT
     package_redirect_id: Optional[str] = None
