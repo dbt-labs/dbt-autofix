@@ -762,10 +762,10 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
         "latest_version_incl_prerelease": "=1.0.0",
     },
     "ScalefreeCOM/datavault4dbt": {
-        "latest_version": "=1.13.0",
-        "oldest_fusion_compatible_version": None,
-        "latest_fusion_compatible_version": None,
-        "fusion_compatible_versions": [],
+        "latest_version": "=1.14.0",
+        "oldest_fusion_compatible_version": "=1.14.0",
+        "latest_fusion_compatible_version": "=1.14.0",
+        "fusion_compatible_versions": ["=1.14.0"],
         "fusion_incompatible_versions": [
             "=1.0.0",
             "=1.0.1",
@@ -832,10 +832,10 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=1.9.9",
         ],
         "unknown_compatibility_versions": [],
-        "package_latest_version_index_json": "=1.13.0",
+        "package_latest_version_index_json": "=1.14.0",
         "package_redirect_name": None,
         "package_redirect_namespace": None,
-        "latest_version_incl_prerelease": "=1.13.0",
+        "latest_version_incl_prerelease": "=1.14.0",
     },
     "Snowflake-Labs/dbt_constraints": {
         "latest_version": "=1.0.7",
