@@ -30,15 +30,14 @@ def checkout_repo_and_run_conformance(
 ) -> dict[str, FusionConformanceResult]:
     results: dict[str, FusionConformanceResult] = {}
     with TemporaryDirectory() as tmpdir:
-        print(f"writing to {tmpdir}")
         repo = DbtPackageRepo(
             repo_name=package_name,
             github_organization=github_organization,
             github_repo_name=github_repo_name,
             local_path=tmpdir,
         )
-        package_id = f"{github_organization}/{github_repo_name}"
-        # package: DbtPackage = DbtPackage(package_name=package_name, package_id=package_id, project_config_raw_version_specifier=None)
+        package_id = f"{github_organization}/{package_name}"
+        console.log(f"Running parse conformance for {package_id}")
         tags = repo.get_tags()
         for i, tag in enumerate(tags):
             if limit > 0 and i > limit:
@@ -57,7 +56,7 @@ def run_conformance_for_version(path, package_name, tag_version, package_id) -> 
     # check require dbt version
     try:
         dbt_project_yml = safe_load((Path(f"{path}/dbt_project.yml")).read_text()) or ({}, {})
-        require_dbt_version_string = dbt_project_yml[1].get("require_dbt_version")
+        require_dbt_version_string = dbt_project_yml[1].get("require-dbt-version")
     except Exception as e:
         error_console.log(f"dbt_project.yml load failed for {package_id} {tag_version}: {e}")
         return
@@ -73,11 +72,11 @@ def run_conformance_for_version(path, package_name, tag_version, package_id) -> 
         package_name, tag_version, package_id=package_id, raw_require_dbt_version_range=require_dbt_version_string
     )
     parse_conformance = check_fusion_schema_compatibility(Path(path), show_fusion_output=True)
-    result.require_dbt_version_compatible = new_version.is_require_dbt_version_fusion_compatible()
     result.require_dbt_version_defined = new_version.is_require_dbt_version_defined()
+    if result.require_dbt_version_defined:
+        result.require_dbt_version_compatible = new_version.is_require_dbt_version_fusion_compatible()
     result.manually_verified_compatible = new_version.is_explicitly_allowed_on_fusion()
     result.manually_verified_incompatible = new_version.is_explicitly_disallowed_on_fusion()
-    result.parse_compatibility_result = parse_conformance
     if parse_conformance:
         result.parse_compatible = parse_conformance.parse_exit_code == 0
         result.parse_compatibility_result = parse_conformance
@@ -156,7 +155,13 @@ def parse_log_output(output: str, exit_code: int) -> ParseConformanceLogOutput:
             body = line.get("body")
             log_message = LogMessage()
             json_format.ParseDict(line.get("attributes"), log_message, ignore_unknown_fields=True)
-            fusion_log_message = FusionLogMessage(body, str(log_message.SerializeToString()))
+            fusion_log_message = FusionLogMessage(
+                body=str(body),
+                severity_text=str(severity_text),
+                error_code=log_message.code,
+                dbt_core_event_code=log_message.dbt_core_event_code,
+                original_severity_text=log_message.original_severity_text,
+            )
             if severity_text == "ERROR":
                 result.errors.append(fusion_log_message)
             elif severity_text == "WARNING":
@@ -224,15 +229,18 @@ def check_fusion_schema_compatibility(
                     "test_schema_compat",
                     "--project-dir",
                     str(repo_path),
+                    "--log-format",
+                    "otel",
                 ],
                 check=False,
                 text=True,
                 capture_output=True,
                 timeout=60,
             )
+            deps_output = parse_log_output(deps_result.stdout, deps_result.returncode)
             if deps_result.returncode != 0:
                 error_console.log(f"dbt deps returned errors")
-                error_console.log(parse_log_output(deps_result.stdout, deps_result.returncode))
+                error_console.log(deps_output)
 
             # Now try parse
             if show_fusion_output:
@@ -257,6 +265,8 @@ def check_fusion_schema_compatibility(
             if parse_result.returncode != 0:
                 error_console.log(f"dbt parse returned errors")
                 error_console.log(parse_output)
+                if len(deps_output.errors) > 0:
+                    parse_output.errors.extend(deps_output.errors)
         except Exception as e:
             error_console.log(f"{e}: An unknown error occurred when running dbt parse")
             return
@@ -281,6 +291,8 @@ def check_fusion_schema_compatibility(
                 "test_schema_compat",
                 "--project-dir",
                 str(repo_path),
+                "--log-format",
+                "otel",
             ],
             check=False,
             timeout=60,
