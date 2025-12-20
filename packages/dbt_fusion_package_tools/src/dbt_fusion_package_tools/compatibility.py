@@ -20,16 +20,12 @@ class FusionCompatibility(DataClassJSONMixin):
 @dataclass
 class FusionLogMessage(DataClassJSONMixin):
     body: str
-    message: str
-    # message: LogMessage = field(
-    #     metadata=field_options(
-    #         serialize=lambda msg: msg.SerializeToString(),
-    #     ))
-    # def to_dict(self) -> dict[Any, Any]:
-    #     return {
-    #         "body": self.body,
-    #         "message": self.message.SerializeToString()
-    #     }
+    error_code: Optional[int] = None
+    severity_text: Optional[str] = None
+    """Optional fusion error/warning code"""
+    dbt_core_event_code: Optional[str] = None
+    """Original severity before user up/down-grade configuration applied."""
+    original_severity_text: Optional[str] = None
 
 
 @dataclass

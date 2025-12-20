@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dbt_fusion_package_tools.check_parse_conformance import checkout_repo_and_run_conformance
+from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 
 import requests
 from requests import HTTPError
@@ -256,7 +257,6 @@ def download_package_jsons_from_hub_repo(
         if file_count_limit > 0 and len(files) >= file_count_limit:
             break
 
-    # results: List[PackageJSON] = []
     packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     if not files:
         # No files found; return empty list rather than error.
@@ -314,7 +314,6 @@ def get_github_repos_from_file(file_path: Path) -> defaultdict[str, set[str]]:
             repo = version.get("package_version_github_url", "")
             m = re.match(r"^(https?://github\.com/[^/]+/[^/]+)", repo)
             if m:
-                # print(m.group(1))
                 package_repos[package].add(m.group(1))
     for repos in package_repos:
         # print(repos)
@@ -375,8 +374,11 @@ def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: in
     return valid_repos
 
 
-def run_conformance(file_path: Path, package_limit: int = 0) -> defaultdict[str, list[dict[str, Any]]]:
-    output: defaultdict[str, list[dict[str, Any]]] = reload_packages_from_file(file_path)
+def run_conformance(file_path: Path, package_limit: int = 0) -> dict[str, dict[str, FusionConformanceResult]]:
+    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(
+        path="/Users/chaya/workplace/hub.getdbt.com"
+    )
+    results: dict[str, dict[str, FusionConformanceResult]] = {}
     github_repos: defaultdict[str, set[str]] = get_github_repos_from_file(file_path)
     github_urls: dict[str, str] = validate_github_urls(github_repos, package_limit)
     for i, package in enumerate(output):
@@ -384,57 +386,35 @@ def run_conformance(file_path: Path, package_limit: int = 0) -> defaultdict[str,
             break
         if package not in github_urls:
             continue
+        results[package] = {}
         package_github_url = github_urls[package]
         m = re.match(r"^(https?://github\.com/[^/]+/[^/]+)", package_github_url)
         if m:
-            # print(m.group(1))
             parsed_url = (m.group(1)).split("/")
             package_github_org = parsed_url[-2]
             package_github_repo = parsed_url[-1]
             package_name = output[package][0]["package_name_index_json"]
-            conformance_output = checkout_repo_and_run_conformance(
-                package_github_org, package_github_repo, package_name
-            )
-            print(conformance_output)
-            conformance_output_dict = {}
-            for k, v in conformance_output.items():
-                conformance_output_dict[k] = v.to_dict()
-            output[package].append(conformance_output_dict)
+            results[package] = checkout_repo_and_run_conformance(package_github_org, package_github_repo, package_name)
 
-    return output
+    return results
+
+
+def write_conformance_output_to_json(
+    data: dict[str, dict[str, FusionConformanceResult]], dest_dir: Path, *, indent: int = 2, sort_keys: bool = True
+):
+    data_output = {}
+    for k, v in data.items():
+        data_output[k] = {version: result.to_dict() for version, result in v.items()}
+    out_file = dest_dir / "conformance_output.json"
+    with out_file.open("w", encoding="utf-8") as fh:
+        json.dump(data_output, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
 
 
 def main():
-    file_count_limit = 0
-    # results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
-    # results = read_json_from_local_hub_repo(
-    #     path="/Users/chaya/workplace/hub.getdbt.com", file_count_limit=file_count_limit
-    # )
-    # print(f"Downloaded {len(results)} packages from hub.getdbt.com")
+    package_limit = 0
     output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
-    # write_dict_to_json(results, output_path)
-    # print(f"Output written to {output_path / 'package_output.json'}")
-    # reload_packages = reload_packages_from_file(output_path / "package_output.json")
-    # print(f"Reloaded {len(reload_packages)} packages from file")
-    # Shows that all packages except
-    # github_repos = get_github_repos_from_file(output_path / "package_output.json")
-    # print(f"Reloaded {len(github_repos)} packages from file")
-    # valid_repos = validate_github_urls(github_repos)
-    # print("Repos with no valid Github URLs:")
-    # for repo in valid_repos:
-    #     if len(valid_repos[repo]) == 0:
-    #         print(f"No valid repos: {repo}")
-    #     elif len(valid_repos[repo]) > 1:
-    #         print(f"Multiple repo URLs: {repo}")
-    parse_conformance_results = run_conformance(output_path / "package_output.json", package_limit=5)
-    out_file = output_path / "conformance_output.json"
-    # for result in parse_conformance_results:
-    #     parse_conformance_results[result].to_json()
-    with out_file.open("w", encoding="utf-8") as fh:
-        json.dump(parse_conformance_results, fh, indent=2, sort_keys=True, ensure_ascii=False)
-    # for repo in valid_repos:
-
-    # print(github_repos)
+    parse_conformance_results = run_conformance(output_path / "package_output.json", package_limit)
+    write_conformance_output_to_json(parse_conformance_results, output_path)
 
 
 if __name__ == "__main__":
