@@ -82,7 +82,7 @@ class VersionSpecifier(VersionSpecification):
 
         if not skip_matcher:
             matcher = self.matcher
-        return "{}{}.{}.{}{}{}".format(matcher, self.major, self.minor, self.patch, prerelease, build)
+        return "{}{}.{}.{}{}{}".format(matcher.value, self.major, self.minor, self.patch, prerelease, build)
 
     @classmethod
     def from_version_string(cls, version_string: str) -> "VersionSpecifier":

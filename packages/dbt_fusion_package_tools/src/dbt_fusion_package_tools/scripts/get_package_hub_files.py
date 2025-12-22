@@ -197,6 +197,78 @@ def download_package_jsons_from_hub_repo(
     return packages
 
 
+def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
+    """Read JSON files from a local copy of the hub repo and return a
+    defaultdict mapping package_id -> list[parsed outputs].
+
+    The `path` argument may be either:
+      - the repository root (so files are found under `data/packages/...`),
+      - or the `data/packages` directory itself, or
+      - a single JSON file path.
+
+    Behavior mirrors `download_package_jsons_from_hub_repo` where possible:
+      - JSON files are found recursively
+      - each file is parsed and passed to `process_json(file_path, parsed_json)`
+      - parsing/IO errors are warned and skipped
+    """
+    base = Path(path)
+    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+
+    if not base.exists():
+        warnings.warn(f"Path does not exist: {path}")
+        return packages
+
+    # Collect JSON files
+    json_files: List[Path]
+    if base.is_file():
+        if base.suffix.lower() == ".json":
+            json_files = [base]
+        else:
+            return packages
+    else:
+        json_files = sorted(base.rglob("*.json"), key=lambda p: str(p))
+
+    if file_count_limit > 0:
+        json_files = json_files[:file_count_limit]
+
+    if not json_files:
+        return packages
+
+    for file in json_files:
+        try:
+            with file.open("r", encoding="utf-8") as fh:
+                parsed = json.load(fh)
+
+            # Try to produce a repo-style path like 'data/packages/...'
+            file_path: str
+            parts = list(file.parts)
+            if "data" in parts:
+                idx = parts.index("data")
+                file_path = Path(*parts[idx:]).as_posix()
+            else:
+                try:
+                    # prefer path relative to provided base
+                    rel = file.relative_to(base)
+                    file_path = rel.as_posix()
+                except Exception:
+                    file_path = file.as_posix()
+
+            # If the user passed the `data/packages` directory itself,
+            # ensure returned path still starts with 'data/packages'
+            if not file_path.startswith("data/packages") and base.name == "packages" and base.parent.name == "data":
+                rel = file.relative_to(base)
+                file_path = Path("data") / "packages" / rel
+                file_path = file_path.as_posix()
+
+            output = process_json(file_path, parsed)
+            if output != {}:
+                packages[output["package_id_from_path"]].append(output)
+        except Exception as exc:
+            warnings.warn(f"Failed to read/parse {file}: {exc}")
+
+    return packages
+
+
 def reload_packages_from_file(
     file_path: Path,
 ) -> defaultdict[str, list[dict[str, Any]]]:
@@ -206,7 +278,10 @@ def reload_packages_from_file(
 
 def main():
     file_count_limit = 0
-    results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
+    # results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
+    results = read_json_from_local_hub_repo(
+        path="~/workplace/hub.getdbt.com", file_count_limit=file_count_limit
+    )
     print(f"Downloaded {len(results)} packages from hub.getdbt.com")
     output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
     write_dict_to_json(results, output_path)
