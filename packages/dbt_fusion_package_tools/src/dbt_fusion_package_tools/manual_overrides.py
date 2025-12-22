@@ -98,6 +98,7 @@ EXPLICIT_DISALLOW_VERSIONS: dict[str, set[str]] = {
             "2.9.0",
             "2.9.1",
             "2.9.2",
+            "2.9.3",
         ]
     ),
 }

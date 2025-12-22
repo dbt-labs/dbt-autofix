@@ -35,6 +35,9 @@ def test_check_renames(old_package_id, new_package_id):
         ("dbt-labs/dbt_project_evaluator", "=1.1.0", False),
         ("dbt-labs/dbt_project_evaluator", "=1.1.1", False),
         ("dbt-labs/dbt_project_evaluator", "=1.1.2", True),
+        ("brooklyn-data/dbt_artifacts", "=2.10.0", True),
+        ("brooklyn-data/dbt_artifacts", "=2.9.3", False),
+        ("brooklyn-data/dbt_artifacts", "=0.6.0", False),
     ],
 )
 def test_check_explicit_override_version(package_id, version, expected):

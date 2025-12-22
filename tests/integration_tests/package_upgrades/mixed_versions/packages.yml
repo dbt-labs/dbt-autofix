@@ -29,3 +29,6 @@ packages:
 # version is incompatible, but compatible version has different name
   - package: calogica/dbt_date
     version: 0.10.1
+# version 2.9.3 has manual override as incompatible, 2.10.0 is compatible
+  - package: brooklyn-data/dbt_artifacts
+    version: 2.9.3

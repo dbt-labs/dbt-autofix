@@ -16,7 +16,7 @@ from dbt_fusion_package_tools.upgrade_status import PackageVersionFusionCompatib
 
 PROJECT_WITH_PACKAGES_PATH = Path("tests/integration_tests/package_upgrades/mixed_versions")
 # update if count changes
-PROJECT_DEPENDENCY_COUNT = 9
+PROJECT_DEPENDENCY_COUNT = 10
 
 # cases to test:
 
@@ -90,6 +90,9 @@ def test_generate_package_dependencies():
         elif package == "calogica/dbt_date":
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
+        elif package == "brooklyn-data/dbt_artifacts":
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+            assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
 
 
 def test_check_for_package_upgrades():
@@ -125,6 +128,11 @@ def test_check_for_package_upgrades():
             )
         elif package == "calogica/dbt_date":
             assert fusion_compatibility_state == PackageVersionUpgradeType.NO_UPGRADE_REQUIRED
+        elif package == "brooklyn-data/dbt_artifacts":
+            assert (
+                fusion_compatibility_state
+                == PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG
+            )
 
 
 def test_upgrade_package_versions_no_force_update():
@@ -138,7 +146,7 @@ def test_upgrade_package_versions_no_force_update():
     assert output
     assert output.upgraded
     assert len(output.upgrades) == 1
-    assert len(output.unchanged) == 8
+    assert len(output.unchanged) == 9
     assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT
     output.print_to_console(json_output=False)
     output.print_to_console(json_output=True)
@@ -154,7 +162,7 @@ def test_upgrade_package_versions_with_force_update():
     )
     assert output
     assert output.upgraded
-    assert len(output.upgrades) == 3
+    assert len(output.upgrades) == 4
     assert len(output.unchanged) == 6
     assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT
     output.print_to_console(json_output=False)
