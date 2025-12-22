@@ -1165,9 +1165,10 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
     },
     "brooklyn-data/dbt_artifacts": {
         "latest_version": "=2.10.0",
-        "oldest_fusion_compatible_version": "=0.2.0",
+        "oldest_fusion_compatible_version": "=2.10.0",
         "latest_fusion_compatible_version": "=2.10.0",
-        "fusion_compatible_versions": [
+        "fusion_compatible_versions": ["=2.10.0"],
+        "fusion_incompatible_versions": [
             "=0.2.0",
             "=0.2.1",
             "=0.3.0",
@@ -1188,14 +1189,11 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=2.0.0",
             "=2.1.0",
             "=2.1.1",
-            "=2.10.0",
             "=2.2.0",
             "=2.2.1",
             "=2.2.2",
             "=2.2.3",
             "=2.3.0",
-        ],
-        "fusion_incompatible_versions": [
             "=2.4.0",
             "=2.4.1",
             "=2.4.2",
@@ -8674,9 +8672,10 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
     },
     "tailsdotcom/dbt_artifacts": {
         "latest_version": "=2.10.0",
-        "oldest_fusion_compatible_version": "=0.2.0",
+        "oldest_fusion_compatible_version": "=2.10.0",
         "latest_fusion_compatible_version": "=2.10.0",
-        "fusion_compatible_versions": [
+        "fusion_compatible_versions": ["=2.10.0"],
+        "fusion_incompatible_versions": [
             "=0.2.0",
             "=0.2.1",
             "=0.3.0",
@@ -8697,14 +8696,11 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=2.0.0",
             "=2.1.0",
             "=2.1.1",
-            "=2.10.0",
             "=2.2.0",
             "=2.2.1",
             "=2.2.2",
             "=2.2.3",
             "=2.3.0",
-        ],
-        "fusion_incompatible_versions": [
             "=2.4.0",
             "=2.4.1",
             "=2.4.2",

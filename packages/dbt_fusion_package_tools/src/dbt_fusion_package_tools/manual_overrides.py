@@ -1,6 +1,5 @@
 EXPLICIT_DISALLOW_ALL_VERSIONS: set[str] = set(
     [
-        "brooklyn-data/dbt_artifacts",
         "Snowflake-Labs/dbt_constraints",
         "get-select/dbt_snowflake_query_tags",
         "data-mie/dbt_profiler",
@@ -55,5 +54,50 @@ EXPLICIT_DISALLOW_VERSIONS: dict[str, set[str]] = {
     # dbt_project_evaluator version 1.1.0 has compatible
     # require dbt version but actually has bug that makes
     # package incompatible until fixed in 1.1.2
-    "dbt-labs/dbt_project_evaluator": set(["1.1.0", "1.1.1"])
+    "dbt-labs/dbt_project_evaluator": set(["1.1.0", "1.1.1"]),
+    "brooklyn-data/dbt_artifacts": set(
+        [
+            "0.1.0",
+            "0.2.0",
+            "0.2.1",
+            "0.3.0",
+            "0.4.0",
+            "0.4.1",
+            "0.4.2",
+            "0.4.3",
+            "0.4.4",
+            "0.5.0",
+            "0.6.0",
+            "0.7.0",
+            "0.8.0",
+            "1.0.0",
+            "1.1.0",
+            "1.1.1",
+            "1.1.2",
+            "1.2.0",
+            "2.0.0",
+            "2.1.0",
+            "2.1.1",
+            "2.2.0",
+            "2.2.1",
+            "2.2.2",
+            "2.2.3",
+            "2.3.0",
+            "2.4.0",
+            "2.4.1",
+            "2.4.2",
+            "2.4.3",
+            "2.5.0",
+            "2.6.0",
+            "2.6.1",
+            "2.6.2",
+            "2.6.3",
+            "2.6.4",
+            "2.7.0",
+            "2.8.0",
+            "2.9.0",
+            "2.9.1",
+            "2.9.2",
+        ]
+    ),
 }
