@@ -388,7 +388,7 @@ docs = [
 requires-dist = [
     { name = "dbt-protos", specifier = ">=1.0.410" },
     { name = "gitpython", specifier = ">=3.1.45" },
-    { name = "mashumaro", specifier = ">=3.17" },
+    { name = "mashumaro", specifier = ">=3.9" },
     { name = "pydocstyle", marker = "extra == 'docs'", specifier = ">=6.3.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = ">=2.32.5" },
