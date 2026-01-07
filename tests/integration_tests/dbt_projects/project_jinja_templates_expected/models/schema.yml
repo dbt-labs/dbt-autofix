@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: model_with_spaces_{{ env_var('DBT_ENV') | lower }}
+    description: "Model with spaces in name and Jinja template"
+    columns:
+      - name: id
+        description: "Primary key"
+seeds:
+  - name: seed_name_{{ env_var('DBT_DATABASE') | lower }}
+    description: "Seed with Jinja in name"
+  - name: another_seed_{{ var('version') }}
+    description: "Seed with var() function"
+
+exposures:
+  - name: exposure_with_specialchars_{{ env_var('ENV') }}
+    type: dashboard
+    description: "Exposure with special chars and Jinja"
+    owner:
+      name: Test User
+      email: test@example.com
+    depends_on:
+      - ref('model with spaces {{ env_var("DBT_ENV") | lower }}')
