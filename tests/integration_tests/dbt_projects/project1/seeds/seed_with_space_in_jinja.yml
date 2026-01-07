@@ -1,0 +1,4 @@
+seeds:
+  - name: example_seed_with_spaces_{{ env_var('DBT_DATABASE') | lower }}
+    config:
+      enabled: true
