@@ -2267,6 +2267,46 @@ exposures:
         exposure_special_chars_refactored = refactored_dict["exposures"][1]
         assert exposure_special_chars_refactored["name"] == "exposure_with_special_chars"
 
+    def test_jinja_templates_preserved_in_name_values(self, schema_specs: SchemaSpecs):
+        """Test that Jinja templates in name values are preserved and not corrupted"""
+        input_yaml = """
+version: 2
+seeds:
+  - name: prefix_{{ env_var('DBT_DATABASE') | lower }}
+models:
+  - name: my model {{ env_var('X') | default('test') }}
+exposures:
+  - name: exposure with {{ env_var('Y') | lower }}
+  - name: exposure-special)(*chars {{ env_var('Z') }}
+"""
+        result = changeset_replace_non_alpha_underscores_in_name_values(input_yaml, schema_specs)
+        refactored_dict = safe_load(result.refactored_yaml)
+
+        # Seeds: no spaces outside Jinja, so no refactoring needed
+        seed = refactored_dict["seeds"][0]
+        assert seed["name"] == "prefix_{{ env_var('DBT_DATABASE') | lower }}"
+        # Ensure spaces inside Jinja are preserved
+        assert " | " in seed["name"]
+        assert "'DBT_DATABASE'" in seed["name"]
+
+        # Models: spaces outside Jinja replaced, inside preserved
+        model = refactored_dict["models"][0]
+        assert model["name"] == "my_model_{{ env_var('X') | default('test') }}"
+        # Ensure spaces inside Jinja are preserved
+        assert " | " in model["name"]
+        assert "'X'" in model["name"]
+
+        # Exposures: spaces replaced, special chars removed, but Jinja preserved
+        exposure1 = refactored_dict["exposures"][0]
+        assert exposure1["name"] == "exposure_with_{{ env_var('Y') | lower }}"
+        # Ensure spaces inside Jinja are preserved
+        assert " | " in exposure1["name"]
+
+        exposure2 = refactored_dict["exposures"][1]
+        assert exposure2["name"] == "exposurespecialchars_{{ env_var('Z') }}"
+        # Ensure Jinja syntax is preserved (parentheses, quotes, etc.)
+        assert "{{ env_var('Z') }}" in exposure2["name"]
+
 
 @pytest.mark.parametrize(
     "input_str,expected_match",

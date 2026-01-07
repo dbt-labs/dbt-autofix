@@ -824,6 +824,90 @@ def changeset_replace_non_alpha_underscores_in_name_values(
     )
 
 
+def _replace_spaces_outside_jinja(text: str) -> str:
+    """Replace spaces with underscores, but preserve spaces inside Jinja templates.
+    
+    This function avoids corrupting Jinja templates like {{ env_var('X') | lower }}
+    by only replacing spaces that are outside of {{ }} blocks.
+    
+    Args:
+        text: The text to process
+        
+    Returns:
+        Text with spaces replaced by underscores, except inside Jinja templates
+    """
+    result = []
+    i = 0
+    in_jinja = False
+    
+    while i < len(text):
+        # Check for Jinja opening {{
+        if i < len(text) - 1 and text[i:i+2] == "{{":
+            in_jinja = True
+            result.append("{{")
+            i += 2
+            continue
+            
+        # Check for Jinja closing }}
+        if i < len(text) - 1 and text[i:i+2] == "}}":
+            in_jinja = False
+            result.append("}}")
+            i += 2
+            continue
+        
+        # Replace spaces with underscores only outside Jinja blocks
+        if text[i] == " " and not in_jinja:
+            result.append("_")
+        else:
+            result.append(text[i])
+        
+        i += 1
+    
+    return "".join(result)
+
+
+def _remove_non_alpha_outside_jinja(text: str) -> str:
+    """Remove non-alphanumeric characters (except underscores), but preserve Jinja templates.
+    
+    This function avoids corrupting Jinja templates like {{ env_var('X') | lower }}
+    by preserving everything inside {{ }} blocks.
+    
+    Args:
+        text: The text to process
+        
+    Returns:
+        Text with non-alphanumeric characters removed, except inside Jinja templates
+    """
+    result = []
+    i = 0
+    jinja_depth = 0
+    
+    while i < len(text):
+        # Check for Jinja opening {{
+        if i < len(text) - 1 and text[i:i+2] == "{{":
+            jinja_depth += 1
+            result.append("{{")
+            i += 2
+            continue
+            
+        # Check for Jinja closing }}
+        if i < len(text) - 1 and text[i:i+2] == "}}":
+            result.append("}}")
+            jinja_depth -= 1
+            i += 2
+            continue
+        
+        # Keep character if it's alphanumeric/underscore, or if we're inside Jinja
+        char = text[i]
+        if jinja_depth > 0 or char.isalnum() or char == "_":
+            result.append(char)
+        # Otherwise skip the character (it's removed)
+        
+        i += 1
+    
+    return "".join(result)
+
+
 def replace_node_name_non_alpha_with_underscores(node: dict[str, str], node_type: str):
     node_deprecation_refactors: List[DbtDeprecationRefactor] = []
     node_copy = node.copy()
@@ -834,11 +918,11 @@ def replace_node_name_non_alpha_with_underscores(node: dict[str, str], node_type
     new_name = None
     if name:
         if node_type == "exposures":
-            new_name = name.replace(" ", "_")
-            new_name = "".join(c for c in new_name if (c.isalnum() or c == "_"))
+            new_name = _replace_spaces_outside_jinja(name)
+            new_name = _remove_non_alpha_outside_jinja(new_name)
             deprecation = "ExposureNameDeprecation"
         else:
-            new_name = name.replace(" ", "_")
+            new_name = _replace_spaces_outside_jinja(name)
             deprecation = "ResourceNamesWithSpacesDeprecation"
 
         if new_name and new_name != name:
