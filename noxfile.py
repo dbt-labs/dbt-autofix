@@ -93,7 +93,7 @@ def test_core_1_10_installation(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    session.run("uv", "run", "dbt-autofix", "--help")
+    session.run("dbt-autofix", "--help")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
@@ -113,4 +113,4 @@ def test_core_1_12_installation(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    session.run("uv", "run", "dbt-autofix", "--help")
+    session.run("dbt-autofix", "--help")
