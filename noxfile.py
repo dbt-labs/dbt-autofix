@@ -82,6 +82,7 @@ def test_core_1_10_installation(session):
     session.run_install(
         "uv",
         "sync",
+        "--all-packages",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
@@ -101,6 +102,7 @@ def test_core_1_12_installation(session):
     session.run_install(
         "uv",
         "sync",
+        "--all-packages",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
