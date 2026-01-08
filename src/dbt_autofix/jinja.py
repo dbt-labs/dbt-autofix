@@ -1,10 +1,355 @@
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from dataclasses import dataclass, field
+import linecache
+import codecs
+import os
+import tempfile
+
+from types import CodeType
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Union,
+    Type,
+    NoReturn,
+)
+from typing_extensions import Protocol
 
 import jinja2
+import jinja2.ext
+import jinja2.parser
+import jinja2.nodes
+import jinja2.sandbox
 
-from dbt_common.clients.jinja import get_environment
 from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
+
+
+# this is ported from dbt-common/utils/jinja.py
+
+MACRO_PREFIX = "dbt_macro__"
+DOCS_PREFIX = "dbt_docs__"
+
+
+def get_dbt_macro_name(name: str) -> str:
+    if name is None:
+        raise DbtInternalError("Got None for a macro name!")
+    return f"{MACRO_PREFIX}{name}"
+
+
+def get_dbt_docs_name(name: str) -> str:
+    if name is None:
+        raise DbtInternalError("Got None for a doc name!")
+    return f"{DOCS_PREFIX}{name}"
+
+
+def get_materialization_macro_name(
+    materialization_name: str, adapter_type: Optional[str] = None, with_prefix: bool = True
+) -> str:
+    if adapter_type is None:
+        adapter_type = "default"
+    name = f"materialization_{materialization_name}_{adapter_type}"
+    return get_dbt_macro_name(name) if with_prefix else name
+
+
+def get_docs_macro_name(docs_name: str, with_prefix: bool = True) -> str:
+    return get_dbt_docs_name(docs_name) if with_prefix else docs_name
+
+
+def get_test_macro_name(test_name: str, with_prefix: bool = True) -> str:
+    name = f"test_{test_name}"
+    return get_dbt_macro_name(name) if with_prefix else name
+
+
+# this is ported from dbt-common/clients/jinja.py
+SUPPORTED_LANG_ARG = jinja2.nodes.Name("supported_languages", "param")
+
+# Global which can be set by dependents of dbt-common (e.g. core via flag parsing)
+MACRO_DEBUGGING: Union[str, bool] = False
+
+_ParseReturn = Union[jinja2.nodes.Node, List[jinja2.nodes.Node]]
+
+
+# Temporary type capturing the concept the functions in this file expect for a "node"
+class _NodeProtocol(Protocol):
+    pass
+
+
+class MaterializationExtension(jinja2.ext.Extension):
+    tags = set(["materialization"])
+
+    def parse(self, parser: jinja2.parser.Parser) -> _ParseReturn:
+        node = jinja2.nodes.Macro(lineno=next(parser.stream).lineno)
+        materialization_name = parser.parse_assign_target(name_only=True).name
+
+        adapter_name = "default"
+        node.args = []
+        node.defaults = []
+
+        while parser.stream.skip_if("comma"):
+            target = parser.parse_assign_target(name_only=True)
+
+            if target.name == "default":
+                pass
+
+            elif target.name == "adapter":
+                parser.stream.expect("assign")
+                value = parser.parse_expression()
+                adapter_name = value.value  # type: ignore
+
+            elif target.name == "supported_languages":
+                target.set_ctx("param")
+                node.args.append(target)
+                parser.stream.expect("assign")
+                languages = parser.parse_expression()
+                node.defaults.append(languages)
+
+            else:
+                raise Exception(materialization_name, target.name)
+
+        if SUPPORTED_LANG_ARG not in node.args:
+            node.args.append(SUPPORTED_LANG_ARG)
+            node.defaults.append(jinja2.nodes.List([jinja2.nodes.Const("sql")]))
+
+        node.name = get_materialization_macro_name(materialization_name, adapter_name)
+
+        node.body = parser.parse_statements(("name:endmaterialization",), drop_needle=True)
+
+        return node
+
+
+class DocumentationExtension(jinja2.ext.Extension):
+    tags = set(["docs"])
+
+    def parse(self, parser: jinja2.parser.Parser) -> _ParseReturn:
+        node = jinja2.nodes.Macro(lineno=next(parser.stream).lineno)
+        docs_name = parser.parse_assign_target(name_only=True).name
+
+        node.args = []
+        node.defaults = []
+        node.name = get_docs_macro_name(docs_name)
+        node.body = parser.parse_statements(("name:enddocs",), drop_needle=True)
+        return node
+
+
+class TestExtension(jinja2.ext.Extension):
+    tags = set(["test"])
+
+    def parse(self, parser: jinja2.parser.Parser) -> _ParseReturn:
+        node = jinja2.nodes.Macro(lineno=next(parser.stream).lineno)
+        test_name = parser.parse_assign_target(name_only=True).name
+
+        parser.parse_signature(node)
+        node.name = get_test_macro_name(test_name)
+        node.body = parser.parse_statements(("name:endtest",), drop_needle=True)
+        return node
+
+
+def _linecache_inject(source: str, write: bool) -> str:
+    if write:
+        # this is the only reliable way to accomplish this. Obviously, it's
+        # really darn noisy and will fill your temporary directory
+        tmp_file = tempfile.NamedTemporaryFile(
+            prefix="dbt-macro-compiled-",
+            suffix=".py",
+            delete=False,
+            mode="w+",
+            encoding="utf-8",
+        )
+        tmp_file.write(source)
+        filename = tmp_file.name
+    else:
+        # `codecs.encode` actually takes a `bytes` as the first argument if
+        # the second argument is 'hex' - mypy does not know this.
+        rnd = codecs.encode(os.urandom(12), "hex")
+        filename = rnd.decode("ascii")
+
+    # put ourselves in the cache
+    cache_entry = (len(source), None, [line + "\n" for line in source.splitlines()], filename)
+    # linecache does in fact have an attribute `cache`, thanks
+    linecache.cache[filename] = cache_entry
+    return filename
+
+
+@dataclass
+class MacroType:
+    name: str
+    type_params: List["MacroType"] = field(default_factory=list)
+
+
+class MacroFuzzParser(jinja2.parser.Parser):
+    def parse_macro(self) -> jinja2.nodes.Macro:
+        node = jinja2.nodes.Macro(lineno=next(self.stream).lineno)
+
+        # modified to fuzz macros defined in the same file. this way
+        # dbt can understand the stack of macros being called.
+        #  - @cmcarthur
+        node.name = get_dbt_macro_name(self.parse_assign_target(name_only=True).name)
+
+        self.parse_signature(node)
+        node.body = self.parse_statements(("name:endmacro",), drop_needle=True)
+        return node
+
+    def parse_signature(self, node: Union[jinja2.nodes.Macro, jinja2.nodes.CallBlock]) -> None:
+        """Overrides the default jinja Parser.parse_signature method, modifying
+        the original implementation to allow macros to have typed parameters."""
+
+        # Jinja does not support extending its node types, such as Macro, so
+        # at least while typed macros are experimental, we will patch the
+        # information onto the existing types.
+        setattr(node, "arg_types", [])
+        setattr(node, "has_type_annotations", False)
+
+        args = node.args = []  # type: ignore
+        defaults = node.defaults = []  # type: ignore
+
+        self.stream.expect("lparen")
+        while self.stream.current.type != "rparen":
+            if args:
+                self.stream.expect("comma")
+
+            arg = self.parse_assign_target(name_only=True)
+            arg.set_ctx("param")
+
+            type_name: Optional[str]
+            if self.stream.skip_if("colon"):
+                node.has_type_annotations = True  # type: ignore
+                type_name = self.parse_type_name()  # type: ignore
+            else:
+                type_name = ""
+
+            node.arg_types.append(type_name)  # type: ignore
+
+            if self.stream.skip_if("assign"):
+                defaults.append(self.parse_expression())
+            elif defaults:
+                self.fail("non-default argument follows default argument")
+
+            args.append(arg)
+        self.stream.expect("rparen")
+
+    def parse_type_name(self) -> MacroType:
+        # NOTE: Types syntax is validated here, but not whether type names
+        # are valid or have correct parameters.
+
+        # A type name should consist of a name (i.e. 'Dict')...
+        type_name = self.stream.expect("name").value
+        type = MacroType(type_name)
+
+        # ..and an optional comma-delimited list of type parameters
+        # as in the type declaration 'Dict[str, str]'
+        if self.stream.skip_if("lbracket"):
+            while self.stream.current.type != "rbracket":
+                if type.type_params:
+                    self.stream.expect("comma")
+                param_type = self.parse_type_name()
+                type.type_params.append(param_type)
+
+            self.stream.expect("rbracket")
+
+        return type
+
+
+class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
+    def _parse(self, source: str, name: Optional[str], filename: Optional[str]) -> jinja2.nodes.Template:
+        return MacroFuzzParser(self, source, name, filename).parse()
+
+    def _compile(self, source: str, filename: str) -> CodeType:
+        """
+        Override jinja's compilation. Use to stash the rendered source inside
+        the python linecache for debugging when the appropriate environment
+        variable is set.
+
+        If the value is 'write', also write the files to disk.
+        WARNING: This can write a ton of data if you aren't careful.
+        """
+        if filename == "<template>" and MACRO_DEBUGGING:
+            write = MACRO_DEBUGGING == "write"
+            filename = _linecache_inject(source, write)
+
+        return super()._compile(source, filename)  # type: ignore
+
+
+def _is_dunder_name(name: str) -> bool:
+    return name.startswith("__") and name.endswith("__")
+
+
+def create_undefined(node: Optional[_NodeProtocol] = None) -> Type[jinja2.Undefined]:
+    class Undefined(jinja2.Undefined):
+        def __init__(
+            self,
+            hint: Optional[str] = None,
+            obj: Any = None,
+            name: Optional[str] = None,
+            exc: Any = None,
+        ) -> None:
+            super().__init__(hint=hint, name=name)
+            self.node = node
+            self.name = name
+            self.hint = hint
+            # jinja uses these for safety, so we have to override them.
+            # see https://github.com/pallets/jinja/blob/master/jinja2/sandbox.py#L332-L339 # noqa
+            self.unsafe_callable = False
+            self.alters_data = False
+
+        def __getitem__(self, name: Any) -> "Undefined":
+            # Propagate the undefined value if a caller accesses this as if it
+            # were a dictionary
+            return self
+
+        def __getattr__(self, name: str) -> "Undefined":
+            if name == "name" or _is_dunder_name(name):
+                raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, name))
+
+            self.name = name
+
+            return self.__class__(hint=self.hint, name=self.name)
+
+        def __call__(self, *args: Any, **kwargs: Any) -> "Undefined":
+            return self
+
+        def __reduce__(self) -> NoReturn:
+            raise Exception(f"name={self.name or 'unknown'}, node={node}")
+
+    return Undefined
+
+
+def is_list(value):
+    return isinstance(value, list)
+
+
+TEXT_FILTERS: Dict[str, Callable[[Any], Any]] = {
+    "as_text": lambda x: x,
+    "as_bool": lambda x: x,
+    "as_native": lambda x: x,
+    "as_number": lambda x: x,
+    "is_list": is_list,
+}
+
+
+def get_environment(
+    node: Optional[_NodeProtocol] = None,  # always none in autofix
+    capture_macros: bool = False,
+) -> jinja2.Environment:
+    args: Dict[str, List[Union[str, Type[jinja2.ext.Extension]]]] = {
+        "extensions": ["jinja2.ext.do", "jinja2.ext.loopcontrols"]
+    }
+
+    if capture_macros:
+        args["undefined"] = create_undefined(None)  # type: ignore
+
+    args["extensions"].append(MaterializationExtension)
+    args["extensions"].append(DocumentationExtension)
+    args["extensions"].append(TestExtension)
+
+    env_cls: Type[jinja2.Environment] = MacroFuzzEnvironment
+    filters = TEXT_FILTERS
+
+    env = env_cls(**args)
+    env.filters.update(filters)
+
+    return env
 
 
 def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
@@ -25,14 +370,14 @@ def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
         return None
 
     # set 'capture_macros' to capture undefined
-    env = get_environment(None, capture_macros=True)
+    env = get_environment(node=None, capture_macros=True)
 
     parsed = env.parse(string)
     func_calls = tuple(parsed.find_all(jinja2.nodes.Call))
 
     config_func_calls = list(
         filter(
-            lambda f: hasattr(f, "node") and hasattr(f.node, "name") and f.node.name == "config",
+            lambda f: hasattr(f, "node") and hasattr(f.node, "name") and f.node.name == "config",  # type: ignore
             func_calls,
         )
     )
