@@ -4,7 +4,7 @@ description = "CLI to autofix deprecations in dbt projects"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "pyyaml>=6.0.2",
+    "pyyaml>=6.0.2", # need 6.0.2 for python 3.13 support
     "typer>=0.16.0",
     "yamllint>=1.37.0",
     "rich>=13.7.0",
@@ -40,9 +40,6 @@ test = [
     "pre-commit>=4.2.0",
     "nox",
 ]
-docs = [
-    "pydocstyle>=6.3.0",
-]
 
 [tool.pdm.build]
 # Include pre_commit_hooks/ directory in distribution
@@ -65,9 +62,17 @@ indent-width = 4
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
-select = ["E4", "E7", "E9", "F", "I", "RUF", "PL", "TID", "T20"]
-ignore = []
-
+select = ["E4", "E7", "E9", "F", "I", "RUF", "PL", "TID", "T20", "D"]
+# Ignore some doc warnings
+# D100: Missing docstring in public module
+# D101: Missing docstring in public class
+# D102: Missing docstring in public method
+# D103: Missing docstring in public function
+# D104: Missing docstring in public package
+# D105: Missing docstring in magic method
+# D107: Missing docstring in __init__
+# D202: No blank lines allowed after function docstring
+ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
 
 [tool.pyright]
 include = [
@@ -93,17 +98,8 @@ pythonpath = [
 ]
 addopts = "--ignore-glob=**/dbt_packages/**"
 
-[tool.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
-# D100: Missing docstring in public module
-# D101: Missing docstring in public class
-# D102: Missing docstring in public method
-# D103: Missing docstring in public function
-# D104: Missing docstring in public package
-# D105: Missing docstring in magic method
-# D107: Missing docstring in __init__
-# D202: No blank lines allowed after function docstring
-add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
 
 [[tool.uv.index]]
 name = "testpypi"
