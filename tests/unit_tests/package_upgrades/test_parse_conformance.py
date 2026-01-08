@@ -19,4 +19,5 @@ def test_fusion_schema_compat():
 
 
 def test_checkout_repo_and_run_conformance():
-    checkout_repo_and_run_conformance("dbt-labs", "dbt-project-evaluator", "dbt_project_evaluator", limit=1)
+    # checkout_repo_and_run_conformance("dbt-labs", "dbt-project-evaluator", "dbt_project_evaluator", limit=1)
+    checkout_repo_and_run_conformance("1997mahadi", "dbt-dlt-ingestion-pipeline", "crypto_dlt_pipeline")
