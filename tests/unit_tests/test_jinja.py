@@ -1,11 +1,12 @@
 import jinja2
+import jinja2.nodes
 import pytest
-from dbt_common.clients.jinja import get_environment
 
 from dbt_autofix.jinja import (
     _SourceCodeExtractor,
     construct_static_kwarg_value,
     statically_parse_unrendered_config,
+    get_environment,
 )
 
 
@@ -172,7 +173,7 @@ def test_source_code_extractor_multiline():
 
 def _extract_first_kwarg(source: str):
     """Helper to extract first kwarg from a config source string."""
-    env = get_environment(None, capture_macros=True)
+    env = get_environment(node=None, capture_macros=True)
     parsed = env.parse(source)
     func_calls = list(parsed.find_all(jinja2.nodes.Call))
     config_call = func_calls[0]
@@ -224,7 +225,7 @@ def test_construct_static_kwarg_value_multiple_kwargs():
 
     expected_values = {"materialized": "'table'", "schema": "'my_schema'", "enabled": "true"}
 
-    env = get_environment(None, capture_macros=True)
+    env = get_environment(node=None, capture_macros=True)
     parsed = env.parse(source)
     func_calls = list(parsed.find_all(jinja2.nodes.Call))
     config_call = func_calls[0]

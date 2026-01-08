@@ -23,3 +23,5 @@ project2/*
 
 # raw package hub output (because big)
 src/dbt_autofix/packages/scripts/output/*
+# profiles.yml temporarily added by unit tests
+tests/integration_tests/package_upgrades/dbt_utils_package_lookup_map_2/profiles.yml
