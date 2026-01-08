@@ -110,6 +110,25 @@ def check_binary_name(binary_name: str) -> bool:
         return False
 
 
+def check_fusion_version(binary_name: str) -> Optional[str]:
+    try:
+        version_result = subprocess.run(
+            [
+                binary_name,
+                "--version",
+            ],
+            check=False,
+            capture_output=True,
+            timeout=60,
+            text=True,
+        )
+        if "dbt-fusion" in version_result.stdout:
+            return version_result.stdout.split()[-1]
+    except Exception as e:
+        error_console.log(f"{e}: An unknown error occurred when checking dbt version")
+    return
+
+
 def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
     possible_binary_names: list[str] = ["dbtf", "dbt"] if custom_name is None else [custom_name]
 
@@ -128,21 +147,12 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
     # now check version returned by each and use first one
     # don't need exception handling here because previous step already did it
     for valid_binary_name in binary_names_found:
-        version_result = subprocess.run(
-            [
-                valid_binary_name,
-                "--version",
-            ],
-            check=False,
-            capture_output=True,
-            timeout=60,
-            text=True,
-        )
-        if "dbt-fusion" in version_result.stdout:
+        version_result = check_fusion_version(valid_binary_name)
+        if version_result:
             return valid_binary_name
 
     # if we got to the end, then no fusion version has been found
-    error_console.log(f"Could not find Fusion binary, latest version output is {version_result.stdout}")
+    error_console.log(f"Could not find Fusion binary, latest version output is {version_result}")
     return None
 
 
@@ -215,6 +225,11 @@ def check_fusion_schema_compatibility(
         # Find correct name for Fusion binary
         fusion_binary_name: Optional[str] = find_fusion_binary(custom_name="/Users/chaya/.local/bin/dbt")
         if fusion_binary_name is None:
+            raise FusionBinaryNotAvailable()
+        
+        # Get the Fusion version
+        fusion_version: Optional[str] = check_fusion_version(fusion_binary_name)
+        if fusion_version is None:
             raise FusionBinaryNotAvailable()
 
         try:
