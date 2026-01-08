@@ -189,12 +189,13 @@ def parse_log_output(output: str, exit_code: int) -> ParseConformanceLogOutput:
 
 
 def check_fusion_schema_compatibility(
-    repo_path: Path = Path.cwd(), show_fusion_output=True
+    repo_path: Path = Path.cwd(), fusion_binary: Optional[str] = None, show_fusion_output=True
 ) -> Optional[ParseConformanceLogOutput]:
     """
     Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
 
     Args:
+        fusion_binary_name: name of a valid Fusion binary
         repo_path: Path to the dbt package repository
 
     Returns:
@@ -222,8 +223,11 @@ def check_fusion_schema_compatibility(
         # Ensure the `_DBT_FUSION_STRICT_MODE` is set (this will ensure fusion errors on schema violations)
         os.environ["_DBT_FUSION_STRICT_MODE"] = "1"
 
-        # Find correct name for Fusion binary
-        fusion_binary_name: Optional[str] = find_fusion_binary(custom_name="/Users/chaya/.local/bin/dbt")
+        # Find correct name for Fusion binary if none provided
+        fusion_binary_name: Optional[str] = fusion_binary
+        if fusion_binary_name is None:
+            fusion_binary_name = find_fusion_binary()
+        # If still no valid name, return
         if fusion_binary_name is None:
             raise FusionBinaryNotAvailable()
         
@@ -329,7 +333,7 @@ def check_fusion_schema_compatibility(
 
 
 def main():
-    check_fusion_schema_compatibility(Path.cwd())
+    check_fusion_schema_compatibility(repo_path=Path.cwd())
 
 
 if __name__ == "__main__":
