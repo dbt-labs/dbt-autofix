@@ -74,3 +74,41 @@ def test_pre_commit_installation(session):
         "non_existent_file",
         "--verbose",
     )
+
+
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
+def test_core_1_10_installation(session):
+    """Test that dbt-autofix can be installed with dbt-core"""
+    session.run_install(
+        "uv",
+        "sync",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+    session.run_install(
+        "uv",
+        "add",
+        "dbt-core==1.10.6",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+    session.run("uv", "run", "dbt-autofix", "--help")
+
+
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
+def test_core_1_12_installation(session):
+    """Test that dbt-autofix can be installed with dbt-core"""
+    session.run_install(
+        "uv",
+        "sync",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+    session.run_install(
+        "uv",
+        "add",
+        "dbt-core==1.11.2",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+    session.run("uv", "run", "dbt-autofix", "--help")
