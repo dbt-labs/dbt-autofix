@@ -2,14 +2,16 @@
 name = "dbt-fusion-package-tools"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10, <3.14" # can't support 3.14 without mashumaro 3.15
 dependencies = [
     "gitpython>=3.1.45",
     "mashumaro>=3.9,<3.15", # matches dbt-core
-    "pyyaml>=6.0.2",
+    "pyyaml>=6.0.2 ; python_version >= '3.13'", # need 6.0.2 for python 3.13 support
+    "pyyaml>=6.0 ; python_version < '3.13'", # matches dbt-core
     "dbt-protos>=1.0.410",
-    "requests>=2.32.5",
+    "requests<3.0.0", # matches dbt-common
     "rich>=14.0.0",
+    "click>=8.2.0,<9.0", # matches dbt-core 
 ]
 
 dynamic = ["version"]
@@ -28,8 +30,3 @@ build-backend = "pdm.backend"
 [tool.pdm.version]
 source = "scm"
 version_format = "pdm_build:format_version"
-
-[project.optional-dependencies]
-docs = [
-    "pydocstyle>=6.3.0",
-]
