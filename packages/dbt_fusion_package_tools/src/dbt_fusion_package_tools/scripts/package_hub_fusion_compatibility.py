@@ -388,9 +388,9 @@ def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: in
         for github_url in packages[package]:
             response = check_github_url(github_url)
             if not response:
-                print(f"No response for {package} {github_url}")
+                error_console.log(f"No response for {package} {github_url}")
             if response["status"] != 200 or response.get("error"):
-                print(response)
+                error_console.log(response)
             if response["is_404"]:
                 continue
             elif response["is_301"]:

@@ -13,6 +13,24 @@ from dbt_fusion_package_tools.exceptions import SemverError
 
 from pprint import pprint
 
+import typer
+from rich import print
+from rich.console import Console
+from typing_extensions import Annotated
+
+console = Console()
+error_console = Console(stderr=True)
+
+app = typer.Typer()
+
+current_dir = Path.cwd()
+DEFAULT_OUTPUT_PATH = current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
+DEFAULT_HUB_PATH = Path.home() / "workplace" / "hub.getdbt.com"
+DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
+DEFAULT_CONFORMANCE_OUTPUT_FILE = (
+    current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output" / "conformance_output.json"
+)
+
 
 def reload_output_from_file(
     file_path: Path,
@@ -58,7 +76,7 @@ def get_json_from_package_hub_file(file_path: Path, package_name: str, version: 
         with file_path.open("r", encoding="utf-8") as fh:
             return json.load(fh)
     except FileNotFoundError:
-        print(f"******************** No package hub output found for {package_name} version {version}")
+        error_console.log(f"No package hub output found for {package_name} version {version}")
         return {}
 
 
@@ -100,11 +118,31 @@ def write_dict_to_json(data: dict[str, Any], dest_path: Path, *, indent: int = 2
         json.dump(data, fh, indent=indent, sort_keys=False, ensure_ascii=False)
 
 
-def main():
-    file_path: Path = (
-        Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output" / "v89_conformance_output_20251222.json"
-    )
-    fusion_version = "89"
+@app.command()
+def main(
+    local_hub_path: Annotated[
+        str, typer.Option("--local-hub", help="Fully qualified path to local Package Hub clone")
+    ] = str(DEFAULT_HUB_PATH),
+    fusion_binary: Annotated[str, typer.Option("--fusion-binary", help="Name of fusion binary")] = str(
+        DEFAULT_FUSION_BINARY_PATH
+    ),
+    output_path: Annotated[
+        str, typer.Option("--output-path", help="Fully qualified path to directory for output")
+    ] = str(DEFAULT_OUTPUT_PATH),
+    package_limit: Annotated[
+        int, typer.Option("--limit", help="Only run on first n packages (default = 0 to run all packages)")
+    ] = 0,
+    fusion_version: Annotated[str, typer.Option("--fusion-version", help="Version of Fusion used for testing")] = "89",
+    conformance_output_path: Annotated[
+        str, typer.Option("--conformance-output", help="Path to conformance output")
+    ] = str(DEFAULT_CONFORMANCE_OUTPUT_FILE),
+):
+    file_path: Path = Path(conformance_output_path)
+    console.log(f"Writing to local Hub repo: {local_hub_path}")
+    console.log(f"Reading from output path: {conformance_output_path}")
+    console.log(f"Package limit: {str(package_limit) if package_limit > 0 else 'none'}")
+    console.log(f"Fusion version: 2.0.0-preview.{fusion_version}")
+
     conformance_output = reload_output_from_file(file_path)
     conformance_data = extract_output_from_json(conformance_output)
     package_count = 0
@@ -112,9 +150,10 @@ def main():
     error_count = 0
     i = 0
     for package_name in conformance_data:
-        # if i > 5:
-        #     break
-        latest_version = check_for_rename("/Users/chaya/workplace/hub.getdbt.com", package_name)
+        if package_limit > 0 and i > package_limit:
+            break
+        console.log(f"Updating package {package_name} with {len(conformance_data[package_name])} versions")
+        latest_version = check_for_rename(local_hub_path, package_name)
         package_count += 1
         for version in conformance_data[package_name]:
             try:
@@ -122,10 +161,10 @@ def main():
                 if version_spec > latest_version:
                     continue
             except SemverError:
-                print(f"Can't parse version spec {version} for package {package_name}")
+                error_console.log(f"Can't parse version spec {version} for package {package_name}")
                 error_count += 1
                 continue
-            version_file_path = find_package_hub_file("/Users/chaya/workplace/hub.getdbt.com", package_name, version)
+            version_file_path = find_package_hub_file(local_hub_path, package_name, version)
             package_hub_json = get_json_from_package_hub_file(version_file_path, package_name, version)
             if package_hub_json == {}:
                 error_count += 1
@@ -138,8 +177,11 @@ def main():
             write_dict_to_json(updated_json, version_file_path, indent=4)
             success_count += 1
         i += 1
-    print(package_count, success_count, error_count)
+    console.log("Package Hub update complete", style="green")
+    console.log(f"Packages processed: {package_count}")
+    console.log(f"Success count: {success_count}")
+    console.log(f"Error count: {error_count}")
 
 
 if __name__ == "__main__":
-    main()
+    app()

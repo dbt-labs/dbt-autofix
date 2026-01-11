@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Optional
+import re
 
 from rich.console import Console
 
@@ -27,6 +28,8 @@ from dbt_fusion_package_tools.compatibility import (
 
 console = Console()
 error_console = Console(stderr=True)
+
+_ERROR_PATH_REGEX = re.compile(r"(?:\.\./)*")
 
 
 def checkout_repo_and_run_conformance(
@@ -174,17 +177,22 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
     return None
 
 
-def parse_log_output(output: str, exit_code: int) -> ParseConformanceLogOutput:
+def parse_log_output(output: str, exit_code: int, repo_path: Path = Path.cwd()) -> ParseConformanceLogOutput:
     log_output = [json.loads(x) for x in output.splitlines()]
     result = ParseConformanceLogOutput(parse_exit_code=exit_code)
+    temp_path = str(repo_path)
     for line in log_output:
         if line.get("event_type") == "v1.public.events.fusion.log.LogMessage":
             severity_text = line.get("severity_text")
-            body = line.get("body")
+            # remove the tempdir path from the log message
+            body_no_path = (str(line.get("body"))).replace(temp_path, "")
+            body_no_path = body_no_path.replace("private/", "")
+            body = _ERROR_PATH_REGEX.sub("", body_no_path)
+            error_console.log(body)
             log_message = LogMessage()
             json_format.ParseDict(line.get("attributes"), log_message, ignore_unknown_fields=True)
             fusion_log_message = FusionLogMessage(
-                body=str(body),
+                body=body,
                 severity_text=str(severity_text),
                 error_code=log_message.code,
                 dbt_core_event_code=log_message.dbt_core_event_code,
@@ -276,7 +284,7 @@ def check_fusion_schema_compatibility(
                 capture_output=True,
                 timeout=60,
             )
-            deps_output = parse_log_output(deps_result.stdout, deps_result.returncode)
+            deps_output = parse_log_output(deps_result.stdout, deps_result.returncode, repo_path)
             if deps_result.returncode != 0:
                 error_console.log(f"dbt deps returned errors")
                 error_console.log(deps_output)
@@ -300,7 +308,7 @@ def check_fusion_schema_compatibility(
                 capture_output=True,
                 timeout=60,
             )
-            parse_output = parse_log_output(parse_result.stdout, parse_result.returncode)
+            parse_output = parse_log_output(parse_result.stdout, parse_result.returncode, repo_path)
             if parse_result.returncode != 0:
                 error_console.log(f"dbt parse returned errors")
                 error_console.log(parse_output)
