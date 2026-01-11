@@ -16,13 +16,6 @@ def reload_output_from_file(
     with file_path.open("r", encoding="utf-8") as fh:
         return json.load(fh)
 
-    # data_output = {}
-    # for k, v in data.items():
-    #     data_output[k] = {version: result.to_dict() for version, result in v.items()}
-    # out_file = dest_dir / "conformance_output.json"
-    # with out_file.open("w", encoding="utf-8") as fh:
-    #     json.dump(data_output, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
-
 
 def main():
     file_path: Path = (

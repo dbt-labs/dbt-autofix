@@ -13,6 +13,20 @@ from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 
 import requests
 from requests import HTTPError
+import typer
+from rich import print
+from rich.console import Console
+from typing_extensions import Annotated
+
+console = Console()
+error_console = Console(stderr=True)
+
+app = typer.Typer()
+
+current_dir = Path.cwd()
+DEFAULT_OUTPUT_PATH = current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
+DEFAULT_HUB_PATH = Path.home() / "workplace" / "hub.getdbt.com"
+DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
 
 
 def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> Any:
@@ -199,7 +213,6 @@ def download_package_jsons_from_hub_repo(
     branch: Optional[str] = "master",
     github_token: Optional[str] = None,
     file_count_limit: int = 0,
-    # ) -> List[PackageJSON]:
 ) -> defaultdict[str, list[dict[str, Any]]]:
     """Download and parse all JSON files under `data/packages` in a GitHub repo.
 
@@ -318,7 +331,6 @@ def get_github_repos_from_file(file_path: Path) -> defaultdict[str, set[str]]:
             if m:
                 package_repos[package].add(m.group(1))
     for repos in package_repos:
-        # print(repos)
         repo_count = len(package_repos[repos])
         if repo_count > 1:
             print(repos, package_repos[repos])
@@ -388,9 +400,9 @@ def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: in
     return valid_repos
 
 
-def run_conformance(file_path: Path, package_limit: int = 0) -> dict[str, dict[str, FusionConformanceResult]]:
+def run_conformance(file_path: Path, local_hub_path: Path, package_limit: int = 0, fusion_binary = None) -> dict[str, dict[str, FusionConformanceResult]]:
     output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(
-        path="/Users/chaya/workplace/hub.getdbt.com"
+        path=local_hub_path
     )
     results: dict[str, dict[str, FusionConformanceResult]] = {}
     github_repos: defaultdict[str, set[str]] = get_github_repos_from_file(file_path)
@@ -408,7 +420,7 @@ def run_conformance(file_path: Path, package_limit: int = 0) -> dict[str, dict[s
             package_github_org = parsed_url[-2]
             package_github_repo = parsed_url[-1]
             package_name = output[package][0]["package_name_index_json"]
-            results[package] = checkout_repo_and_run_conformance(package_github_org, package_github_repo, package_name)
+            results[package] = checkout_repo_and_run_conformance(package_github_org, package_github_repo, package_name, limit=package_limit, fusion_binary=fusion_binary)
 
     return results
 
@@ -423,17 +435,31 @@ def write_conformance_output_to_json(
     data_output = {}
     for k, v in data.items():
         data_output[k] = {version: result.to_dict() for version, result in v.items()}
-    out_file = dest_dir / "conformance_output.json"
+    out_file = Path(dest_dir) / "conformance_output.json"
     with out_file.open("w", encoding="utf-8") as fh:
         json.dump(data_output, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
 
-
-def main():
-    package_limit = 0
-    output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
-    parse_conformance_results = run_conformance(output_path / "package_output.json", package_limit)
+@app.command()
+def main(
+    local_hub_path: Annotated[str, typer.Option("--local-hub", help="Fully qualified path to local Package Hub clone")] = str(DEFAULT_HUB_PATH),
+    fusion_binary: Annotated[str, typer.Option("--fusion-binary", help="Name of fusion binary")] = str(DEFAULT_FUSION_BINARY_PATH),
+    output_path: Annotated[str, typer.Option("--output-path", help="Fully qualified path to directory for output")] = str(DEFAULT_OUTPUT_PATH),
+    package_limit: Annotated[int, typer.Option("--limit", help="Only run on first n packages (default = 0 to run all packages)")] = 0,
+):
+    if output_path:
+        output_dir = Path(output_path)
+    else:
+        output_dir = DEFAULT_OUTPUT_PATH
+    console.log(f"Reading from local Hub repo: {local_hub_path}")
+    console.log(f"Writing to output path: {output_dir}/package_output.json")
+    console.log(f"Package limit: {package_limit}")
+    console.log(f"Fusion binary: {fusion_binary}")
+    parse_conformance_results = run_conformance(output_dir / "package_output.json", local_hub_path, package_limit, fusion_binary)
     write_conformance_output_to_json(parse_conformance_results, output_path)
+    console.log(f"Successfully wrote output to {output_path}/conformance_output.json")
 
 
 if __name__ == "__main__":
-    main()
+    app()
+
+

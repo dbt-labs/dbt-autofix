@@ -30,7 +30,7 @@ error_console = Console(stderr=True)
 
 
 def checkout_repo_and_run_conformance(
-    github_organization: str, github_repo_name: str, package_name: str, limit: int = 0
+    github_organization: str, github_repo_name: str, package_name: str, limit: int = 0, fusion_binary: Optional[str] = None
 ) -> dict[str, FusionConformanceResult]:
     results: dict[str, FusionConformanceResult] = {}
     with TemporaryDirectory() as tmpdir:
@@ -49,13 +49,13 @@ def checkout_repo_and_run_conformance(
             checked_out = repo.checkout_tag(tag, stash_changes=True)
             console.log(f"tag {tag.name} checked out: {checked_out}")
             tag_version = tag.name[1:] if tag.name[0] == "v" else tag.name
-            result = run_conformance_for_version(tmpdir, package_name, tag_version, package_id)
+            result = run_conformance_for_version(tmpdir, package_name, tag_version, package_id, fusion_binary)
             if result:
                 results[tag_version] = result
     return results
 
 
-def run_conformance_for_version(path, package_name, tag_version, package_id) -> Optional[FusionConformanceResult]:
+def run_conformance_for_version(path, package_name, tag_version, package_id, fusion_binary = None) -> Optional[FusionConformanceResult]:
     result = FusionConformanceResult(version=tag_version)
     # check require dbt version
     try:
@@ -81,7 +81,7 @@ def run_conformance_for_version(path, package_name, tag_version, package_id) -> 
         package_id=package_id,
         raw_require_dbt_version_range=require_dbt_version_string,
     )
-    parse_conformance = check_fusion_schema_compatibility(Path(path), show_fusion_output=True)
+    parse_conformance = check_fusion_schema_compatibility(Path(path), fusion_binary=fusion_binary, show_fusion_output=True)
     result.require_dbt_version_defined = new_version.is_require_dbt_version_defined()
     if result.require_dbt_version_defined:
         result.require_dbt_version_compatible = new_version.is_require_dbt_version_fusion_compatible()

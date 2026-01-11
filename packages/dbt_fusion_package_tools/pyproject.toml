@@ -19,7 +19,7 @@ dynamic = ["version"]
 [project.scripts]
 dbt-fusion-package-tools = "dbt_fusion_package_tools:main"
 dbt-fusion-package-schema-compat = "dbt_fusion_package_tools.check_parse_conformance:main"
-package-hub-compat = "dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility:main"
+package-hub-compat = "dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility:app"
 
 [tool.uv]
 package = true
