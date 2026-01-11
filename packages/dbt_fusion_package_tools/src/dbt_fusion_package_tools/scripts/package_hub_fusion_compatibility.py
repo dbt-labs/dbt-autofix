@@ -400,10 +400,10 @@ def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: in
     return valid_repos
 
 
-def run_conformance(file_path: Path, local_hub_path: Path, package_limit: int = 0, fusion_binary = None) -> dict[str, dict[str, FusionConformanceResult]]:
-    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(
-        path=local_hub_path
-    )
+def run_conformance(
+    file_path: Path, local_hub_path: Path, package_limit: int = 0, fusion_binary=None
+) -> dict[str, dict[str, FusionConformanceResult]]:
+    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(path=local_hub_path)
     results: dict[str, dict[str, FusionConformanceResult]] = {}
     github_repos: defaultdict[str, set[str]] = get_github_repos_from_file(file_path)
     github_urls: dict[str, str] = validate_github_urls(github_repos, package_limit)
@@ -420,7 +420,9 @@ def run_conformance(file_path: Path, local_hub_path: Path, package_limit: int = 
             package_github_org = parsed_url[-2]
             package_github_repo = parsed_url[-1]
             package_name = output[package][0]["package_name_index_json"]
-            results[package] = checkout_repo_and_run_conformance(package_github_org, package_github_repo, package_name, limit=package_limit, fusion_binary=fusion_binary)
+            results[package] = checkout_repo_and_run_conformance(
+                package_github_org, package_github_repo, package_name, limit=package_limit, fusion_binary=fusion_binary
+            )
 
     return results
 
@@ -439,12 +441,21 @@ def write_conformance_output_to_json(
     with out_file.open("w", encoding="utf-8") as fh:
         json.dump(data_output, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
 
+
 @app.command()
 def main(
-    local_hub_path: Annotated[str, typer.Option("--local-hub", help="Fully qualified path to local Package Hub clone")] = str(DEFAULT_HUB_PATH),
-    fusion_binary: Annotated[str, typer.Option("--fusion-binary", help="Name of fusion binary")] = str(DEFAULT_FUSION_BINARY_PATH),
-    output_path: Annotated[str, typer.Option("--output-path", help="Fully qualified path to directory for output")] = str(DEFAULT_OUTPUT_PATH),
-    package_limit: Annotated[int, typer.Option("--limit", help="Only run on first n packages (default = 0 to run all packages)")] = 0,
+    local_hub_path: Annotated[
+        str, typer.Option("--local-hub", help="Fully qualified path to local Package Hub clone")
+    ] = str(DEFAULT_HUB_PATH),
+    fusion_binary: Annotated[str, typer.Option("--fusion-binary", help="Name of fusion binary")] = str(
+        DEFAULT_FUSION_BINARY_PATH
+    ),
+    output_path: Annotated[
+        str, typer.Option("--output-path", help="Fully qualified path to directory for output")
+    ] = str(DEFAULT_OUTPUT_PATH),
+    package_limit: Annotated[
+        int, typer.Option("--limit", help="Only run on first n packages (default = 0 to run all packages)")
+    ] = 0,
 ):
     if output_path:
         output_dir = Path(output_path)
@@ -454,12 +465,12 @@ def main(
     console.log(f"Writing to output path: {output_dir}/package_output.json")
     console.log(f"Package limit: {package_limit}")
     console.log(f"Fusion binary: {fusion_binary}")
-    parse_conformance_results = run_conformance(output_dir / "package_output.json", local_hub_path, package_limit, fusion_binary)
+    parse_conformance_results = run_conformance(
+        output_dir / "package_output.json", local_hub_path, package_limit, fusion_binary
+    )
     write_conformance_output_to_json(parse_conformance_results, output_path)
     console.log(f"Successfully wrote output to {output_path}/conformance_output.json")
 
 
 if __name__ == "__main__":
     app()
-
-
