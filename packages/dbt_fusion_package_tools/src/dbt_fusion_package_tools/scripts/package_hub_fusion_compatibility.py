@@ -6,7 +6,9 @@ import warnings
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from dbt_fusion_package_tools.check_parse_conformance import checkout_repo_and_run_conformance
+from dbt_fusion_package_tools.check_parse_conformance import (
+    checkout_repo_and_run_conformance,
+)
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 
 import requests
@@ -338,7 +340,13 @@ def check_github_url(
     try:
         resp = requests.head(url, headers=headers, timeout=timeout, allow_redirects=False)
         if resp.status_code in (405, 501):  # HEAD not allowed => try GET
-            resp = requests.get(url, headers=headers, timeout=timeout, allow_redirects=False, stream=True)
+            resp = requests.get(
+                url,
+                headers=headers,
+                timeout=timeout,
+                allow_redirects=False,
+                stream=True,
+            )
         status = resp.status_code
         location = resp.headers.get("Location")
         return {
@@ -349,7 +357,13 @@ def check_github_url(
             "error": None,
         }
     except requests.RequestException as exc:
-        return {"status": None, "is_404": False, "is_301": False, "location": None, "error": str(exc)}
+        return {
+            "status": None,
+            "is_404": False,
+            "is_301": False,
+            "location": None,
+            "error": str(exc),
+        }
 
 
 def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: int = 0) -> dict[str, str]:
@@ -400,7 +414,11 @@ def run_conformance(file_path: Path, package_limit: int = 0) -> dict[str, dict[s
 
 
 def write_conformance_output_to_json(
-    data: dict[str, dict[str, FusionConformanceResult]], dest_dir: Path, *, indent: int = 2, sort_keys: bool = True
+    data: dict[str, dict[str, FusionConformanceResult]],
+    dest_dir: Path,
+    *,
+    indent: int = 2,
+    sort_keys: bool = True,
 ):
     data_output = {}
     for k, v in data.items():

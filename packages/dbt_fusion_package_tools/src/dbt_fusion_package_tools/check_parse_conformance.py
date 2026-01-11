@@ -19,7 +19,11 @@ from dbt_fusion_package_tools.version_utils import VersionSpecifier
 from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
 from dbtlabs.proto.public.v1.events.fusion.log.log_pb2 import LogMessage
 from google.protobuf import json_format
-from dbt_fusion_package_tools.compatibility import FusionConformanceResult, ParseConformanceLogOutput, FusionLogMessage
+from dbt_fusion_package_tools.compatibility import (
+    FusionConformanceResult,
+    ParseConformanceLogOutput,
+    FusionLogMessage,
+)
 
 console = Console()
 error_console = Console(stderr=True)
@@ -55,7 +59,10 @@ def run_conformance_for_version(path, package_name, tag_version, package_id) -> 
     result = FusionConformanceResult(version=tag_version)
     # check require dbt version
     try:
-        dbt_project_yml = safe_load((Path(f"{path}/dbt_project.yml")).read_text()) or ({}, {})
+        dbt_project_yml = safe_load((Path(f"{path}/dbt_project.yml")).read_text()) or (
+            {},
+            {},
+        )
         require_dbt_version_string = dbt_project_yml[1].get("require-dbt-version")
     except Exception as e:
         error_console.log(f"dbt_project.yml load failed for {package_id} {tag_version}: {e}")
@@ -69,7 +76,10 @@ def run_conformance_for_version(path, package_name, tag_version, package_id) -> 
         except Exception as e:
             error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag_version}: {e}")
     new_version: DbtPackageVersion = DbtPackageVersion(
-        package_name, tag_version, package_id=package_id, raw_require_dbt_version_range=require_dbt_version_string
+        package_name,
+        tag_version,
+        package_id=package_id,
+        raw_require_dbt_version_range=require_dbt_version_string,
     )
     parse_conformance = check_fusion_schema_compatibility(Path(path), show_fusion_output=True)
     result.require_dbt_version_defined = new_version.is_require_dbt_version_defined()
@@ -189,7 +199,9 @@ def parse_log_output(output: str, exit_code: int) -> ParseConformanceLogOutput:
 
 
 def check_fusion_schema_compatibility(
-    repo_path: Path = Path.cwd(), fusion_binary: Optional[str] = None, show_fusion_output=True
+    repo_path: Path = Path.cwd(),
+    fusion_binary: Optional[str] = None,
+    show_fusion_output=True,
 ) -> Optional[ParseConformanceLogOutput]:
     """
     Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
@@ -230,7 +242,7 @@ def check_fusion_schema_compatibility(
         # If still no valid name, return
         if fusion_binary_name is None:
             raise FusionBinaryNotAvailable()
-        
+
         # Get the Fusion version
         fusion_version: Optional[str] = check_fusion_version(fusion_binary_name)
         if fusion_version is None:
