@@ -100,7 +100,6 @@ def update_hub_json(
     updated_json["downloads"] = original_json["downloads"]
 
     new_conformance = conformance_output.to_dict()
-    new_conformance["fusion_version_tested"] = fusion_version
     if "fusion_compatibility" in original_json:
         manually_verified_compatible = original_json["fusion_compatibility"].get("manually_verified_compatible")
         manually_verified_incompatible = original_json["fusion_compatibility"].get("manually_verified_incompatible")
