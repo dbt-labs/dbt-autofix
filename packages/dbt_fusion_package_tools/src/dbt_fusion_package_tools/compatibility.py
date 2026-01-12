@@ -35,6 +35,7 @@ class ParseConformanceLogOutput(DataClassJSONMixin):
     total_warnings: int = 0
     errors: list[FusionLogMessage] = field(default_factory=list)
     warnings: list[FusionLogMessage] = field(default_factory=list)
+    fusion_version: str = "unknown"
 
 
 @dataclass

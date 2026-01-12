@@ -177,9 +177,11 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
     return None
 
 
-def parse_log_output(output: str, exit_code: int, repo_path: Path = Path.cwd()) -> ParseConformanceLogOutput:
+def parse_log_output(
+    output: str, exit_code: int, repo_path: Path = Path.cwd(), fusion_version: str = "unknown"
+) -> ParseConformanceLogOutput:
     log_output = [json.loads(x) for x in output.splitlines()]
-    result = ParseConformanceLogOutput(parse_exit_code=exit_code)
+    result = ParseConformanceLogOutput(parse_exit_code=exit_code, fusion_version=fusion_version)
     temp_path = str(repo_path)
     for line in log_output:
         if line.get("event_type") == "v1.public.events.fusion.log.LogMessage":
@@ -188,7 +190,6 @@ def parse_log_output(output: str, exit_code: int, repo_path: Path = Path.cwd()) 
             body_no_path = (str(line.get("body"))).replace(temp_path, "")
             body_no_path = body_no_path.replace("private/", "")
             body = _ERROR_PATH_REGEX.sub("", body_no_path)
-            error_console.log(body)
             log_message = LogMessage()
             json_format.ParseDict(line.get("attributes"), log_message, ignore_unknown_fields=True)
             fusion_log_message = FusionLogMessage(
@@ -284,7 +285,9 @@ def check_fusion_schema_compatibility(
                 capture_output=True,
                 timeout=60,
             )
-            deps_output = parse_log_output(deps_result.stdout, deps_result.returncode, repo_path)
+            deps_output = parse_log_output(
+                deps_result.stdout, deps_result.returncode, repo_path, fusion_version=fusion_version
+            )
             if deps_result.returncode != 0:
                 error_console.log(f"dbt deps returned errors")
                 error_console.log(deps_output)
@@ -308,7 +311,9 @@ def check_fusion_schema_compatibility(
                 capture_output=True,
                 timeout=60,
             )
-            parse_output = parse_log_output(parse_result.stdout, parse_result.returncode, repo_path)
+            parse_output = parse_log_output(
+                parse_result.stdout, parse_result.returncode, repo_path, fusion_version=fusion_version
+            )
             if parse_result.returncode != 0:
                 error_console.log(f"dbt parse returned errors")
                 error_console.log(parse_output)
