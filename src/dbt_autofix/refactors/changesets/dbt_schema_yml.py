@@ -1010,3 +1010,131 @@ def changeset_remove_duplicate_models(yml_str: str) -> YMLRuleRefactorResult:
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
     )
+
+
+def deduplicate_columns_list(
+    columns: List[Dict[str, Any]],
+    parent_name: str,
+    parent_type: str
+) -> Tuple[List[Dict[str, Any]], bool, List[DbtDeprecationRefactor]]:
+    """Remove duplicate column definitions, keeping the last occurrence.
+
+    dbt Core behavior: "Only the last definition will be used"
+
+    Args:
+        columns: List of column dictionaries
+        parent_name: Name of the parent node (model/source table) for logging
+        parent_type: Type of parent ("Model", "Source table") for logging
+
+    Returns:
+        Tuple containing:
+        - Deduplicated columns list (order preserved, duplicates removed, last kept)
+        - Boolean indicating if any duplicates were found
+        - List of deprecation refactors for logging
+    """
+    if not columns:
+        return columns, False, []
+
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    seen_names: Dict[str, int] = {}  # name -> last index
+    duplicate_indices: set = set()
+
+    # First pass: identify duplicates by finding all occurrences
+    for i, column in enumerate(columns):
+        col_name = column.get("name")
+        if col_name is None:
+            continue
+        if col_name in seen_names:
+            # Mark the PREVIOUS occurrence as duplicate (we keep the last)
+            duplicate_indices.add(seen_names[col_name])
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"{parent_type} '{parent_name}' - Removed duplicate column '{col_name}' (keeping last definition).",
+                    deprecation=DeprecationType.DUPLICATE_COLUMN_DEFINITION_DEPRECATION
+                )
+            )
+        seen_names[col_name] = i
+
+    # Second pass: build deduplicated list (excluding duplicate indices)
+    deduplicated = [col for i, col in enumerate(columns) if i not in duplicate_indices]
+
+    return deduplicated, len(duplicate_indices) > 0, deprecation_refactors
+
+
+def changeset_remove_duplicate_column_definitions(
+    yml_str: str,
+    schema_specs: SchemaSpecs
+) -> YMLRuleRefactorResult:
+    """Remove duplicate column definitions in YAML files, keeping the last occurrence.
+
+    This handles the dbt warning:
+    "Column 'X' is defined multiple times in 'path/model.sql'.
+     Only the last definition will be used."
+
+    Args:
+        yml_str: The YAML string to process
+        schema_specs: Schema specifications (used to identify node types with columns)
+
+    Returns:
+        YMLRuleRefactorResult containing the refactored YAML
+    """
+    refactored = False
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    yml_dict = DbtYAML().load(yml_str) or {}
+
+    # Process top-level node types (models, seeds, snapshots, etc.)
+    for node_type in schema_specs.yaml_specs_per_node_type:
+        if node_type not in yml_dict:
+            continue
+        for i, node in enumerate(yml_dict.get(node_type) or []):
+            node_name = node.get("name", f"unknown_{node_type}")
+            pretty_type = node_type[:-1].title()
+
+            # Process columns at node level
+            if "columns" in node and isinstance(node["columns"], list):
+                deduped, changed, logs = deduplicate_columns_list(
+                    node["columns"], node_name, pretty_type
+                )
+                if changed:
+                    refactored = True
+                    yml_dict[node_type][i]["columns"] = deduped
+                    deprecation_refactors.extend(logs)
+
+            # Process columns in model versions
+            if "versions" in node:
+                for v_i, version in enumerate(node.get("versions") or []):
+                    if "columns" in version and isinstance(version["columns"], list):
+                        version_name = f"{node_name} (version {version.get('v', v_i)})"
+                        deduped, changed, logs = deduplicate_columns_list(
+                            version["columns"], version_name, pretty_type
+                        )
+                        if changed:
+                            refactored = True
+                            yml_dict[node_type][i]["versions"][v_i]["columns"] = deduped
+                            deprecation_refactors.extend(logs)
+
+    # Process sources -> tables -> columns
+    if "sources" in yml_dict:
+        for s_i, source in enumerate(yml_dict.get("sources") or []):
+            source_name = source.get("name", "unknown_source")
+            if "tables" in source:
+                for t_i, table in enumerate(source.get("tables") or []):
+                    table_name = table.get("name", "unknown_table")
+                    full_name = f"{source_name}.{table_name}"
+
+                    if "columns" in table and isinstance(table["columns"], list):
+                        deduped, changed, logs = deduplicate_columns_list(
+                            table["columns"], full_name, "Source table"
+                        )
+                        if changed:
+                            refactored = True
+                            yml_dict["sources"][s_i]["tables"][t_i]["columns"] = deduped
+                            deprecation_refactors.extend(logs)
+
+    return YMLRuleRefactorResult(
+        rule_name="remove_duplicate_column_definitions",
+        refactored=refactored,
+        refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
+        original_yaml=yml_str,
+        deprecation_refactors=deprecation_refactors,
+    )

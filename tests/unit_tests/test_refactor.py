@@ -21,6 +21,7 @@ from dbt_autofix.refactor import (
 )
 from dbt_autofix.refactors.changesets.dbt_project_yml import rec_check_yaml_path
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
+    changeset_remove_duplicate_column_definitions,
     changeset_remove_duplicate_models,
     changeset_replace_fancy_quotes,
 )
@@ -2506,3 +2507,268 @@ select 1 as id
         assert "meta" in result.deprecation_refactors[0].log
         # Verify Jinja function call is preserved
         assert "get_warehouse('medium')" in result.refactored_content
+
+
+class TestRemoveDuplicateColumnDefinitions:
+    """Tests for changeset_remove_duplicate_column_definitions function"""
+
+    def test_no_duplicates_no_changes(self, schema_specs: SchemaSpecs):
+        """Test that YAML without duplicate columns is not modified"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns:
+      - name: id
+        description: "Primary key"
+      - name: created_at
+        description: "Creation timestamp"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert not result.refactored
+        assert len(result.deprecation_refactors) == 0
+        assert result.refactored_yaml == input_yaml
+        assert result.rule_name == "remove_duplicate_column_definitions"
+
+    def test_single_duplicate_column_model(self, schema_specs: SchemaSpecs):
+        """Test removal of single duplicate column in a model"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns:
+      - name: id
+        description: "First definition"
+      - name: created_at
+        description: "Creation timestamp"
+      - name: id
+        description: "Second definition"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert result.refactored
+        assert len(result.deprecation_refactors) == 1
+        assert "Removed duplicate column 'id'" in result.deprecation_refactors[0].log
+
+        # Verify the refactored YAML keeps last occurrence
+        refactored_dict = safe_load(result.refactored_yaml)
+        model = refactored_dict["models"][0]
+        assert len(model["columns"]) == 2
+
+        # Check that the second (last) definition is kept
+        id_column = [c for c in model["columns"] if c["name"] == "id"][0]
+        assert id_column["description"] == "Second definition"
+
+    def test_multiple_duplicate_columns(self, schema_specs: SchemaSpecs):
+        """Test removal of multiple duplicate columns"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns:
+      - name: id
+        description: "First id"
+      - name: status
+        description: "First status"
+      - name: id
+        description: "Second id"
+      - name: status
+        description: "Second status"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert result.refactored
+        assert len(result.deprecation_refactors) == 2
+
+        refactored_dict = safe_load(result.refactored_yaml)
+        model = refactored_dict["models"][0]
+        assert len(model["columns"]) == 2
+
+        id_column = [c for c in model["columns"] if c["name"] == "id"][0]
+        assert id_column["description"] == "Second id"
+
+        status_column = [c for c in model["columns"] if c["name"] == "status"][0]
+        assert status_column["description"] == "Second status"
+
+    def test_keeps_last_occurrence(self, schema_specs: SchemaSpecs):
+        """Test that the LAST occurrence is kept (matching dbt behavior)"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns:
+      - name: initial_catch_up_date
+        description: "First definition"
+        config:
+          masking_policy: old_policy
+      - name: some_other_column
+        description: "Other column"
+      - name: initial_catch_up_date
+        description: "Second definition"
+        config:
+          masking_policy: new_policy
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert result.refactored
+
+        refactored_dict = safe_load(result.refactored_yaml)
+        model = refactored_dict["models"][0]
+
+        # Find the column by name
+        column = [c for c in model["columns"] if c["name"] == "initial_catch_up_date"][0]
+        assert column["description"] == "Second definition"
+        assert column["config"]["masking_policy"] == "new_policy"
+
+    def test_preserves_column_order(self, schema_specs: SchemaSpecs):
+        """Test that non-duplicate columns maintain their order"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns:
+      - name: alpha
+        description: "Alpha"
+      - name: duplicate_col
+        description: "First duplicate"
+      - name: beta
+        description: "Beta"
+      - name: duplicate_col
+        description: "Second duplicate"
+      - name: gamma
+        description: "Gamma"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert result.refactored
+
+        refactored_dict = safe_load(result.refactored_yaml)
+        columns = refactored_dict["models"][0]["columns"]
+        column_names = [c["name"] for c in columns]
+
+        # Order should be: alpha, beta, duplicate_col (last occurrence position), gamma
+        assert column_names == ["alpha", "beta", "duplicate_col", "gamma"]
+
+    def test_duplicate_columns_in_sources(self, schema_specs: SchemaSpecs):
+        """Test duplicate column removal in source tables"""
+        input_yaml = """
+version: 2
+sources:
+  - name: my_source
+    tables:
+      - name: my_table
+        columns:
+          - name: id
+            description: "First definition"
+          - name: created_at
+            description: "Timestamp"
+          - name: id
+            description: "Second definition"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert result.refactored
+        assert len(result.deprecation_refactors) == 1
+        assert "my_source.my_table" in result.deprecation_refactors[0].log
+
+        refactored_dict = safe_load(result.refactored_yaml)
+        table = refactored_dict["sources"][0]["tables"][0]
+        assert len(table["columns"]) == 2
+
+        id_column = [c for c in table["columns"] if c["name"] == "id"][0]
+        assert id_column["description"] == "Second definition"
+
+    def test_triple_duplicate_column(self, schema_specs: SchemaSpecs):
+        """Test that only the last of three identical columns is kept"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns:
+      - name: id
+        description: "First"
+      - name: id
+        description: "Second"
+      - name: id
+        description: "Third"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert result.refactored
+        assert len(result.deprecation_refactors) == 2  # Two duplicates removed
+
+        refactored_dict = safe_load(result.refactored_yaml)
+        model = refactored_dict["models"][0]
+        assert len(model["columns"]) == 1
+        assert model["columns"][0]["description"] == "Third"
+
+    def test_empty_columns_list(self, schema_specs: SchemaSpecs):
+        """Test handling of empty columns list"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns: []
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert not result.refactored
+        assert len(result.deprecation_refactors) == 0
+
+    def test_no_columns_property(self, schema_specs: SchemaSpecs):
+        """Test handling of nodes without columns property"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    description: "A model without columns"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert not result.refactored
+        assert len(result.deprecation_refactors) == 0
+
+    def test_case_sensitivity(self, schema_specs: SchemaSpecs):
+        """Test that column name matching is case-sensitive"""
+        input_yaml = """
+version: 2
+models:
+  - name: test_model
+    columns:
+      - name: ID
+        description: "Uppercase"
+      - name: id
+        description: "Lowercase"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        # ID and id are different column names, so no duplicates
+        assert not result.refactored
+        assert len(result.deprecation_refactors) == 0
+
+        refactored_dict = safe_load(result.refactored_yaml)
+        model = refactored_dict["models"][0]
+        assert len(model["columns"]) == 2
+
+    def test_duplicate_in_multiple_models(self, schema_specs: SchemaSpecs):
+        """Test duplicate removal across multiple models"""
+        input_yaml = """
+version: 2
+models:
+  - name: model_one
+    columns:
+      - name: id
+        description: "First"
+      - name: id
+        description: "Second"
+  - name: model_two
+    columns:
+      - name: status
+        description: "First status"
+      - name: status
+        description: "Second status"
+"""
+        result = changeset_remove_duplicate_column_definitions(input_yaml, schema_specs)
+        assert result.refactored
+        assert len(result.deprecation_refactors) == 2
+
+        refactored_dict = safe_load(result.refactored_yaml)
+
+        model_one = refactored_dict["models"][0]
+        assert len(model_one["columns"]) == 1
+        assert model_one["columns"][0]["description"] == "Second"
+
+        model_two = refactored_dict["models"][1]
+        assert len(model_two["columns"]) == 1
+        assert model_two["columns"][0]["description"] == "Second status"
