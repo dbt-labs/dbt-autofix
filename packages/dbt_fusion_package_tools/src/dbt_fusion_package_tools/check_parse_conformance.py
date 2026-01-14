@@ -1,12 +1,11 @@
 """Interface for objects useful to processing hub entries"""
 
-from dataclasses import dataclass, field
 import json
 import os
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Optional
+from typing import Optional
 import re
 
 from rich.console import Console
@@ -14,9 +13,7 @@ from rich.console import Console
 from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
 from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
 from dbt_fusion_package_tools.yaml.loader import safe_load
-from dbt_fusion_package_tools.dbt_package import DbtPackage
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
-from dbt_fusion_package_tools.version_utils import VersionSpecifier
 from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
 from dbtlabs.proto.public.v1.events.fusion.log.log_pb2 import LogMessage
 from google.protobuf import json_format

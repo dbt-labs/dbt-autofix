@@ -1,12 +1,7 @@
 from dataclasses import dataclass, field
-from json import dumps
-from typing import Any, Optional
+from typing import Optional
 
-from mashumaro import DataClassDictMixin, field_options
-from mashumaro.mixins.json import DataClassJSONMixin, Encoder
-from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
-from dbtlabs.proto.public.v1.events.fusion.log.log_pb2 import LogMessage
-from google.protobuf import json_format
+from mashumaro.mixins.json import DataClassJSONMixin
 
 
 @dataclass

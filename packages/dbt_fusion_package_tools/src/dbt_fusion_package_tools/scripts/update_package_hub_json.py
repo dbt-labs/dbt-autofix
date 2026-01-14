@@ -1,20 +1,13 @@
 from collections import defaultdict
-import csv
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from dbt_fusion_package_tools.fusion_version_compatibility_output import (
-    FUSION_VERSION_COMPATIBILITY_OUTPUT,
-)
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 from dbt_fusion_package_tools.version_utils import VersionSpecifier
 from dbt_fusion_package_tools.exceptions import SemverError
 
-from pprint import pprint
-
 import typer
-from rich import print
 from rich.console import Console
 from typing_extensions import Annotated
 
