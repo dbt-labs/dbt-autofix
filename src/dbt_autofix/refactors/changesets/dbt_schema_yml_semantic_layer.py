@@ -573,7 +573,7 @@ def get_or_create_metric_for_measure(
 
     if fill_nulls_with is not None:
         artificial_metric["fill_nulls_with"] = fill_nulls_with
-    if join_to_timespine:
+    if join_to_timespine is not None:
         artificial_metric["join_to_timespine"] = join_to_timespine
 
     semantic_definitions.record_artificial_metric(

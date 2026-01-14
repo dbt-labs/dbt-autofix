@@ -141,6 +141,7 @@ models:
         type: simple
         hidden: true
         fill_nulls_with: -12
+        join_to_timespine: false
       - name: conversion_metric
         description: The conversion metric description
         type: conversion
