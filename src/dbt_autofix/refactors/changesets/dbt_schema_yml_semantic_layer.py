@@ -118,7 +118,7 @@ def combine_simple_metrics_with_their_input_measure(
 
         if measure.get("expr"):
             metric["expr"] = measure["expr"]
-        if fill_nulls_with:
+        if is_useful_fill_nulls_with_value(fill_nulls_with):
             metric["fill_nulls_with"] = fill_nulls_with
         if join_to_timespine:
             metric["join_to_timespine"] = join_to_timespine
@@ -500,9 +500,8 @@ def make_artificial_metric_name(
     semantic_definitions: SemanticDefinitions,
 ) -> str:
     base_name = measure_name
-    # Can't just use 'if fill_nulls_with:' here because we don't want to miss the
-    # case where fill_nulls_with is zero.
-    if fill_nulls_with is not None and fill_nulls_with != "":
+    # the 'is not None' check here is duplicated inside the called function, but it's here for typechecking
+    if is_useful_fill_nulls_with_value(fill_nulls_with) and fill_nulls_with is not None:
         try:
             val = int(fill_nulls_with)
             fill_nulls_with_str = f"negative_{abs(val)}" if val < 0 else str(val)
@@ -525,6 +524,10 @@ def make_artificial_metric_name(
         i += 1
 
     return final_name
+
+
+def is_useful_fill_nulls_with_value(fill_nulls_with: Optional[str]) -> bool:
+    return fill_nulls_with is not None and fill_nulls_with != ""
 
 
 def get_or_create_metric_for_measure(
@@ -571,7 +574,7 @@ def get_or_create_metric_for_measure(
         if window_groupings:
             artificial_metric["non_additive_dimension"]["group_by"] = window_groupings
 
-    if fill_nulls_with is not None:
+    if is_useful_fill_nulls_with_value(fill_nulls_with):
         artificial_metric["fill_nulls_with"] = fill_nulls_with
     if join_to_timespine is not None:
         artificial_metric["join_to_timespine"] = join_to_timespine
