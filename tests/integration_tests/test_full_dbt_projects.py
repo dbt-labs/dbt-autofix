@@ -65,9 +65,7 @@ def compare_dirs(dir1, dir2):
                 real_diffs = True
                 diff_message += f"\n{file}:\n"
                 diff_message += "".join(
-                    difflib.unified_diff(
-                        actual, expected, fromfile=f"actual/{file}", tofile=f"expected/{file}", lineterm=""
-                    )
+                    difflib.unified_diff(actual, expected, fromfile=f"actual/{file}", tofile=f"expected/{file}")
                 )
         if real_diffs:
             pytest.fail(diff_message)
