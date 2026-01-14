@@ -111,20 +111,20 @@ models:
           - name: revenue
             alias: current_revenue
           - name: cumulative_revenue
-      - name: revenue_fill_nulls_with_150_join_to_timespine
+      - name: revenue_fill_nulls_with_0_join_to_timespine
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
         type: simple
         hidden: true
-        fill_nulls_with: 150
+        fill_nulls_with: 0
         join_to_timespine: true
       - name: cumulative_revenue_with_input_settings
         description: The cumulative revenue for all orders, but now with fill_nulls_with and join_to_timespine settings.
         label: Cumulative Revenue (All Time)
         type: cumulative
         input_metric:
-          name: revenue_fill_nulls_with_150_join_to_timespine
+          name: revenue_fill_nulls_with_0_join_to_timespine
           filter: cumulative_filter
       - name: revenue_fill_nulls_with_test_join_to_timespine
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.

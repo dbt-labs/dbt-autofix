@@ -174,7 +174,7 @@ metrics:
     type_params:
       measure: 
         name: revenue
-        fill_nulls_with: 150
+        fill_nulls_with: 0
         join_to_timespine: true
         filter: cumulative_filter
   - name: conversion_metric
