@@ -297,6 +297,42 @@ class TestUnmatchedEndingsRemoval:
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
 
+    def test_matched_if_with_no_lstrip(self):
+        sql_content = """
+        {%+ if(condition) %}
+        select *
+        from my_table
+        {% endif %}
+        """
+        result = remove_unmatched_endings(sql_content)
+        assert "if(condition)" in result.refactored_content
+        assert "{% endif %}" in result.refactored_content
+        assert len(result.deprecation_refactors) == 0
+
+    def test_matched_if_with_no_strip(self):
+        sql_content = """
+        {%+ if(condition) +%}
+        select *
+        from my_table
+        {% endif %}
+        """
+        result = remove_unmatched_endings(sql_content)
+        assert "if(condition)" in result.refactored_content
+        assert "{% endif %}" in result.refactored_content
+        assert len(result.deprecation_refactors) == 0
+
+    def test_matched_if_with_whitespace_control(self):
+        sql_content = """
+        {%- if(condition) -%}
+        select *
+        from my_table
+        {% endif %}
+        """
+        result = remove_unmatched_endings(sql_content)
+        assert "if(condition)" in result.refactored_content
+        assert "{% endif %}" in result.refactored_content
+        assert len(result.deprecation_refactors) == 0
+
     def test_nested_structures(self):
         sql_content = """
         {% macro outer_macro() %}
