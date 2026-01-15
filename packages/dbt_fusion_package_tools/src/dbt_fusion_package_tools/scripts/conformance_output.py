@@ -11,6 +11,20 @@ def reload_output_from_file(
 ) -> defaultdict[str, list[dict[str, Any]]]:
     with file_path.open("r", encoding="utf-8") as fh:
         return json.load(fh)
+    
+
+def group_errors(error_code: str, error_message: str) -> str:
+    if error_code == "102":
+        return "dbt102: Deprecated test argument/config at top level"
+    elif error_code == "1005" and error_message in("'data-paths' cannot be specified in dbt_project.yml", "'source-paths' cannot be specified in dbt_project.yml"):
+        return "dbt1005: data-paths or source-paths in dbt_project.yml"
+    elif error_code == "1005" and len(error_message) > 21 and error_message[0:21] == "Found duplicate model":
+        return "dbt1005: Found duplicate model"
+    else:
+        remove_file_name = error_message.split("-->")
+        split_on_backtick = (remove_file_name[0]).split("`")
+        split_on_period = (split_on_backtick[0]).split(".")
+        return f"dbt{error_code}: {split_on_period[0]}"
 
 
 def main():
@@ -31,11 +45,14 @@ def main():
             package_version: dict[str, Any] = package[version]
             parse_errors: set[str] = set()
             parse_warnings: set[str] = set()
+            parse_short_errors: set[str] = set()
             parse_compatibility_result = package_version.get("parse_compatibility_result") or {}
             if parse_compatibility_result.get("errors"):
                 for error in parse_compatibility_result["errors"]:
                     parse_errors.add(str(error["error_code"]))
                     unique_error_codes[str(error["error_code"])] += 1
+                    short_error = group_errors(str(error["error_code"]), error["body"])
+                    parse_short_errors.add(short_error)
                     all_errors.append(
                         {
                             "package_name": package_name,
@@ -44,19 +61,21 @@ def main():
                             "manually_verified_incompatible": package[version]["manually_verified_incompatible"],
                             "parse_compatible": package[version]["parse_compatible"],
                             "parse_error_code": str(error["error_code"]),
-                            "parse_error": error["body"],
+                            "parse_error": error["body"] if len(error["body"]) < 200 else error["body"][:200],
                             "parse_exit_code": parse_compatibility_result.get("parse_exit_code"),
                             "parse_total_errors": parse_compatibility_result.get("total_errors"),
                             "parse_total_warnings": parse_compatibility_result.get("total_warnings"),
                             "require_dbt_version_compatible": package[version]["require_dbt_version_compatible"],
                             "require_dbt_version_defined": package[version]["require_dbt_version_defined"],
                             "fusion_version": f"v{fusion_version}",
+                            "parse_error_grouped": short_error,
                         }
                     )
             if parse_compatibility_result.get("warnings"):
                 for warning in parse_compatibility_result["warnings"]:
                     parse_warnings.add(str(warning["error_code"]))
                     unique_warning_codes[str(error["error_code"])] += 1
+            sorted_parse_short_errors: list[str] = sorted([x for x in parse_short_errors])
             package_summary.append(
                 {
                     "package_name": package_name,
@@ -72,6 +91,9 @@ def main():
                     "require_dbt_version_compatible": package[version]["require_dbt_version_compatible"],
                     "require_dbt_version_defined": package[version]["require_dbt_version_defined"],
                     "fusion_version": f"v{fusion_version}",
+                    "short_error_total": len(parse_short_errors),
+                    "short_error_1": sorted_parse_short_errors[0] if len(sorted_parse_short_errors) > 0 else "",
+                    "short_error_2":  sorted_parse_short_errors[1] if len(sorted_parse_short_errors) > 1 else "",
                 }
             )
     print(f"unique error codes: {unique_error_codes}")
