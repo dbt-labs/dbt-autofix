@@ -92,7 +92,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
     Returns: SQLRuleRefactorResult
     """
     # Regex patterns for Jinja tag and comment matching
-    JINJA_TAG_PATTERN = re.compile(r"{%-?\s*((?s:.*?))\s*-?%}", re.DOTALL)
+    JINJA_TAG_PATTERN = re.compile(r"{%-?\+?\s*((?s:.*?))\s*\+?-?%}", re.DOTALL)
     # Match proper comments {# ... #}
     JINJA_COMMENT_PATTERN = re.compile(r"{#.*?#}", re.DOTALL)
     MACRO_START = re.compile(r"^macro\s+([^\s(]+)")  # Captures macro name
