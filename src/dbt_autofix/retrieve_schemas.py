@@ -28,7 +28,12 @@ class DbtProjectSpecs:
 
 class SchemaSpecs:
     def __init__(self, version: Optional[str] = None, disable_ssl_verification: bool = False):
+        # Create single client for getting schemas from CDN
+        # add retries for transient connection issues
         self.disable_ssl_verification = disable_ssl_verification
+        self.transport = httpx.HTTPTransport(retries=3)
+        self.client = httpx.Client(transport=self.transport, verify=not disable_ssl_verification)
+
         self.yaml_specs_per_node_type, self.dbtproject_specs_per_node_type, self.valid_top_level_yaml_fields = (
             self._get_specs(version)
         )
@@ -45,9 +50,9 @@ class SchemaSpecs:
             logging.basicConfig(level=logging.INFO)
 
         if version is None:
-            version = get_fusion_latest_version(self.disable_ssl_verification)
-        yml_schema = get_fusion_yml_schema(version, self.disable_ssl_verification)
-        dbt_project_schema = get_fusion_dbt_project_schema(version, self.disable_ssl_verification)
+            version = get_fusion_latest_version(self.client)
+        yml_schema = get_fusion_yml_schema(self.client, version)
+        dbt_project_schema = get_fusion_dbt_project_schema(self.client, version)
 
         valid_top_level_yaml_fields = list(yml_schema["properties"].keys())
 
@@ -260,8 +265,8 @@ class SchemaSpecs:
         """
         if self._dict_config_cache is None:
             # Get the schema
-            version = self._schema_version or get_fusion_latest_version(self.disable_ssl_verification)
-            schema = get_fusion_dbt_project_schema(version, self.disable_ssl_verification)
+            version = self._schema_version or get_fusion_latest_version(self.client)
+            schema = get_fusion_dbt_project_schema(self.client, version)
 
             specific_properties = {}
             open_ended = set()
@@ -313,18 +318,18 @@ class SchemaSpecs:
         return self._dict_config_cache
 
 
-def get_fusion_latest_version(disable_ssl_verification: bool = False) -> str:
+def get_fusion_latest_version(client: httpx.Client) -> str:
     latest_versions_url = "https://public.cdn.getdbt.com/fs/versions.json"
-    resp = httpx.get(latest_versions_url, verify=not disable_ssl_verification)
+    resp = client.get(latest_versions_url)
     resp.raise_for_status()
     return resp.json()["latest"]["tag"]
 
 
-def get_fusion_yml_schema(version: str, disable_ssl_verification: bool = False) -> dict:
+def get_fusion_yml_schema(client: httpx.Client, version: str) -> dict:
     yml_schema_url = f"https://public.cdn.getdbt.com/fs/schemas/fs-schema-dbt-yaml-files-{version}.json"
 
     logging.info(f"Getting fusion yml schema for version {version}: {yml_schema_url}")
-    response = httpx.get(yml_schema_url, verify=not disable_ssl_verification)
+    response = client.get(yml_schema_url)
     response.raise_for_status()
 
     # for some reason we have 2 different schemas now in the response
@@ -333,11 +338,11 @@ def get_fusion_yml_schema(version: str, disable_ssl_verification: bool = False) 
     return json.loads(response_split[-1])
 
 
-def get_fusion_dbt_project_schema(version: str, disable_ssl_verification: bool = False) -> dict:
+def get_fusion_dbt_project_schema(client: httpx.Client, version: str) -> dict:
     dbt_project_schema_url = f"https://public.cdn.getdbt.com/fs/schemas/fs-schema-dbt-project-{version}.json"
 
     logging.info(f"Getting fusion dbt project schema for version {version}: {dbt_project_schema_url}")
-    response = httpx.get(dbt_project_schema_url, verify=not disable_ssl_verification)
+    response = client.get(dbt_project_schema_url)
     response.raise_for_status()
 
     return response.json()
