@@ -16,6 +16,7 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
+    changeset_remove_duplicate_column_definitions,
     changeset_remove_duplicate_models,
     changeset_remove_extra_tabs,
     changeset_remove_indentation_version,
@@ -84,6 +85,7 @@ def process_yaml_files_except_dbt_project(
 
     behavior_change_rules = [
         (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
+        (changeset_remove_duplicate_column_definitions, schema_specs),
     ]
     safe_change_rules = [
         (changeset_replace_fancy_quotes, None),
