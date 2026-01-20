@@ -73,14 +73,14 @@ semantic_models:
         description: P99 of gross customer lifetime spend inclusive of taxes (discrete).
         agg_params:
           percentile: 0.99
-          use_discrete_percentile: True
-          use_approximate_percentile: False
+          use_discrete_percentile: true
+          use_approximate_percentile: false
       - name: lifetime_spend_p95_approximate
         agg: percentile
         description: P95 of gross customer lifetime spend inclusive of taxes (approximate).
         agg_params:
           percentile: 0.95
-          use_approximate_percentile: True
+          use_approximate_percentile: true
 
 metrics:
   - name: lifetime_spend_pretax
