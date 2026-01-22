@@ -80,6 +80,20 @@ models:
         type: ratio
         numerator: drink_revenue
         denominator: revenue
+      - name: drink_revenue_pct_wtih_complex_args
+        description: The % of order revenue from drinks.
+        label: Drink Revenue %
+        type: ratio
+        numerator:
+          name: drink_revenue
+          filter: drink_revenue > 0
+          alias: drink_revenue_filtered
+        denominator:
+          name: revenue
+          filter: revenue > 0
+          alias: revenue_filtered
+
+  # Derived Metrics
       - name: revenue_growth_mom
         description: "Percentage growth of revenue compared to 1 month ago. Excluded tax"
         type: derived
