@@ -66,6 +66,20 @@ models:
         agg: sum
         description: Gross customer lifetime spend inclusive of taxes.
         type: simple
+      - name: lifetime_spend_p99_discrete
+        agg: percentile
+        description: P99 of gross customer lifetime spend inclusive of taxes (discrete).
+        type: simple
+        hidden: true
+        percentile: 0.99
+        percentile_type: discrete
+      - name: lifetime_spend_p95_approximate
+        agg: percentile
+        description: P95 of gross customer lifetime spend inclusive of taxes (approximate).
+        type: simple
+        hidden: true
+        percentile: 0.95
+        percentile_type: approximate
       - name: average_order_value
         description: LTV pre-tax / number of orders
         label: Average Order Value
