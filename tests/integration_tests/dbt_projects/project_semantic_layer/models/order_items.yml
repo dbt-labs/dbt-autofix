@@ -117,6 +117,19 @@ metrics:
     type_params:
       numerator: drink_revenue
       denominator: revenue
+  - name: drink_revenue_pct_wtih_complex_args
+    description: The % of order revenue from drinks.
+    label: Drink Revenue %
+    type: ratio
+    type_params:
+      numerator:
+        name: drink_revenue
+        filter: drink_revenue > 0
+        alias: drink_revenue_filtered
+      denominator:
+        name: revenue
+        filter: revenue > 0
+        alias: revenue_filtered
 
   # Derived Metrics
   - name: revenue_growth_mom
