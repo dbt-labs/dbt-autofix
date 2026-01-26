@@ -11,12 +11,15 @@ def reload_output_from_file(
 ) -> defaultdict[str, list[dict[str, Any]]]:
     with file_path.open("r", encoding="utf-8") as fh:
         return json.load(fh)
-    
+
 
 def group_errors(error_code: str, error_message: str) -> str:
     if error_code == "102":
         return "dbt102: Deprecated test argument/config at top level"
-    elif error_code == "1005" and error_message in("'data-paths' cannot be specified in dbt_project.yml", "'source-paths' cannot be specified in dbt_project.yml"):
+    elif error_code == "1005" and error_message in (
+        "'data-paths' cannot be specified in dbt_project.yml",
+        "'source-paths' cannot be specified in dbt_project.yml",
+    ):
         return "dbt1005: data-paths or source-paths in dbt_project.yml"
     elif error_code == "1005" and len(error_message) > 21 and error_message[0:21] == "Found duplicate model":
         return "dbt1005: Found duplicate model"
@@ -93,7 +96,7 @@ def main():
                     "fusion_version": f"v{fusion_version}",
                     "short_error_total": len(parse_short_errors),
                     "short_error_1": sorted_parse_short_errors[0] if len(sorted_parse_short_errors) > 0 else "",
-                    "short_error_2":  sorted_parse_short_errors[1] if len(sorted_parse_short_errors) > 1 else "",
+                    "short_error_2": sorted_parse_short_errors[1] if len(sorted_parse_short_errors) > 1 else "",
                 }
             )
     print(f"unique error codes: {unique_error_codes}")
