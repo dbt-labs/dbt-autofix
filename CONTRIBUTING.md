@@ -2,7 +2,12 @@
 
 ## Installation
 
-To install `dbt-autofix` locally, simply run `pip install .` in a local python virtual environment. 
+This project uses `uv` for workspace and virutalenv management.
+
+1. Clone the repo: `gh repo clone dbt-labs/dbt-autofix`
+2. Install `uv`: [See docs](https://docs.astral.sh/uv/getting-started/installation/)
+3. Install dependencies: `uv sync --extra test`
+4. Activate virtual environment: `source .venv/bin/activate`
 
 You confirm your installation worked as expected via `dbt-autofix --version`
 
