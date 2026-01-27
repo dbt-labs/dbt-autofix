@@ -73,13 +73,13 @@ class DbtPackageRepo:
         elif exists and is_dir and self.overwrite_local_path:
             try:
                 shutil.rmtree(Path(path))
-            except:
+            except OSError:
                 return False
         # now create directory (or leave alone if exists)
         try:
             Path(path).mkdir(exist_ok=True)
             return True
-        except:
+        except OSError:
             return False
 
     def _clone_repo(self):
@@ -114,7 +114,7 @@ class DbtPackageRepo:
         if stash_changes:
             try:
                 self.git_repo.git.stash("--all")
-            except:
+            except Exception:
                 pass  # okay if we don't stash
         try:
             branch = self.git_repo.heads[branch_name]
@@ -128,7 +128,7 @@ class DbtPackageRepo:
         if stash_changes:
             try:
                 self.git_repo.git.stash("--all")
-            except:
+            except Exception:
                 pass  # okay if we don't stash
         try:
             self.git_repo.head.reference = tag.commit
