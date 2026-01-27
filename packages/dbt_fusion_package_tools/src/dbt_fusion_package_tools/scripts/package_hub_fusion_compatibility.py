@@ -106,8 +106,9 @@ def write_dict_to_json(data: Dict[str, Any], dest_dir: Path, *, indent: int = 2,
 
 
 def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
-    """Read JSON files from a local copy of the hub repo and return a
-    defaultdict mapping package_id -> list[parsed outputs].
+    """Read JSON files from a local copy of the hub repo.
+
+    Returns a defaultdict mapping package_id -> list[parsed outputs].
 
     The `path` argument may be either:
       - the repository root (so files are found under `data/packages/...`),
@@ -205,6 +206,7 @@ def download_package_jsons_from_hub_repo(
         branch: Branch name to use; if omitted the repository default branch is
             discovered via the GitHub API.
         github_token: Optional GitHub token to increase rate limits.
+        file_count_limit: Maximum number of files to download (0 for unlimited).
     """
     base_api = "https://api.github.com"
     headers: Dict[str, str] = {"User-Agent": "dbt-autofix-agent"}
@@ -282,12 +284,9 @@ def main():
     results = read_json_from_local_hub_repo(
         path="/Users/chaya/workplace/hub.getdbt.com", file_count_limit=file_count_limit
     )
-    print(f"Downloaded {len(results)} packages from hub.getdbt.com")
     output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
     write_dict_to_json(results, output_path)
-    print(f"Output written to {output_path / 'package_output.json'}")
-    reload_packages = reload_packages_from_file(output_path / "package_output.json")
-    print(f"Reloaded {len(reload_packages)} packages from file")
+    reload_packages_from_file(output_path / "package_output.json")
 
 
 if __name__ == "__main__":

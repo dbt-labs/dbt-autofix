@@ -2,9 +2,9 @@ import io
 from pathlib import Path
 from typing import Any, Dict
 
+import yamllint.config
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
-import yamllint.config
 
 config = """
 rules:
@@ -48,7 +48,7 @@ def read_file(path: Path) -> Dict:
 
 
 def dict_to_yaml_str(content: Dict[str, Any], write_empty: bool = False) -> str:
-    """Write a dict value to a YAML string"""
+    """Write a dict value to a YAML string."""
 
     # If content is empty, return an empty string
     if not content and write_empty:

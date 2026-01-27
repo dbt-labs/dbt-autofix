@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -72,13 +73,14 @@ def process_yaml_files_except_dbt_project(
     """Process all YAML files in the project.
 
     Args:
-        path: Project root path
+        root_path: Project root path
         model_paths: Paths to process
         schema_specs: The schema specifications to use
         dry_run: Whether to perform a dry run
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
+        semantic_definitions: Optional semantic layer definitions for metric refactoring
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
@@ -169,7 +171,7 @@ def process_yaml_files_except_dbt_project(
                         error_console.print(
                             f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
                         )
-                        exit(1)
+                        sys.exit(1)
 
     for changesets in ordered_changesets:
         _apply_changesets(file_name_to_yaml_results, changesets)
@@ -237,7 +239,7 @@ def process_dbt_project_yml(
 
 
 def skip_file(file_path: Path, select: Optional[List[str]] = None) -> bool:
-    """Skip a file if a select list is provided and the file is not in the select list"""
+    """Skip a file if a select list is provided and the file is not in the select list."""
     if select:
         return not any([Path(select_path).resolve().as_posix() in file_path.as_posix() for select_path in select])
     else:
@@ -257,7 +259,8 @@ def process_sql_files(
 
     Args:
         path: Base project path
-        sql_paths: Set of paths relative to project root where SQL files are located
+        sql_paths_to_node_type: Mapping of SQL paths to their node types
+        schema_specs: The schema specifications to use
         dry_run: Whether to perform a dry run
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior change
@@ -353,7 +356,7 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
             )
 
     if refactored:
-        import yaml
+        import yaml  # noqa: PLC0415
 
         # we use dump from ruamel to keep indentation style but this loses quite a bit of formatting though
         refactored_yaml = DbtYAML().dump_to_string(yaml.safe_load(yml_str))  # type: ignore
@@ -488,7 +491,7 @@ def get_dbt_roots_paths(
     return dbt_roots_paths
 
 
-def changeset_all_sql_yml_files(  # noqa: PLR0913
+def changeset_all_sql_yml_files(
     path: Path,
     schema_specs: SchemaSpecs,
     dry_run: bool = False,
@@ -560,6 +563,7 @@ def apply_changesets(
     Args:
         yaml_results: List of YAML refactoring results
         sql_results: List of SQL refactoring results
+        json_output: Whether to output results in JSON format
     """
     # Apply YAML changes
     for yaml_result in yaml_results:

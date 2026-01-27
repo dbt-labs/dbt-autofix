@@ -40,6 +40,7 @@ test = [
     "pytest-cov>=4.1.0",
     "pre-commit>=4.2.0",
     "nox",
+    "ruff>=0.14.14",
 ]
 
 [tool.pdm.build]
@@ -64,16 +65,21 @@ indent-width = 4
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
 select = ["E4", "E7", "E9", "F", "I", "RUF", "PL", "TID", "T20", "D"]
-# Ignore some doc warnings
-# D100: Missing docstring in public module
-# D101: Missing docstring in public class
-# D102: Missing docstring in public method
-# D103: Missing docstring in public function
-# D104: Missing docstring in public package
-# D105: Missing docstring in magic method
-# D107: Missing docstring in __init__
-# D202: No blank lines allowed after function docstring
-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
+ignore = [
+    "D100",    # Missing docstring in public module
+    "D101",    # Missing docstring in public class
+    "D102",    # Missing docstring in public method
+    "D103",    # Missing docstring in public function
+    "D104",    # Missing docstring in public package
+    "D105",    # Missing docstring in magic method
+    "D107",    # Missing docstring in __init__
+    "D202",    # No blank lines allowed after function docstring
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many statements
+    "PLR2004", # Magic value used in comparison
+]
 
 [tool.pyright]
 include = [
@@ -91,7 +97,12 @@ reportUnusedExpression = true
 reportMissingImports = false
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["PLR2004", "T201"]
+"tests/**.py" = [
+    "PLR2004",  # Magic values in comparisons - tests use literals in assertions
+    "T201",     # print() found - tests may use print for debugging
+    "D205",     # Docstring blank line - test docstrings use INPUT/OUTPUT/WHY format
+    "PLC0415",  # Import not at top-level - tests use local imports for isolation
+]
 
 [tool.pytest.ini_options]
 pythonpath = [

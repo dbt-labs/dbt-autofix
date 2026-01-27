@@ -50,7 +50,7 @@ class DbtPackageVersion:
                 self.require_dbt_version = convert_version_specifiers_to_range(version_specs)
             else:
                 self.require_dbt_version = None
-        except:
+        except Exception:
             self.require_dbt_version = None
 
     def __lt__(self, other) -> bool:
@@ -60,6 +60,8 @@ class DbtPackageVersion:
 
     def __eq__(self, other) -> bool:
         return self.package_name != other.package_name or self.version != other.version
+
+    __hash__ = None  # Mutable object, not suitable for hashing
 
     def is_prerelease_version(self) -> bool:
         return self.version.prerelease is not None
@@ -71,7 +73,7 @@ class DbtPackageVersion:
             return False
 
     def is_require_dbt_version_defined(self) -> bool:
-        return self.require_dbt_version_range != None and len(self.require_dbt_version_range) > 0
+        return self.require_dbt_version_range is not None and len(self.require_dbt_version_range) > 0
 
     def is_version_explicitly_disallowed_on_fusion(self) -> bool:
         return (

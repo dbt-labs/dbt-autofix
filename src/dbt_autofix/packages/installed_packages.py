@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
 from typing import Any, Optional, Union
-from rich.console import Console
-import yaml
 
+import yaml
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
+from rich.console import Console
+
 from dbt_autofix.refactors.yml import read_file
 
 console = Console()
@@ -14,7 +15,7 @@ console = Console()
 
 
 def find_packages_within_directory(installed_packages_dir: Union[Path, str]) -> list[Path]:
-    if type(installed_packages_dir) == str:
+    if isinstance(installed_packages_dir, str):
         installed_packages_path = Path(installed_packages_dir)
     elif isinstance(installed_packages_dir, Path):
         installed_packages_path = installed_packages_dir
@@ -89,7 +90,7 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
         return {}
     try:
         parsed_package_file = read_file(package_project_yml_path)
-    except:
+    except Exception:
         console.log(f"Error when parsing package file {package_project_yml_path}")
         return {}
     if parsed_package_file == {}:

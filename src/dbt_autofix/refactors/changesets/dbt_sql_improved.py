@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Set, Tuple
+from typing import List, Set, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLRuleRefactorResult
@@ -34,8 +34,7 @@ CHAINED_ACCESS_PATTERN = re.compile(
 def move_custom_config_access_to_meta_sql_improved(
     sql_content: str, schema_specs: SchemaSpecs, node_type: str
 ) -> SQLRuleRefactorResult:
-    """
-    Move custom config access to meta in SQL files using the new meta_get/meta_require methods.
+    """Move custom config access to meta in SQL files using the new meta_get/meta_require methods.
 
     This improved version:
     - Handles both config.get() and config.require()
@@ -104,9 +103,6 @@ def move_custom_config_access_to_meta_sql_improved(
     # Apply replacements in reverse order to maintain correct positions
     for start, end, replacement, original in reversed(replacements):
         refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
-
-        # Determine which method was used
-        method_used = "get" if ".get(" in original else "require"
 
         deprecation_refactors.append(
             DbtDeprecationRefactor(

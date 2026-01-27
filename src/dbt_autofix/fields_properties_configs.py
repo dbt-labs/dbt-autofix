@@ -282,8 +282,8 @@ fields_per_node_type = {
 }
 
 
-def print_matrix(json_schema_version=None, disable_ssl_verification=False):  # noqa: PLR0912
-    from dbt_autofix.retrieve_schemas import SchemaSpecs
+def print_matrix(json_schema_version=None, disable_ssl_verification=False):
+    from dbt_autofix.retrieve_schemas import SchemaSpecs  # noqa: PLC0415
 
     schema_specs = SchemaSpecs(json_schema_version, disable_ssl_verification)
     results = dict()

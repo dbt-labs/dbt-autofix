@@ -13,8 +13,7 @@ CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DO
 
 
 def extract_config_macro(sql_content: str) -> Optional[str]:
-    """
-    Extract the {{ config(...) }} macro from SQL content.
+    """Extract the {{ config(...) }} macro from SQL content.
 
     This function properly handles nested Jinja expressions like:
     incremental_predicate="data_date = '{{ var('run_date') }}'"
@@ -76,7 +75,7 @@ def extract_config_macro(sql_content: str) -> Optional[str]:
     return None
 
 
-def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa: PLR0912
+def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:
     """Remove unmatched {% endmacro %} and {% endif %} tags from SQL content.
 
     Handles:
@@ -113,8 +112,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
         return False
 
     def looks_like_commented_out_code(pos: int) -> bool:
-        """
-        Check if a tag at the given position looks like it's part of commented-out code.
+        """Check if a tag at the given position looks like it's part of commented-out code.
 
         This handles malformed comment syntax like:
         - {#% if ... %} where %} should have been #}
@@ -308,7 +306,7 @@ def refactor_custom_configs_to_meta_sql(
                 existing_meta = refactored_sql_configs["meta"]
                 if isinstance(existing_meta, str):
                     # It's a source code string like "{'key': 'value'}" - parse it
-                    import ast
+                    import ast  # noqa: PLC0415
 
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)
@@ -424,10 +422,8 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
                 source_value = config_source_map[k]
                 # Check if it's a simple quoted string (not a Jinja expression)
                 if (
-                    source_value.startswith("'")
-                    and source_value.endswith("'")
-                    or source_value.startswith('"')
-                    and source_value.endswith('"')
+                    (source_value.startswith("'") and source_value.endswith("'"))
+                    or (source_value.startswith('"') and source_value.endswith('"'))
                 ) and not any(c in source_value for c in ["(", ")", "[", "]", "{", "}", "+", "-", "*", "/", "%"]):
                     # Simple string - convert to double quotes
                     # Extract the content between quotes

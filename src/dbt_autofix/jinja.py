@@ -1,15 +1,15 @@
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import jinja2
-
 from dbt_common.clients.jinja import get_environment
 from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
 
 
 def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
-    """
-    Given a string with jinja, extract an unrendered config call.
+    r"""Extract an unrendered config call from a jinja string.
+
     If no config call is present, returns None.
 
     For example, given:
@@ -68,8 +68,6 @@ def _extract_dict_value_from_source(source_string: str, key: str) -> str:
     This is used for dictionary literal arguments like config({'key': value}).
     Handles both single and double quotes for keys.
     """
-    import re
-
     # Find the config( and the dictionary
     config_match = re.search(r"\{\{\s*config\s*\(\s*\{", source_string)
     if not config_match:
@@ -192,8 +190,6 @@ def construct_static_kwarg_value(kwarg, source_string: str) -> str:
         Input: kwarg with key='materialized', source="config(materialized=env_var('X'))"
         Output: "env_var('X')"
     """
-    import re
-
     try:
         key = kwarg.key
 
@@ -230,8 +226,7 @@ class RefArgs:
 
 
 def statically_parse_ref(expression: str) -> Optional[RefArgs]:
-    """
-    Returns a RefArgs or List[str] object, corresponding to ref or source respectively, given an input jinja expression.
+    """Returns a RefArgs or List[str] object, corresponding to ref or source respectively, given an input jinja expression.
 
     input: str representing how input node is referenced in tested model sql
         * examples:
@@ -251,7 +246,7 @@ def statically_parse_ref(expression: str) -> Optional[RefArgs]:
         pass
 
     if statically_parsed.get("refs"):
-        raw_ref = list(statically_parsed["refs"])[0]
+        raw_ref = next(iter(statically_parsed["refs"]))
         ref = RefArgs(
             package=raw_ref.get("package"),
             name=raw_ref.get("name"),

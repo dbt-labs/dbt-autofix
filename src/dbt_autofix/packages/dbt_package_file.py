@@ -1,16 +1,18 @@
 from collections import defaultdict
-from typing import Any, Optional
-from dbt_fusion_package_tools.dbt_package import DbtPackage
-from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dataclasses import dataclass, field
 from pathlib import Path
-from rich.console import Console
+from typing import Any, Optional
+
+from dbt_fusion_package_tools.dbt_package import DbtPackage
+from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbt_fusion_package_tools.upgrade_status import (
-    PackageVersionFusionCompatibilityState,
     PackageFusionCompatibilityState,
+    PackageVersionFusionCompatibilityState,
 )
-from dbt_autofix.refactors.yml import read_file
 from dbt_fusion_package_tools.version_utils import Matchers
+from rich.console import Console
+
+from dbt_autofix.refactors.yml import read_file
 
 console = Console()
 
@@ -77,7 +79,7 @@ def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
 
     try:
         parsed_package_file = read_file(packages_yml_path)
-    except:
+    except Exception:
         console.log(f"Error when parsing package file {packages_yml_path}")
         return {}
     if parsed_package_file == {}:
@@ -89,14 +91,14 @@ def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
 
 # Same as load_yaml_from_packages_yml
 def load_yaml_from_dependencies_yml(dependencies_yml_path: Path) -> dict[Any, Any]:
-    """Same as `load_yaml_from_packages_yml` but dependencies.yml"""
+    """Same as `load_yaml_from_packages_yml` but dependencies.yml."""
     if dependencies_yml_path.name != "dependencies.yml":
         console.log("File must be dependencies.yml")
         return {}
 
     try:
         parsed_package_file = read_file(dependencies_yml_path)
-    except:
+    except Exception:
         console.log(f"Error when parsing package file {dependencies_yml_path}")
         return {}
     if parsed_package_file == {}:
@@ -122,7 +124,7 @@ class DbtPackageFile:
         try:
             self.yml_str = self.file_path.read_text()
             console.log(f"parsed yaml string: {self.yml_str}")
-        except:
+        except Exception:
             console.log(f"Error when parsing package file {self.file_path}")
 
     def add_package_dependency(self, package_id: str, package: DbtPackage):
@@ -155,7 +157,7 @@ class DbtPackageFile:
     def merge_installed_versions(self, installed_packages: dict[str, DbtPackageVersion]) -> int:
         package_lookup: dict[str, str] = self.get_reverse_lookup_by_package_name()
         installed_count: int = 0
-        for package in installed_packages:
+        for package, package_version in installed_packages.items():
             # skip packages that don't have a corresponding packages.yml config
             if package not in package_lookup:
                 self.unknown_packages.add(package)
@@ -164,15 +166,15 @@ class DbtPackageFile:
             # kind of hacky - try to correct installed version if package's dbt project yml
             # has an incorrect version
             package_version_range = self.package_dependencies[package_id].project_config_version_range
-            installed_version = installed_packages[package].version
+            installed_version = package_version.version
             if (
                 package_version_range is not None
                 and installed_version is not None
                 and installed_version < package_version_range.start
             ):
-                installed_packages[package].version = package_version_range.start
-                installed_packages[package].version.matcher = Matchers.EXACT
-            if self.set_installed_version_for_package(package_id, installed_packages[package]):
+                package_version.version = package_version_range.start
+                package_version.version.matcher = Matchers.EXACT
+            if self.set_installed_version_for_package(package_id, package_version):
                 installed_count += 1
         return installed_count
 
@@ -197,10 +199,9 @@ class DbtPackageFile:
             installed_version_compatibility: PackageVersionFusionCompatibilityState = self.package_dependencies[
                 package
             ].is_installed_version_fusion_compatible()
-            if (
-                installed_version_compatibility == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
-                or installed_version_compatibility
-                == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+            if installed_version_compatibility in (
+                PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
+                PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
             ):
                 package_names.append(package)
         return package_names

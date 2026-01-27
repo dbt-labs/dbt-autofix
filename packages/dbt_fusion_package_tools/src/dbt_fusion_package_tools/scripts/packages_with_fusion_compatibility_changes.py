@@ -29,7 +29,6 @@ def main():
         writer = csv.DictWriter(file, fieldnames=field_names)
         writer.writeheader()
         writer.writerows(package_summary)
-    print(f"Wrote {len(package_summary)} rows to packages.csv")
 
 
 if __name__ == "__main__":

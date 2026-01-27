@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import yamllint.config
 
@@ -19,7 +19,7 @@ yaml_config = yamllint.config.YamlLintConfig(config)
 def changeset_dbt_project_remove_deprecated_config(
     yml_str: str, exclude_dbt_project_keys: bool = False
 ) -> YMLRuleRefactorResult:
-    """Remove deprecated keys"""
+    """Remove deprecated keys."""
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -233,7 +233,7 @@ def _path_exists_as_file(path: Path) -> bool:
 def changeset_dbt_project_prefix_plus_for_config(
     yml_str: str, path: Path, schema_specs: SchemaSpecs
 ) -> YMLRuleRefactorResult:
-    """Update keys for the config in dbt_project.yml under to prefix it with a `+`"""
+    """Update keys for the config in dbt_project.yml under to prefix it with a `+`."""
     all_refactor_logs: List[str] = []
 
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -300,13 +300,13 @@ def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorRe
 
     for key in yml_dict:
         if key == "flags":
-            for behavior_change_flag in behavior_change_flag_to_explainations:
+            for behavior_change_flag, explanation in behavior_change_flag_to_explainations.items():
                 if yml_dict["flags"].get(behavior_change_flag) is False:
                     yml_dict["flags"][behavior_change_flag] = True
                     refactored = True
                     deprecation_refactors.append(
                         DbtDeprecationRefactor(
-                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
+                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {explanation}.",
                             deprecation="SourceFreshnessProjectHooksNotRun",
                         )
                     )
@@ -414,7 +414,6 @@ def changeset_fix_space_after_plus(yml_str: str, schema_specs: SchemaSpecs) -> Y
             # Fix by removing space
             indent = match.group(1)
             colon_and_space = match.group(3)
-            original_full_match = match.group(0)
             corrected_full = f"{indent}{corrected_key}{colon_and_space}"
 
             start_pos = match.start()

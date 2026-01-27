@@ -1,16 +1,15 @@
 import difflib
 import re
-from typing import List, Tuple, Dict, Any
-import yamllint.linter
 from copy import deepcopy
+from typing import Any, Dict, List, Tuple
 
-from dbt_autofix.refactors.results import YMLRuleRefactorResult
-from dbt_autofix.refactors.results import DbtDeprecationRefactor
-from dbt_autofix.retrieve_schemas import SchemaSpecs
+import yamllint.linter
+
 from dbt_autofix.deprecations import DeprecationType
+from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, yaml_config
-from dbt_autofix.refactors.constants import COMMON_PROPERTY_MISSPELLINGS, COMMON_CONFIG_MISSPELLINGS
-from dbt_autofix.refactors.fancy_quotes_utils import FANCY_LEFT_PLACEHOLDER, FANCY_RIGHT_PLACEHOLDER
+from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
@@ -138,11 +137,7 @@ def _process_line_fancy_quotes(line: str) -> Tuple[str, bool, List[int]]:
         if char == "\u201d":
             if inside_string and string_start_char in ('"', "\u201c"):
                 # This could be closing a string or content inside a string
-                if (
-                    string_start_char == "\u201c"
-                    or string_start_char == "\u201d"
-                    or (string_start_char == '"' and _would_close_string(line, i))
-                ):
+                if string_start_char in {"“", "”"} or (string_start_char == '"' and _would_close_string(line, i)):
                     # Fancy quote used as closing delimiter - replace with regular quote
                     refactored = True
                     result.append('"')
@@ -187,9 +182,7 @@ def _would_close_string(line: str, pos: int) -> bool:
 
 
 def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
-    """Generates a refactored YAML string from a single YAML file
-    - moves all the owner fields that are not in owner_properties under config.meta
-    """
+    """Generate a refactored YAML string moving non-owner fields to config.meta."""
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -337,7 +330,7 @@ def changeset_remove_indentation_version(yml_str: str) -> YMLRuleRefactorResult:
 
 
 def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
-    """Removes extra tabs in the YAML files"""
+    """Removes extra tabs in the YAML files."""
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     current_yaml = yml_str
@@ -374,13 +367,15 @@ def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
     )
 
 
-def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:  # noqa: PLR0912,PLR0915
-    """Generates a refactored YAML string from a single YAML file
+def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
+    """Generate a refactored YAML string restructuring fields per dbt conventions.
+
+    This function:
     - moves all the config fields under config
     - moves all the meta fields under config.meta and merges with existing config.meta
     - moves all the unknown fields under config.meta
     - provide some information if some fields don't exist but are similar to allowed fields
-    - removes custom top-level keys
+    - removes custom top-level keys.
     """
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -521,10 +516,10 @@ def restructure_yaml_keys_for_test(
     test: Dict[str, Any], schema_specs: SchemaSpecs
 ) -> Tuple[Dict[str, Any], bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys for tests according to dbt conventions.
-    Tests are separated from other nodes because
-    - they don't support meta
-    - they can be either a string or a dict
-    - when they are a dict, the top level ist just the test name
+
+    Tests are separated from other nodes because they don't support meta,
+    can be either a string or a dict, and when they are a dict, the top
+    level is just the test name.
 
     Args:
         test: The test dictionary to process
@@ -607,23 +602,26 @@ def refactor_test_config_fields(
 def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
-    for field in test_definition:
-        if field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
+    for field, value in list(test_definition.items()):
+        if field.lower() in COMMON_PROPERTY_MISSPELLINGS:
+            correct_field = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Test '{test_name}' - Field '{field}' is a common misspelling of '{COMMON_PROPERTY_MISSPELLINGS[field.lower()]}', it has been renamed.",
+                    log=f"Test '{test_name}' - Field '{field}' is a common misspelling of '{correct_field}', it has been renamed.",
                     deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                 )
             )
-            test_definition[COMMON_PROPERTY_MISSPELLINGS[field.lower()]] = test_definition[field]
+            test_definition[correct_field] = value
             del test_definition[field]
 
     return deprecation_refactors
 
 
 def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
-    """Move non-config args under 'arguments' key
-    This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
+    """Move non-config args under 'arguments' key.
+
+    This refactor is only necessary for custom tests, or tests making use of
+    the alternative test definition syntax ('test_name').
     """
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 

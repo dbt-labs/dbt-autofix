@@ -1,10 +1,10 @@
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
-import re
-from typing import Any, Optional
-from rich.console import Console
+from typing import Optional
 
 from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from rich.console import Console
 
 console = Console()
 error_console = Console(stderr=True)

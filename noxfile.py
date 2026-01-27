@@ -5,7 +5,7 @@ nox.options.default_venv_backend = "uv"
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def run_cli(session):
-    """Make sure the CLI runs correctly"""
+    """Make sure the CLI runs correctly."""
     session.run_install(
         "uv",
         "sync",
@@ -17,7 +17,7 @@ def run_cli(session):
 
 @nox.session(python=["3.13"], venv_backend="uv")
 def check_latest_schema(session):
-    """Make sure the CLI runs correctly"""
+    """Make sure the CLI runs correctly."""
     session.run_install(
         "uv",
         "sync",
@@ -29,7 +29,7 @@ def check_latest_schema(session):
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def pytest(session):
-    """Run the tests"""
+    """Run the tests."""
     session.run_install(
         "uv",
         "sync",
@@ -42,7 +42,7 @@ def pytest(session):
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def run_cli_deprecations(session):
-    """Make sure the deperecations CLI runs (but fails)"""
+    """Make sure the deperecations CLI runs (but fails)."""
     session.run_install(
         "uv",
         "sync",
@@ -54,7 +54,7 @@ def run_cli_deprecations(session):
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def test_pre_commit_installation(session):
-    """Test that dbt-autofix can be installed as a pre-commit hook"""
+    """Test that dbt-autofix can be installed as a pre-commit hook."""
     session.run_install(
         "uv",
         "sync",
@@ -78,7 +78,7 @@ def test_pre_commit_installation(session):
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def test_core_1_10_installation(session):
-    """Test that dbt-autofix can be installed with dbt-core"""
+    """Test that dbt-autofix can be installed with dbt-core."""
     session.run_install(
         "uv",
         "sync",
@@ -98,7 +98,7 @@ def test_core_1_10_installation(session):
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def test_core_1_12_installation(session):
-    """Test that dbt-autofix can be installed with dbt-core"""
+    """Test that dbt-autofix can be installed with dbt-core."""
     session.run_install(
         "uv",
         "sync",

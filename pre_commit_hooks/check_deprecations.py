@@ -46,14 +46,15 @@ def filter_relevant_files(filenames: List[str], root_path: Path = Path.cwd()) ->
 
 
 def parse_arguments(argv: Optional[List[str]] = None) -> argparse.Namespace:
-    """
+    """Parse command-line arguments for the pre-commit hook.
+
     This function acts as an adapter between pre-commit's interface (which passes
     filenames as positional arguments) and dbt-autofix's internal API (which expects
     a list via the 'select' parameter). We can't use the dbt-autofix CLI directly
     because we need to:
     1. Convert positional filenames to the internal select parameter
     2. Filter only relevant dbt files before processing
-    3. Return appropriate exit codes based on whether changes were found
+    3. Return appropriate exit codes based on whether changes were found.
     """
     parser = argparse.ArgumentParser(description="Check for dbt deprecations in staged files")
     parser.add_argument(

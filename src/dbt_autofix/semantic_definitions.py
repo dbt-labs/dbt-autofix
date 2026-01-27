@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import Dict, Tuple, Optional, Any, List, Set, Union
 from pathlib import Path
-from typing_extensions import Self
-from dbt_autofix.refactors.yml import DbtYAML
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
 from dbt_autofix.jinja import statically_parse_ref
+from dbt_autofix.refactors.yml import DbtYAML
 
 
 class SemanticDefinitions:
@@ -118,7 +118,7 @@ class SemanticDefinitions:
         return model_keys
 
     def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, Dict[str, Any]]:
-        """Returns dict of metric_name -> metric"""
+        """Returns dict of metric_name -> metric."""
         metrics: Dict[str, Dict[str, Any]] = {}
         for dbt_path in dbt_paths:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(

@@ -1,8 +1,8 @@
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-import re
 
 import httpx
 from rich.console import Console
@@ -115,7 +115,7 @@ class DBTClient:
             self._client = httpx.Client()
 
     def update_job(self, job: dict) -> dict:
-        """Update an existing dbt Cloud job using a new JobDefinition"""
+        """Update an existing dbt Cloud job using a new JobDefinition."""
 
         logging.debug(f"Updating {job['name']}")
 
@@ -208,7 +208,7 @@ class DBTClient:
         return response.json()
 
     def _check_for_creds(self):
-        """Confirm the presence of credentials"""
+        """Confirm the presence of credentials."""
         if not self._api_key:
             raise Exception("An API key is required to get dbt Cloud jobs.")
 
@@ -280,7 +280,7 @@ class DBTCloudChangesetResult:
                 console.print(f"    {log}")
 
 
-def update_jobs(  # noqa: PLR0913
+def update_jobs(
     account_id: int,
     api_key: Optional[str],
     base_url: str = "https://cloud.getdbt.com",

@@ -7,6 +7,7 @@ from dbt_fusion_package_tools.dbt_package_version import (
     DbtPackageVersion,
 )
 from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
 from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
 from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
@@ -22,7 +23,6 @@ from dbt_fusion_package_tools.version_utils import (
     get_version_specifiers,
     versions_compatible,
 )
-from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
 
 console = Console()
 error_console = Console(stderr=True)
@@ -96,7 +96,7 @@ class DbtPackage:
                 self.project_config_version_range = convert_version_specifiers_to_range(version_specs)
             else:
                 self.project_config_version_range = None
-        except:
+        except Exception:
             self.project_config_version_range = None
             error_console.print("exception calculating config version range ")
         self.merge_fusion_compatibility_output()
@@ -126,7 +126,7 @@ class DbtPackage:
                 ),
                 latest=True,
             )
-        except:
+        except Exception:
             return False
 
     def is_public_package(self) -> bool:

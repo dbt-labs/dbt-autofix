@@ -1,8 +1,8 @@
 from pathlib import Path
+
 import pytest
 
 from dbt_autofix.hub_packages import should_skip_package
-
 
 PROJECT_WITH_PACKAGES_PATH = Path("tests/unit_tests/dbt_projects/project_with_packages")
 
