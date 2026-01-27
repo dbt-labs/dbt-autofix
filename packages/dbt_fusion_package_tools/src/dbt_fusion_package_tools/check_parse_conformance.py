@@ -69,25 +69,30 @@ def download_tarball_and_run_conformance(
     fusion_binary: Optional[str] = None,
 ) -> Optional[FusionConformanceResult]:
     with TemporaryDirectory() as tmpdir:
+        # download tarball from version json
         try:
             # Download the tarball
             response = requests.get(package_version_download_url, stream=True)
             response.raise_for_status()
-        
+
             # Save to a temporary file
             tar_path = Path(tmpdir) / "archive.tar.gz"
             with open(tar_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
-            
-            # Extract the tarball
+        except Exception as e:
+            console.log(f"Error when downloading tarball: {e}")
+            return
+
+        # if we do, extract the archive
+        try:
             extract_dir = Path(tmpdir) / "extracted"
             extract_dir.mkdir(parents=True, exist_ok=True)
-            
+
             with tarfile.open(tar_path, "r:gz") as tar:
                 tar.extractall(path=extract_dir)
-            
+
             # Clean up the tar file
             tar_path.unlink()
 
@@ -95,20 +100,21 @@ def download_tarball_and_run_conformance(
             tar_contents = os.listdir(extract_dir)
             if len(tar_contents) != 1:
                 console.log("Error downloading tar")
-                return
             extracted_package = extract_dir / tar_contents[0]
-        except requests.exceptions.HTTPError as e:
-            console.log(f"Error when downloading tar: {e}")
-            return
         except Exception as e:
-            console.log(f"Error when downloading and extracting tarball: {e}")
+            console.log(f"Error when extracting tarball: {e}")
             return
+
+        # run conformance if possible
         try:
             console.log(f"Running parse conformance for {package_id} version {package_version_str}")
-            return run_conformance_for_version(extracted_package, package_name, package_version_str, package_id, fusion_binary)
+            return run_conformance_for_version(
+                extracted_package, package_name, package_version_str, package_id, fusion_binary=fusion_binary
+            )
         except Exception as e:
             console.log(f"Error when running conformance: {e}")
     return
+
 
 def run_conformance_for_version(
     path, package_name, tag_version, package_id, fusion_binary=None

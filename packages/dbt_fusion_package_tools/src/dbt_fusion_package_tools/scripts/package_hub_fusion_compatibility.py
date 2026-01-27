@@ -452,7 +452,7 @@ def run_conformance_from_tarballs(
                 package_id=version["package_id_from_path"],
                 package_version_str=str(package_version_string),
                 package_version_download_url=package_version_download_url,
-                fusion_binary=fusion_binary
+                fusion_binary=fusion_binary,
             )
             if conformance_output:
                 results[package][package_version_string] = conformance_output
@@ -498,12 +498,8 @@ def main(
     console.log(f"Writing to output path: {output_dir}/package_output.json")
     console.log(f"Package limit: {package_limit}")
     console.log(f"Fusion binary: {fusion_binary}")
-    # parse_conformance_results = run_conformance(
-    #     output_dir / "package_output.json", local_hub_path, package_limit, fusion_binary
-    # )
-    parse_conformance_results = run_conformance_from_tarballs(
-        local_hub_path, package_limit, fusion_binary
-    )
+
+    parse_conformance_results = run_conformance_from_tarballs(local_hub_path, package_limit, fusion_binary)
     write_conformance_output_to_json(parse_conformance_results, output_path)
     console.log(f"Successfully wrote output to {output_path}/conformance_output.json")
 
