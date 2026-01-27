@@ -414,7 +414,6 @@ def changeset_fix_space_after_plus(yml_str: str, schema_specs: SchemaSpecs) -> Y
             # Fix by removing space
             indent = match.group(1)
             colon_and_space = match.group(3)
-            match.group(0)
             corrected_full = f"{indent}{corrected_key}{colon_and_space}"
 
             start_pos = match.start()
