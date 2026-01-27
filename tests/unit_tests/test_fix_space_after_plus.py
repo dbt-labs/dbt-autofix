@@ -1,4 +1,4 @@
-"""Tests for changeset_fix_space_after_plus function"""
+"""Tests for changeset_fix_space_after_plus function."""
 
 from dataclasses import dataclass
 
@@ -9,13 +9,13 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import changeset_fix_space
 
 @dataclass
 class MockDbtProjectSpecs:
-    """Mock DbtProjectSpecs for testing"""
+    """Mock DbtProjectSpecs for testing."""
 
     allowed_config_fields_dbt_project_with_plus: set[str]
 
 
 class MockSchemaSpecs:
-    """Mock SchemaSpecs for testing"""
+    """Mock SchemaSpecs for testing."""
 
     def __init__(self):
         # Common valid config keys that should be recognized
@@ -51,15 +51,15 @@ class MockSchemaSpecs:
 
 @pytest.fixture
 def schema_specs():
-    """Fixture to provide mock schema specs for tests"""
+    """Fixture to provide mock schema specs for tests."""
     return MockSchemaSpecs()
 
 
 class TestFixSpaceAfterPlus:
-    """Tests for fixing space after plus in config keys"""
+    """Tests for fixing space after plus in config keys."""
 
     def test_no_space_after_plus_no_changes(self, schema_specs: MockSchemaSpecs):
-        """Test that YAML without space after plus is not modified"""
+        """Test that YAML without space after plus is not modified."""
         input_yaml = """
 name: my_project
 version: 1.0
@@ -76,7 +76,7 @@ models:
         assert result.refactored_yaml == input_yaml
 
     def test_single_space_after_plus(self, schema_specs: MockSchemaSpecs):
-        """Test that single space after plus is fixed"""
+        """Test that single space after plus is fixed."""
         input_yaml = """
 name: my_project
 version: 1.0
@@ -102,7 +102,7 @@ models:
         assert result.refactored_yaml == expected_yaml
 
     def test_multiple_spaces_after_plus(self, schema_specs: MockSchemaSpecs):
-        """Test that multiple instances of space after plus are all fixed"""
+        """Test that multiple instances of space after plus are all fixed."""
         input_yaml = """
 name: my_project
 version: 1.0
@@ -129,7 +129,7 @@ models:
         assert "+ schema:" not in result.refactored_yaml
 
     def test_mixed_correct_and_incorrect_keys(self, schema_specs: MockSchemaSpecs):
-        """Test that only incorrect keys are fixed"""
+        """Test that only incorrect keys are fixed."""
         input_yaml = """
 name: my_project
 version: 1.0
@@ -154,7 +154,7 @@ models:
         assert "+schema: my_schema" in result.refactored_yaml
 
     def test_nested_config_keys(self, schema_specs: MockSchemaSpecs):
-        """Test that space after plus is fixed in nested structures"""
+        """Test that space after plus is fixed in nested structures."""
         input_yaml = """
 name: my_project
 version: 1.0
@@ -178,7 +178,7 @@ models:
         assert "+ materialized:" not in result.refactored_yaml
 
     def test_preserves_yaml_structure(self, schema_specs: MockSchemaSpecs):
-        """Test that YAML structure and other content is preserved"""
+        """Test that YAML structure and other content is preserved."""
         input_yaml = """
 name: my_project
 version: 1.0
@@ -204,7 +204,7 @@ models:
         assert "+tags:" in result.refactored_yaml
 
     def test_different_indentation_levels(self, schema_specs: MockSchemaSpecs):
-        """Test that space after plus is fixed at different indentation levels"""
+        """Test that space after plus is fixed at different indentation levels."""
         input_yaml = """
 name: my_project
 
@@ -232,14 +232,14 @@ models:
             assert "+ tags:" not in line
 
     def test_empty_yaml(self, schema_specs: MockSchemaSpecs):
-        """Test that empty YAML is handled correctly"""
+        """Test that empty YAML is handled correctly."""
         input_yaml = ""
         result = changeset_fix_space_after_plus(input_yaml, schema_specs)
         assert not result.refactored
         assert len(result.deprecation_refactors) == 0
 
     def test_yaml_with_no_plus_keys(self, schema_specs: MockSchemaSpecs):
-        """Test that YAML without any plus-prefixed keys is not modified"""
+        """Test that YAML without any plus-prefixed keys is not modified."""
         input_yaml = """
 name: my_project
 version: 1.0
@@ -256,7 +256,7 @@ models:
         assert result.refactored_yaml == input_yaml
 
     def test_line_number_in_log(self, schema_specs: MockSchemaSpecs):
-        """Test that the log message includes the correct line number"""
+        """Test that the log message includes the correct line number."""
         input_yaml = """name: my_project
 version: 1.0
 
@@ -272,7 +272,7 @@ models:
         assert "line 6" in result.deprecation_refactors[0].log
 
     def test_multiple_word_keys_not_matched(self, schema_specs: MockSchemaSpecs):
-        """Test that keys with multiple words (invalid pattern) are not matched"""
+        """Test that keys with multiple words (invalid pattern) are not matched."""
         input_yaml = """
 name: my_project
 
@@ -287,7 +287,7 @@ models:
         assert len(result.deprecation_refactors) == 0
 
     def test_seeds_section(self, schema_specs: MockSchemaSpecs):
-        """Test that space after plus is fixed in seeds section"""
+        """Test that space after plus is fixed in seeds section."""
         input_yaml = """
 name: my_project
 
@@ -304,7 +304,7 @@ seeds:
         assert "+tags:" in result.refactored_yaml
 
     def test_tests_section(self, schema_specs: MockSchemaSpecs):
-        """Test that space after plus is fixed in tests section"""
+        """Test that space after plus is fixed in tests section."""
         input_yaml = """
 name: my_project
 
@@ -320,7 +320,7 @@ tests:
         assert "+store_failures:" in result.refactored_yaml
 
     def test_snapshots_section(self, schema_specs: MockSchemaSpecs):
-        """Test that space after plus is fixed in snapshots section"""
+        """Test that space after plus is fixed in snapshots section."""
         input_yaml = """
 name: my_project
 
@@ -337,7 +337,7 @@ snapshots:
         assert "+tags:" in result.refactored_yaml
 
     def test_real_world_example_from_issue(self, schema_specs: MockSchemaSpecs):
-        """Test the real-world example from the GitHub issue"""
+        """Test the real-world example from the GitHub issue."""
         input_yaml = """
 name: my_project
 
@@ -367,7 +367,7 @@ models:
                 assert "+ tags:" not in line
 
     def test_invalid_key_removed(self, schema_specs: MockSchemaSpecs):
-        """Test that keys not in the schema are removed entirely"""
+        """Test that keys not in the schema are removed entirely."""
         input_yaml = """
 name: my_project
 
@@ -397,7 +397,7 @@ models:
         assert any("Removed invalid key '+ custom_invalid_key'" in log for log in fix_logs)
 
     def test_all_invalid_keys_removed(self, schema_specs: MockSchemaSpecs):
-        """Test that when all keys are invalid, they are all removed"""
+        """Test that when all keys are invalid, they are all removed."""
         input_yaml = """
 name: my_project
 

@@ -7,7 +7,7 @@ from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignor
 
 
 def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
-    """Given a string with jinja, extract an unrendered config call.
+    r"""Given a string with jinja, extract an unrendered config call.
     If no config call is present, returns None.
 
     For example, given:
@@ -248,7 +248,7 @@ def statically_parse_ref(expression: str) -> Optional[RefArgs]:
         pass
 
     if statically_parsed.get("refs"):
-        raw_ref = list(statically_parsed["refs"])[0]
+        raw_ref = next(iter(statically_parsed["refs"]))
         ref = RefArgs(
             package=raw_ref.get("package"),
             name=raw_ref.get("name"),

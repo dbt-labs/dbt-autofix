@@ -105,7 +105,6 @@ def move_custom_config_access_to_meta_sql_improved(
         refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
 
         # Determine which method was used
-        method_used = "get" if ".get(" in original else "require"
 
         deprecation_refactors.append(
             DbtDeprecationRefactor(

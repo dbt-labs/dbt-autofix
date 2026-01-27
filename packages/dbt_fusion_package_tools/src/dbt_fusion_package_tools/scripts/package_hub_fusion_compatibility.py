@@ -282,12 +282,9 @@ def main():
     results = read_json_from_local_hub_repo(
         path="/Users/chaya/workplace/hub.getdbt.com", file_count_limit=file_count_limit
     )
-    print(f"Downloaded {len(results)} packages from hub.getdbt.com")
     output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
     write_dict_to_json(results, output_path)
-    print(f"Output written to {output_path / 'package_output.json'}")
-    reload_packages = reload_packages_from_file(output_path / "package_output.json")
-    print(f"Reloaded {len(reload_packages)} packages from file")
+    reload_packages_from_file(output_path / "package_output.json")
 
 
 if __name__ == "__main__":

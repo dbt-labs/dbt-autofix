@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -169,7 +170,7 @@ def process_yaml_files_except_dbt_project(
                         error_console.print(
                             f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
                         )
-                        exit(1)
+                        sys.exit(1)
 
     for changesets in ordered_changesets:
         _apply_changesets(file_name_to_yaml_results, changesets)
@@ -237,7 +238,7 @@ def process_dbt_project_yml(
 
 
 def skip_file(file_path: Path, select: Optional[List[str]] = None) -> bool:
-    """Skip a file if a select list is provided and the file is not in the select list"""
+    """Skip a file if a select list is provided and the file is not in the select list."""
     if select:
         return not any([Path(select_path).resolve().as_posix() in file_path.as_posix() for select_path in select])
     else:

@@ -27,8 +27,8 @@ def test_convert_version_str(input_str: str, expected_match: VersionSpecifier):
     assert extracted_version.patch == expected_match.patch
     assert extracted_version.prerelease == expected_match.prerelease
     assert extracted_version.matcher == expected_match.matcher
-    assert extracted_version.is_exact == True
-    assert versions_compatible(extracted_version, input_str) == True
+    assert extracted_version.is_exact
+    assert versions_compatible(extracted_version, input_str)
 
 
 # class Matchers(StrEnum):

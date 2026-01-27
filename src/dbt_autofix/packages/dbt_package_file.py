@@ -91,7 +91,7 @@ def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
 
 # Same as load_yaml_from_packages_yml
 def load_yaml_from_dependencies_yml(dependencies_yml_path: Path) -> dict[Any, Any]:
-    """Same as `load_yaml_from_packages_yml` but dependencies.yml"""
+    """Same as `load_yaml_from_packages_yml` but dependencies.yml."""
     if dependencies_yml_path.name != "dependencies.yml":
         console.log("File must be dependencies.yml")
         return {}
@@ -200,9 +200,7 @@ class DbtPackageFile:
                 package
             ].is_installed_version_fusion_compatible()
             if (
-                installed_version_compatibility == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
-                or installed_version_compatibility
-                == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+                installed_version_compatibility in (PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW, PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0)
             ):
                 package_names.append(package)
         return package_names

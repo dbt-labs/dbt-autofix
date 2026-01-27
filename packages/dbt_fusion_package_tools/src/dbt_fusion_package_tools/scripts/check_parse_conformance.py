@@ -1,4 +1,4 @@
-"""Interface for objects useful to processing hub entries"""
+"""Interface for objects useful to processing hub entries."""
 
 import logging
 import os

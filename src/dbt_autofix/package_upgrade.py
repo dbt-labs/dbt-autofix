@@ -235,8 +235,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
             packages_to_check.remove(package)
         # already compatible version - don't upgrade
         elif (
-            installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
-            or installed_version_compat == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
+            installed_version_compat in (PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0, PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW)
         ):
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(

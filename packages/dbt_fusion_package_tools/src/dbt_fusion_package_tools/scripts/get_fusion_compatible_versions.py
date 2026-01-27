@@ -31,7 +31,7 @@ def convert_version_spec_to_string(version_spec: Optional[VersionSpecifier]) -> 
 def new_name_from_redirect(redirect_name, redirect_namespace, current_name, current_namespace) -> str:
     if redirect_name and redirect_namespace:
         return f"{redirect_namespace}/{redirect_name}"
-    elif redirect_namespace == None:
+    elif redirect_namespace is None:
         return f"{current_namespace}/{redirect_name}"
     else:
         return f"{redirect_namespace}/{current_name}"
@@ -55,7 +55,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             package_latest_version_index_json = VersionSpecifier.from_version_string(
                 version["package_latest_version_index_json"]
             )
-            if version["package_redirect_name"] != None or version["package_redirect_namespace"] != None:
+            if version["package_redirect_name"] is not None or version["package_redirect_namespace"] is not None:
                 package_redirect_name = version["package_redirect_name"]
                 package_redirect_namespace = version["package_redirect_namespace"]
             continue
@@ -104,7 +104,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             assert oldest_fusion_compatible_version is not None
             assert len(fusion_compatible_versions) > 0
         if not latest_fusion_version:
-            assert oldest_fusion_compatible_version == None
+            assert oldest_fusion_compatible_version is None
             assert len(fusion_compatible_versions) == 0
     return {
         # "versions": versions,
@@ -137,7 +137,6 @@ def get_versions(packages):
                 old_package_namespace,
             )
             renamed_packages.append((package, new_name))
-            print(f"renamed package: {package}, {new_name}")
             continue
         else:
             packages_with_versions[package] = versions
@@ -164,9 +163,7 @@ def main():
     data = read_package_output_json(input / "package_output.json")
     # check_package_names(data)
     packages_with_versions: dict[str, dict[str, Any]] = get_versions(data)
-    print(f"Read {len(packages_with_versions)} packages from file")
     write_dict_to_json(packages_with_versions, input)
-    print("Output written to fusion_version_compatibility_output.json")
     with open(
         Path.cwd() / "src" / "dbt_fusion_package_tools" / "fusion_version_compatibility_output.py", "w"
     ) as output_py_file:

@@ -83,7 +83,7 @@ class DbtPackageRepo:
             return False
 
     def _clone_repo(self):
-        """Clone down a github repo to a path and a reference to that directory"""
+        """Clone down a github repo to a path and a reference to that directory."""
         if not self.local_path or not self.git_clone_url:
             raise GitOperationError("No local path or git clone URL defined")
         try:

@@ -1,4 +1,4 @@
-"""Interface for objects useful to processing hub entries"""
+"""Interface for objects useful to processing hub entries."""
 
 import json
 import os
@@ -53,7 +53,6 @@ def checkout_repo_and_run_conformance(
 ) -> dict[str, FusionConformanceResult]:
     results: dict[str, FusionConformanceResult] = {}
     with TemporaryDirectory() as tmpdir:
-        print(f"writing to {tmpdir}")
         repo = DbtPackageRepo(
             repo_name=package_name,
             github_organization=github_organization,

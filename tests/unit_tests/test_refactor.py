@@ -223,7 +223,7 @@ exposures:
 
 
 class TestUnmatchedEndingsRemoval:
-    """Tests for remove_unmatched_endings function"""
+    """Tests for remove_unmatched_endings function."""
 
     def test_basic_unmatched_endmacro(self):
         sql_content = """
@@ -517,7 +517,7 @@ class TestUnmatchedEndingsRemoval:
 
 
 class TestYamlRefactoring:
-    """Tests for YAML refactoring functions"""
+    """Tests for YAML refactoring functions."""
 
     def test_changeset_refactor_yml_with_config_fields(
         self, temp_project_dir: Path, schema_yml_with_config_fields: str, schema_specs: SchemaSpecs
@@ -910,7 +910,7 @@ sources:
 
 
 class TestYamlOutput:
-    """Tests for YAML output functions"""
+    """Tests for YAML output functions."""
 
     def test_output_yaml(self):
         # Test that output_yaml produces valid YAML
@@ -933,7 +933,7 @@ class TestYamlOutput:
 
 
 class TestDbtProjectYAMLPusPrefix:
-    """Tests for YAML output functions"""
+    """Tests for YAML output functions."""
 
     def test_check_project(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
         # Test that output_yaml produces valid YAML
@@ -1025,7 +1025,7 @@ class TestDbtProjectYAMLPusPrefix:
 
 
 class TestDbtProjectRemoveDeprecated:
-    """Tests for YAML output functions"""
+    """Tests for YAML output functions."""
 
     def test_remove_deprecated_config(self):
         input_str = """
@@ -1078,7 +1078,7 @@ profile: garage-jaffle
 
 
 class TestOwnerPropertiesRefactoring:
-    """Tests for owner properties refactoring"""
+    """Tests for owner properties refactoring."""
 
     def test_owner_properties_refactoring(
         self, temp_project_dir: Path, schema_yml_with_owner_properties: str, schema_specs: SchemaSpecs
@@ -1208,62 +1208,62 @@ models:
 
 
 class TestSkipFile:
-    """Tests for skip_file function"""
+    """Tests for skip_file function."""
 
     def test_skip_file_no_select(self):
-        """Test that no files are skipped when no select list is provided"""
+        """Test that no files are skipped when no select list is provided."""
         file_path = Path("/path/to/file.sql")
         assert not skip_file(file_path)
         assert not skip_file(file_path, None)
 
     def test_skip_file_with_select_matching(self):
-        """Test that files matching the select list are not skipped"""
+        """Test that files matching the select list are not skipped."""
         file_path = Path("/path/to/file.sql")
         select = ["/path/to/file.sql"]
         assert not skip_file(file_path, select)
 
     def test_skip_file_with_select_not_matching(self):
-        """Test that files not matching the select list are skipped"""
+        """Test that files not matching the select list are skipped."""
         file_path = Path("/path/to/file.sql")
         select = ["/path/to/other.sql"]
         assert skip_file(file_path, select)
 
     def test_skip_file_with_select_partial_match(self):
-        """Test that files partially matching the select list are not skipped"""
+        """Test that files partially matching the select list are not skipped."""
         file_path = Path("/path/to/file.sql")
         select = ["/path/to"]
         assert not skip_file(file_path, select)
 
     def test_skip_file_with_select_multiple_paths(self):
-        """Test that files matching any path in the select list are not skipped"""
+        """Test that files matching any path in the select list are not skipped."""
         file_path = Path("/path/to/file.sql")
         select = ["/path/to/other.sql", "/path/to/file.sql"]
         assert not skip_file(file_path, select)
 
     def test_skip_file_with_select_relative_paths(self):
-        """Test that relative paths in select list work correctly"""
+        """Test that relative paths in select list work correctly."""
         file_path = Path("/absolute/path/to/file.sql")
         select = ["/absolute/path/to/file.sql"]  # Changed to use absolute path since that's what the function expects
         assert not skip_file(file_path, select)
 
     def test_skip_file_with_select_different_case(self):
-        """Test that path matching is case sensitive"""
+        """Test that path matching is case sensitive."""
         file_path = Path("/path/to/file.sql")
         select = ["/PATH/TO/FILE.SQL"]
         assert skip_file(file_path, select)
 
     def test_skip_file_with_select_empty_list(self):
-        """Test that empty select list is treated the same as no select list"""
+        """Test that empty select list is treated the same as no select list."""
         file_path = Path("/path/to/file.sql")
         select = []
         assert not skip_file(file_path, select)  # Changed to expect False since empty list is treated same as None
 
 
 class TestTestConfigurationRefactoring:
-    """Tests for test configuration refactoring"""
+    """Tests for test configuration refactoring."""
 
     def test_test_config_model_column_level(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that test configuration fields at column level are moved under config"""
+        """Test that test configuration fields at column level are moved under config."""
         input_yaml = """
 version: 2
 
@@ -1311,7 +1311,7 @@ models:
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
     def test_test_config_model_top_level(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that test configuration fields at model level are moved under config"""
+        """Test that test configuration fields at model level are moved under config."""
         input_yaml = """
 version: 2
 
@@ -1353,7 +1353,7 @@ models:
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
     def test_test_config_source_top_level(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that test configuration fields at source table level are moved under config"""
+        """Test that test configuration fields at source table level are moved under config."""
         input_yaml = """
 version: 2
 
@@ -1406,7 +1406,7 @@ sources:
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
     def test_test_config_string_tests(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that string tests are left unchanged"""
+        """Test that string tests are left unchanged."""
         input_yaml = """
 version: 2
 
@@ -1424,7 +1424,7 @@ models:
         assert len(result.refactor_logs) == 0
 
     def test_test_config_mixed_string_and_dict_tests(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that mixed string and dict tests are handled correctly"""
+        """Test that mixed string and dict tests are handled correctly."""
         input_yaml = """
 version: 2
 
@@ -1469,7 +1469,7 @@ models:
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
     def test_test_config_data_tests_key(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that tests work with both 'tests' and 'data_tests' keys"""
+        """Test that tests work with both 'tests' and 'data_tests' keys."""
         input_yaml = """
 version: 2
 
@@ -1510,7 +1510,7 @@ models:
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
     def test_test_config_source_column_level(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that test configuration fields at source column level are moved under config"""
+        """Test that test configuration fields at source column level are moved under config."""
         input_yaml = """
 version: 2
 
@@ -1579,7 +1579,7 @@ sources:
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
     def test_test_config_existing_config_field(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that test configuration fields are handled correctly when config already exists"""
+        """Test that test configuration fields are handled correctly when config already exists."""
         input_yaml = """
 version: 2
 
@@ -1615,7 +1615,7 @@ models:
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
     def test_ordereddict_mutation_bug(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
-        """Test that reproduces the OrderedDict mutated during iteration bug"""
+        """Test that reproduces the OrderedDict mutated during iteration bug."""
         input_yaml = """
 version: 2
 
@@ -1655,7 +1655,7 @@ models:
 
 
 class TestRemoveExtraTabs:
-    """Tests for changeset_remove_extra_tabs function"""
+    """Tests for changeset_remove_extra_tabs function."""
 
     def test_no_tabs_no_changes(self):
         input_yaml = """
@@ -1789,10 +1789,10 @@ models:
 
 
 class TestReplaceFancyQuotes:
-    """Tests for changeset_replace_fancy_quotes function"""
+    """Tests for changeset_replace_fancy_quotes function."""
 
     def test_no_fancy_quotes_no_changes(self):
-        """Test that YAML without fancy quotes is not modified"""
+        """Test that YAML without fancy quotes is not modified."""
         input_yaml = """
 version: 2
 models:
@@ -1809,7 +1809,7 @@ models:
         assert result.rule_name == "replace_fancy_quotes"
 
     def test_replace_left_double_quote(self):
-        """Test replacing U+201C (") with standard quote"""
+        """Test replacing U+201C (") with standard quote."""
         input_yaml = 'model-paths: [\u201cmodels"]'
         result = changeset_replace_fancy_quotes(input_yaml)
         assert result.refactored
@@ -1819,7 +1819,7 @@ models:
         assert result.refactored_yaml == 'model-paths: ["models"]'
 
     def test_replace_right_double_quote(self):
-        """Test replacing U+201D (") with standard quote"""
+        """Test replacing U+201D (") with standard quote."""
         input_yaml = 'model-paths: ["models\u201d]'
         result = changeset_replace_fancy_quotes(input_yaml)
         assert result.refactored
@@ -1829,7 +1829,7 @@ models:
         assert result.refactored_yaml == 'model-paths: ["models"]'
 
     def test_replace_both_fancy_quotes(self):
-        """Test replacing both U+201C and U+201D in same line"""
+        """Test replacing both U+201C and U+201D in same line."""
         input_yaml = "model-paths: [\u201cmodels\u201d]"
         result = changeset_replace_fancy_quotes(input_yaml)
         assert result.refactored
@@ -1839,7 +1839,7 @@ models:
         assert result.refactored_yaml == 'model-paths: ["models"]'
 
     def test_replace_fancy_quotes_multiple_lines(self):
-        """Test replacing fancy quotes used as YAML delimiters"""
+        """Test replacing fancy quotes used as YAML delimiters."""
         input_yaml = """version: 2
 models:
   - name: \u201ctest_model\u201d
@@ -1857,7 +1857,7 @@ models:
         assert result.refactored_yaml == expected_yaml
 
     def test_yaml_structure_preserved(self):
-        """Test that YAML structure and indentation are preserved"""
+        """Test that YAML structure and indentation are preserved."""
         input_yaml = """version: 2
 models:
   - name: \u201ctest_model\u201d
@@ -1873,7 +1873,7 @@ models:
         assert lines[4].startswith("      - name:")
 
     def test_preserve_fancy_quotes_in_descriptions(self):
-        """Test that fancy quotes inside description values are preserved"""
+        """Test that fancy quotes inside description values are preserved."""
         input_yaml = """version: 2
 models:
   - name: test_model
@@ -1888,7 +1888,7 @@ models:
         assert result.refactored_yaml == input_yaml
 
     def test_mixed_fancy_quotes_preservation(self):
-        """Test that fancy quotes in descriptions are preserved while others are replaced"""
+        """Test that fancy quotes in descriptions are preserved while others are replaced."""
         input_yaml = """version: 2
 models:
   - name: \u201ctest_model\u201d
@@ -1912,10 +1912,10 @@ models:
 
 
 class TestRemoveDuplicateKeys:
-    """Tests for changeset_remove_duplicate_keys function"""
+    """Tests for changeset_remove_duplicate_keys function."""
 
     def test_no_duplicates_no_changes(self):
-        """Test that YAML without duplicate keys is not modified"""
+        """Test that YAML without duplicate keys is not modified."""
         input_yaml = """
 version: 2
 models:
@@ -1932,7 +1932,7 @@ models:
         assert result.rule_name == "remove_duplicate_keys"
 
     def test_single_duplicate_key(self):
-        """Test that a single duplicate key is detected and removed"""
+        """Test that a single duplicate key is detected and removed."""
         input_yaml = """
 version: 2
 models:
@@ -1954,7 +1954,7 @@ models:
         assert model["description"] == "Second description"
 
     def test_multiple_duplicate_keys(self):
-        """Test that multiple duplicate keys are detected and removed"""
+        """Test that multiple duplicate keys are detected and removed."""
         input_yaml = """
 version: 2
 models:
@@ -1982,7 +1982,7 @@ models:
         assert column["description"] == "Another description"
 
     def test_nested_duplicate_keys(self):
-        """Test that duplicate keys in nested structures are detected"""
+        """Test that duplicate keys in nested structures are detected."""
         input_yaml = """
 version: 2
 models:
@@ -2016,7 +2016,7 @@ models:
         assert column["tests"] == ["unique", "unique"]
 
     def test_duplicate_keys_with_comments(self):
-        """Test that duplicate keys are handled correctly with comments"""
+        """Test that duplicate keys are handled correctly with comments."""
         input_yaml = """
 version: 2
 models:
@@ -2037,7 +2037,7 @@ models:
         assert model["description"] == "Second description"
 
     def test_duplicate_keys_in_sources(self):
-        """Test that duplicate keys in sources are detected"""
+        """Test that duplicate keys in sources are detected."""
         input_yaml = """
 version: 2
 sources:
@@ -2062,7 +2062,7 @@ sources:
         assert table["description"] == "Another table description"
 
     def test_duplicate_keys_in_tests(self):
-        """Test that duplicate keys in test configurations are detected"""
+        """Test that duplicate keys in test configurations are detected."""
         input_yaml = """
 version: 2
 models:
@@ -2093,7 +2093,7 @@ models:
         assert not_null_test["not_null"]["severity"] == "warn"
 
     def test_empty_yaml(self):
-        """Test that empty YAML is handled correctly"""
+        """Test that empty YAML is handled correctly."""
         input_yaml = ""
         result = changeset_remove_duplicate_keys(input_yaml)
         assert not result.refactored
@@ -2102,10 +2102,10 @@ models:
 
 
 class TestRemoveDuplicateModels:
-    """Tests for changeset_remove_duplicate_models function"""
+    """Tests for changeset_remove_duplicate_models function."""
 
     def test_no_duplicates_no_changes(self):
-        """Test that YAML without duplicate models is not modified"""
+        """Test that YAML without duplicate models is not modified."""
         input_yaml = """
 version: 2
 models:
@@ -2121,7 +2121,7 @@ models:
         assert result.rule_name == "remove_duplicate_models"
 
     def test_single_duplicate_model(self):
-        """Test that a single duplicate model is detected and first occurrence removed"""
+        """Test that a single duplicate model is detected and first occurrence removed."""
         input_yaml = """
 version: 2
 models:
@@ -2155,7 +2155,7 @@ models:
         assert str(deprecation_date) == "2025-04-01" or deprecation_date == "2025-04-01"
 
     def test_multiple_duplicates_same_model(self):
-        """Test that multiple duplicates of the same model are handled correctly"""
+        """Test that multiple duplicates of the same model are handled correctly."""
         input_yaml = """
 version: 2
 models:
@@ -2181,7 +2181,7 @@ models:
         assert refactored_dict["models"][1]["description"] == "Third occurrence"
 
     def test_multiple_different_duplicates(self):
-        """Test that multiple different models with duplicates are handled independently"""
+        """Test that multiple different models with duplicates are handled independently."""
         input_yaml = """
 version: 2
 models:
@@ -2210,7 +2210,7 @@ models:
         assert refactored_dict["models"][2]["description"] == "Second B"
 
     def test_models_with_non_dict_items(self):
-        """Test that non-dict items in models list are handled gracefully"""
+        """Test that non-dict items in models list are handled gracefully."""
         input_yaml = """
 version: 2
 models:
@@ -2231,7 +2231,7 @@ models:
         assert refactored_dict["models"][1]["description"] == "Duplicate"
 
     def test_duplicate_with_complex_structure(self):
-        """Test that duplicates with complex nested structures are handled correctly"""
+        """Test that duplicates with complex nested structures are handled correctly."""
         input_yaml = """
 version: 2
 models:
@@ -2273,10 +2273,10 @@ models:
 
 
 class TestReplaceSpacesUnderscoresInNameValues:
-    """Tests for changeset_remove_duplicate_keys function"""
+    """Tests for changeset_remove_duplicate_keys function."""
 
     def test_changeset_replace_non_alpha_underscores_in_name_values(self, schema_specs: SchemaSpecs):
-        """Test that YAML without duplicate keys is not modified"""
+        """Test that YAML without duplicate keys is not modified."""
         input_yaml = """
 version: 2
 models:
@@ -2304,7 +2304,7 @@ exposures:
         assert exposure_special_chars_refactored["name"] == "exposure_with_special_chars"
 
     def test_jinja_templates_preserved_in_name_values(self, schema_specs: SchemaSpecs):
-        """Test that Jinja templates in name values are preserved and not corrupted"""
+        """Test that Jinja templates in name values are preserved and not corrupted."""
         input_yaml = """
 version: 2
 seeds:
@@ -2394,10 +2394,10 @@ def test_config_regex(input_str, expected_match):
 
 
 class TestRefactorCustomConfigsToMetaSQL:
-    """Tests for refactor_custom_configs_to_meta_sql function"""
+    """Tests for refactor_custom_configs_to_meta_sql function."""
 
     def test_on_error_with_env_var_moved_to_meta(self, schema_specs: SchemaSpecs):
-        """Test that on_error config IS moved to meta even when env_var() is present (static analysis)"""
+        """Test that on_error config IS moved to meta even when env_var() is present (static analysis)."""
         sql_content = """{{
     config(
         materialized=env_var("DBT_MAT_TABLE"),
@@ -2429,7 +2429,7 @@ select 1 as id
         assert "meta" in result.deprecation_refactors[0].log
 
     def test_multiple_custom_configs_with_jinja_moved_to_meta(self, schema_specs: SchemaSpecs):
-        """Test that multiple custom configs ARE moved to meta even with Jinja (static analysis)"""
+        """Test that multiple custom configs ARE moved to meta even with Jinja (static analysis)."""
         sql_content = """{{
     config(
         materialized=var("materialization"),
@@ -2457,7 +2457,7 @@ select 1 as id
         assert "meta" in result.deprecation_refactors[0].log
 
     def test_valid_configs_not_moved_to_meta(self, schema_specs: SchemaSpecs):
-        """Test that valid configs are not moved to meta (no custom configs present)"""
+        """Test that valid configs are not moved to meta (no custom configs present)."""
         sql_content = """{{
     config(
         materialized=env_var("DBT_MAT_TABLE"),
@@ -2476,7 +2476,7 @@ select 1 as id
         assert len(result.deprecation_refactors) == 0
 
     def test_nested_jinja_in_string_preserved(self, schema_specs: SchemaSpecs):
-        """Test that nested Jinja expressions inside strings are correctly preserved"""
+        """Test that nested Jinja expressions inside strings are correctly preserved."""
         sql_content = """{{
   config(
     materialized='incremental',
@@ -2516,7 +2516,7 @@ select 1 as id
         assert "{{ var('run_date') }}" in result.refactored_content
 
     def test_jinja_function_call_preserved(self, schema_specs: SchemaSpecs):
-        """Test that Jinja function calls in config values are correctly preserved"""
+        """Test that Jinja function calls in config values are correctly preserved."""
         sql_content = """{{ config(
     tags = ["monthly"]
     , materialization = 'table'

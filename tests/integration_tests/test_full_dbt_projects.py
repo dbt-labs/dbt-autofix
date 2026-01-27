@@ -2,7 +2,6 @@ import difflib
 import filecmp
 import json
 import os
-import pprint
 import shutil
 import tempfile
 from collections import defaultdict
@@ -103,9 +102,7 @@ def compare_json_logs(logs_io: StringIO, path: Path):
     for log_dict in log_dicts_filtered:
         if log_dict not in expected_log_dicts_filtered:
             print("Log dict not in expected log dicts:")
-            pprint.pprint(log_dict)
             print("Expected log dicts:")
-            pprint.pprint(expected_log_dicts_filtered)
 
         assert log_dict in expected_log_dicts_filtered
 

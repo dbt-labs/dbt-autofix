@@ -1,6 +1,5 @@
 import tempfile
 from pathlib import Path
-from pprint import pprint
 
 import pytest
 
@@ -258,7 +257,6 @@ def test_find_package_dependencies_yml(temp_project_dir_with_packages_yml: Path)
 def test_parse_package_yml(temp_project_dir_with_packages_yml: Path):
     package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
     package_yml = load_yaml_from_packages_yml(package_files[0])
-    pprint(package_yml)
     assert package_yml
     assert len(package_yml) == 1
     assert "packages" in package_yml

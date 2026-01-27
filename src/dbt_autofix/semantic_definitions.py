@@ -118,7 +118,7 @@ class SemanticDefinitions:
         return model_keys
 
     def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, Dict[str, Any]]:
-        """Returns dict of metric_name -> metric"""
+        """Returns dict of metric_name -> metric."""
         metrics: Dict[str, Dict[str, Any]] = {}
         for dbt_path in dbt_paths:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
