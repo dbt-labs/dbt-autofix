@@ -205,6 +205,7 @@ def download_package_jsons_from_hub_repo(
         branch: Branch name to use; if omitted the repository default branch is
             discovered via the GitHub API.
         github_token: Optional GitHub token to increase rate limits.
+        file_count_limit: Maximum number of files to download (0 for unlimited).
     """
     base_api = "https://api.github.com"
     headers: Dict[str, str] = {"User-Agent": "dbt-autofix-agent"}

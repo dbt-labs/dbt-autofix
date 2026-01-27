@@ -202,6 +202,7 @@ def check_fusion_schema_compatibility(
 
     Args:
         repo_path: Path to the dbt package repository
+        show_fusion_output: Whether to display fusion command output
 
     Returns:
         True if fusion compatible (dbtf parse exits with code 0), False otherwise
