@@ -46,7 +46,9 @@ def filter_relevant_files(filenames: List[str], root_path: Path = Path.cwd()) ->
 
 
 def parse_arguments(argv: Optional[List[str]] = None) -> argparse.Namespace:
-    """This function acts as an adapter between pre-commit's interface (which passes
+    """Parse command-line arguments for the pre-commit hook.
+
+    This function acts as an adapter between pre-commit's interface (which passes
     filenames as positional arguments) and dbt-autofix's internal API (which expects
     a list via the 'select' parameter). We can't use the dbt-autofix CLI directly
     because we need to:

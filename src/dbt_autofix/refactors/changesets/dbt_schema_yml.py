@@ -184,9 +184,7 @@ def _would_close_string(line: str, pos: int) -> bool:
 
 
 def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
-    """Generates a refactored YAML string from a single YAML file
-    - moves all the owner fields that are not in owner_properties under config.meta.
-    """
+    """Generate a refactored YAML string moving non-owner fields to config.meta."""
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -372,7 +370,9 @@ def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
 
 
 def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:  # noqa: PLR0912,PLR0915
-    """Generates a refactored YAML string from a single YAML file
+    """Generate a refactored YAML string restructuring fields per dbt conventions.
+
+    This function:
     - moves all the config fields under config
     - moves all the meta fields under config.meta and merges with existing config.meta
     - moves all the unknown fields under config.meta
@@ -518,10 +518,10 @@ def restructure_yaml_keys_for_test(
     test: Dict[str, Any], schema_specs: SchemaSpecs
 ) -> Tuple[Dict[str, Any], bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys for tests according to dbt conventions.
-    Tests are separated from other nodes because
-    - they don't support meta
-    - they can be either a string or a dict
-    - when they are a dict, the top level ist just the test name.
+
+    Tests are separated from other nodes because they don't support meta,
+    can be either a string or a dict, and when they are a dict, the top
+    level is just the test name.
 
     Args:
         test: The test dictionary to process
@@ -620,8 +620,10 @@ def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name
 
 
 def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
-    """Move non-config args under 'arguments' key
-    This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name').
+    """Move non-config args under 'arguments' key.
+
+    This refactor is only necessary for custom tests, or tests making use of
+    the alternative test definition syntax ('test_name').
     """
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 

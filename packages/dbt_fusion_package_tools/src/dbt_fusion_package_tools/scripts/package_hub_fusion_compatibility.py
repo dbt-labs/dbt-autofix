@@ -106,8 +106,9 @@ def write_dict_to_json(data: Dict[str, Any], dest_dir: Path, *, indent: int = 2,
 
 
 def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
-    """Read JSON files from a local copy of the hub repo and return a
-    defaultdict mapping package_id -> list[parsed outputs].
+    """Read JSON files from a local copy of the hub repo.
+
+    Returns a defaultdict mapping package_id -> list[parsed outputs].
 
     The `path` argument may be either:
       - the repository root (so files are found under `data/packages/...`),

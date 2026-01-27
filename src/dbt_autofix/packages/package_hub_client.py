@@ -114,8 +114,9 @@ def _get(package_name, registry_base_url=None):
 
 
 class memoized:
-    """Decorator. Caches a function's return value each time it is called. If
-    called later with the same arguments, the cached value is returned (not
+    """Decorator that caches a function's return value each time it is called.
+
+    If called later with the same arguments, the cached value is returned (not
     reevaluated).
 
     Taken from https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
