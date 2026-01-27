@@ -1,15 +1,15 @@
-from pprint import pprint
 import tempfile
 from pathlib import Path
-from dbt_autofix.packages.dbt_package_file import (
-    DbtPackageFile,
-    load_yaml_from_packages_yml,
-    parse_package_dependencies_from_packages_yml,
-    parse_package_dependencies_from_yml,
-    find_package_yml_files,
-)
+from pprint import pprint
 
 import pytest
+
+from dbt_autofix.packages.dbt_package_file import (
+    DbtPackageFile,
+    find_package_yml_files,
+    load_yaml_from_packages_yml,
+    parse_package_dependencies_from_packages_yml,
+)
 
 
 @pytest.fixture

@@ -7,6 +7,7 @@ from dbt_fusion_package_tools.dbt_package_version import (
     DbtPackageVersion,
 )
 from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
+from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
 from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
 from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
@@ -22,7 +23,6 @@ from dbt_fusion_package_tools.version_utils import (
     get_version_specifiers,
     versions_compatible,
 )
-from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
 
 console = Console()
 error_console = Console(stderr=True)

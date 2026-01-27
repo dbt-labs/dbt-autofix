@@ -1,6 +1,11 @@
 from pathlib import Path
 from typing import Optional
-import pytest
+
+from dbt_fusion_package_tools.upgrade_status import (
+    PackageFusionCompatibilityState,
+    PackageVersionFusionCompatibilityState,
+    PackageVersionUpgradeType,
+)
 
 from dbt_autofix.package_upgrade import (
     PackageUpgradeResult,
@@ -9,10 +14,7 @@ from dbt_autofix.package_upgrade import (
     generate_package_dependencies,
     upgrade_package_versions,
 )
-from dbt_fusion_package_tools.upgrade_status import PackageFusionCompatibilityState, PackageVersionUpgradeType
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_fusion_package_tools.upgrade_status import PackageVersionFusionCompatibilityState
-
 
 PROJECT_WITH_PACKAGES_PATH = Path("tests/integration_tests/package_upgrades/mixed_versions")
 # update if count changes

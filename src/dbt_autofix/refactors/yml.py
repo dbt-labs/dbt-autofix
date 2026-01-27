@@ -2,9 +2,9 @@ import io
 from pathlib import Path
 from typing import Any, Dict
 
+import yamllint.config
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
-import yamllint.config
 
 config = """
 rules:

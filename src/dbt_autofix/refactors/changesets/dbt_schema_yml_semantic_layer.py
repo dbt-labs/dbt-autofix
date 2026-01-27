@@ -1,9 +1,9 @@
 import copy
-from typing import List, Tuple, Dict, Any, Optional, Union, Callable
-from dbt_autofix.refactors.results import YMLRuleRefactorResult
-from dbt_autofix.refactors.results import DbtDeprecationRefactor
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
-from dbt_autofix.semantic_definitions import MeasureInput, SemanticDefinitions, ModelAccessHelpers
+from dbt_autofix.semantic_definitions import MeasureInput, ModelAccessHelpers, SemanticDefinitions
 
 
 def changeset_merge_simple_metrics_with_models(
@@ -730,46 +730,45 @@ def merge_semantic_models_with_model(
     if "versions" in node:
         # TODO: handle merging semantic models into versioned models
         pass
-    else:
-        if semantic_model := semantic_definitions.get_semantic_model(node["name"]):
-            node_logs = []
-            # Create a semantic_model property for the model
-            semantic_model_block = {
-                "enabled": True,
-            }
-            if semantic_model.get("config"):
-                semantic_model_block["config"] = semantic_model["config"]
-            if semantic_model["name"] != node["name"]:
-                semantic_model_block["name"] = node["name"]
-            node["semantic_model"] = semantic_model_block
+    elif semantic_model := semantic_definitions.get_semantic_model(node["name"]):
+        node_logs = []
+        # Create a semantic_model property for the model
+        semantic_model_block = {
+            "enabled": True,
+        }
+        if semantic_model.get("config"):
+            semantic_model_block["config"] = semantic_model["config"]
+        if semantic_model["name"] != node["name"]:
+            semantic_model_block["name"] = node["name"]
+        node["semantic_model"] = semantic_model_block
 
-            # Propagate semantic model properties to the model
-            if semantic_model.get("description"):
-                if node.get("description"):
-                    node["description"] += f" {semantic_model['description']}"
-                    node_logs.append(f"Appended semantic model 'description' to model 'description'.")
-                else:
-                    node["description"] = semantic_model["description"]
-                    node_logs.append(f"Set model 'description' to semantic model 'description'.")
+        # Propagate semantic model properties to the model
+        if semantic_model.get("description"):
+            if node.get("description"):
+                node["description"] += f" {semantic_model['description']}"
+                node_logs.append("Appended semantic model 'description' to model 'description'.")
+            else:
+                node["description"] = semantic_model["description"]
+                node_logs.append("Set model 'description' to semantic model 'description'.")
 
-            if agg_time_dimension := semantic_model.get("defaults", {}).get("agg_time_dimension"):
-                node["agg_time_dimension"] = agg_time_dimension
-                node_logs.append(f"Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.")
+        if agg_time_dimension := semantic_model.get("defaults", {}).get("agg_time_dimension"):
+            node["agg_time_dimension"] = agg_time_dimension
+            node_logs.append("Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.")
 
-            # Propagate entities to model columns or derived_semantics
-            node_logs.extend(merge_entities_with_model_columns(node, semantic_model.get("entities", [])))
+        # Propagate entities to model columns or derived_semantics
+        node_logs.extend(merge_entities_with_model_columns(node, semantic_model.get("entities", [])))
 
-            # Propagate dimensions to model columns or derived_semantics
-            node_logs.extend(merge_dimensions_with_model_columns(node, semantic_model.get("dimensions", [])))
+        # Propagate dimensions to model columns or derived_semantics
+        node_logs.extend(merge_dimensions_with_model_columns(node, semantic_model.get("dimensions", [])))
 
-            # propagate measures to model metrics
+        # propagate measures to model metrics
 
-            refactored = True
-            refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
-            semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"], node["name"])
-            for log in node_logs:
-                refactor_log += f"\n\t* {log}"
-            refactor_logs.append(refactor_log)
+        refactored = True
+        refactor_log = f"Model '{node['name']}' - Merged with semantic model '{semantic_model['name']}'."
+        semantic_definitions.mark_semantic_model_as_merged(semantic_model["name"], node["name"])
+        for log in node_logs:
+            refactor_log += f"\n\t* {log}"
+        refactor_logs.append(refactor_log)
 
     return node, refactored, refactor_logs
 

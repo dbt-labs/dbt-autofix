@@ -85,7 +85,7 @@ def upgrade_packages(
     except:
         error_console.print("[red]-- Package upgrade failed, please check logs for details --[/red]")
     if json_output:
-        print(json.dumps({"mode": "complete"}))  # noqa: T201
+        print(json.dumps({"mode": "complete"}))
 
 
 @app.command(name="deprecations")
@@ -158,7 +158,7 @@ def refactor_yml(  # noqa: PLR0913
         apply_changesets(yaml_results, sql_results, json_output)
 
     if json_output:
-        print(json.dumps({"mode": "complete"}))  # noqa: T201
+        print(json.dumps({"mode": "complete"}))
 
 
 @app.command(name="jobs")

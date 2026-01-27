@@ -7,8 +7,7 @@ from pathlib import Path
 
 
 def check_fusion_schema_compatibility(repo_path: Path) -> bool:
-    """
-    Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
+    """Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
 
     Args:
         repo_path: Path to the dbt package repository

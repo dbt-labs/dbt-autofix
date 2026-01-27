@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from dbt_fusion_package_tools.check_parse_conformance import (
     check_fusion_schema_compatibility,
     checkout_repo_and_run_conformance,

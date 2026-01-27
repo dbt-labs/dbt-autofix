@@ -1,24 +1,22 @@
 """Interface for objects useful to processing hub entries"""
 
-from dataclasses import dataclass, field
 import json
 import os
 import subprocess
+from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Optional
+from typing import Optional
 
-from rich.console import Console
-
-from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
-from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
-from dbt_fusion_package_tools.yaml.loader import safe_load
-from dbt_fusion_package_tools.dbt_package import DbtPackage
-from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
-from dbt_fusion_package_tools.version_utils import VersionSpecifier
 from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
 from dbtlabs.proto.public.v1.events.fusion.log.log_pb2 import LogMessage
 from google.protobuf import json_format
+from rich.console import Console
+
+from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
+from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
+from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
+from dbt_fusion_package_tools.yaml.loader import safe_load
 
 console = Console()
 error_console = Console(stderr=True)
@@ -201,8 +199,7 @@ def parse_log_output(output: str, exit_code: int) -> ParseConformanceLogOutput:
 def check_fusion_schema_compatibility(
     repo_path: Path = Path.cwd(), show_fusion_output=True
 ) -> Optional[ParseConformanceLogOutput]:
-    """
-    Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
+    """Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
 
     Args:
         repo_path: Path to the dbt package repository
@@ -256,7 +253,7 @@ def check_fusion_schema_compatibility(
                 timeout=60,
             )
             if deps_result.returncode != 0:
-                error_console.log(f"dbt deps returned errors")
+                error_console.log("dbt deps returned errors")
                 error_console.log(parse_log_output(deps_result.stdout, deps_result.returncode))
 
             # Now try parse
@@ -280,7 +277,7 @@ def check_fusion_schema_compatibility(
             )
             parse_output = parse_log_output(parse_result.stdout, parse_result.returncode)
             if parse_result.returncode != 0:
-                error_console.log(f"dbt parse returned errors")
+                error_console.log("dbt parse returned errors")
                 error_console.log(parse_output)
         except Exception as e:
             error_console.log(f"{e}: An unknown error occurred when running dbt parse")
