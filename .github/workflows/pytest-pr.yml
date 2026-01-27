@@ -41,7 +41,8 @@ jobs:
           python-version: "3.10"
           enable-cache: true
           cache-suffix: format
-      - run: uv tool run ruff format --check --diff . --config pyproject.toml
+      - run: uv sync --extra test
+      - run: uv run ruff format --check --diff .
 
   lint:
     name: ruff lint
@@ -55,4 +56,5 @@ jobs:
           python-version: "3.10"
           enable-cache: true
           cache-suffix: lint
-      - run: uv tool run ruff check . --config pyproject.toml
+      - run: uv sync --extra test
+      - run: uv run ruff check .
