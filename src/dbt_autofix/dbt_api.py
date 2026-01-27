@@ -280,7 +280,7 @@ class DBTCloudChangesetResult:
                 console.print(f"    {log}")
 
 
-def update_jobs(  # noqa: PLR0913
+def update_jobs(
     account_id: int,
     api_key: Optional[str],
     base_url: str = "https://cloud.getdbt.com",

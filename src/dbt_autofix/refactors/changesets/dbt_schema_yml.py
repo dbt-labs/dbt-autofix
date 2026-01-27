@@ -369,7 +369,7 @@ def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
     )
 
 
-def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:  # noqa: PLR0912,PLR0915
+def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
     """Generate a refactored YAML string restructuring fields per dbt conventions.
 
     This function:
