@@ -90,7 +90,7 @@ def run_conformance_for_version(path, package_name, tag_version, package_id) -> 
             with open(Path(f"{path}/dbt_project.yml"), "a") as f:
                 f.write("\nprofile: test_schema_compat\n")
         except Exception as e:
-            error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag.name}: {e}")
+            error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag_version}: {e}")
     new_version: DbtPackageVersion = DbtPackageVersion(
         package_name, tag_version, package_id=package_id, raw_require_dbt_version_range=require_dbt_version_string
     )
