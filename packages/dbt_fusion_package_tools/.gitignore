@@ -23,3 +23,6 @@ project2/*
 
 # raw package hub output (because big)
 src/dbt_fusion_package_tools/scripts/output/*
+
+# dbt logs
+logs
