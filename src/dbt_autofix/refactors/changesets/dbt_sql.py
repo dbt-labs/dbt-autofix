@@ -306,7 +306,7 @@ def refactor_custom_configs_to_meta_sql(
                 existing_meta = refactored_sql_configs["meta"]
                 if isinstance(existing_meta, str):
                     # It's a source code string like "{'key': 'value'}" - parse it
-                    import ast
+                    import ast  # noqa: PLC0415
 
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)

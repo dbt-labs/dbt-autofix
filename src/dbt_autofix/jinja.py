@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -67,8 +68,6 @@ def _extract_dict_value_from_source(source_string: str, key: str) -> str:
     This is used for dictionary literal arguments like config({'key': value}).
     Handles both single and double quotes for keys.
     """
-    import re
-
     # Find the config( and the dictionary
     config_match = re.search(r"\{\{\s*config\s*\(\s*\{", source_string)
     if not config_match:
@@ -191,8 +190,6 @@ def construct_static_kwarg_value(kwarg, source_string: str) -> str:
         Input: kwarg with key='materialized', source="config(materialized=env_var('X'))"
         Output: "env_var('X')"
     """
-    import re
-
     try:
         key = kwarg.key
 

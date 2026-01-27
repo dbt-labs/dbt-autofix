@@ -92,7 +92,7 @@ reportUnusedExpression = true
 reportMissingImports = false
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["PLR2004", "T201", "D205"]
+"tests/**.py" = ["PLR2004", "T201", "D205", "PLC0415"]
 
 [tool.pytest.ini_options]
 pythonpath = [
