@@ -7,7 +7,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dbt_fusion_package_tools.check_parse_conformance import (
-    checkout_repo_and_run_conformance,
     download_tarball_and_run_conformance,
 )
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
@@ -399,33 +398,6 @@ def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: in
             else:
                 valid_repos[package] = github_url
     return valid_repos
-
-
-def run_conformance(
-    file_path: Path, local_hub_path: Path, package_limit: int = 0, fusion_binary=None
-) -> dict[str, dict[str, FusionConformanceResult]]:
-    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(path=local_hub_path)
-    results: dict[str, dict[str, FusionConformanceResult]] = {}
-    github_repos: defaultdict[str, set[str]] = get_github_repos_from_file(file_path)
-    github_urls: dict[str, str] = validate_github_urls(github_repos, package_limit)
-    for i, package in enumerate(output):
-        if package_limit > 0 and i > package_limit:
-            break
-        if package not in github_urls:
-            continue
-        results[package] = {}
-        package_github_url = github_urls[package]
-        m = re.match(r"^(https?://github\.com/[^/]+/[^/]+)", package_github_url)
-        if m:
-            parsed_url = (m.group(1)).split("/")
-            package_github_org = parsed_url[-2]
-            package_github_repo = parsed_url[-1]
-            package_name = output[package][0]["package_name_index_json"]
-            results[package] = checkout_repo_and_run_conformance(
-                package_github_org, package_github_repo, package_name, limit=package_limit, fusion_binary=fusion_binary
-            )
-
-    return results
 
 
 def run_conformance_from_tarballs(

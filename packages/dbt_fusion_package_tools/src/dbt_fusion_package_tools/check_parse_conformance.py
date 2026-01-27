@@ -13,7 +13,6 @@ import tarfile
 from rich.console import Console
 
 from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
-from dbt_fusion_package_tools.git.package_repo import DbtPackageRepo
 from dbt_fusion_package_tools.yaml.loader import safe_load
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
@@ -29,36 +28,6 @@ console = Console()
 error_console = Console(stderr=True)
 
 _ERROR_PATH_REGEX = re.compile(r"(?:\.\./)*")
-
-
-def checkout_repo_and_run_conformance(
-    github_organization: str,
-    github_repo_name: str,
-    package_name: str,
-    limit: int = 0,
-    fusion_binary: Optional[str] = None,
-) -> dict[str, FusionConformanceResult]:
-    results: dict[str, FusionConformanceResult] = {}
-    with TemporaryDirectory() as tmpdir:
-        repo = DbtPackageRepo(
-            repo_name=package_name,
-            github_organization=github_organization,
-            github_repo_name=github_repo_name,
-            local_path=tmpdir,
-        )
-        package_id = f"{github_organization}/{package_name}"
-        console.log(f"Running parse conformance for {package_id}")
-        tags = repo.get_tags()
-        for i, tag in enumerate(tags):
-            if limit > 0 and i > limit:
-                break
-            checked_out = repo.checkout_tag(tag, stash_changes=True)
-            console.log(f"tag {tag.name} checked out: {checked_out}")
-            tag_version = tag.name[1:] if tag.name[0] == "v" else tag.name
-            result = run_conformance_for_version(tmpdir, package_name, tag_version, package_id, fusion_binary)
-            if result:
-                results[tag_version] = result
-    return results
 
 
 def download_tarball_and_run_conformance(
@@ -91,7 +60,10 @@ def download_tarball_and_run_conformance(
             extract_dir.mkdir(parents=True, exist_ok=True)
 
             with tarfile.open(tar_path, "r:gz") as tar:
-                tar.extractall(path=extract_dir)
+                for entry in tar:
+                    if os.path.isabs(entry.name) or ".." in entry.name:
+                        raise ValueError("Illegal tar archive entry")
+                    tar.extract(entry, extract_dir)
 
             # Clean up the tar file
             tar_path.unlink()
