@@ -97,7 +97,12 @@ reportUnusedExpression = true
 reportMissingImports = false
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["PLR2004", "T201", "D205", "PLC0415"]
+"tests/**.py" = [
+    "PLR2004",  # Magic values in comparisons - tests use literals in assertions
+    "T201",     # print() found - tests may use print for debugging
+    "D205",     # Docstring blank line - test docstrings use INPUT/OUTPUT/WHY format
+    "PLC0415",  # Import not at top-level - tests use local imports for isolation
+]
 
 [tool.pytest.ini_options]
 pythonpath = [
