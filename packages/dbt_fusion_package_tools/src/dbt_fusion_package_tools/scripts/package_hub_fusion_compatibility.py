@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dbt_fusion_package_tools.check_parse_conformance import (
     checkout_repo_and_run_conformance,
+    download_tarball_and_run_conformance,
 )
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 
@@ -427,6 +428,38 @@ def run_conformance(
     return results
 
 
+def run_conformance_from_tarballs(
+    local_hub_path: Path, package_limit: int = 0, fusion_binary=None
+) -> dict[str, dict[str, FusionConformanceResult]]:
+    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(path=local_hub_path)
+
+    results: dict[str, dict[str, FusionConformanceResult]] = {}
+
+    for i, package in enumerate(output):
+        if package_limit > 0 and i > package_limit:
+            break
+        results[package] = {}
+        for version in output[package]:
+            package_version_download_url = version.get("package_version_download_url")
+            package_version_string = version.get("package_version_string")
+            if not package_version_string:
+                continue
+            if not package_version_download_url:
+                console.log(f"No download available for {package}")
+                continue
+            conformance_output = download_tarball_and_run_conformance(
+                package_name=package,
+                package_id=version["package_id_from_path"],
+                package_version_str=str(package_version_string),
+                package_version_download_url=package_version_download_url,
+                fusion_binary=fusion_binary
+            )
+            if conformance_output:
+                results[package][package_version_string] = conformance_output
+
+    return results
+
+
 def write_conformance_output_to_json(
     data: dict[str, dict[str, FusionConformanceResult]],
     dest_dir: Path,
@@ -465,8 +498,11 @@ def main(
     console.log(f"Writing to output path: {output_dir}/package_output.json")
     console.log(f"Package limit: {package_limit}")
     console.log(f"Fusion binary: {fusion_binary}")
-    parse_conformance_results = run_conformance(
-        output_dir / "package_output.json", local_hub_path, package_limit, fusion_binary
+    # parse_conformance_results = run_conformance(
+    #     output_dir / "package_output.json", local_hub_path, package_limit, fusion_binary
+    # )
+    parse_conformance_results = run_conformance_from_tarballs(
+        local_hub_path, package_limit, fusion_binary
     )
     write_conformance_output_to_json(parse_conformance_results, output_path)
     console.log(f"Successfully wrote output to {output_path}/conformance_output.json")

@@ -8,6 +8,8 @@ from tempfile import TemporaryDirectory
 from typing import Optional
 import re
 
+import requests
+import tarfile
 from rich.console import Console
 
 from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
@@ -58,6 +60,55 @@ def checkout_repo_and_run_conformance(
                 results[tag_version] = result
     return results
 
+
+def download_tarball_and_run_conformance(
+    package_name: str,
+    package_id: str,
+    package_version_str: str,
+    package_version_download_url: str,
+    fusion_binary: Optional[str] = None,
+) -> Optional[FusionConformanceResult]:
+    with TemporaryDirectory() as tmpdir:
+        try:
+            # Download the tarball
+            response = requests.get(package_version_download_url, stream=True)
+            response.raise_for_status()
+        
+            # Save to a temporary file
+            tar_path = Path(tmpdir) / "archive.tar.gz"
+            with open(tar_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            # Extract the tarball
+            extract_dir = Path(tmpdir) / "extracted"
+            extract_dir.mkdir(parents=True, exist_ok=True)
+            
+            with tarfile.open(tar_path, "r:gz") as tar:
+                tar.extractall(path=extract_dir)
+            
+            # Clean up the tar file
+            tar_path.unlink()
+
+            # Check that only 1 directory is inside
+            tar_contents = os.listdir(extract_dir)
+            if len(tar_contents) != 1:
+                console.log("Error downloading tar")
+                return
+            extracted_package = extract_dir / tar_contents[0]
+        except requests.exceptions.HTTPError as e:
+            console.log(f"Error when downloading tar: {e}")
+            return
+        except Exception as e:
+            console.log(f"Error when downloading and extracting tarball: {e}")
+            return
+        try:
+            console.log(f"Running parse conformance for {package_id} version {package_version_str}")
+            return run_conformance_for_version(extracted_package, package_name, package_version_str, package_id, fusion_binary)
+        except Exception as e:
+            console.log(f"Error when running conformance: {e}")
+    return
 
 def run_conformance_for_version(
     path, package_name, tag_version, package_id, fusion_binary=None
