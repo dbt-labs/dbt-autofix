@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility import write_conformance_output_to_json
+from dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility import write_conformance_output_to_json, follow_redirects
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult, ParseConformanceLogOutput, FusionLogMessage
 
 

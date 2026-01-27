@@ -400,11 +400,70 @@ def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: in
     return valid_repos
 
 
-def run_conformance_from_tarballs(
-    local_hub_path: Path, package_limit: int = 0, fusion_binary=None
-) -> dict[str, dict[str, FusionConformanceResult]]:
-    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(path=local_hub_path)
+def follow_redirects(package_name: str, packages: dict[str, dict[str, Optional[str]]]) -> str:
+    package_redirect_name: Optional[str] = packages[package_name].get("package_redirect_name")
+    package_redirect_namespace: Optional[str] = packages[package_name].get("package_redirect_namespace")
+    # base case: package does not have any redirects
+    if not package_redirect_name and not package_redirect_namespace:
+        return package_name
+    # recursive case: follow redirect
+    original_namespace = package_name.split("/")[0]
+    original_name = package_name.split("/")[1]
+    if package_redirect_name and package_redirect_namespace:
+        package_after_redirect: str = f"{package_redirect_namespace}/{package_redirect_name}"
+    elif package_redirect_name:
+        package_after_redirect: str = f"{original_namespace}/{package_redirect_name}"
+    else:
+        package_after_redirect: str = f"{package_redirect_namespace}/{original_name}"
+    next_redirect_name = follow_redirects(package_after_redirect, packages)
+    return next_redirect_name
 
+
+def get_latest_github_tarball_urls(hub_data: defaultdict[str, list[dict[str, Any]]]) -> dict[str,str]:
+    # first load in all packages and get latest version + redirects
+    # but don't actually follow the redirects yet
+    packages_no_redirects: dict[str, dict[str, Optional[str]]] = {}
+    for package in hub_data:
+        # index file should always be first
+        package_latest_version: str = hub_data[package][0]["package_latest_version_index_json"]
+        package_redirect_name: Optional[str] = hub_data[package][0].get("package_redirect_name")
+        package_redirect_namespace: Optional[str] = hub_data[package][0].get("package_redirect_namespace")
+        package_latest_version_download_url: Optional[str] = None
+
+        for version in hub_data[package][1:]:
+            package_version_string = version.get("package_version_string")
+
+            # get the tarball url for the latest version only
+            if package_version_string == package_latest_version:
+                package_latest_version_download_url = version.get("package_version_download_url")
+                break
+        
+        if not package_latest_version_download_url:
+            console.log(f"No download available for {package}")
+            continue
+        else:
+            packages_no_redirects[package] = {
+                "package_latest_version": package_latest_version,
+                "package_redirect_name": package_redirect_name,
+                "package_redirect_namespace": package_redirect_namespace,
+                "package_latest_version_download_url": package_latest_version_download_url,
+            }
+    
+    # get final latest version url after following redirect
+    package_latest_version_urls: dict[str, str] = {}
+    for package in packages_no_redirects:
+        package_latest_name: str = follow_redirects(package, packages_no_redirects)
+        package_latest_url: Optional[str] = packages_no_redirects[package_latest_name].get("package_latest_version_download_url")
+        if package_latest_url is not None:
+            package_latest_version_urls[package] = package_latest_url
+    return package_latest_version_urls
+
+
+def run_conformance_from_tarballs(
+    output: defaultdict[str, list[dict[str, Any]]], 
+    package_latest_version_urls: dict[str, str],
+    package_limit: int = 0, fusion_binary=None
+) -> dict[str, dict[str, FusionConformanceResult]]:
     results: dict[str, dict[str, FusionConformanceResult]] = {}
 
     for i, package in enumerate(output):
@@ -414,20 +473,25 @@ def run_conformance_from_tarballs(
         for version in output[package]:
             package_version_download_url = version.get("package_version_download_url")
             package_version_string = version.get("package_version_string")
-            if not package_version_string:
+            if package_version_string is None:
                 continue
-            if not package_version_download_url:
-                console.log(f"No download available for {package}")
+            if package_version_download_url is None:
+                console.log(f"No download URL found for {package} version {package_version_string}")
                 continue
             conformance_output = download_tarball_and_run_conformance(
                 package_name=package,
                 package_id=version["package_id_from_path"],
                 package_version_str=str(package_version_string),
                 package_version_download_url=package_version_download_url,
+                latest_package_version_download_url=package_latest_version_urls.get(package),
                 fusion_binary=fusion_binary,
             )
-            if conformance_output:
+            if not conformance_output:
+                console.log(f"Could not run conformance for {package} version {package_version_string}\n")
+                continue
+            else:
                 results[package][package_version_string] = conformance_output
+                console.log()
 
     return results
 
@@ -471,7 +535,9 @@ def main(
     console.log(f"Package limit: {package_limit}")
     console.log(f"Fusion binary: {fusion_binary}")
 
-    parse_conformance_results = run_conformance_from_tarballs(local_hub_path, package_limit, fusion_binary)
+    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(path=local_hub_path)
+    package_latest_version_urls: dict[str, str] = get_latest_github_tarball_urls(output)
+    parse_conformance_results = run_conformance_from_tarballs(output, package_latest_version_urls, package_limit, fusion_binary)
     write_conformance_output_to_json(parse_conformance_results, output_path)
     console.log(f"Successfully wrote output to {output_path}/conformance_output.json")
 

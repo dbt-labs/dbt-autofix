@@ -17,8 +17,6 @@ class FusionLogMessage(DataClassJSONMixin):
     body: str
     error_code: Optional[int] = None
     severity_text: Optional[str] = None
-    """Optional fusion error/warning code"""
-    dbt_core_event_code: Optional[str] = None
     """Original severity before user up/down-grade configuration applied."""
     original_severity_text: Optional[str] = None
 
@@ -42,3 +40,4 @@ class FusionConformanceResult(DataClassJSONMixin):
     parse_compatibility_result: Optional[ParseConformanceLogOutput] = None
     manually_verified_compatible: Optional[bool] = None
     manually_verified_incompatible: Optional[bool] = None
+    download_failed: bool = False

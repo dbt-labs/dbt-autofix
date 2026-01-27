@@ -30,15 +30,27 @@ error_console = Console(stderr=True)
 _ERROR_PATH_REGEX = re.compile(r"(?:\.\./)*")
 
 
+def construct_download_url_from_latest(latest_package_version_download_url: str, target_version_download_url: str) -> str:
+    version_download_tag: str = target_version_download_url.split("/")[-1]
+    latest_version_url: list[str] = latest_package_version_download_url.split("/")[:-1]
+    latest_version_url.append(version_download_tag)
+    return "/".join(latest_version_url)
+
+
 def download_tarball_and_run_conformance(
     package_name: str,
     package_id: str,
     package_version_str: str,
     package_version_download_url: str,
+    latest_package_version_download_url: Optional[str],
     fusion_binary: Optional[str] = None,
 ) -> Optional[FusionConformanceResult]:
     with TemporaryDirectory() as tmpdir:
         # download tarball from version json
+        tar_path: Optional[Path] = None
+        # track exceptions across both checks
+        exceptions: list[str] = []
+        # use explicitly provided version first
         try:
             # Download the tarball
             response = requests.get(package_version_download_url, stream=True)
@@ -50,11 +62,36 @@ def download_tarball_and_run_conformance(
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
-        except Exception as e:
-            console.log(f"Error when downloading tarball: {e}")
-            return
+        except requests.exceptions.HTTPError as http_error:
+            exceptions.append(f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}")
+        except Exception as other_error:
+            exceptions.append(f"Error when downloading tarball: {other_error}")
+        # if that errors or doesn't exist, construct from the latest version
+        if not tar_path and latest_package_version_download_url:
+            constructed_url: str = construct_download_url_from_latest(latest_package_version_download_url, package_version_download_url)
+            try:
+                # Download the tarball
+                response = requests.get(constructed_url, stream=True)
+                response.raise_for_status()
 
-        # if we do, extract the archive
+                # Save to a temporary file
+                tar_path = Path(tmpdir) / "archive.tar.gz"
+                with open(tar_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+            except requests.exceptions.HTTPError as http_error:
+                exceptions.append(f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}")
+            except Exception as other_error:
+                exceptions.append(f"Error when downloading tarball: {other_error}")
+        # if still no download, error
+        if not tar_path:
+            console.log(f"Could not download {package_name} {package_version_str}")
+            for exception in exceptions:
+                console.log(exception)
+            return FusionConformanceResult(version=package_version_str, download_failed=True)
+
+        # if we do have a file, extract the archive
         try:
             extract_dir = Path(tmpdir) / "extracted"
             extract_dir.mkdir(parents=True, exist_ok=True)
@@ -85,13 +122,13 @@ def download_tarball_and_run_conformance(
             )
         except Exception as e:
             console.log(f"Error when running conformance: {e}")
-    return
+            return
 
 
 def run_conformance_for_version(
     path, package_name, tag_version, package_id, fusion_binary=None
 ) -> Optional[FusionConformanceResult]:
-    result = FusionConformanceResult(version=tag_version)
+    result = FusionConformanceResult(version=tag_version, download_failed=False)
     # check require dbt version
     try:
         dbt_project_yml = safe_load((Path(f"{path}/dbt_project.yml")).read_text()) or (
@@ -222,7 +259,6 @@ def parse_log_output(
                 body=body,
                 severity_text=str(severity_text),
                 error_code=log_message.code,
-                dbt_core_event_code=log_message.dbt_core_event_code,
                 original_severity_text=log_message.original_severity_text,
             )
             if severity_text == "ERROR":
