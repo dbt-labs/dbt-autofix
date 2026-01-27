@@ -25,6 +25,8 @@ class VersionSpecification(DataClassDictMixin):
     build: Optional[str] = None
     matcher: Matchers = Matchers.EXACT
 
+    __hash__ = None  # Mutable dataclass, not suitable for hashing
+
 
 _MATCHERS = r"(?P<matcher>\>=|\>|\<|\<=|=)?"
 _NUM_NO_LEADING_ZEROS = r"(0|[1-9]\d*)"
@@ -98,6 +100,8 @@ class VersionSpecifier(VersionSpecification):
 
     def __str__(self) -> str:
         return self.to_version_string()
+
+    __hash__ = None  # Mutable dataclass, not suitable for hashing
 
     def to_range(self) -> "VersionRange":
         range_start: VersionSpecifier = UnboundedVersionSpecifier()
