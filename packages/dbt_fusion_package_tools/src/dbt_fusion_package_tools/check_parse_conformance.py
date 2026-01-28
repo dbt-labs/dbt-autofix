@@ -30,7 +30,9 @@ error_console = Console(stderr=True)
 _ERROR_PATH_REGEX = re.compile(r"(?:\.\./)*")
 
 
-def construct_download_url_from_latest(latest_package_version_download_url: str, target_version_download_url: str) -> str:
+def construct_download_url_from_latest(
+    latest_package_version_download_url: str, target_version_download_url: str
+) -> str:
     version_download_tag: str = target_version_download_url.split("/")[-1]
     latest_version_url: list[str] = latest_package_version_download_url.split("/")[:-1]
     latest_version_url.append(version_download_tag)
@@ -63,12 +65,16 @@ def download_tarball_and_run_conformance(
                     if chunk:
                         f.write(chunk)
         except requests.exceptions.HTTPError as http_error:
-            exceptions.append(f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}")
+            exceptions.append(
+                f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}"
+            )
         except Exception as other_error:
             exceptions.append(f"Error when downloading tarball: {other_error}")
         # if that errors or doesn't exist, construct from the latest version
         if not tar_path and latest_package_version_download_url:
-            constructed_url: str = construct_download_url_from_latest(latest_package_version_download_url, package_version_download_url)
+            constructed_url: str = construct_download_url_from_latest(
+                latest_package_version_download_url, package_version_download_url
+            )
             try:
                 # Download the tarball
                 response = requests.get(constructed_url, stream=True)
@@ -81,7 +87,9 @@ def download_tarball_and_run_conformance(
                         if chunk:
                             f.write(chunk)
             except requests.exceptions.HTTPError as http_error:
-                exceptions.append(f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}")
+                exceptions.append(
+                    f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}"
+                )
             except Exception as other_error:
                 exceptions.append(f"Error when downloading tarball: {other_error}")
         # if still no download, error

@@ -1,7 +1,7 @@
 from pathlib import Path
 from dbt_fusion_package_tools.check_parse_conformance import (
     check_fusion_schema_compatibility,
-    construct_download_url_from_latest
+    construct_download_url_from_latest,
 )
 
 
@@ -21,4 +21,7 @@ def test_fusion_schema_compat():
 def test_construct_download_url_from_latest():
     old_version_url: str = "https://codeload.github.com/fishtown-analytics/dbt-utils/tar.gz/0.1.5"
     package_latest_url: str = "https://codeload.github.com/dbt-labs/dbt-utils/tar.gz/1.3.3"
-    assert construct_download_url_from_latest(package_latest_url, old_version_url) == "https://codeload.github.com/dbt-labs/dbt-utils/tar.gz/0.1.5"
+    assert (
+        construct_download_url_from_latest(package_latest_url, old_version_url)
+        == "https://codeload.github.com/dbt-labs/dbt-utils/tar.gz/0.1.5"
+    )

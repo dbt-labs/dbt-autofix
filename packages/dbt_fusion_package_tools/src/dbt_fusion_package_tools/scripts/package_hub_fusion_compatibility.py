@@ -419,7 +419,7 @@ def follow_redirects(package_name: str, packages: dict[str, dict[str, Optional[s
     return next_redirect_name
 
 
-def get_latest_github_tarball_urls(hub_data: defaultdict[str, list[dict[str, Any]]]) -> dict[str,str]:
+def get_latest_github_tarball_urls(hub_data: defaultdict[str, list[dict[str, Any]]]) -> dict[str, str]:
     # first load in all packages and get latest version + redirects
     # but don't actually follow the redirects yet
     packages_no_redirects: dict[str, dict[str, Optional[str]]] = {}
@@ -437,7 +437,7 @@ def get_latest_github_tarball_urls(hub_data: defaultdict[str, list[dict[str, Any
             if package_version_string == package_latest_version:
                 package_latest_version_download_url = version.get("package_version_download_url")
                 break
-        
+
         if not package_latest_version_download_url:
             console.log(f"No download available for {package}")
             continue
@@ -448,21 +448,24 @@ def get_latest_github_tarball_urls(hub_data: defaultdict[str, list[dict[str, Any
                 "package_redirect_namespace": package_redirect_namespace,
                 "package_latest_version_download_url": package_latest_version_download_url,
             }
-    
+
     # get final latest version url after following redirect
     package_latest_version_urls: dict[str, str] = {}
     for package in packages_no_redirects:
         package_latest_name: str = follow_redirects(package, packages_no_redirects)
-        package_latest_url: Optional[str] = packages_no_redirects[package_latest_name].get("package_latest_version_download_url")
+        package_latest_url: Optional[str] = packages_no_redirects[package_latest_name].get(
+            "package_latest_version_download_url"
+        )
         if package_latest_url is not None:
             package_latest_version_urls[package] = package_latest_url
     return package_latest_version_urls
 
 
 def run_conformance_from_tarballs(
-    output: defaultdict[str, list[dict[str, Any]]], 
+    output: defaultdict[str, list[dict[str, Any]]],
     package_latest_version_urls: dict[str, str],
-    package_limit: int = 0, fusion_binary=None
+    package_limit: int = 0,
+    fusion_binary=None,
 ) -> dict[str, dict[str, FusionConformanceResult]]:
     results: dict[str, dict[str, FusionConformanceResult]] = {}
 
@@ -537,7 +540,9 @@ def main(
 
     output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(path=local_hub_path)
     package_latest_version_urls: dict[str, str] = get_latest_github_tarball_urls(output)
-    parse_conformance_results = run_conformance_from_tarballs(output, package_latest_version_urls, package_limit, fusion_binary)
+    parse_conformance_results = run_conformance_from_tarballs(
+        output, package_latest_version_urls, package_limit, fusion_binary
+    )
     write_conformance_output_to_json(parse_conformance_results, output_path)
     console.log(f"Successfully wrote output to {output_path}/conformance_output.json")
 
