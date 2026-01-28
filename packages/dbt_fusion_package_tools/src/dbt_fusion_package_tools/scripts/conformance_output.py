@@ -101,7 +101,9 @@ def main():
                     "package_version": version,
                     "manually_verified_compatible": package[version]["manually_verified_compatible"],
                     "manually_verified_incompatible": package[version]["manually_verified_incompatible"],
-                    "parse_errors": ",".join(sorted(parse_errors)) if len(parse_errors) > 0 else "",
+                    "parse_errors": ",".join([f"dbt{x}" for x in sorted(parse_errors)])
+                    if len(parse_errors) > 0
+                    else "",
                     "parse_warnings": ",".join(sorted(parse_warnings)) if len(parse_warnings) > 0 else "",
                     "parse_exit_code": parse_compatibility_result.get("parse_exit_code"),
                     "parse_total_errors": parse_compatibility_result.get("total_errors"),
