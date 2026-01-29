@@ -39,7 +39,7 @@ _457 total violations across 31 rules_
 - [x] D212: 62 - Multi-line docstring summary should start at the first line
 - [x] I001: 23 - Import block is unsorted or unformatted
 - [x] F401: 15 - Unused import
-- [ ] F541: 5 - f-string without placeholders
+- [x] F541: 5 - f-string without placeholders
 - [ ] RUF021: 2 - Parenthesize `a and b` expressions when chaining `and` and `or`
 - [ ] RUF100: 2 - Unused `noqa` directive
 - [ ] D209: 1 - Multi-line docstring closing quotes should be on a separate line

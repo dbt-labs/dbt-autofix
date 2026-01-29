@@ -747,14 +747,14 @@ def merge_semantic_models_with_model(
             if semantic_model.get("description"):
                 if node.get("description"):
                     node["description"] += f" {semantic_model['description']}"
-                    node_logs.append(f"Appended semantic model 'description' to model 'description'.")
+                    node_logs.append("Appended semantic model 'description' to model 'description'.")
                 else:
                     node["description"] = semantic_model["description"]
-                    node_logs.append(f"Set model 'description' to semantic model 'description'.")
+                    node_logs.append("Set model 'description' to semantic model 'description'.")
 
             if agg_time_dimension := semantic_model.get("defaults", {}).get("agg_time_dimension"):
                 node["agg_time_dimension"] = agg_time_dimension
-                node_logs.append(f"Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.")
+                node_logs.append("Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.")
 
             # Propagate entities to model columns or derived_semantics
             node_logs.extend(merge_entities_with_model_columns(node, semantic_model.get("entities", [])))
