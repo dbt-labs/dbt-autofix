@@ -27,6 +27,12 @@ from dbt_fusion_package_tools.yaml.loader import safe_load
 console = Console()
 error_console = Console(stderr=True)
 
+"""Cleans model paths displayed in Fusion error messages.
+
+Example:
+    Original: ../../../../../../private/var/folders/xf/r3bz6sxx0m57976q8nb2d1fh0000gp/T/tmp0bnpllg5/models/examples/basic_example/basic_example_d_site.yml:10:9
+    Cleaned: models/examples/basic_example/basic_example_d_site.yml:10:9
+"""
 _ERROR_PATH_REGEX = re.compile(r"(?:\.\./)*")
 
 

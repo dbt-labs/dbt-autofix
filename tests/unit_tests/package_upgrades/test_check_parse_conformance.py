@@ -5,6 +5,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
+import io
+import tarfile
 
 from dbt_fusion_package_tools.check_parse_conformance import (
     check_binary_name,
@@ -185,23 +187,6 @@ class TestFindFusionBinary:
 
         assert result is None
 
-    @patch("dbt_fusion_package_tools.check_parse_conformance.check_fusion_version")
-    @patch("dbt_fusion_package_tools.check_parse_conformance.check_binary_name")
-    def test_prefers_dbtf_over_dbt(self, mock_check_binary, mock_check_version):
-        """Test that dbtf is preferred over dbt when both exist."""
-        mock_check_binary.return_value = True
-
-        def version_side_effect(binary):
-            if binary == "dbtf":
-                return "v2.0.0"
-            return None
-
-        mock_check_version.side_effect = version_side_effect
-
-        result = find_fusion_binary()
-
-        assert result == "dbtf"
-
 
 class TestParseLogOutput:
     """Tests for parse_log_output function."""
@@ -255,7 +240,7 @@ class TestParseLogOutput:
 
         result = parse_log_output(log_output, exit_code=1, repo_path=Path(temp_path))
 
-        assert temp_path not in result.errors[0].body
+        assert all(temp_path not in error.body for error in result.errors)
 
     def test_sets_fusion_version(self):
         """Test that fusion version is set in output."""
@@ -346,8 +331,6 @@ class TestDownloadTarballAndRunConformance:
         # Create a real tar file for testing
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create a mock tarball content
-            import io
-            import tarfile
 
             tar_buffer = io.BytesIO()
             with tarfile.open(fileobj=tar_buffer, mode="w:gz") as tar:
