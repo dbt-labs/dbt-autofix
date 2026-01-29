@@ -41,7 +41,7 @@ _457 total violations across 31 rules_
 - [x] F401: 15 - Unused import
 - [x] F541: 5 - f-string without placeholders
 - [x] RUF021: 2 - Parenthesize `a and b` expressions when chaining `and` and `or`
-- [ ] RUF100: 2 - Unused `noqa` directive
+- [x] RUF100: 2 - Unused `noqa` directive
 - [ ] D209: 1 - Multi-line docstring closing quotes should be on a separate line
 - [ ] PLR5501: 1 - Use `elif` instead of `else` then `if`
 

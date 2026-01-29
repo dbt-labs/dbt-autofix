@@ -488,7 +488,7 @@ def get_dbt_roots_paths(
     return dbt_roots_paths
 
 
-def changeset_all_sql_yml_files(  # noqa: PLR0913
+def changeset_all_sql_yml_files(
     path: Path,
     schema_specs: SchemaSpecs,
     dry_run: bool = False,
