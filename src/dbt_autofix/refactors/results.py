@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+
 from rich.console import Console
 
 from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes

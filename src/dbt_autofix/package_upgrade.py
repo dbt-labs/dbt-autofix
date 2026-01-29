@@ -1,8 +1,17 @@
+import json
 from dataclasses import dataclass
 from importlib.metadata import version
-import json
 from pathlib import Path
 from typing import Any, Optional
+
+from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
+from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
+from dbt_fusion_package_tools.upgrade_status import (
+    PackageFusionCompatibilityState,
+    PackageVersionFusionCompatibilityState,
+    PackageVersionUpgradeType,
+)
+from dbt_fusion_package_tools.version_utils import Matchers, VersionRange, VersionSpecifier
 from rich.console import Console
 
 from dbt_autofix.packages.dbt_package_file import (
@@ -14,17 +23,7 @@ from dbt_autofix.packages.dbt_package_file import (
     parse_package_dependencies_from_packages_yml,
 )
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
-from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
-from dbt_fusion_package_tools.version_utils import VersionSpecifier, Matchers, VersionRange
-
-from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
-from dbt_fusion_package_tools.upgrade_status import (
-    PackageFusionCompatibilityState,
-    PackageVersionUpgradeType,
-    PackageVersionFusionCompatibilityState,
-)
-
 
 console = Console()
 error_console = Console(stderr=True)

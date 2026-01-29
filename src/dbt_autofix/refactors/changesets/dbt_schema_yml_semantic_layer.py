@@ -1,9 +1,9 @@
 import copy
-from typing import List, Tuple, Dict, Any, Optional, Union, Callable
-from dbt_autofix.refactors.results import YMLRuleRefactorResult
-from dbt_autofix.refactors.results import DbtDeprecationRefactor
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
-from dbt_autofix.semantic_definitions import MeasureInput, SemanticDefinitions, ModelAccessHelpers
+from dbt_autofix.semantic_definitions import MeasureInput, ModelAccessHelpers, SemanticDefinitions
 
 
 def changeset_merge_simple_metrics_with_models(
