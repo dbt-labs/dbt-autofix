@@ -112,7 +112,6 @@ def download_package_jsons_from_hub_repo(
     branch: Optional[str] = "master",
     github_token: Optional[str] = None,
     file_count_limit: int = 0,
-    # ) -> List[PackageJSON]:
 ) -> defaultdict[str, list[dict[str, Any]]]:
     """Download and parse all JSON files under `data/packages` in a GitHub repo.
 
@@ -172,13 +171,11 @@ def download_package_jsons_from_hub_repo(
         if file_count_limit > 0 and len(files) >= file_count_limit:
             break
 
-    # results: List[PackageJSON] = []
     packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     if not files:
         # No files found; return empty list rather than error.
         return packages
 
-    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     # 3) Download each JSON using raw.githubusercontent.com
     for entry in files:
         file_path = entry["path"]
@@ -278,7 +275,6 @@ def reload_packages_from_file(
 
 def main():
     file_count_limit = 0
-    # results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
     results = read_json_from_local_hub_repo(path="~/workplace/hub.getdbt.com", file_count_limit=file_count_limit)
     print(f"Downloaded {len(results)} packages from hub.getdbt.com")
     output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
