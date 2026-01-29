@@ -136,7 +136,7 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
             return
         if package_yml_count == 1 and dependencies_yml_count == 1:
             error_console.log(
-                f"Project contains both packages.yml and dependencies.yml, package dependencies will only be loaded from packages.yml"
+                "Project contains both packages.yml and dependencies.yml, package dependencies will only be loaded from packages.yml"
             )
             package_dependencies_yml_files = [x for x in package_dependencies_yml_files if x.name == "packages.yml"]
     dependency_path: Path = package_dependencies_yml_files[0]
@@ -151,7 +151,7 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
             dependency_yaml, dependency_path
         )
     if not deps_file:
-        error_console.log(f"Project dependencies could not be parsed")
+        error_console.log("Project dependencies could not be parsed")
         return
     # check installed packages
     installed_packages: dict[str, DbtPackageVersion] = get_current_installed_package_versions(root_dir)
