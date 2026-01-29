@@ -31,6 +31,43 @@ The final PR should not have this plan in it. But I'm adding it to version contr
 
 ## Tracker
 
-_Count up all the violations of each rule here, so we can track progress as we fix one rule at a time. Make a checklist. Each item should be a rule. Number of violations, and whether it's autofixable, unsafe-autofixable, or requires manual fixes_
+**Ruff version: 0.14.14**
 
-- [ ]
+_457 total violations across 31 rules_
+
+### Safe autofix (`uvx ruff check --fix`)
+- [ ] D212: 62 - Multi-line docstring summary should start at the first line
+- [ ] I001: 23 - Import block is unsorted or unformatted
+- [ ] F401: 15 - Unused import
+- [ ] F541: 5 - f-string without placeholders
+- [ ] RUF021: 2 - Parenthesize `a and b` expressions when chaining `and` and `or`
+- [ ] RUF100: 2 - Unused `noqa` directive
+- [ ] D209: 1 - Multi-line docstring closing quotes should be on a separate line
+- [ ] PLR5501: 1 - Use `elif` instead of `else` then `if`
+
+### Unsafe autofix (`uvx ruff check --fix --unsafe-fixes`)
+- [ ] D415: 161 - First line should end with a period, question mark, or exclamation point
+- [ ] T201: 13 - `print` found (has exceptions - see Known exceptions)
+- [ ] D200: 11 - One-line docstring should fit on one line
+- [ ] E711: 5 - Comparison to `None` should be `is None`
+- [ ] F841: 5 - Local variable is assigned but never used
+- [ ] PLR1714: 3 - Consider merging multiple comparisons
+- [ ] T203: 3 - `pprint` found
+- [ ] E712: 2 - Comparison to `True`/`False` should be `if cond:`
+- [ ] D301: 1 - Use `r"""` if any backslashes in a docstring
+- [ ] PLR1722: 1 - Use `sys.exit()` instead of `exit()`
+- [ ] RUF015: 1 - Prefer `next(iter(...))` over `list(...)[0]`
+
+### Manual fix required
+- [ ] D205: 54 - 1 blank line required between summary line and description
+- [ ] PLR0912: 19 - Too many branches
+- [ ] PLR2004: 15 - Magic value used in comparison
+- [ ] E722: 9 - Do not use bare `except`
+- [ ] PLR0915: 9 - Too many statements
+- [ ] PLC0415: 8 - `import` should be at the top of the file
+- [ ] PLR0913: 8 - Too many arguments in function definition
+- [ ] D417: 5 - Missing argument descriptions in the docstring
+- [ ] E721: 5 - Use `is` and `is not` for type comparisons
+- [ ] PLC0206: 4 - Extracting value from dictionary without `.items()`
+- [ ] PLR0911: 2 - Too many return statements
+- [ ] PLW1641: 2 - Object does not implement `__hash__` method
