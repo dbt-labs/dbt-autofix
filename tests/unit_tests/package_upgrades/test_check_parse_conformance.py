@@ -13,12 +13,27 @@ from dbt_fusion_package_tools.check_parse_conformance import (
     download_tarball_and_run_conformance,
     find_fusion_binary,
     parse_log_output,
+    check_fusion_schema_compatibility,
 )
 from dbt_fusion_package_tools.compatibility import (
     FusionConformanceResult,
     FusionLogMessage,
     ParseConformanceLogOutput,
 )
+
+
+# Basic integration test mainly for local debugging
+def test_fusion_schema_compat():
+    output = check_fusion_schema_compatibility(
+        Path("tests/integration_tests/package_upgrades/dbt_utils_package_lookup_map_2")
+    )
+    print(output)
+    print()
+    print(
+        check_fusion_schema_compatibility(
+            Path("tests/integration_tests/package_upgrades/dbt_utils_package_lookup_map_2"), show_fusion_output=False
+        )
+    )
 
 
 class TestConstructDownloadUrlFromLatest:
