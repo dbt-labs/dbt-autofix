@@ -13,8 +13,7 @@ CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DO
 
 
 def extract_config_macro(sql_content: str) -> Optional[str]:
-    """
-    Extract the {{ config(...) }} macro from SQL content.
+    """Extract the {{ config(...) }} macro from SQL content.
 
     This function properly handles nested Jinja expressions like:
     incremental_predicate="data_date = '{{ var('run_date') }}'"
@@ -113,8 +112,7 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa
         return False
 
     def looks_like_commented_out_code(pos: int) -> bool:
-        """
-        Check if a tag at the given position looks like it's part of commented-out code.
+        """Check if a tag at the given position looks like it's part of commented-out code.
 
         This handles malformed comment syntax like:
         - {#% if ... %} where %} should have been #}
