@@ -4,7 +4,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10, <3.14" # can't support 3.14 without mashumaro 3.15
 dependencies = [
-    "gitpython>=3.1.45",
     "mashumaro>=3.9,<3.15", # matches dbt-core
     "pyyaml>=6.0.2 ; python_version >= '3.13'", # need 6.0.2 for python 3.13 support
     "pyyaml>=6.0 ; python_version < '3.13'", # matches dbt-core
