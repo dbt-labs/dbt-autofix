@@ -60,14 +60,16 @@ _457 total violations across 31 rules_
 
 ### Manual fix required
 - [ ] D205: 54 - 1 blank line required between summary line and description
-- [ ] PLR0912: 19 - Too many branches
 - [ ] PLR2004: 15 - Magic value used in comparison
 - [ ] E722: 9 - Do not use bare `except`
-- [ ] PLR0915: 9 - Too many statements
 - [ ] PLC0415: 8 - `import` should be at the top of the file
-- [ ] PLR0913: 8 - Too many arguments in function definition
 - [ ] D417: 5 - Missing argument descriptions in the docstring
 - [ ] E721: 5 - Use `is` and `is not` for type comparisons
 - [ ] PLC0206: 4 - Extracting value from dictionary without `.items()`
-- [ ] PLR0911: 2 - Too many return statements
 - [ ] PLW1641: 2 - Object does not implement `__hash__` method
+
+### Ignored (configured in pyproject.toml)
+- PLR0911: Too many return statements
+- PLR0912: Too many branches
+- PLR0913: Too many arguments in function definition
+- PLR0915: Too many statements
