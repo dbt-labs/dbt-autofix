@@ -33,7 +33,7 @@ def convert_version_spec_to_string(
 def new_name_from_redirect(redirect_name, redirect_namespace, current_name, current_namespace) -> str:
     if redirect_name and redirect_namespace:
         return f"{redirect_namespace}/{redirect_name}"
-    elif redirect_namespace == None:
+    elif redirect_namespace is None:
         return f"{current_namespace}/{redirect_name}"
     else:
         return f"{redirect_namespace}/{current_name}"
@@ -57,7 +57,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             package_latest_version_index_json = VersionSpecifier.from_version_string(
                 version["package_latest_version_index_json"]
             )
-            if version["package_redirect_name"] != None or version["package_redirect_namespace"] != None:
+            if version["package_redirect_name"] is not None or version["package_redirect_namespace"] is not None:
                 package_redirect_name = version["package_redirect_name"]
                 package_redirect_namespace = version["package_redirect_namespace"]
             continue
@@ -106,7 +106,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             assert oldest_fusion_compatible_version is not None
             assert len(fusion_compatible_versions) > 0
         if not latest_fusion_version:
-            assert oldest_fusion_compatible_version == None
+            assert oldest_fusion_compatible_version is None
             assert len(fusion_compatible_versions) == 0
     return {
         # "versions": versions,
