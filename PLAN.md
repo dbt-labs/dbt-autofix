@@ -43,7 +43,7 @@ _457 total violations across 31 rules_
 - [x] RUF021: 2 - Parenthesize `a and b` expressions when chaining `and` and `or`
 - [x] RUF100: 2 - Unused `noqa` directive
 - [x] D209: 1 - Multi-line docstring closing quotes should be on a separate line
-- [ ] PLR5501: 1 - Use `elif` instead of `else` then `if`
+- [x] PLR5501: 1 - Use `elif` instead of `else` then `if`
 
 ### Unsafe autofix (`uvx ruff check --fix --unsafe-fixes`)
 - [ ] D415: 161 - First line should end with a period, question mark, or exclamation point
