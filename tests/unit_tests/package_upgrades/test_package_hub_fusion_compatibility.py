@@ -344,7 +344,7 @@ class TestReadJsonFromLocalHubRepo:
 
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
-                result = read_json_from_local_hub_repo(str(invalid_file))
+                read_json_from_local_hub_repo(str(invalid_file))
 
                 assert len(w) > 0
 
