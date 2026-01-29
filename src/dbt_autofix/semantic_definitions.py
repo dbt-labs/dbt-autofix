@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from typing_extensions import Self
 
 from dbt_autofix.jinja import statically_parse_ref
 from dbt_autofix.refactors.yml import DbtYAML
