@@ -30,24 +30,6 @@ DEFAULT_HUB_PATH = Path.home() / "workplace" / "hub.getdbt.com"
 DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
 
 
-def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> Any:
-    try:
-        resp = requests.get(url, headers=headers or {}, timeout=timeout)
-        resp.raise_for_status()
-        # requests already decodes JSON when using .json(), but in case
-        # the content is not JSON, fall back to decoding manually.
-        try:
-            return resp.json()
-        except ValueError:
-            return json.loads(resp.text)
-    except HTTPError:
-        # re-raise HTTP errors to be handled by callers
-        raise
-    except requests.RequestException as exc:
-        # Convert other request exceptions to a RuntimeError for clarity
-        raise RuntimeError(f"Network error when fetching {url}: {exc}")
-
-
 # Example package index path:
 # data/packages/Aaron-Zhou/synapse_statistic/index.json
 def is_package_index_file(file_path: str) -> bool:
@@ -203,96 +185,6 @@ def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
                 packages[output["package_id_from_path"]].append(output)
         except Exception as exc:
             warnings.warn(f"Failed to read/parse {file}: {exc}")
-
-    return packages
-
-
-def download_package_jsons_from_hub_repo(
-    owner: str = "dbt-labs",
-    repo: str = "hub.getdbt.com",
-    path: str = "data/packages",
-    branch: Optional[str] = "master",
-    github_token: Optional[str] = None,
-    file_count_limit: int = 0,
-) -> defaultdict[str, list[dict[str, Any]]]:
-    """Download and parse all JSON files under `data/packages` in a GitHub repo.
-
-    This function performs the following steps:
-    - Discover the repository's default branch (if `branch` is not provided).
-    - Fetch the git tree for the branch recursively and find all files under
-      ``{path}`` that end with ``.json``.
-    - Download each JSON file via the raw.githubusercontent.com URL and parse
-      it into Python objects.
-
-    Returns:
-        A list of parsed JSON objects typed as ``PackageJSON``.
-
-    Args:
-        owner: GitHub repo owner (default: "dbt-labs").
-        repo: GitHub repository name (default: "hub.getdbt.com").
-        path: Path within the repo to search (default: "data/packages").
-        branch: Branch name to use; if omitted the repository default branch is
-            discovered via the GitHub API.
-        github_token: Optional GitHub token to increase rate limits.
-    """
-    base_api = "https://api.github.com"
-    headers: Dict[str, str] = {"User-Agent": "dbt-autofix-agent"}
-    if github_token:
-        headers["Authorization"] = f"token {github_token}"
-
-    # 1) Find default branch if not provided
-    if not branch:
-        repo_url = f"{base_api}/repos/{owner}/{repo}"
-        try:
-            repo_info = _http_get_json(repo_url, headers=headers)
-            branch = repo_info.get("default_branch")
-        except Exception as exc:  # pragma: no cover - network error handling
-            raise RuntimeError(f"Failed to get repo info for {owner}/{repo}: {exc}")
-        if not branch:
-            raise RuntimeError("Could not determine repository default branch")
-
-    # 2) Get the git tree recursively
-    tree_url = f"{base_api}/repos/{owner}/{repo}/git/trees/{branch}?recursive=1"
-    try:
-        tree_json = _http_get_json(tree_url, headers=headers)
-    except Exception as exc:  # pragma: no cover - network error handling
-        raise RuntimeError(f"Failed to fetch git tree for {owner}/{repo}@{branch}: {exc}")
-
-    if "tree" not in tree_json:
-        raise RuntimeError("Unexpected response from GitHub API when fetching tree")
-
-    files: List[Dict[str, Any]] = []
-    prefix = path.rstrip("/") + "/"
-    for entry in tree_json["tree"]:
-        # entry has keys: path, mode, type (blob/tree), sha, url
-        if entry.get("type") != "blob":
-            continue
-        p = entry.get("path", "")
-        if p.startswith(prefix) and p.endswith(".json"):
-            files.append(entry)
-        if file_count_limit > 0 and len(files) >= file_count_limit:
-            break
-
-    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    if not files:
-        # No files found; return empty list rather than error.
-        return packages
-
-    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    # 3) Download each JSON using raw.githubusercontent.com
-    for entry in files:
-        file_path = entry["path"]
-        raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{file_path}"
-        # Use simple GET; raw.githubusercontent does not require auth for public repos.
-        try:
-            parsed = _http_get_json(raw_url, headers={"User-Agent": headers["User-Agent"]})
-            output = process_json(file_path, parsed)
-            if output != {}:
-                packages[output["package_id_from_path"]].append(output)
-            time.sleep(1)
-        except Exception as exc:  # network/file parsing issues
-            warnings.warn(f"Failed to fetch/parse {file_path}: {exc}")
-            time.sleep(5)
 
     return packages
 
