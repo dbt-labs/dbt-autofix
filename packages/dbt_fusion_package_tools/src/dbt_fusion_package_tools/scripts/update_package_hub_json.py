@@ -1,3 +1,11 @@
+"""Script to add parse conformance data to Package Hub.
+
+Run as a CLI: `uv run update-package-hub`
+
+Reads the `conformance_output.json` output from `package_hub_fusion_compatibility`.
+Adds or updates the Fusion compatibility info for package versions in a local Hub repo.
+"""
+
 import json
 from collections import defaultdict
 from pathlib import Path

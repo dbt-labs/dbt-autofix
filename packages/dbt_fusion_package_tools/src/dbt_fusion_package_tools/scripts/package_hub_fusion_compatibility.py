@@ -1,7 +1,17 @@
+"""Script to run parse conformance on all package versions in Package Hub.
+
+Run as a CLI: `uv run package-hub-compat`
+
+Reads JSON from a local clone of `hub.getdbt.com` and extracts all package versions,
+then runs parse conformance using `check_parse_conformance`.
+Writes output to `output/conformance_output.json`, which is used in two other scripts
+* `update_package_hub_json`: adds compatibility info back to the original Package Hub files
+* `conformance_output`: produces 2 CSV files that summarize compatibility info for further analysis
+"""
+
 import json
 import os
 import re
-import time
 import warnings
 from collections import defaultdict
 from pathlib import Path
@@ -9,7 +19,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import typer
-from requests import HTTPError
 from rich import print
 from rich.console import Console
 from typing_extensions import Annotated
@@ -426,7 +435,7 @@ def main(
     else:
         output_dir = DEFAULT_OUTPUT_PATH
     console.log(f"Reading from local Hub repo: {local_hub_path}")
-    console.log(f"Writing to output path: {output_dir}/package_output.json")
+    console.log(f"Writing to output path: {output_dir}/conformance_output.json")
     console.log(f"Package limit: {package_limit}")
     console.log(f"Fusion binary: {fusion_binary}")
 

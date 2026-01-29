@@ -1,4 +1,4 @@
-"""Interface for objects useful to processing hub entries"""
+"""Runs dbt parse in Fusion to identify parse erors in packages."""
 
 import json
 import os
