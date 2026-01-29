@@ -91,7 +91,7 @@ def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
 
 # Same as load_yaml_from_packages_yml
 def load_yaml_from_dependencies_yml(dependencies_yml_path: Path) -> dict[Any, Any]:
-    """Same as `load_yaml_from_packages_yml` but dependencies.yml"""
+    """Same as `load_yaml_from_packages_yml` but dependencies.yml."""
     if dependencies_yml_path.name != "dependencies.yml":
         console.log("File must be dependencies.yml")
         return {}

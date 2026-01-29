@@ -52,7 +52,7 @@ def parse_arguments(argv: Optional[List[str]] = None) -> argparse.Namespace:
     because we need to:
     1. Convert positional filenames to the internal select parameter
     2. Filter only relevant dbt files before processing
-    3. Return appropriate exit codes based on whether changes were found
+    3. Return appropriate exit codes based on whether changes were found.
     """
     parser = argparse.ArgumentParser(description="Check for dbt deprecations in staged files")
     parser.add_argument(

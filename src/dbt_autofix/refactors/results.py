@@ -53,7 +53,7 @@ class YMLRefactorResult:
     refactors: list[YMLRuleRefactorResult]
 
     def update_yaml_file(self) -> None:
-        """Update the YAML file with the refactored content"""
+        """Update the YAML file with the refactored content."""
         # Restore fancy quotes from placeholders before writing
         final_yaml = restore_fancy_quotes(self.refactored_yaml)
         Path(self.file_path).write_text(final_yaml)
@@ -121,7 +121,7 @@ class SQLRefactorResult:
     has_warnings: bool = False
 
     def update_sql_file(self) -> None:
-        """Update the SQL file with the refactored content"""
+        """Update the SQL file with the refactored content."""
         new_file_path = self.refactored_file_path or self.file_path
         if self.file_path != new_file_path:
             os.rename(self.file_path, self.refactored_file_path)

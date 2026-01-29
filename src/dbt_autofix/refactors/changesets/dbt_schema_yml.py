@@ -187,7 +187,7 @@ def _would_close_string(line: str, pos: int) -> bool:
 
 def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
     """Generates a refactored YAML string from a single YAML file
-    - moves all the owner fields that are not in owner_properties under config.meta
+    - moves all the owner fields that are not in owner_properties under config.meta.
     """
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -336,7 +336,7 @@ def changeset_remove_indentation_version(yml_str: str) -> YMLRuleRefactorResult:
 
 
 def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
-    """Removes extra tabs in the YAML files"""
+    """Removes extra tabs in the YAML files."""
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     current_yaml = yml_str
@@ -379,7 +379,7 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
     - moves all the meta fields under config.meta and merges with existing config.meta
     - moves all the unknown fields under config.meta
     - provide some information if some fields don't exist but are similar to allowed fields
-    - removes custom top-level keys
+    - removes custom top-level keys.
     """
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -523,7 +523,7 @@ def restructure_yaml_keys_for_test(
     Tests are separated from other nodes because
     - they don't support meta
     - they can be either a string or a dict
-    - when they are a dict, the top level ist just the test name
+    - when they are a dict, the top level ist just the test name.
 
     Args:
         test: The test dictionary to process
@@ -622,7 +622,7 @@ def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name
 
 def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
     """Move non-config args under 'arguments' key
-    This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
+    This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name').
     """
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 

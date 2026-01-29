@@ -23,7 +23,7 @@ class PackageFusionCompatibilityState(str, Enum):
 
 
 class PackageVersionUpgradeType(str, Enum):
-    """String enum for package upgrade types"""
+    """String enum for package upgrade types."""
 
     NO_UPGRADE_REQUIRED = "Package is already compatible with Fusion"
     UPGRADE_AVAILABLE = "Package has Fusion-compatible version available"

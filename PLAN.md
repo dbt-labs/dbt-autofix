@@ -46,7 +46,7 @@ _457 total violations across 31 rules_
 - [x] PLR5501: 1 - Use `elif` instead of `else` then `if`
 
 ### Unsafe autofix (`uvx ruff check --fix --unsafe-fixes`)
-- [ ] D415: 161 - First line should end with a period, question mark, or exclamation point
+- [x] D415: 161 - First line should end with a period, question mark, or exclamation point
 - [ ] T201: 13 - `print` found (has exceptions - see Known exceptions)
 - [ ] D200: 11 - One-line docstring should fit on one line
 - [ ] E711: 5 - Comparison to `None` should be `is None`
