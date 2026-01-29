@@ -344,7 +344,7 @@ class TestDownloadTarballAndRunConformance:
         mock_get.return_value = mock_response
 
         # Create a real tar file for testing
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory():
             # Create a mock tarball content
             import io
             import tarfile
@@ -405,7 +405,7 @@ class TestDownloadTarballAndRunConformance:
         mock_conformance.return_value = FusionConformanceResult(version="v1.0.0")
 
         # This should try the fallback URL
-        result = download_tarball_and_run_conformance(
+        download_tarball_and_run_conformance(
             package_name="test_package",
             package_id="test-org/test-package",
             package_version_str="v1.0.0",
