@@ -19,7 +19,7 @@ yaml_config = yamllint.config.YamlLintConfig(config)
 def changeset_dbt_project_remove_deprecated_config(
     yml_str: str, exclude_dbt_project_keys: bool = False
 ) -> YMLRuleRefactorResult:
-    """Remove deprecated keys"""
+    """Remove deprecated keys."""
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -233,7 +233,7 @@ def _path_exists_as_file(path: Path) -> bool:
 def changeset_dbt_project_prefix_plus_for_config(
     yml_str: str, path: Path, schema_specs: SchemaSpecs
 ) -> YMLRuleRefactorResult:
-    """Update keys for the config in dbt_project.yml under to prefix it with a `+`"""
+    """Update keys for the config in dbt_project.yml under to prefix it with a `+`."""
     all_refactor_logs: List[str] = []
 
     yml_dict = DbtYAML().load(yml_str) or {}

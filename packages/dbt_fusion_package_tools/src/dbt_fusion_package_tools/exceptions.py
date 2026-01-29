@@ -21,6 +21,6 @@ class FusionBinaryNotAvailable(Exception):
 
 
 class GitOperationError(Exception):
-    """Custom exception for git operation failures"""
+    """Custom exception for git operation failures."""
 
     pass
