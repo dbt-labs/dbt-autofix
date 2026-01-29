@@ -10,12 +10,12 @@ package_conformance_summary: one line per package version
 package_conformance_all_errors: one line per error per package version
 """
 
-from collections import Counter, defaultdict
 import csv
 import json
+from collections import Counter, defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any
-from datetime import datetime
 
 OUTPUT_PATH: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
 CONFORMANCE_OUTPUT_FILE_NAME: str = "v101_conformance_output_20260128.json"

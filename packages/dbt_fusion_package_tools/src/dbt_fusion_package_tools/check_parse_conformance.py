@@ -2,27 +2,27 @@
 
 import json
 import os
+import re
 import subprocess
+import tarfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Optional
-import re
 
 import requests
-import tarfile
-from rich.console import Console
-
-from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
-from dbt_fusion_package_tools.yaml.loader import safe_load
-from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
 from dbtlabs.proto.public.v1.events.fusion.log.log_pb2 import LogMessage
 from google.protobuf import json_format
+from rich.console import Console
+
 from dbt_fusion_package_tools.compatibility import (
     FusionConformanceResult,
-    ParseConformanceLogOutput,
     FusionLogMessage,
+    ParseConformanceLogOutput,
 )
+from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
+from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
+from dbt_fusion_package_tools.yaml.loader import safe_load
 
 console = Console()
 error_console = Console(stderr=True)
@@ -290,8 +290,7 @@ def check_fusion_schema_compatibility(
     fusion_binary: Optional[str] = None,
     show_fusion_output=True,
 ) -> Optional[ParseConformanceLogOutput]:
-    """
-    Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
+    """Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
 
     Args:
         fusion_binary_name: name of a valid Fusion binary
@@ -359,7 +358,7 @@ def check_fusion_schema_compatibility(
                 deps_result.stdout, deps_result.returncode, repo_path, fusion_version=fusion_version
             )
             if deps_result.returncode != 0:
-                error_console.log(f"dbt deps returned errors")
+                error_console.log("dbt deps returned errors")
                 error_console.log(deps_output)
 
             # Now try parse
@@ -385,7 +384,7 @@ def check_fusion_schema_compatibility(
                 parse_result.stdout, parse_result.returncode, repo_path, fusion_version=fusion_version
             )
             if parse_result.returncode != 0:
-                error_console.log(f"dbt parse returned errors")
+                error_console.log("dbt parse returned errors")
                 error_console.log(parse_output)
                 if len(deps_output.errors) > 0:
                     parse_output.errors.extend(deps_output.errors)

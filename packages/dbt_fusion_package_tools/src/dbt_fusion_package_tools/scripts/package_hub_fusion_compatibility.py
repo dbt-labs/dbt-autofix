@@ -6,17 +6,18 @@ import warnings
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+import requests
+import typer
+from requests import HTTPError
+from rich import print
+from rich.console import Console
+from typing_extensions import Annotated
+
 from dbt_fusion_package_tools.check_parse_conformance import (
     download_tarball_and_run_conformance,
 )
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
-
-import requests
-from requests import HTTPError
-import typer
-from rich import print
-from rich.console import Console
-from typing_extensions import Annotated
 
 console = Console()
 error_console = Console(stderr=True)
@@ -340,8 +341,7 @@ def get_github_repos_from_file(file_path: Path) -> defaultdict[str, set[str]]:
 def check_github_url(
     url: str, timeout: int = 10, github_token: Optional[str] = os.getenv("GITHUB_TOKEN")
 ) -> Dict[str, Any]:
-    """
-    Check a GitHub URL and return status info.
+    """Check a GitHub URL and return status info.
     Returns a dict with keys: status (int|None), is_404 (bool), is_301 (bool),
     location (redirect target or None), error (str|None).
     """

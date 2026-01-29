@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from rich.console import Console
 
+from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 from dbt_fusion_package_tools.manual_overrides import (
     EXPLICIT_ALLOW_ALL_VERSIONS,
     EXPLICIT_DISALLOW_ALL_VERSIONS,
@@ -18,7 +19,6 @@ from dbt_fusion_package_tools.version_utils import (
     get_version_specifiers,
     versions_compatible,
 )
-from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 
 console = Console()
 

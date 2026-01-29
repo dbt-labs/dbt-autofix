@@ -1,15 +1,15 @@
-from collections import defaultdict
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
-
-from dbt_fusion_package_tools.compatibility import FusionConformanceResult
-from dbt_fusion_package_tools.version_utils import VersionSpecifier
-from dbt_fusion_package_tools.exceptions import SemverError
 
 import typer
 from rich.console import Console
 from typing_extensions import Annotated
+
+from dbt_fusion_package_tools.compatibility import FusionConformanceResult
+from dbt_fusion_package_tools.exceptions import SemverError
+from dbt_fusion_package_tools.version_utils import VersionSpecifier
 
 console = Console()
 error_console = Console(stderr=True)
@@ -47,7 +47,7 @@ def extract_output_from_json(
 
 def check_for_rename(hub_path: str, package_name: str) -> VersionSpecifier:
     dir_path = Path(hub_path) / "data" / "packages" / package_name
-    file_path = dir_path / f"index.json"
+    file_path = dir_path / "index.json"
     with file_path.open("r", encoding="utf-8") as fh:
         index_json = json.load(fh)
     # if "redirectname" in index_json or "redirectnamespace" in index_json:
