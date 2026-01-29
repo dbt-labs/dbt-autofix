@@ -7,8 +7,7 @@ from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignor
 
 
 def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
-    """
-    Given a string with jinja, extract an unrendered config call.
+    """Given a string with jinja, extract an unrendered config call.
     If no config call is present, returns None.
 
     For example, given:
@@ -229,8 +228,7 @@ class RefArgs:
 
 
 def statically_parse_ref(expression: str) -> Optional[RefArgs]:
-    """
-    Returns a RefArgs or List[str] object, corresponding to ref or source respectively, given an input jinja expression.
+    """Returns a RefArgs or List[str] object, corresponding to ref or source respectively, given an input jinja expression.
 
     input: str representing how input node is referenced in tested model sql
         * examples:
