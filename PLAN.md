@@ -49,7 +49,7 @@ _457 total violations across 31 rules_
 - [x] D415: 161 - First line should end with a period, question mark, or exclamation point
 - [ ] T201: 13 - `print` found (has exceptions - see Known exceptions)
 - [x] D200: 11 - One-line docstring should fit on one line
-- [ ] E711: 5 - Comparison to `None` should be `is None`
+- [x] E711: 5 - Comparison to `None` should be `is None`
 - [ ] F841: 5 - Local variable is assigned but never used
 - [ ] PLR1714: 3 - Consider merging multiple comparisons
 - [ ] T203: 3 - `pprint` found
