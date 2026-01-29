@@ -469,8 +469,7 @@ class TestIntegrationUpdatePackageHubJson:
                 }
             }
             conformance_file = Path(tmpdir) / "conformance.json"
-            with conformance_file.open("w") as f:
-                json.dump(conformance_output, f)
+            conformance_file.write_text(json.dumps(conformance_output))
 
             # Load and extract
             loaded = reload_output_from_file(conformance_file)
