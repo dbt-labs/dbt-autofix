@@ -21,7 +21,9 @@ def read_package_output_json(file_path: Path) -> dict[str, Any]:
     return data
 
 
-def convert_version_spec_to_string(version_spec: Optional[VersionSpecifier]) -> Optional[str]:
+def convert_version_spec_to_string(
+    version_spec: Optional[VersionSpecifier],
+) -> Optional[str]:
     if version_spec is None:
         return None
     else:
@@ -168,7 +170,8 @@ def main():
     write_dict_to_json(packages_with_versions, input)
     print("Output written to fusion_version_compatibility_output.json")
     with open(
-        Path.cwd() / "src" / "dbt_fusion_package_tools" / "fusion_version_compatibility_output.py", "w"
+        Path.cwd() / "src" / "dbt_fusion_package_tools" / "fusion_version_compatibility_output.py",
+        "w",
     ) as output_py_file:
         output_py_file.write(
             f"from typing import Any\n\nFUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {packages_with_versions}"

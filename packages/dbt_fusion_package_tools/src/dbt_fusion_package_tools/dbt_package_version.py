@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from rich.console import Console
 
+from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 from dbt_fusion_package_tools.manual_overrides import (
     EXPLICIT_ALLOW_ALL_VERSIONS,
     EXPLICIT_DISALLOW_ALL_VERSIONS,
@@ -32,6 +33,7 @@ class DbtPackageVersion:
     package_id_with_version: Optional[str] = None
     package_id: Optional[str] = None
     raw_require_dbt_version_range: Any = None
+    fusion_conformance_result: Optional[FusionConformanceResult] = None
 
     @property
     def version(self) -> VersionSpecifier:

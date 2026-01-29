@@ -4,7 +4,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10, <3.14" # can't support 3.14 without mashumaro 3.15
 dependencies = [
-    "gitpython>=3.1.45",
     "mashumaro>=3.9,<3.15", # matches dbt-core
     "pyyaml>=6.0.2 ; python_version >= '3.13'", # need 6.0.2 for python 3.13 support
     "pyyaml>=6.0 ; python_version < '3.13'", # matches dbt-core
@@ -12,6 +11,7 @@ dependencies = [
     "requests<3.0.0", # matches dbt-common
     "rich>=14.0.0",
     "click>=8.2.0,<9.0", # matches dbt-core 
+    "typer>=0.16.0",
 ]
 
 dynamic = ["version"]
@@ -19,6 +19,8 @@ dynamic = ["version"]
 [project.scripts]
 dbt-fusion-package-tools = "dbt_fusion_package_tools:main"
 dbt-fusion-package-schema-compat = "dbt_fusion_package_tools.check_parse_conformance:main"
+package-hub-compat = "dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility:app"
+update-package-hub = "dbt_fusion_package_tools.scripts.update_package_hub_json:app"
 
 [tool.uv]
 package = true

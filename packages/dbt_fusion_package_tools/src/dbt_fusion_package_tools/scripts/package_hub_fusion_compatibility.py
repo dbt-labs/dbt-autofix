@@ -1,30 +1,42 @@
+"""Script to run parse conformance on all package versions in Package Hub.
+
+Run as a CLI: `uv run package-hub-compat`
+
+Reads JSON from a local clone of `hub.getdbt.com` and extracts all package versions,
+then runs parse conformance using `check_parse_conformance`.
+Writes output to `output/conformance_output.json`, which is used in two other scripts
+* `update_package_hub_json`: adds compatibility info back to the original Package Hub files
+* `conformance_output`: produces 2 CSV files that summarize compatibility info for further analysis
+"""
+
 import json
-import time
+import os
+import re
 import warnings
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests
-from requests import HTTPError
+import typer
+from rich import print
+from rich.console import Console
+from typing_extensions import Annotated
 
+from dbt_fusion_package_tools.check_parse_conformance import (
+    download_tarball_and_run_conformance,
+)
+from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 
-def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> Any:
-    try:
-        resp = requests.get(url, headers=headers or {}, timeout=timeout)
-        resp.raise_for_status()
-        # requests already decodes JSON when using .json(), but in case
-        # the content is not JSON, fall back to decoding manually.
-        try:
-            return resp.json()
-        except ValueError:
-            return json.loads(resp.text)
-    except HTTPError:
-        # re-raise HTTP errors to be handled by callers
-        raise
-    except requests.RequestException as exc:
-        # Convert other request exceptions to a RuntimeError for clarity
-        raise RuntimeError(f"Network error when fetching {url}: {exc}")
+console = Console()
+error_console = Console(stderr=True)
+
+app = typer.Typer()
+
+current_dir = Path.cwd()
+DEFAULT_OUTPUT_PATH = current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
+DEFAULT_HUB_PATH = Path.home() / "workplace" / "hub.getdbt.com"
+DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
 
 
 # Example package index path:
@@ -64,6 +76,15 @@ def clean_version(version_str: Optional[str]) -> str:
     return version_str
 
 
+# Notes:
+# The package_id from path (which is the key in results)
+# is the organization + package name
+# This is not related to the Github URL
+# Example:
+# package_id_from_path = AxelThevenot/dbt_star
+# package_version_download_url = https://codeload.github.com/AxelThevenot/dbt-star/tar.gz/0.1.0
+# Package Hub page: https://hub.getdbt.com/AxelThevenot/dbt_star/latest/
+# package name in packages.yml: AxelThevenot/dbt_star
 def process_json(file_path: str, parsed_json: Any) -> dict[str, Any]:
     package_id = extract_package_id_from_path(file_path)
     if package_id == "":
@@ -177,98 +198,6 @@ def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
     return packages
 
 
-def download_package_jsons_from_hub_repo(
-    owner: str = "dbt-labs",
-    repo: str = "hub.getdbt.com",
-    path: str = "data/packages",
-    branch: Optional[str] = "master",
-    github_token: Optional[str] = None,
-    file_count_limit: int = 0,
-    # ) -> List[PackageJSON]:
-) -> defaultdict[str, list[dict[str, Any]]]:
-    """Download and parse all JSON files under `data/packages` in a GitHub repo.
-
-    This function performs the following steps:
-    - Discover the repository's default branch (if `branch` is not provided).
-    - Fetch the git tree for the branch recursively and find all files under
-      ``{path}`` that end with ``.json``.
-    - Download each JSON file via the raw.githubusercontent.com URL and parse
-      it into Python objects.
-
-    Returns:
-        A list of parsed JSON objects typed as ``PackageJSON``.
-
-    Args:
-        owner: GitHub repo owner (default: "dbt-labs").
-        repo: GitHub repository name (default: "hub.getdbt.com").
-        path: Path within the repo to search (default: "data/packages").
-        branch: Branch name to use; if omitted the repository default branch is
-            discovered via the GitHub API.
-        github_token: Optional GitHub token to increase rate limits.
-    """
-    base_api = "https://api.github.com"
-    headers: Dict[str, str] = {"User-Agent": "dbt-autofix-agent"}
-    if github_token:
-        headers["Authorization"] = f"token {github_token}"
-
-    # 1) Find default branch if not provided
-    if not branch:
-        repo_url = f"{base_api}/repos/{owner}/{repo}"
-        try:
-            repo_info = _http_get_json(repo_url, headers=headers)
-            branch = repo_info.get("default_branch")
-        except Exception as exc:  # pragma: no cover - network error handling
-            raise RuntimeError(f"Failed to get repo info for {owner}/{repo}: {exc}")
-        if not branch:
-            raise RuntimeError("Could not determine repository default branch")
-
-    # 2) Get the git tree recursively
-    tree_url = f"{base_api}/repos/{owner}/{repo}/git/trees/{branch}?recursive=1"
-    try:
-        tree_json = _http_get_json(tree_url, headers=headers)
-    except Exception as exc:  # pragma: no cover - network error handling
-        raise RuntimeError(f"Failed to fetch git tree for {owner}/{repo}@{branch}: {exc}")
-
-    if "tree" not in tree_json:
-        raise RuntimeError("Unexpected response from GitHub API when fetching tree")
-
-    files: List[Dict[str, Any]] = []
-    prefix = path.rstrip("/") + "/"
-    for entry in tree_json["tree"]:
-        # entry has keys: path, mode, type (blob/tree), sha, url
-        if entry.get("type") != "blob":
-            continue
-        p = entry.get("path", "")
-        if p.startswith(prefix) and p.endswith(".json"):
-            files.append(entry)
-        if file_count_limit > 0 and len(files) >= file_count_limit:
-            break
-
-    # results: List[PackageJSON] = []
-    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    if not files:
-        # No files found; return empty list rather than error.
-        return packages
-
-    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    # 3) Download each JSON using raw.githubusercontent.com
-    for entry in files:
-        file_path = entry["path"]
-        raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{file_path}"
-        # Use simple GET; raw.githubusercontent does not require auth for public repos.
-        try:
-            parsed = _http_get_json(raw_url, headers={"User-Agent": headers["User-Agent"]})
-            output = process_json(file_path, parsed)
-            if output != {}:
-                packages[output["package_id_from_path"]].append(output)
-            time.sleep(1)
-        except Exception as exc:  # network/file parsing issues
-            warnings.warn(f"Failed to fetch/parse {file_path}: {exc}")
-            time.sleep(5)
-
-    return packages
-
-
 def reload_packages_from_file(
     file_path: Path,
 ) -> defaultdict[str, list[dict[str, Any]]]:
@@ -276,19 +205,248 @@ def reload_packages_from_file(
         return json.load(fh)
 
 
-def main():
-    file_count_limit = 0
-    # results = download_package_jsons_from_hub_repo(file_count_limit=file_count_limit)
-    results = read_json_from_local_hub_repo(
-        path="/Users/chaya/workplace/hub.getdbt.com", file_count_limit=file_count_limit
+def get_github_repos_from_file(file_path: Path) -> defaultdict[str, set[str]]:
+    """Extracts the Github repo paths from package hub output.
+
+    Note that the repos are in a set because in rare cases, a package
+    may have more than 1 reported repo.
+
+    Args:
+        file_path (Path): path to output from read_json_from_local_hub_repo
+
+    Returns:
+        defaultdict[str, set[str]]: packages with repos
+
+    Example:
+        {
+            "package_1":
+                {"https://github.com/example/package-1"}
+        }
+    """
+    with file_path.open("r", encoding="utf-8") as fh:
+        output = json.load(fh)
+    package_repos: defaultdict[str, set[str]] = defaultdict(set)
+    for package in output:
+        for version in output[package]:
+            repo = version.get("package_version_github_url", "")
+            m = re.match(r"^(https?://github\.com/[^/]+/[^/]+)", repo)
+            if m:
+                package_repos[package].add(m.group(1))
+    for repos in package_repos:
+        repo_count = len(package_repos[repos])
+        if repo_count > 1:
+            print(repos, package_repos[repos])
+    return package_repos
+
+
+def check_github_url(
+    url: str, timeout: int = 10, github_token: Optional[str] = os.getenv("GITHUB_TOKEN")
+) -> Dict[str, Any]:
+    """Check a GitHub URL and return status info.
+    Returns a dict with keys: status (int|None), is_404 (bool), is_301 (bool),
+    location (redirect target or None), error (str|None).
+    """
+    headers = {"User-Agent": "dbt-autofix-agent"}
+    if github_token:
+        headers["Authorization"] = f"token {github_token}"
+
+    try:
+        resp = requests.head(url, headers=headers, timeout=timeout, allow_redirects=False)
+        if resp.status_code in (405, 501):  # HEAD not allowed => try GET
+            resp = requests.get(
+                url,
+                headers=headers,
+                timeout=timeout,
+                allow_redirects=False,
+                stream=True,
+            )
+        status = resp.status_code
+        location = resp.headers.get("Location")
+        return {
+            "status": status,
+            "is_404": status == 404,
+            "is_301": status == 301,
+            "location": location,
+            "error": None,
+        }
+    except requests.RequestException as exc:
+        return {
+            "status": None,
+            "is_404": False,
+            "is_301": False,
+            "location": None,
+            "error": str(exc),
+        }
+
+
+def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: int = 0) -> dict[str, str]:
+    # Returning a single string here because literally only 1 package has more than 1 valid repo
+    # and it looks like a mistake (Saras-Daton/Walmart)
+    valid_repos: dict[str, str] = {}
+    for i, package in enumerate(packages):
+        if package_limit > 0 and i > package_limit:
+            break
+        for github_url in packages[package]:
+            response = check_github_url(github_url)
+            if not response:
+                error_console.log(f"No response for {package} {github_url}")
+            if (response["status"] != 200 and not response["is_301"]) or response.get("error"):
+                error_console.log(response)
+            if response["is_404"]:
+                continue
+            elif response["is_301"]:
+                valid_repos[package] = response["location"]
+            else:
+                valid_repos[package] = github_url
+    return valid_repos
+
+
+def follow_redirects(package_name: str, packages: dict[str, dict[str, Optional[str]]]) -> str:
+    package_redirect_name: Optional[str] = packages[package_name].get("package_redirect_name")
+    package_redirect_namespace: Optional[str] = packages[package_name].get("package_redirect_namespace")
+    # base case: package does not have any redirects
+    if not package_redirect_name and not package_redirect_namespace:
+        return package_name
+    # recursive case: follow redirect
+    original_namespace = package_name.split("/")[0]
+    original_name = package_name.split("/")[1]
+    if package_redirect_name and package_redirect_namespace:
+        package_after_redirect: str = f"{package_redirect_namespace}/{package_redirect_name}"
+    elif package_redirect_name:
+        package_after_redirect: str = f"{original_namespace}/{package_redirect_name}"
+    else:
+        package_after_redirect: str = f"{package_redirect_namespace}/{original_name}"
+    next_redirect_name = follow_redirects(package_after_redirect, packages)
+    return next_redirect_name
+
+
+def get_latest_github_tarball_urls(hub_data: defaultdict[str, list[dict[str, Any]]]) -> dict[str, str]:
+    # first load in all packages and get latest version + redirects
+    # but don't actually follow the redirects yet
+    packages_no_redirects: dict[str, dict[str, Optional[str]]] = {}
+    for package in hub_data:
+        # index file should always be first
+        package_latest_version: str = hub_data[package][0]["package_latest_version_index_json"]
+        package_redirect_name: Optional[str] = hub_data[package][0].get("package_redirect_name")
+        package_redirect_namespace: Optional[str] = hub_data[package][0].get("package_redirect_namespace")
+        package_latest_version_download_url: Optional[str] = None
+
+        for version in hub_data[package][1:]:
+            package_version_string = version.get("package_version_string")
+
+            # get the tarball url for the latest version only
+            if package_version_string == package_latest_version:
+                package_latest_version_download_url = version.get("package_version_download_url")
+                break
+
+        if not package_latest_version_download_url:
+            console.log(f"No download available for {package}")
+            continue
+        else:
+            packages_no_redirects[package] = {
+                "package_latest_version": package_latest_version,
+                "package_redirect_name": package_redirect_name,
+                "package_redirect_namespace": package_redirect_namespace,
+                "package_latest_version_download_url": package_latest_version_download_url,
+            }
+
+    # get final latest version url after following redirect
+    package_latest_version_urls: dict[str, str] = {}
+    for package in packages_no_redirects:
+        package_latest_name: str = follow_redirects(package, packages_no_redirects)
+        package_latest_url: Optional[str] = packages_no_redirects[package_latest_name].get(
+            "package_latest_version_download_url"
+        )
+        if package_latest_url is not None:
+            package_latest_version_urls[package] = package_latest_url
+    return package_latest_version_urls
+
+
+def run_conformance_from_tarballs(
+    output: defaultdict[str, list[dict[str, Any]]],
+    package_latest_version_urls: dict[str, str],
+    package_limit: int = 0,
+    fusion_binary=None,
+) -> dict[str, dict[str, FusionConformanceResult]]:
+    results: dict[str, dict[str, FusionConformanceResult]] = {}
+
+    for i, package in enumerate(output):
+        if package_limit > 0 and i > package_limit:
+            break
+        results[package] = {}
+        for version in output[package]:
+            package_version_download_url = version.get("package_version_download_url")
+            package_version_string = version.get("package_version_string")
+            if package_version_string is None:
+                continue
+            if package_version_download_url is None:
+                console.log(f"No download URL found for {package} version {package_version_string}")
+                continue
+            conformance_output = download_tarball_and_run_conformance(
+                package_name=package,
+                package_id=version["package_id_from_path"],
+                package_version_str=str(package_version_string),
+                package_version_download_url=package_version_download_url,
+                latest_package_version_download_url=package_latest_version_urls.get(package),
+                fusion_binary=fusion_binary,
+            )
+            if not conformance_output:
+                console.log(f"Could not run conformance for {package} version {package_version_string}\n")
+                continue
+            else:
+                results[package][package_version_string] = conformance_output
+                console.log()
+
+    return results
+
+
+def write_conformance_output_to_json(
+    data: dict[str, dict[str, FusionConformanceResult]],
+    dest_dir: Path,
+    *,
+    indent: int = 2,
+    sort_keys: bool = True,
+):
+    data_output = {}
+    for k, v in data.items():
+        data_output[k] = {version: result.to_dict() for version, result in v.items()}
+    out_file = Path(dest_dir) / "conformance_output.json"
+    with out_file.open("w", encoding="utf-8") as fh:
+        json.dump(data_output, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
+
+
+@app.command()
+def main(
+    local_hub_path: Annotated[
+        str, typer.Option("--local-hub", help="Fully qualified path to local Package Hub clone")
+    ] = str(DEFAULT_HUB_PATH),
+    fusion_binary: Annotated[str, typer.Option("--fusion-binary", help="Name of fusion binary")] = str(
+        DEFAULT_FUSION_BINARY_PATH
+    ),
+    output_path: Annotated[
+        str, typer.Option("--output-path", help="Fully qualified path to directory for output")
+    ] = str(DEFAULT_OUTPUT_PATH),
+    package_limit: Annotated[
+        int, typer.Option("--limit", help="Only run on first n packages (default = 0 to run all packages)")
+    ] = 0,
+):
+    if output_path:
+        output_dir = Path(output_path)
+    else:
+        output_dir = DEFAULT_OUTPUT_PATH
+    console.log(f"Reading from local Hub repo: {local_hub_path}")
+    console.log(f"Writing to output path: {output_dir}/conformance_output.json")
+    console.log(f"Package limit: {package_limit}")
+    console.log(f"Fusion binary: {fusion_binary}")
+
+    output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo(path=local_hub_path)
+    package_latest_version_urls: dict[str, str] = get_latest_github_tarball_urls(output)
+    parse_conformance_results = run_conformance_from_tarballs(
+        output, package_latest_version_urls, package_limit, fusion_binary
     )
-    print(f"Downloaded {len(results)} packages from hub.getdbt.com")
-    output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
-    write_dict_to_json(results, output_path)
-    print(f"Output written to {output_path / 'package_output.json'}")
-    reload_packages = reload_packages_from_file(output_path / "package_output.json")
-    print(f"Reloaded {len(reload_packages)} packages from file")
+    write_conformance_output_to_json(parse_conformance_results, output_path)
+    console.log(f"Successfully wrote output to {output_path}/conformance_output.json")
 
 
 if __name__ == "__main__":
-    main()
+    app()
