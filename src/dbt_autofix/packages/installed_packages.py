@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
 from typing import Any, Optional, Union
-from rich.console import Console
-import yaml
 
+import yaml
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
+from rich.console import Console
+
 from dbt_autofix.refactors.yml import read_file
 
 console = Console()
