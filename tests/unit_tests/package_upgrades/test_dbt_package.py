@@ -1,9 +1,7 @@
 import tempfile
 from pathlib import Path
-from pprint import pprint
 
 import pytest
-from dbt_fusion_package_tools.dbt_package import DbtPackage
 
 
 @pytest.fixture

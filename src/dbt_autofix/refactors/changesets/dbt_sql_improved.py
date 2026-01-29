@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Set, Tuple
+from typing import List, Set, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLRuleRefactorResult

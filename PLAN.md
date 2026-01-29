@@ -36,9 +36,9 @@ The final PR should not have this plan in it. But I'm adding it to version contr
 _457 total violations across 31 rules_
 
 ### Safe autofix (`uvx ruff check --fix`)
-- [ ] D212: 62 - Multi-line docstring summary should start at the first line
-- [ ] I001: 23 - Import block is unsorted or unformatted
-- [ ] F401: 15 - Unused import
+- [x] D212: 62 - Multi-line docstring summary should start at the first line
+- [x] I001: 23 - Import block is unsorted or unformatted
+- [x] F401: 15 - Unused import
 - [ ] F541: 5 - f-string without placeholders
 - [ ] RUF021: 2 - Parenthesize `a and b` expressions when chaining `and` and `or`
 - [ ] RUF100: 2 - Unused `noqa` directive
