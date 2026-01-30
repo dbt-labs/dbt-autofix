@@ -64,16 +64,20 @@ indent-width = 4
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
 select = ["E4", "E7", "E9", "F", "I", "RUF", "PL", "TID", "T20", "D"]
-# Ignore some doc warnings
-# D100: Missing docstring in public module
-# D101: Missing docstring in public class
-# D102: Missing docstring in public method
-# D103: Missing docstring in public function
-# D104: Missing docstring in public package
-# D105: Missing docstring in magic method
-# D107: Missing docstring in __init__
-# D202: No blank lines allowed after function docstring
-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
+ignore = [
+    "D100",     # Missing docstring in public module
+    "D101",     # Missing docstring in public class
+    "D102",     # Missing docstring in public method
+    "D103",     # Missing docstring in public function
+    "D104",     # Missing docstring in public package
+    "D105",     # Missing docstring in magic method
+    "D107",     # Missing docstring in __init__
+    "D202",     # No blank lines allowed after function docstring
+    "PLR0911",  # Too many return statements
+    "PLR0912",  # Too many branches
+    "PLR0913",  # Too many arguments in function definition
+    "PLR0915",  # Too many statements
+]
 
 [tool.pyright]
 include = [
@@ -91,7 +95,16 @@ reportUnusedExpression = true
 reportMissingImports = false
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["PLR2004", "T201"]
+"tests/**.py" = [
+    "D205",     # 1 blank line required between summary line and description
+    "PLR2004",  # Magic value used in comparison
+    "T201",     # `print` found
+    "T203",     # `pprint` found
+]
+"**/scripts/**.py" = [
+    "T201",  # `print` found
+    "T203",  # `pprint` found
+]
 
 [tool.pytest.ini_options]
 pythonpath = [
