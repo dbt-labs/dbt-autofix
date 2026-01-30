@@ -66,10 +66,14 @@ _457 total violations across 31 rules_
 - [ ] D417: 5 - Missing argument descriptions in the docstring
 - [ ] E721: 5 - Use `is` and `is not` for type comparisons
 - [ ] PLC0206: 4 - Extracting value from dictionary without `.items()`
-- [ ] PLW1641: 2 - Object does not implement `__hash__` method
+- [x] PLW1641: 2 - Object does not implement `__hash__` method
 
 ### Ignored (configured in pyproject.toml)
 - PLR0911: Too many return statements
 - PLR0912: Too many branches
 - PLR0913: Too many arguments in function definition
 - PLR0915: Too many statements
+
+## Other findings
+
+- `DbtPackageVersion.__eq__` in `packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/dbt_package_version.py:63` appears buggy - it returns `True` when objects are NOT equal (uses `!=` and `or` instead of `==` and `and`)
