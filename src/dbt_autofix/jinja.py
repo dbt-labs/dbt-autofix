@@ -248,7 +248,7 @@ def statically_parse_ref(expression: str) -> Optional[RefArgs]:
         pass
 
     if statically_parsed.get("refs"):
-        raw_ref = list(statically_parsed["refs"])[0]
+        raw_ref = next(iter(statically_parsed["refs"]))
         ref = RefArgs(
             package=raw_ref.get("package"),
             name=raw_ref.get("name"),
