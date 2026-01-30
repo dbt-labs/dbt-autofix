@@ -1,8 +1,8 @@
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-import re
 
 import httpx
 from rich.console import Console
@@ -267,7 +267,7 @@ class DBTCloudChangesetResult:
             return
 
         if json_output:
-            print(json.dumps(self.to_dict()))  # noqa: T201
+            print(json.dumps(self.to_dict()))
             return
 
         console.print(
@@ -280,7 +280,7 @@ class DBTCloudChangesetResult:
                 console.print(f"    {log}")
 
 
-def update_jobs(  # noqa: PLR0913
+def update_jobs(
     account_id: int,
     api_key: Optional[str],
     base_url: str = "https://cloud.getdbt.com",

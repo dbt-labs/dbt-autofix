@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+
 from rich.console import Console
 
 from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes
@@ -72,7 +73,7 @@ class YMLRefactorResult:
                 "file_path": str(self.file_path),
                 "refactors": flattened_refactors,
             }
-            print(json.dumps(to_print))  # noqa: T201
+            print(json.dumps(to_print))
             return
 
         console.print(
@@ -148,7 +149,7 @@ class SQLRefactorResult:
                 "refactors": flattened_refactors,
                 "warnings": flattened_warnings,
             }
-            print(json.dumps(to_print))  # noqa: T201
+            print(json.dumps(to_print))
             return
 
         console.print(

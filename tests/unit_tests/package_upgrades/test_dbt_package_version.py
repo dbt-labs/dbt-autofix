@@ -1,12 +1,13 @@
 from typing import Any, Optional
+
 import pytest
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbt_fusion_package_tools.version_utils import (
-    VersionSpecifier,
-    VersionRange,
     Matchers,
-    versions_compatible,
     UnboundedVersionSpecifier,
+    VersionRange,
+    VersionSpecifier,
+    versions_compatible,
 )
 
 

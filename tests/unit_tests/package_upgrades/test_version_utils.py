@@ -1,17 +1,13 @@
 # from dbt_autofix.packages.version_utils import construct_version_list_from_raw, construct_version_list, get_version_specifiers
-from dbt_fusion_package_tools.version_utils import (
-    construct_version_list_from_raw,
-    construct_version_list,
-    get_version_specifiers,
-    VersionRange,
-    VersionSpecifier,
-    UnboundedVersionSpecifier,
-)
+from typing import Any
 
 import pytest
-
-
-from typing import Any
+from dbt_fusion_package_tools.version_utils import (
+    VersionRange,
+    VersionSpecifier,
+    construct_version_list_from_raw,
+    get_version_specifiers,
+)
 
 
 @pytest.mark.parametrize(

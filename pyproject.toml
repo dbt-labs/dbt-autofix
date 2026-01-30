@@ -64,16 +64,20 @@ indent-width = 4
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
 select = ["E4", "E7", "E9", "F", "I", "RUF", "PL", "TID", "T20", "D"]
-# Ignore some doc warnings
-# D100: Missing docstring in public module
-# D101: Missing docstring in public class
-# D102: Missing docstring in public method
-# D103: Missing docstring in public function
-# D104: Missing docstring in public package
-# D105: Missing docstring in magic method
-# D107: Missing docstring in __init__
-# D202: No blank lines allowed after function docstring
-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202"]
+ignore = [
+    "D100",     # Missing docstring in public module
+    "D101",     # Missing docstring in public class
+    "D102",     # Missing docstring in public method
+    "D103",     # Missing docstring in public function
+    "D104",     # Missing docstring in public package
+    "D105",     # Missing docstring in magic method
+    "D107",     # Missing docstring in __init__
+    "D202",     # No blank lines allowed after function docstring
+    "PLR0911",  # Too many return statements
+    "PLR0912",  # Too many branches
+    "PLR0913",  # Too many arguments in function definition
+    "PLR0915",  # Too many statements
+]
 
 [tool.pyright]
 include = [
@@ -91,7 +95,59 @@ reportUnusedExpression = true
 reportMissingImports = false
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["PLR2004", "T201"]
+# Global patterns
+"tests/**.py" = [
+    "D205",     # 1 blank line required between summary line and description
+    "PLR2004",  # Magic value used in comparison
+    "T201",     # `print` found
+    "T203",     # `pprint` found
+]
+"**/scripts/**.py" = [
+    "T201",  # `print` found
+    "T203",  # `pprint` found
+]
+# Baseline ignores for existing violations (to be fixed incrementally)
+"noxfile.py" = ["D415"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/__init__.py" = ["T201"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/check_parse_conformance.py" = ["D417"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/dbt_package.py" = ["E722"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/dbt_package_version.py" = ["E711", "E722", "PLW1641"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/exceptions.py" = ["D415"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/package_example.py" = ["T201"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/scripts/conformance_output.py" = ["PLC0206", "PLR2004"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/scripts/get_fusion_compatible_versions.py" = ["E711"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/scripts/get_package_hub_files.py" = ["D205", "D417", "PLR2004"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/scripts/package_hub_fusion_compatibility.py" = ["D205", "PLR2004"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/upgrade_status.py" = ["D415"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/version_utils.py" = ["E721", "E722", "PLR2004", "PLW1641"]
+"packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/yaml/loader.py" = ["D205"]
+"pre_commit_hooks/check_deprecations.py" = ["D205", "D415"]
+"src/dbt_autofix/dbt_api.py" = ["D415", "T201"]
+"src/dbt_autofix/fields_properties_configs.py" = ["PLC0415"]
+"src/dbt_autofix/jinja.py" = ["D205", "D301", "PLC0415", "RUF015"]
+"src/dbt_autofix/main.py" = ["E722"]
+"src/dbt_autofix/package_upgrade.py" = ["PLR1714", "T201"]
+"src/dbt_autofix/packages/dbt_package_file.py" = ["D415", "E722", "PLC0206", "PLR1714"]
+"src/dbt_autofix/packages/dbt_package_text_file.py" = ["PLR2004"]
+"src/dbt_autofix/packages/installed_packages.py" = ["E721", "E722"]
+"src/dbt_autofix/packages/package_hub_client.py" = ["D205"]
+"src/dbt_autofix/refactor.py" = ["D415", "D417", "PLC0415", "PLR1722"]
+"src/dbt_autofix/refactors/changesets/dbt_project_yml.py" = ["D415", "F841", "PLC0206"]
+"src/dbt_autofix/refactors/changesets/dbt_schema_yml.py" = ["D205", "D415", "PLC0206", "PLR1714"]
+"src/dbt_autofix/refactors/changesets/dbt_sql.py" = ["PLC0415"]
+"src/dbt_autofix/refactors/changesets/dbt_sql_improved.py" = ["F841"]
+"src/dbt_autofix/refactors/results.py" = ["D415", "T201"]
+"src/dbt_autofix/refactors/yml.py" = ["D415"]
+"src/dbt_autofix/semantic_definitions.py" = ["D415"]
+"tests/unit_tests/package_upgrades/test_check_parse_conformance.py" = ["F841"]
+"tests/unit_tests/package_upgrades/test_dbt_package_file.py" = ["E721"]
+"tests/unit_tests/package_upgrades/test_dbt_package_version.py" = ["E712"]
+"tests/unit_tests/package_upgrades/test_package_hub_fusion_compatibility.py" = ["F841"]
+"tests/unit_tests/test_dict_config_subkeys.py" = ["D415"]
+"tests/unit_tests/test_fix_space_after_plus.py" = ["D415"]
+"tests/unit_tests/test_jinja.py" = ["PLC0415"]
+"tests/unit_tests/test_rec_check_yaml_path.py" = ["D415"]
+"tests/unit_tests/test_refactor.py" = ["D415", "E712"]
 
 [tool.pytest.ini_options]
 pythonpath = [
