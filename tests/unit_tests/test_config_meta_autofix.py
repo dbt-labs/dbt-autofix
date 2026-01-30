@@ -1,6 +1,5 @@
 """Test cases for the improved config.get/require to meta_get/meta_require autofix."""
 
-
 from dbt_autofix.fields_properties_configs import models_allowed_config
 from dbt_autofix.refactors.changesets.dbt_sql_improved import (
     move_custom_config_access_to_meta_sql_improved,

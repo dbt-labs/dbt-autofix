@@ -29,8 +29,7 @@ def temp_path():
 
 
 def test_persist_docs_with_plus_prefixed_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case from example.yml: +persist_docs with incorrectly +prefixed subkeys
-    """
+    """Test case from example.yml: +persist_docs with incorrectly +prefixed subkeys"""
     input_dict = {
         "+persist_docs": {
             "+columns": True,  # ❌ Wrong: subkey has + prefix
@@ -55,8 +54,7 @@ def test_persist_docs_with_plus_prefixed_subkeys(models_node_fields, temp_path, 
 
 
 def test_persist_docs_with_correct_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case: +persist_docs with correctly named subkeys (no + prefix)
-    """
+    """Test case: +persist_docs with correctly named subkeys (no + prefix)"""
     input_dict = {
         "+persist_docs": {
             "columns": True,  # ✅ Correct: no + prefix
@@ -78,8 +76,7 @@ def test_persist_docs_with_correct_subkeys(models_node_fields, temp_path, real_s
 
 
 def test_persist_docs_with_mixed_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case: +persist_docs with mix of correct and incorrect subkeys
-    """
+    """Test case: +persist_docs with mix of correct and incorrect subkeys"""
     input_dict = {
         "+persist_docs": {
             "columns": True,  # ✅ Correct: no + prefix - keep
@@ -107,8 +104,7 @@ def test_persist_docs_with_mixed_subkeys(models_node_fields, temp_path, real_sch
 
 
 def test_labels_with_plus_prefixed_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case: +labels (accepts any key-value pairs) should keep all subkeys
-    """
+    """Test case: +labels (accepts any key-value pairs) should keep all subkeys"""
     input_dict = {
         "+labels": {
             "+env": "prod",  # Even with + prefix, keep as-is
@@ -132,8 +128,7 @@ def test_labels_with_plus_prefixed_subkeys(models_node_fields, temp_path, real_s
 
 
 def test_grants_with_plus_prefixed_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case: +grants (BTreeMap<String, StringOrArrayOfStrings>) accepts any key-value pairs
-    """
+    """Test case: +grants (BTreeMap<String, StringOrArrayOfStrings>) accepts any key-value pairs"""
     input_dict = {
         "+grants": {
             "+select": ["role1", "role2"],  # ✅ Keep (grants accepts any key)
@@ -157,8 +152,7 @@ def test_grants_with_plus_prefixed_subkeys(models_node_fields, temp_path, real_s
 
 
 def test_multiple_dict_configs_with_various_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case: Multiple dict configs with different behaviors
-    """
+    """Test case: Multiple dict configs with different behaviors"""
     input_dict = {
         "+persist_docs": {
             "+columns": True,  # ❌ Move to meta (wrong prefix)
@@ -199,8 +193,7 @@ def test_multiple_dict_configs_with_various_subkeys(models_node_fields, temp_pat
 
 
 def test_nested_logical_grouping_with_dict_configs(models_node_fields, temp_path, real_schema):
-    """Test case: Dict configs inside logical groupings
-    """
+    """Test case: Dict configs inside logical groupings"""
     input_dict = {
         "my_models": {
             "+persist_docs": {
@@ -231,8 +224,7 @@ def test_nested_logical_grouping_with_dict_configs(models_node_fields, temp_path
 
 
 def test_empty_dict_after_moving_all_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case: What happens when all subkeys are moved out
-    """
+    """Test case: What happens when all subkeys are moved out"""
     input_dict = {
         "+persist_docs": {
             "+columns": True,  # ❌ Move to meta
@@ -252,8 +244,7 @@ def test_empty_dict_after_moving_all_subkeys(models_node_fields, temp_path, real
 
 
 def test_dict_config_with_invalid_non_prefixed_keys(models_node_fields, temp_path, real_schema):
-    """Test case: Dict config with keys that don't match schema (without + prefix)
-    """
+    """Test case: Dict config with keys that don't match schema (without + prefix)"""
     input_dict = {
         "+persist_docs": {
             "columns": True,  # ✅ Valid key
@@ -278,8 +269,7 @@ def test_dict_config_with_invalid_non_prefixed_keys(models_node_fields, temp_pat
 
 
 def test_meta_with_any_subkeys(models_node_fields, temp_path, real_schema):
-    """Test case: +meta accepts any key-value pairs (including +prefixed)
-    """
+    """Test case: +meta accepts any key-value pairs (including +prefixed)"""
     input_dict = {"+meta": {"+custom_key": "value1", "another_key": "value2", "+nested": {"key": "value"}}}
 
     expected_output = {
