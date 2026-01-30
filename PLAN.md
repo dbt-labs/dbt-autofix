@@ -55,7 +55,7 @@ _457 total violations across 31 rules_
 - [ ] T203: 3 - `pprint` found
 - [x] E712: 2 - Comparison to `True`/`False` should be `if cond:`
 - [x] D301: 1 - Use `r"""` if any backslashes in a docstring
-- [ ] PLR1722: 1 - Use `sys.exit()` instead of `exit()`
+- [x] PLR1722: 1 - Use `sys.exit()` instead of `exit()`
 - [ ] RUF015: 1 - Prefer `next(iter(...))` over `list(...)[0]`
 
 ### Manual fix required
