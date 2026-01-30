@@ -514,7 +514,7 @@ def convert_optional_version_string_to_spec(version_string: Optional[str]) -> Op
             return VersionSpecifier.from_version_string(version_string)
         else:
             return None
-    except:
+    except Exception:
         return None
 
 

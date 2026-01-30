@@ -90,7 +90,7 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
         return {}
     try:
         parsed_package_file = read_file(package_project_yml_path)
-    except:
+    except Exception:
         console.log(f"Error when parsing package file {package_project_yml_path}")
         return {}
     if parsed_package_file == {}:

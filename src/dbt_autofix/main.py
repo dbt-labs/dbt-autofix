@@ -82,7 +82,7 @@ def upgrade_packages(
             json_output=json_output,
         )
         packages_upgraded.print_to_console(json_output=json_output)
-    except:
+    except Exception:
         error_console.print("[red]-- Package upgrade failed, please check logs for details --[/red]")
     if json_output:
         print(json.dumps({"mode": "complete"}))
