@@ -61,7 +61,7 @@ class DbtPackageVersion:
         return self.version < other.version
 
     def __eq__(self, other) -> bool:
-        return self.package_name != other.package_name or self.version != other.version
+        return self.package_name == other.package_name and self.version == other.version
 
     def is_prerelease_version(self) -> bool:
         return self.version.prerelease is not None
