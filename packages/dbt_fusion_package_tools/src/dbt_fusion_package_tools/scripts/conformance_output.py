@@ -13,11 +13,11 @@ package_conformance_all_errors: one line per error per package version
 import csv
 import json
 from collections import Counter, defaultdict
-
-MAX_ERROR_MESSAGE_LENGTH = 200
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+MAX_ERROR_MESSAGE_LENGTH = 200
 
 OUTPUT_PATH: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
 CONFORMANCE_OUTPUT_FILE_NAME: str = "v101_conformance_output_20260128.json"

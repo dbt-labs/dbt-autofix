@@ -33,7 +33,7 @@ The final PR should not have this plan in it. But I'm adding it to version contr
 
 **Ruff version: 0.14.14**
 
-_457 total violations across 31 rules_
+_462 total violations across 32 rules_
 
 ### Safe autofix (`uvx ruff check --fix`)
 - [x] D212: 62 - Multi-line docstring summary should start at the first line
@@ -63,6 +63,7 @@ _457 total violations across 31 rules_
 - [x] PLR2004: 15 - Magic value used in comparison
 - [x] E722: 9 - Do not use bare `except`
 - [x] PLC0415: 8 - `import` should be at the top of the file
+- [x] E402: 5 - Module level import not at top of file
 - [x] D417: 5 - Missing argument descriptions in the docstring
 - [x] E721: 5 - Use `is` and `is not` for type comparisons
 - [x] PLC0206: 4 - Extracting value from dictionary without `.items()`

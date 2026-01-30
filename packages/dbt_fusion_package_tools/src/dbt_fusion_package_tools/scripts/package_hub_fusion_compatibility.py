@@ -24,15 +24,15 @@ from rich import print
 from rich.console import Console
 from typing_extensions import Annotated
 
-# Path segment counts for hub.getdbt.com package paths
-PACKAGE_INDEX_PATH_SEGMENTS = 5
-PACKAGE_VERSION_PATH_SEGMENTS = 6
-MIN_PACKAGE_PATH_SEGMENTS = 4
-
 from dbt_fusion_package_tools.check_parse_conformance import (
     download_tarball_and_run_conformance,
 )
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
+
+# Path segment counts for hub.getdbt.com package paths
+PACKAGE_INDEX_PATH_SEGMENTS = 5
+PACKAGE_VERSION_PATH_SEGMENTS = 6
+MIN_PACKAGE_PATH_SEGMENTS = 4
 
 console = Console()
 error_console = Console(stderr=True)
