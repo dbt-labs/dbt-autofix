@@ -299,8 +299,9 @@ def check_fusion_schema_compatibility(
     """Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
 
     Args:
-        fusion_binary_name: name of a valid Fusion binary
         repo_path: Path to the dbt package repository
+        fusion_binary: Name of a valid Fusion binary
+        show_fusion_output: Whether to display Fusion command output
 
     Returns:
         True if fusion compatible (dbtf parse exits with code 0), False otherwise
