@@ -1,16 +1,16 @@
 import difflib
 import re
-from typing import List, Tuple, Dict, Any
-import yamllint.linter
 from copy import deepcopy
+from typing import Any, Dict, List, Tuple
 
-from dbt_autofix.refactors.results import YMLRuleRefactorResult
-from dbt_autofix.refactors.results import DbtDeprecationRefactor
-from dbt_autofix.retrieve_schemas import SchemaSpecs
+import yamllint.linter
+
 from dbt_autofix.deprecations import DeprecationType
-from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, yaml_config
-from dbt_autofix.refactors.constants import COMMON_PROPERTY_MISSPELLINGS, COMMON_CONFIG_MISSPELLINGS
+from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
 from dbt_autofix.refactors.fancy_quotes_utils import FANCY_LEFT_PLACEHOLDER, FANCY_RIGHT_PLACEHOLDER
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLRuleRefactorResult
+from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, yaml_config
+from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 

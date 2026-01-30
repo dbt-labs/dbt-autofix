@@ -2,13 +2,14 @@ import difflib
 import filecmp
 import json
 import os
+import pprint
 import shutil
 import tempfile
 from collections import defaultdict
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
-import pprint
+
 import pytest
 
 from dbt_autofix.main import refactor_yml

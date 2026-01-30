@@ -1,21 +1,21 @@
 """Unit tests for check_parse_conformance module."""
 
+import io
 import json
 import subprocess
+import tarfile
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
-import io
-import tarfile
 
 from dbt_fusion_package_tools.check_parse_conformance import (
     check_binary_name,
+    check_fusion_schema_compatibility,
     check_fusion_version,
     construct_download_url_from_latest,
     download_tarball_and_run_conformance,
     find_fusion_binary,
     parse_log_output,
-    check_fusion_schema_compatibility,
 )
 from dbt_fusion_package_tools.compatibility import (
     FusionConformanceResult,

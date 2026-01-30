@@ -1,6 +1,8 @@
 import tempfile
 from pathlib import Path
+
 import pytest
+
 from dbt_autofix.packages.dbt_package_file import find_package_yml_files
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile, DbtPackageTextFileLine
 
