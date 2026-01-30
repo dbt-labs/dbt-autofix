@@ -670,7 +670,7 @@ class TestYamlRefactoring:
         assert len(source["tables"]) == 2
         assert source["tables"][0]["config"]["event_time"] == "my_other_time_field"
         assert source["tables"][0]["config"]["meta"]["abc"] == 123
-        assert source["tables"][0]["config"]["enabled"] == True  # noqa: E712
+        assert source["tables"][0]["config"]["enabled"] == True
 
         assert source["tables"][1]["config"]["event_time"] == "my_other_time_field"
         assert source["tables"][1]["config"]["meta"]["abc"] == 123

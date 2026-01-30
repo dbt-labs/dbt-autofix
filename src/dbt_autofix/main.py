@@ -85,11 +85,11 @@ def upgrade_packages(
     except:
         error_console.print("[red]-- Package upgrade failed, please check logs for details --[/red]")
     if json_output:
-        print(json.dumps({"mode": "complete"}))  # noqa: T201
+        print(json.dumps({"mode": "complete"}))
 
 
 @app.command(name="deprecations")
-def refactor_yml(  # noqa: PLR0913
+def refactor_yml(
     path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
     dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
@@ -158,11 +158,11 @@ def refactor_yml(  # noqa: PLR0913
         apply_changesets(yaml_results, sql_results, json_output)
 
     if json_output:
-        print(json.dumps({"mode": "complete"}))  # noqa: T201
+        print(json.dumps({"mode": "complete"}))
 
 
 @app.command(name="jobs")
-def jobs(  # noqa: PLR0913
+def jobs(
     account_id: Annotated[
         int, typer.Option("--account-id", "-a", help="The account ID to use", envvar="DBT_ACCOUNT_ID")
     ],

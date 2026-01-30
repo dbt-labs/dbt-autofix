@@ -75,7 +75,7 @@ def extract_config_macro(sql_content: str) -> Optional[str]:
     return None
 
 
-def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:  # noqa: PLR0912
+def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:
     """Remove unmatched {% endmacro %} and {% endif %} tags from SQL content.
 
     Handles:
