@@ -157,7 +157,7 @@ class DbtPackageFile:
     def merge_installed_versions(self, installed_packages: dict[str, DbtPackageVersion]) -> int:
         package_lookup: dict[str, str] = self.get_reverse_lookup_by_package_name()
         installed_count: int = 0
-        for package in installed_packages:
+        for package, installed_pkg in installed_packages.items():
             # skip packages that don't have a corresponding packages.yml config
             if package not in package_lookup:
                 self.unknown_packages.add(package)
@@ -166,15 +166,15 @@ class DbtPackageFile:
             # kind of hacky - try to correct installed version if package's dbt project yml
             # has an incorrect version
             package_version_range = self.package_dependencies[package_id].project_config_version_range
-            installed_version = installed_packages[package].version
+            installed_version = installed_pkg.version
             if (
                 package_version_range is not None
                 and installed_version is not None
                 and installed_version < package_version_range.start
             ):
-                installed_packages[package].version = package_version_range.start
-                installed_packages[package].version.matcher = Matchers.EXACT
-            if self.set_installed_version_for_package(package_id, installed_packages[package]):
+                installed_pkg.version = package_version_range.start
+                installed_pkg.version.matcher = Matchers.EXACT
+            if self.set_installed_version_for_package(package_id, installed_pkg):
                 installed_count += 1
         return installed_count
 
