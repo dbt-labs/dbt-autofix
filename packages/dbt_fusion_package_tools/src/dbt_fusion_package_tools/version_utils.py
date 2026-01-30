@@ -183,6 +183,8 @@ class VersionSpecifier(VersionSpecification):
         assert isinstance(other, VersionSpecifier)
         return self.compare(other) == 0
 
+    __hash__ = None
+
     def __cmp__(self, other: "VersionSpecifier") -> int:
         return self.compare(other)
 
