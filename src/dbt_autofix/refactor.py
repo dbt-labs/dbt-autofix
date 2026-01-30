@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -169,7 +170,7 @@ def process_yaml_files_except_dbt_project(
                         error_console.print(
                             f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
                         )
-                        exit(1)
+                        sys.exit(1)
 
     for changesets in ordered_changesets:
         _apply_changesets(file_name_to_yaml_results, changesets)
