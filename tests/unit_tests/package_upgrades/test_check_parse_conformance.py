@@ -1,7 +1,9 @@
 """Unit tests for check_parse_conformance module."""
 
+import io
 import json
 import subprocess
+import tarfile
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -346,9 +348,6 @@ class TestDownloadTarballAndRunConformance:
         # Create a real tar file for testing
         with tempfile.TemporaryDirectory():
             # Create a mock tarball content
-            import io
-            import tarfile
-
             tar_buffer = io.BytesIO()
             with tarfile.open(fileobj=tar_buffer, mode="w:gz") as tar:
                 # Add a simple directory structure

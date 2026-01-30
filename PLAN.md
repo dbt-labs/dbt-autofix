@@ -62,7 +62,7 @@ _457 total violations across 31 rules_
 - [ ] D205: 54 - 1 blank line required between summary line and description
 - [ ] PLR2004: 15 - Magic value used in comparison
 - [ ] E722: 9 - Do not use bare `except`
-- [ ] PLC0415: 8 - `import` should be at the top of the file
+- [x] PLC0415: 8 - `import` should be at the top of the file
 - [x] D417: 5 - Missing argument descriptions in the docstring
 - [x] E721: 5 - Use `is` and `is not` for type comparisons
 - [x] PLC0206: 4 - Extracting value from dictionary without `.items()`
