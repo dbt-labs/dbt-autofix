@@ -65,11 +65,11 @@ def upgrade_packages(
     try:
         deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
         if not deps_file:
-            error_console.print("[red]-- No package dependency config found --[/red]")
+            console.print("No packages.yml or dependencies.yml found. Nothing to do.")
             return
 
         if len(deps_file.package_dependencies) == 0:
-            error_console.print("[red]-- No package dependencies found --[/red]")
+            console.print("No package dependencies found. Nothing to do.")
             return
 
         package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
@@ -82,8 +82,8 @@ def upgrade_packages(
             json_output=json_output,
         )
         packages_upgraded.print_to_console(json_output=json_output)
-    except:
-        error_console.print("[red]-- Package upgrade failed, please check logs for details --[/red]")
+    except Exception as e:
+        error_console.print(f"[red]-- Package upgrade failed: {e} --[/red]")
     if json_output:
         print(json.dumps({"mode": "complete"}))
 
