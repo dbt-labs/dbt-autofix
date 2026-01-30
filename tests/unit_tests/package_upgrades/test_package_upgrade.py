@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -169,3 +170,18 @@ def test_upgrade_package_versions_with_force_update():
     assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT
     output.print_to_console(json_output=False)
     output.print_to_console(json_output=True)
+
+
+def test_generate_package_dependencies_no_package_files():
+    """Test that generate_package_dependencies returns None when no package files exist."""
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        project_dir = Path(tmpdirname)
+
+        # Create a minimal dbt project without packages.yml or dependencies.yml
+        project_dir.joinpath("dbt_project.yml").write_text("""
+name: test_project
+version: 1.0.0
+""")
+
+        output: Optional[DbtPackageFile] = generate_package_dependencies(project_dir)
+        assert output is None

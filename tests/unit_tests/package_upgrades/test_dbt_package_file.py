@@ -231,6 +231,36 @@ models:
         yield project_dir
 
 
+@pytest.fixture
+def temp_project_dir_without_package_yml():
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        project_dir = Path(tmpdirname)
+
+        # Create dbt_project.yml (but no packages.yml or dependencies.yml)
+        project_dir.joinpath("dbt_project.yml").write_text("""
+name: test_project
+version: 1.0.0
+""")
+
+        # Create project YAML files
+        models_dir = project_dir / "models"
+        models_dir.mkdir(parents=True, exist_ok=True)
+        models_dir.joinpath("schema.yml").write_text("""
+version: 2
+
+models:
+  - name: model1
+    description: "First model"
+""")
+
+        yield project_dir
+
+
+def test_find_package_files_no_package_yml(temp_project_dir_without_package_yml: Path):
+    package_files = find_package_yml_files(temp_project_dir_without_package_yml)
+    assert len(package_files) == 0
+
+
 def test_find_package_files_package_yml(temp_project_dir_with_packages_yml: Path):
     package_files = find_package_yml_files(temp_project_dir_with_packages_yml)
     assert len(package_files) == 1
