@@ -1,2 +1,2 @@
 def output_package_name():
-    print("====== Package Name =======")
+    print("====== Package Name =======")  # noqa: T201

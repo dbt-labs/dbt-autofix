@@ -47,12 +47,12 @@ _457 total violations across 31 rules_
 
 ### Unsafe autofix (`uvx ruff check --fix --unsafe-fixes`)
 - [x] D415: 161 - First line should end with a period, question mark, or exclamation point
-- [ ] T201: 13 - `print` found (has exceptions - see Known exceptions)
+- [x] T201: 13 - `print` found (has exceptions - see Known exceptions)
 - [x] D200: 11 - One-line docstring should fit on one line
 - [x] E711: 5 - Comparison to `None` should be `is None`
 - [x] F841: 5 - Local variable is assigned but never used
 - [x] PLR1714: 3 - Consider merging multiple comparisons
-- [ ] T203: 3 - `pprint` found
+- [x] T203: 3 - `pprint` found
 - [x] E712: 2 - Comparison to `True`/`False` should be `if cond:`
 - [x] D301: 1 - Use `r"""` if any backslashes in a docstring
 - [x] PLR1722: 1 - Use `sys.exit()` instead of `exit()`

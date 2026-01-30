@@ -267,7 +267,7 @@ class DBTCloudChangesetResult:
             return
 
         if json_output:
-            print(json.dumps(self.to_dict()))
+            print(json.dumps(self.to_dict()))  # noqa: T201
             return
 
         console.print(
