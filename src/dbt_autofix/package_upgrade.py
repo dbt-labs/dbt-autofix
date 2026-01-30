@@ -126,6 +126,8 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
     # check `dependencies.yml`
     # check `packages.yml`
     package_dependencies_yml_files: list[Path] = find_package_yml_files(root_dir)
+    if len(package_dependencies_yml_files) == 0:
+        return None
     if len(package_dependencies_yml_files) != 1:
         package_yml_count = len([x for x in package_dependencies_yml_files if x.name == "packages.yml"])
         dependencies_yml_count = len([x for x in package_dependencies_yml_files if x.name == "dependencies.yml"])
