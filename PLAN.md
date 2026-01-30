@@ -65,7 +65,7 @@ _457 total violations across 31 rules_
 - [ ] PLC0415: 8 - `import` should be at the top of the file
 - [ ] D417: 5 - Missing argument descriptions in the docstring
 - [ ] E721: 5 - Use `is` and `is not` for type comparisons
-- [ ] PLC0206: 4 - Extracting value from dictionary without `.items()`
+- [x] PLC0206: 4 - Extracting value from dictionary without `.items()`
 - [x] PLW1641: 2 - Object does not implement `__hash__` method
 
 ### Ignored (configured in pyproject.toml)

@@ -604,7 +604,7 @@ def refactor_test_config_fields(
 def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
-    for field in test_definition:
+    for field, value in test_definition.items():
         if field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
@@ -612,7 +612,7 @@ def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name
                     deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                 )
             )
-            test_definition[COMMON_PROPERTY_MISSPELLINGS[field.lower()]] = test_definition[field]
+            test_definition[COMMON_PROPERTY_MISSPELLINGS[field.lower()]] = value
             del test_definition[field]
 
     return deprecation_refactors

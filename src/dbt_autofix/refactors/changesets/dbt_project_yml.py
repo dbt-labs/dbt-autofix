@@ -300,13 +300,13 @@ def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorRe
 
     for key in yml_dict:
         if key == "flags":
-            for behavior_change_flag in behavior_change_flag_to_explainations:
+            for behavior_change_flag, explanation in behavior_change_flag_to_explainations.items():
                 if yml_dict["flags"].get(behavior_change_flag) is False:
                     yml_dict["flags"][behavior_change_flag] = True
                     refactored = True
                     deprecation_refactors.append(
                         DbtDeprecationRefactor(
-                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
+                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {explanation}.",
                             deprecation="SourceFreshnessProjectHooksNotRun",
                         )
                     )

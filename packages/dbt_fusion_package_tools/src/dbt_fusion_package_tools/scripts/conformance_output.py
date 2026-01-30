@@ -60,8 +60,7 @@ def main():
     all_errors = []
     for package_name in conformance_output:
         package: dict[str, Any] = conformance_output[package_name]
-        for version in package:
-            package_version: dict[str, Any] = package[version]
+        for version, package_version in package.items():
             parse_errors: set[str] = set()
             parse_warnings: set[str] = set()
             parse_short_errors: set[str] = set()
@@ -76,16 +75,16 @@ def main():
                         {
                             "package_name": package_name,
                             "package_version": version,
-                            "manually_verified_compatible": package[version]["manually_verified_compatible"],
-                            "manually_verified_incompatible": package[version]["manually_verified_incompatible"],
-                            "parse_compatible": package[version]["parse_compatible"],
+                            "manually_verified_compatible": package_version["manually_verified_compatible"],
+                            "manually_verified_incompatible": package_version["manually_verified_incompatible"],
+                            "parse_compatible": package_version["parse_compatible"],
                             "parse_error_code": str(error["error_code"]),
                             "parse_error": error["body"] if len(error["body"]) < 200 else error["body"][:200],
                             "parse_exit_code": parse_compatibility_result.get("parse_exit_code"),
                             "parse_total_errors": parse_compatibility_result.get("total_errors"),
                             "parse_total_warnings": parse_compatibility_result.get("total_warnings"),
-                            "require_dbt_version_compatible": package[version]["require_dbt_version_compatible"],
-                            "require_dbt_version_defined": package[version]["require_dbt_version_defined"],
+                            "require_dbt_version_compatible": package_version["require_dbt_version_compatible"],
+                            "require_dbt_version_defined": package_version["require_dbt_version_defined"],
                             "fusion_version": f"v{fusion_version}",
                             "parse_error_grouped": short_error,
                         }
@@ -99,8 +98,8 @@ def main():
                 {
                     "package_name": package_name,
                     "package_version": version,
-                    "manually_verified_compatible": package[version]["manually_verified_compatible"],
-                    "manually_verified_incompatible": package[version]["manually_verified_incompatible"],
+                    "manually_verified_compatible": package_version["manually_verified_compatible"],
+                    "manually_verified_incompatible": package_version["manually_verified_incompatible"],
                     "parse_errors": ",".join([f"dbt{x}" for x in sorted(parse_errors)])
                     if len(parse_errors) > 0
                     else "",
@@ -108,14 +107,14 @@ def main():
                     "parse_exit_code": parse_compatibility_result.get("parse_exit_code"),
                     "parse_total_errors": parse_compatibility_result.get("total_errors"),
                     "parse_total_warnings": parse_compatibility_result.get("total_warnings"),
-                    "parse_compatible": package[version]["parse_compatible"],
-                    "require_dbt_version_compatible": package[version]["require_dbt_version_compatible"],
-                    "require_dbt_version_defined": package[version]["require_dbt_version_defined"],
+                    "parse_compatible": package_version["parse_compatible"],
+                    "require_dbt_version_compatible": package_version["require_dbt_version_compatible"],
+                    "require_dbt_version_defined": package_version["require_dbt_version_defined"],
                     "fusion_version": f"v{fusion_version}",
                     "short_error_total": len(parse_short_errors),
                     "short_error_1": sorted_parse_short_errors[0] if len(sorted_parse_short_errors) > 0 else "",
                     "short_error_2": sorted_parse_short_errors[1] if len(sorted_parse_short_errors) > 1 else "",
-                    "download_failed": package[version]["download_failed"],
+                    "download_failed": package_version["download_failed"],
                 }
             )
     print(f"unique error codes: {unique_error_codes}")
