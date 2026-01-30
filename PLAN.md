@@ -51,7 +51,7 @@ _457 total violations across 31 rules_
 - [x] D200: 11 - One-line docstring should fit on one line
 - [x] E711: 5 - Comparison to `None` should be `is None`
 - [x] F841: 5 - Local variable is assigned but never used
-- [ ] PLR1714: 3 - Consider merging multiple comparisons
+- [x] PLR1714: 3 - Consider merging multiple comparisons
 - [ ] T203: 3 - `pprint` found
 - [ ] E712: 2 - Comparison to `True`/`False` should be `if cond:`
 - [ ] D301: 1 - Use `r"""` if any backslashes in a docstring
