@@ -1,3 +1,4 @@
+import ast
 import re
 from copy import deepcopy
 from pathlib import Path
@@ -306,8 +307,6 @@ def refactor_custom_configs_to_meta_sql(
                 existing_meta = refactored_sql_configs["meta"]
                 if isinstance(existing_meta, str):
                     # It's a source code string like "{'key': 'value'}" - parse it
-                    import ast
-
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)
                         meta_dict = {k: repr(v) if not isinstance(v, str) else f"'{v}'" for k, v in parsed_meta.items()}

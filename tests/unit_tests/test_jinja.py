@@ -7,6 +7,7 @@ from dbt_autofix.jinja import (
     construct_static_kwarg_value,
     statically_parse_unrendered_config,
 )
+from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_call
 
 
 @pytest.mark.parametrize(
@@ -320,8 +321,6 @@ def test_construct_static_kwarg_value_very_long_value():
     str(kwarg) which returns an AST representation like "Keyword(key='post_hook', ...)".
     This AST string would then be written to the file, corrupting it.
     """
-    from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_call
-
     # Create a long SQL string (over 1000 chars)
     long_sql = "SELECT " + ", ".join([f"column_{i}" for i in range(200)])
     config_str = f"{{{{ config(post_hook='{long_sql}') }}}}"

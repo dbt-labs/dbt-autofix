@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 from rich import print
 
+from dbt_autofix.retrieve_schemas import SchemaSpecs
+
 
 @dataclass
 class AllowedConfig:
@@ -283,8 +285,6 @@ fields_per_node_type = {
 
 
 def print_matrix(json_schema_version=None, disable_ssl_verification=False):
-    from dbt_autofix.retrieve_schemas import SchemaSpecs
-
     schema_specs = SchemaSpecs(json_schema_version, disable_ssl_verification)
     results = dict()
     for node_type, fields_config in fields_per_node_type.items():
