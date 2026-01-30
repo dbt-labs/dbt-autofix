@@ -7,8 +7,6 @@ import tarfile
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
-import io
-import tarfile
 
 from dbt_fusion_package_tools.check_parse_conformance import (
     check_binary_name,
