@@ -8,7 +8,8 @@ from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignor
 
 
 def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
-    r"""Given a string with jinja, extract an unrendered config call.
+    r"""Extract an unrendered config call from a jinja string.
+
     If no config call is present, returns None.
 
     For example, given:
