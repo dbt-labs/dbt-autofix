@@ -95,7 +95,7 @@ class DbtPackage:
                 self.project_config_version_range = convert_version_specifiers_to_range(version_specs)
             else:
                 self.project_config_version_range = None
-        except:
+        except Exception:
             self.project_config_version_range = None
             error_console.print("exception calculating config version range ")
         self.merge_fusion_compatibility_output()
@@ -125,7 +125,7 @@ class DbtPackage:
                 ),
                 latest=True,
             )
-        except:
+        except Exception:
             return False
 
     def is_public_package(self) -> bool:

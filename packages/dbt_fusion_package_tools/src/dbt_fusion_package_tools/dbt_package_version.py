@@ -52,7 +52,7 @@ class DbtPackageVersion:
                 self.require_dbt_version = convert_version_specifiers_to_range(version_specs)
             else:
                 self.require_dbt_version = None
-        except:
+        except Exception:
             self.require_dbt_version = None
 
     def __lt__(self, other) -> bool:
