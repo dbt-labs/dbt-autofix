@@ -14,6 +14,7 @@ import os
 import re
 import warnings
 from collections import defaultdict
+from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -22,6 +23,11 @@ import typer
 from rich import print
 from rich.console import Console
 from typing_extensions import Annotated
+
+# Path segment counts for hub.getdbt.com package paths
+PACKAGE_INDEX_PATH_SEGMENTS = 5
+PACKAGE_VERSION_PATH_SEGMENTS = 6
+MIN_PACKAGE_PATH_SEGMENTS = 4
 
 from dbt_fusion_package_tools.check_parse_conformance import (
     download_tarball_and_run_conformance,
@@ -43,7 +49,7 @@ DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
 # data/packages/Aaron-Zhou/synapse_statistic/index.json
 def is_package_index_file(file_path: str) -> bool:
     file_path_split = file_path.split("/")
-    if len(file_path_split) != 5:
+    if len(file_path_split) != PACKAGE_INDEX_PATH_SEGMENTS:
         return False
     return file_path_split[-1] == "index.json"
 
@@ -52,7 +58,7 @@ def is_package_index_file(file_path: str) -> bool:
 # data/packages/Aaron-Zhou/synapse_statistic/versions/v0.1.0.json
 def is_package_version_file(file_path: str) -> bool:
     file_path_split = file_path.split("/")
-    if len(file_path_split) != 6:
+    if len(file_path_split) != PACKAGE_VERSION_PATH_SEGMENTS:
         return False
     return file_path_split[-2] == "versions"
 
@@ -62,7 +68,7 @@ def is_package_version_file(file_path: str) -> bool:
 # data/packages/Aaron-Zhou/synapse_statistic/versions/v0.1.0.json
 def extract_package_id_from_path(file_path: str) -> str:
     file_path_split = file_path.split("/")
-    if file_path_split[0] != "data" or file_path_split[1] != "packages" or len(file_path_split) < 4:
+    if file_path_split[0] != "data" or file_path_split[1] != "packages" or len(file_path_split) < MIN_PACKAGE_PATH_SEGMENTS:
         return ""
     return f"{file_path_split[2]}/{file_path_split[3]}"
 
@@ -264,8 +270,8 @@ def check_github_url(
         location = resp.headers.get("Location")
         return {
             "status": status,
-            "is_404": status == 404,
-            "is_301": status == 301,
+            "is_404": status == HTTPStatus.NOT_FOUND,
+            "is_301": status == HTTPStatus.MOVED_PERMANENTLY,
             "location": location,
             "error": None,
         }
@@ -290,7 +296,7 @@ def validate_github_urls(packages: defaultdict[str, set[str]], package_limit: in
             response = check_github_url(github_url)
             if not response:
                 error_console.log(f"No response for {package} {github_url}")
-            if (response["status"] != 200 and not response["is_301"]) or response.get("error"):
+            if (response["status"] != HTTPStatus.OK and not response["is_301"]) or response.get("error"):
                 error_console.log(response)
             if response["is_404"]:
                 continue

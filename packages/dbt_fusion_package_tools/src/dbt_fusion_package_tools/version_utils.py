@@ -7,6 +7,9 @@ from mashumaro import DataClassDictMixin
 
 from dbt_fusion_package_tools.exceptions import SemverError, VersionsNotCompatibleError
 
+# A version range has at most 2 bounds (start and end)
+MAX_VERSION_RANGE_BOUNDS = 2
+
 
 class Matchers(str, Enum):
     GREATER_THAN = ">"
@@ -496,7 +499,7 @@ def get_version_specifiers(raw_version: list[str]) -> list[VersionSpecifier]:
 
 
 def convert_version_specifiers_to_range(specs: list[VersionSpecifier]) -> VersionRange:
-    if len(specs) == 0 or len(specs) > 2:
+    if len(specs) == 0 or len(specs) > MAX_VERSION_RANGE_BOUNDS:
         # assume any version compatible
         any_version = VersionSpecifier.from_version_string(">=0.0.0")
         return VersionRange(any_version, any_version)

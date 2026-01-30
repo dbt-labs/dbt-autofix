@@ -8,6 +8,13 @@ from typing import Any, Dict, List, Optional
 import requests
 from requests import HTTPError
 
+# Path segment counts for hub.getdbt.com package paths
+# e.g., data/packages/owner/name/index.json = 5 segments
+# e.g., data/packages/owner/name/versions/v1.0.0.json = 6 segments
+PACKAGE_INDEX_PATH_SEGMENTS = 5
+PACKAGE_VERSION_PATH_SEGMENTS = 6
+MIN_PACKAGE_PATH_SEGMENTS = 4
+
 
 def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> Any:
     try:
@@ -31,7 +38,7 @@ def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: 
 # data/packages/Aaron-Zhou/synapse_statistic/index.json
 def is_package_index_file(file_path: str) -> bool:
     file_path_split = file_path.split("/")
-    if len(file_path_split) != 5:
+    if len(file_path_split) != PACKAGE_INDEX_PATH_SEGMENTS:
         return False
     return file_path_split[-1] == "index.json"
 
@@ -40,7 +47,7 @@ def is_package_index_file(file_path: str) -> bool:
 # data/packages/Aaron-Zhou/synapse_statistic/versions/v0.1.0.json
 def is_package_version_file(file_path: str) -> bool:
     file_path_split = file_path.split("/")
-    if len(file_path_split) != 6:
+    if len(file_path_split) != PACKAGE_VERSION_PATH_SEGMENTS:
         return False
     return file_path_split[-2] == "versions"
 
@@ -50,7 +57,7 @@ def is_package_version_file(file_path: str) -> bool:
 # data/packages/Aaron-Zhou/synapse_statistic/versions/v0.1.0.json
 def extract_package_id_from_path(file_path: str) -> str:
     file_path_split = file_path.split("/")
-    if file_path_split[0] != "data" or file_path_split[1] != "packages" or len(file_path_split) < 4:
+    if file_path_split[0] != "data" or file_path_split[1] != "packages" or len(file_path_split) < MIN_PACKAGE_PATH_SEGMENTS:
         return ""
     return f"{file_path_split[2]}/{file_path_split[3]}"
 
