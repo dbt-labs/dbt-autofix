@@ -34,8 +34,7 @@ CHAINED_ACCESS_PATTERN = re.compile(
 def move_custom_config_access_to_meta_sql_improved(
     sql_content: str, schema_specs: SchemaSpecs, node_type: str
 ) -> SQLRuleRefactorResult:
-    """
-    Move custom config access to meta in SQL files using the new meta_get/meta_require methods.
+    """Move custom config access to meta in SQL files using the new meta_get/meta_require methods.
 
     This improved version:
     - Handles both config.get() and config.require()

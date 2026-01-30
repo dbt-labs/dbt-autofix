@@ -1,5 +1,4 @@
-"""
-Simple input/output tests for rec_check_yaml_path function.
+"""Simple input/output tests for rec_check_yaml_path function.
 
 Each test shows:
 - Input: what goes into the function
@@ -33,8 +32,7 @@ from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 @pytest.fixture(scope="module")
 def real_schema():
-    """
-    Provides REAL dbt Fusion schema specs.
+    """Provides REAL dbt Fusion schema specs.
     This fetches the actual schema from dbt Fusion, so tests are accurate!
     """
     return SchemaSpecs()
@@ -42,8 +40,7 @@ def real_schema():
 
 @pytest.fixture
 def models_node_fields(real_schema):
-    """
-    Provides the real node fields for models from dbt Fusion schema.
+    """Provides the real node fields for models from dbt Fusion schema.
     This tells us what config keys are actually valid for models in dbt_project.yml.
     """
     return real_schema.dbtproject_specs_per_node_type["models"]
@@ -62,8 +59,7 @@ def temp_path():
 
 
 def test_correct_hook_syntax_unchanged(models_node_fields, temp_path):
-    """
-    INPUT:  +post-hook with hyphen (correct for dbt_project.yml)
+    """INPUT:  +post-hook with hyphen (correct for dbt_project.yml)
     OUTPUT: Same, no changes
     WHY:    This is the correct syntax according to the REAL Fusion schema
     """
@@ -78,8 +74,7 @@ def test_correct_hook_syntax_unchanged(models_node_fields, temp_path):
 
 
 def test_correct_configs_unchanged(models_node_fields, temp_path):
-    """
-    INPUT:  Valid configs with + prefix
+    """INPUT:  Valid configs with + prefix
     OUTPUT: Same, no changes
     WHY:    All configs are recognized and properly formatted
     """
@@ -99,8 +94,7 @@ def test_correct_configs_unchanged(models_node_fields, temp_path):
 
 
 def test_unsupported_hook_moved_to_meta(models_node_fields, temp_path):
-    """
-    INPUT:  +post_hook with underscore (NOT in schema)
+    """INPUT:  +post_hook with underscore (NOT in schema)
     OUTPUT: Moved to +meta.post_hook
     WHY:    Schema doesn't recognize post_hook, so it's treated as custom config
     """
@@ -122,8 +116,7 @@ def test_unsupported_hook_moved_to_meta(models_node_fields, temp_path):
 
 
 def test_mixed_valid_and_invalid_configs(models_node_fields, temp_path):
-    """
-    INPUT:  Mix of valid (+post-hook) and invalid (+post_hook) configs
+    """INPUT:  Mix of valid (+post-hook) and invalid (+post_hook) configs
     OUTPUT: Valid kept, invalid moved to meta
     WHY:    Only schema-supported configs stay at top level
     """
@@ -154,8 +147,7 @@ def test_mixed_valid_and_invalid_configs(models_node_fields, temp_path):
 
 
 def test_valid_config_missing_plus(models_node_fields, temp_path):
-    """
-    INPUT:  materialized without + prefix
+    """INPUT:  materialized without + prefix
     OUTPUT: +materialized with + prefix added
     WHY:    In dbt_project.yml, config keys need + prefix
     """
@@ -172,8 +164,7 @@ def test_valid_config_missing_plus(models_node_fields, temp_path):
 
 
 def test_hook_missing_plus(models_node_fields, temp_path):
-    """
-    INPUT:  post-hook without + prefix (hyphen is correct, just missing +)
+    """INPUT:  post-hook without + prefix (hyphen is correct, just missing +)
     OUTPUT: +post-hook with + prefix added
     WHY:    Config keys in dbt_project.yml need + prefix
     """
@@ -194,8 +185,7 @@ def test_hook_missing_plus(models_node_fields, temp_path):
 
 
 def test_unknown_config_with_plus_moved_to_meta(models_node_fields, temp_path):
-    """
-    INPUT:  +custom_config (not in schema)
+    """INPUT:  +custom_config (not in schema)
     OUTPUT: Moved to +meta.custom_config
     WHY:    Unknown configs must go under meta to avoid errors
     """
@@ -212,8 +202,7 @@ def test_unknown_config_with_plus_moved_to_meta(models_node_fields, temp_path):
 
 
 def test_unknown_config_without_plus_moved_to_meta(models_node_fields, temp_path):
-    """
-    INPUT:  custom_field without + (not in schema)
+    """INPUT:  custom_field without + (not in schema)
     OUTPUT: Moved to +meta.custom_field
     WHY:    Unknown configs go to meta, even if they don't have +
     """
@@ -228,8 +217,7 @@ def test_unknown_config_without_plus_moved_to_meta(models_node_fields, temp_path
 
 
 def test_multiple_unknowns_merged_into_meta(models_node_fields, temp_path):
-    """
-    INPUT:  Multiple unknown configs
+    """INPUT:  Multiple unknown configs
     OUTPUT: All merged into single +meta block
     WHY:    Keep all custom configs organized under meta
     """
@@ -250,8 +238,7 @@ def test_multiple_unknowns_merged_into_meta(models_node_fields, temp_path):
 
 
 def test_real_world_example_user_config(models_node_fields, temp_path):
-    """
-    INPUT:  Real user config with +post_hook (underscore - not in schema!)
+    """INPUT:  Real user config with +post_hook (underscore - not in schema!)
     OUTPUT: Moved to +meta.post_hook
     WHY:    post_hook is not in schema, so treated as custom config
 
@@ -287,8 +274,7 @@ def test_real_world_example_user_config(models_node_fields, temp_path):
 
 
 def test_all_scenarios_combined(models_node_fields, temp_path):
-    """
-    INPUT:  Mix of all scenarios
+    """INPUT:  Mix of all scenarios
     OUTPUT: Everything properly handled
     WHY:    Real projects have all these issues at once
     """
@@ -325,8 +311,7 @@ def test_all_scenarios_combined(models_node_fields, temp_path):
 
 
 def test_empty_dict(models_node_fields, temp_path):
-    """
-    INPUT:  Empty dict
+    """INPUT:  Empty dict
     OUTPUT: Empty dict
     WHY:    Nothing to process
     """
@@ -340,8 +325,7 @@ def test_empty_dict(models_node_fields, temp_path):
 
 
 def test_preserves_complex_values(models_node_fields, temp_path):
-    """
-    INPUT:  Configs with complex values (lists, dicts)
+    """INPUT:  Configs with complex values (lists, dicts)
     OUTPUT: Values preserved exactly
     WHY:    We only change keys, never values
     """
@@ -360,8 +344,7 @@ def test_preserves_complex_values(models_node_fields, temp_path):
 
 
 def test_jinja_in_hook_values_preserved(models_node_fields, temp_path):
-    """
-    INPUT:  Invalid config (+post_hook) with complex Jinja
+    """INPUT:  Invalid config (+post_hook) with complex Jinja
     OUTPUT: Moved to meta with Jinja preserved exactly
     WHY:    We only move keys, never touch the values/Jinja content
     """
@@ -394,8 +377,7 @@ def test_jinja_in_hook_values_preserved(models_node_fields, temp_path):
 
 
 def test_nested_config_under_logical_grouping(models_node_fields, temp_path):
-    """
-    INPUT:  Logical grouping 'example' (doesn't exist as directory) with nested configs
+    """INPUT:  Logical grouping 'example' (doesn't exist as directory) with nested configs
     OUTPUT: Grouping preserved, nested configs get + prefix
     WHY:    Logical groupings in YAML should be recursed into, not moved to meta
 
@@ -413,8 +395,7 @@ def test_nested_config_under_logical_grouping(models_node_fields, temp_path):
 
 
 def test_multiple_nested_configs_under_logical_grouping(models_node_fields, temp_path):
-    """
-    INPUT:  Logical grouping with multiple nested configs
+    """INPUT:  Logical grouping with multiple nested configs
     OUTPUT: All nested configs get + prefix
     WHY:    All valid configs in a logical grouping need + prefix
     """
@@ -429,8 +410,7 @@ def test_multiple_nested_configs_under_logical_grouping(models_node_fields, temp
 
 
 def test_deeply_nested_logical_groupings(models_node_fields, temp_path):
-    """
-    INPUT:  Multiple levels of logical groupings
+    """INPUT:  Multiple levels of logical groupings
     OUTPUT: Configs at all levels get + prefix
     WHY:    Recursion should work at any depth
     """
@@ -445,8 +425,7 @@ def test_deeply_nested_logical_groupings(models_node_fields, temp_path):
 
 
 def test_users_exact_scenario_from_question(models_node_fields, temp_path):
-    """
-    INPUT:  The exact structure from the user's question
+    """INPUT:  The exact structure from the user's question
     OUTPUT: materialized gets + prefix
     WHY:    This is the bug that was reported
 
@@ -468,8 +447,7 @@ def test_users_exact_scenario_from_question(models_node_fields, temp_path):
 
 
 def test_nested_custom_configs_in_logical_grouping(models_node_fields, temp_path):
-    """
-    INPUT:  Logical grouping with custom (invalid) configs
+    """INPUT:  Logical grouping with custom (invalid) configs
     OUTPUT: Custom configs moved to +meta at the right level
     WHY:    Custom configs should still move to meta, even in nested groupings
     """
@@ -484,8 +462,7 @@ def test_nested_custom_configs_in_logical_grouping(models_node_fields, temp_path
 
 
 def test_mixed_logical_groupings_and_configs(models_node_fields, temp_path):
-    """
-    INPUT:  Top-level configs mixed with logical groupings
+    """INPUT:  Top-level configs mixed with logical groupings
     OUTPUT: Both handled correctly
     WHY:    Real projects have configs at multiple levels
     """
@@ -506,8 +483,7 @@ def test_mixed_logical_groupings_and_configs(models_node_fields, temp_path):
 
 
 def test_logical_grouping_with_already_prefixed_configs(models_node_fields, temp_path):
-    """
-    INPUT:  Logical grouping where some configs already have +
+    """INPUT:  Logical grouping where some configs already have +
     OUTPUT: Already prefixed configs unchanged, others get +
     WHY:    Partial migrations should work correctly
     """
@@ -527,8 +503,7 @@ def test_logical_grouping_with_already_prefixed_configs(models_node_fields, temp
 
 
 def test_empty_logical_grouping(models_node_fields, temp_path):
-    """
-    INPUT:  Logical grouping with empty dict
+    """INPUT:  Logical grouping with empty dict
     OUTPUT: Empty dict preserved
     WHY:    Edge case - empty groupings should work
     """
@@ -548,8 +523,7 @@ def test_empty_logical_grouping(models_node_fields, temp_path):
 
 
 def test_none_value_returned_as_is(models_node_fields, temp_path):
-    """
-    INPUT:  None (non-dict value passed to function)
+    """INPUT:  None (non-dict value passed to function)
     OUTPUT: None, empty logs
     WHY:    Type guard should handle None gracefully
     """
@@ -560,8 +534,7 @@ def test_none_value_returned_as_is(models_node_fields, temp_path):
 
 
 def test_integer_value_returned_as_is(models_node_fields, temp_path):
-    """
-    INPUT:  Integer value (e.g., 5)
+    """INPUT:  Integer value (e.g., 5)
     OUTPUT: Same integer, empty logs
     WHY:    Type guard should preserve non-dict scalar values
     """
@@ -572,8 +545,7 @@ def test_integer_value_returned_as_is(models_node_fields, temp_path):
 
 
 def test_string_value_returned_as_is(models_node_fields, temp_path):
-    """
-    INPUT:  String value (e.g., "table")
+    """INPUT:  String value (e.g., "table")
     OUTPUT: Same string, empty logs
     WHY:    Type guard should preserve string values
     """
@@ -584,8 +556,7 @@ def test_string_value_returned_as_is(models_node_fields, temp_path):
 
 
 def test_boolean_value_returned_as_is(models_node_fields, temp_path):
-    """
-    INPUT:  Boolean values (True/False)
+    """INPUT:  Boolean values (True/False)
     OUTPUT: Same boolean, empty logs
     WHY:    Type guard should preserve boolean values
     """
@@ -599,8 +570,7 @@ def test_boolean_value_returned_as_is(models_node_fields, temp_path):
 
 
 def test_list_value_returned_as_is(models_node_fields, temp_path):
-    """
-    INPUT:  List value (e.g., ["a", "b"])
+    """INPUT:  List value (e.g., ["a", "b"])
     OUTPUT: Same list, empty logs
     WHY:    Type guard should preserve list values
     """
@@ -612,8 +582,7 @@ def test_list_value_returned_as_is(models_node_fields, temp_path):
 
 
 def test_partition_by_with_nested_dict_preserved(models_node_fields, temp_path):
-    """
-    INPUT:  Config with partition_by containing nested dict with range
+    """INPUT:  Config with partition_by containing nested dict with range
     OUTPUT: Config preserved exactly (this is the user's exact scenario)
     WHY:    partition_by value is a complex dict that should be preserved as-is
 
@@ -647,8 +616,7 @@ def test_partition_by_with_nested_dict_preserved(models_node_fields, temp_path):
 
 
 def test_cluster_by_list_preserved(models_node_fields, temp_path):
-    """
-    INPUT:  Config with cluster_by as list
+    """INPUT:  Config with cluster_by as list
     OUTPUT: List value preserved exactly
     WHY:    cluster_by is a valid config that accepts list values
     """
@@ -663,8 +631,7 @@ def test_cluster_by_list_preserved(models_node_fields, temp_path):
 
 
 def test_persist_docs_dict_preserved(models_node_fields, temp_path):
-    """
-    INPUT:  Config with persist_docs as dict
+    """INPUT:  Config with persist_docs as dict
     OUTPUT: Dict value preserved exactly
     WHY:    persist_docs is a valid config that accepts dict values
     """
@@ -679,8 +646,7 @@ def test_persist_docs_dict_preserved(models_node_fields, temp_path):
 
 
 def test_tags_list_with_special_values(models_node_fields, temp_path):
-    """
-    INPUT:  Config with tags list including special values
+    """INPUT:  Config with tags list including special values
     OUTPUT: List preserved exactly
     WHY:    tags is a valid config accepting list values
     """
@@ -695,8 +661,7 @@ def test_tags_list_with_special_values(models_node_fields, temp_path):
 
 
 def test_user_exact_scenario_from_traceback(models_node_fields, temp_path):
-    """
-    INPUT:  Exact scenario from user's traceback
+    """INPUT:  Exact scenario from user's traceback
     OUTPUT: All configs get + prefix, complex values preserved
     WHY:    This is the real-world bug that was reported
 
@@ -737,8 +702,7 @@ def test_user_exact_scenario_from_traceback(models_node_fields, temp_path):
 
 
 def test_mixed_config_types_in_logical_grouping(models_node_fields, temp_path):
-    """
-    INPUT:  Logical grouping with string, dict, list, and boolean configs
+    """INPUT:  Logical grouping with string, dict, list, and boolean configs
     OUTPUT: Valid configs get + prefix, invalid moved to meta, values preserved
     WHY:    Real projects have diverse config value types
 
@@ -774,8 +738,7 @@ def test_mixed_config_types_in_logical_grouping(models_node_fields, temp_path):
 
 
 def test_deeply_nested_with_complex_config_values(models_node_fields, temp_path):
-    """
-    INPUT:  Multi-level logical groupings with complex values at leaf level
+    """INPUT:  Multi-level logical groupings with complex values at leaf level
     OUTPUT: Complex values preserved at all nesting levels
     WHY:    Deep nesting should work correctly with complex values
     """
@@ -804,8 +767,7 @@ def test_deeply_nested_with_complex_config_values(models_node_fields, temp_path)
 
 
 def test_config_with_empty_dict_value(models_node_fields, temp_path):
-    """
-    INPUT:  Config with empty dict as value
+    """INPUT:  Config with empty dict as value
     OUTPUT: Empty dict preserved
     WHY:    Edge case - empty dict values should be preserved
     """
@@ -820,8 +782,7 @@ def test_config_with_empty_dict_value(models_node_fields, temp_path):
 
 
 def test_config_with_empty_list_value(models_node_fields, temp_path):
-    """
-    INPUT:  Config with empty list as value
+    """INPUT:  Config with empty list as value
     OUTPUT: Empty list preserved
     WHY:    Edge case - empty list values should be preserved
     """
@@ -836,8 +797,7 @@ def test_config_with_empty_list_value(models_node_fields, temp_path):
 
 
 def test_config_with_nested_empty_structures(models_node_fields, temp_path):
-    """
-    INPUT:  Config with nested empty dict
+    """INPUT:  Config with nested empty dict
     OUTPUT: Nested structure preserved
     WHY:    Complex nested structures with empty values should work
     """
@@ -852,8 +812,7 @@ def test_config_with_nested_empty_structures(models_node_fields, temp_path):
 
 
 def test_all_scalar_types_in_one_config(models_node_fields, temp_path):
-    """
-    INPUT:  Multiple valid configs with different value types
+    """INPUT:  Multiple valid configs with different value types
     OUTPUT: All get + prefix, all value types preserved
     WHY:    Ensure type guard works for all common value types together
 
@@ -885,8 +844,7 @@ def test_all_scalar_types_in_one_config(models_node_fields, temp_path):
 
 
 def test_persist_docs_dict_value_not_recursed(models_node_fields, temp_path):
-    """
-    INPUT:  Config with +persist_docs that has dict value
+    """INPUT:  Config with +persist_docs that has dict value
     OUTPUT: Dict value preserved as-is, NOT recursed into
     WHY:    Bug fix - persist_docs value should not be treated as nested configs
 
@@ -905,8 +863,7 @@ def test_persist_docs_dict_value_not_recursed(models_node_fields, temp_path):
 
 
 def test_labels_dict_value_not_recursed(models_node_fields, temp_path):
-    """
-    INPUT:  Config with +labels that has dict value
+    """INPUT:  Config with +labels that has dict value
     OUTPUT: Dict value preserved as-is, NOT recursed into
     WHY:    Bug fix - labels value should not be treated as nested configs
 
@@ -928,8 +885,7 @@ def test_labels_dict_value_not_recursed(models_node_fields, temp_path):
 
 
 def test_mixed_valid_configs_with_dict_values(models_node_fields, temp_path):
-    """
-    INPUT:  Multiple configs, some with dict values, some without + prefix
+    """INPUT:  Multiple configs, some with dict values, some without + prefix
     OUTPUT: Missing + added, dict values preserved without recursion
     WHY:    Comprehensive test for real dbt_project.yml structure
 

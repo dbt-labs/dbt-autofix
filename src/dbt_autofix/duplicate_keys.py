@@ -34,8 +34,7 @@ def find_duplicate_keys(
     root_dir: Path,
     dry_run: bool = False,
 ) -> Tuple[List[DuplicateFound], List[DuplicateFound]]:
-    """
-    Find duplicate keys in the project and packages.
+    """Find duplicate keys in the project and packages.
     """
     project_duplicates: List[DuplicateFound] = []
     package_duplicates: List[DuplicateFound] = []
