@@ -73,13 +73,14 @@ def process_yaml_files_except_dbt_project(
     """Process all YAML files in the project.
 
     Args:
-        path: Project root path
+        root_path: Project root path
         model_paths: Paths to process
         schema_specs: The schema specifications to use
         dry_run: Whether to perform a dry run
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
+        semantic_definitions: Optional semantic model definitions for merging
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
@@ -258,7 +259,8 @@ def process_sql_files(
 
     Args:
         path: Base project path
-        sql_paths: Set of paths relative to project root where SQL files are located
+        sql_paths_to_node_type: Mapping of paths relative to project root to node types
+        schema_specs: The schema specifications to use
         dry_run: Whether to perform a dry run
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior change
@@ -561,6 +563,7 @@ def apply_changesets(
     Args:
         yaml_results: List of YAML refactoring results
         sql_results: List of SQL refactoring results
+        json_output: Whether to output results as JSON instead of rich console
     """
     # Apply YAML changes
     for yaml_result in yaml_results:
