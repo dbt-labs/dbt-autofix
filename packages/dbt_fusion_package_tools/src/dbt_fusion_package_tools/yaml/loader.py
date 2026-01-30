@@ -33,9 +33,7 @@ class SafeLoaderWithOutput(Reader, Scanner, Parser, Composer, SafeConstructorWit
 
 
 def load(stream, Loader):
-    """Parse the first YAML document in a stream
-    and produce the corresponding Python object.
-    """
+    """Parse the first YAML document in a stream and produce the corresponding Python object."""
     loader = Loader(stream)
 
     try:
