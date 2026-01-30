@@ -42,8 +42,6 @@ def find_package_yml_files(
         if yml_file.name in VALID_PACKAGE_YML_NAMES:
             package_yml_files.append(yml_file)
 
-    if len(package_yml_files) == 0:
-        console.log("No package YML files found")
     return package_yml_files
 
 
