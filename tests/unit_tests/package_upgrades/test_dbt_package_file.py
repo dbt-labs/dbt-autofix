@@ -9,7 +9,6 @@ from dbt_autofix.packages.dbt_package_file import (
     find_package_yml_files,
     load_yaml_from_packages_yml,
     parse_package_dependencies_from_packages_yml,
-    parse_package_dependencies_from_yml,
 )
 
 

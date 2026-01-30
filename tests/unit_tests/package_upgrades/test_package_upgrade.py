@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Optional
 
-import pytest
 from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
     PackageVersionFusionCompatibilityState,

@@ -3,10 +3,8 @@ from typing import Any
 
 import pytest
 from dbt_fusion_package_tools.version_utils import (
-    UnboundedVersionSpecifier,
     VersionRange,
     VersionSpecifier,
-    construct_version_list,
     construct_version_list_from_raw,
     get_version_specifiers,
 )
