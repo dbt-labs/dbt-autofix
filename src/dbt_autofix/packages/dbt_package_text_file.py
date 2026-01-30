@@ -18,6 +18,9 @@ VERSION_MATCH_STRING = re.compile(r"\s*(?P<version>[^\s#\r\n]+)")
 VERSION_MATCH_LIST = re.compile(r"(?P<version>\[[^\]]*\])")
 PACKAGE_MATCH = re.compile(r"\s*(?P<pkg>[^\s#\r\n]+)")
 
+# Extraction returns 3 parts: prefix, value, suffix
+EXTRACTION_PARTS_COUNT = 3
+
 
 @dataclass
 class DbtPackageTextFileLine:
@@ -103,7 +106,7 @@ class DbtPackageTextFileLine:
         if not self.line_contains_package():
             return ""
         extracted_line: list[str] = self.extract_package_from_line()
-        if len(extracted_line) < 3:
+        if len(extracted_line) < EXTRACTION_PARTS_COUNT:
             return ""
         else:
             return extracted_line[1]
@@ -112,7 +115,7 @@ class DbtPackageTextFileLine:
         if not self.line_contains_package():
             return False
         extracted_version = self.extract_package_from_line()
-        if len(extracted_version) != 3:
+        if len(extracted_version) != EXTRACTION_PARTS_COUNT:
             return False
         self.line = f"{extracted_version[0]}{new_string}{extracted_version[2]}"
         self.modified = True
@@ -122,7 +125,7 @@ class DbtPackageTextFileLine:
         if not self.line_contains_version():
             return False
         extracted_version = self.extract_version_from_line()
-        if len(extracted_version) != 3:
+        if len(extracted_version) != EXTRACTION_PARTS_COUNT:
             return False
         self.line = f"{extracted_version[0]}{new_string}{extracted_version[2]}"
         self.modified = True
