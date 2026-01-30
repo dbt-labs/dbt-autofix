@@ -101,7 +101,7 @@ class PackageUpgradeResult:
                 "unchanged": [result.to_dict() for result in self.unchanged],
                 "autofix_version": version("dbt-autofix"),
             }
-            print(json.dumps(to_print))
+            print(json.dumps(to_print))  # noqa: T201
             return
 
         console.print(
