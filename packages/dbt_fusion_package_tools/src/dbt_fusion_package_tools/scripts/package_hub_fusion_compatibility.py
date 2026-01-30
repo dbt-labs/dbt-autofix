@@ -68,7 +68,11 @@ def is_package_version_file(file_path: str) -> bool:
 # data/packages/Aaron-Zhou/synapse_statistic/versions/v0.1.0.json
 def extract_package_id_from_path(file_path: str) -> str:
     file_path_split = file_path.split("/")
-    if file_path_split[0] != "data" or file_path_split[1] != "packages" or len(file_path_split) < MIN_PACKAGE_PATH_SEGMENTS:
+    if (
+        file_path_split[0] != "data"
+        or file_path_split[1] != "packages"
+        or len(file_path_split) < MIN_PACKAGE_PATH_SEGMENTS
+    ):
         return ""
     return f"{file_path_split[2]}/{file_path_split[3]}"
 

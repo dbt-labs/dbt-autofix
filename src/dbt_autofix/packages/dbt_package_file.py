@@ -199,9 +199,10 @@ class DbtPackageFile:
             installed_version_compatibility: PackageVersionFusionCompatibilityState = self.package_dependencies[
                 package
             ].is_installed_version_fusion_compatible()
-            if (
-                installed_version_compatibility in {PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW, PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0}
-            ):
+            if installed_version_compatibility in {
+                PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
+                PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+            }:
                 package_names.append(package)
         return package_names
 

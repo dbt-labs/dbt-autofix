@@ -421,10 +421,8 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
                 source_value = config_source_map[k]
                 # Check if it's a simple quoted string (not a Jinja expression)
                 if (
-                    (source_value.startswith("'")
-                    and source_value.endswith("'"))
-                    or (source_value.startswith('"')
-                    and source_value.endswith('"'))
+                    (source_value.startswith("'") and source_value.endswith("'"))
+                    or (source_value.startswith('"') and source_value.endswith('"'))
                 ) and not any(c in source_value for c in ["(", ")", "[", "]", "{", "}", "+", "-", "*", "/", "%"]):
                     # Simple string - convert to double quotes
                     # Extract the content between quotes

@@ -81,7 +81,9 @@ def main():
                             "manually_verified_incompatible": package_version["manually_verified_incompatible"],
                             "parse_compatible": package_version["parse_compatible"],
                             "parse_error_code": str(error["error_code"]),
-                            "parse_error": error["body"] if len(error["body"]) < MAX_ERROR_MESSAGE_LENGTH else error["body"][:MAX_ERROR_MESSAGE_LENGTH],
+                            "parse_error": error["body"]
+                            if len(error["body"]) < MAX_ERROR_MESSAGE_LENGTH
+                            else error["body"][:MAX_ERROR_MESSAGE_LENGTH],
                             "parse_exit_code": parse_compatibility_result.get("parse_exit_code"),
                             "parse_total_errors": parse_compatibility_result.get("total_errors"),
                             "parse_total_warnings": parse_compatibility_result.get("total_warnings"),
