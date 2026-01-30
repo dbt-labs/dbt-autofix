@@ -138,9 +138,7 @@ def _process_line_fancy_quotes(line: str) -> Tuple[str, bool, List[int]]:
             if inside_string and string_start_char in ('"', "\u201c"):
                 # This could be closing a string or content inside a string
                 if (
-                    string_start_char == "\u201c"
-                    or string_start_char == "\u201d"
-                    or (string_start_char == '"' and _would_close_string(line, i))
+                    string_start_char in {"“", "”"} or string_start_char == '"' and _would_close_string(line, i)
                 ):
                     # Fancy quote used as closing delimiter - replace with regular quote
                     refactored = True

@@ -200,9 +200,7 @@ class DbtPackageFile:
                 package
             ].is_installed_version_fusion_compatible()
             if (
-                installed_version_compatibility == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
-                or installed_version_compatibility
-                == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+                installed_version_compatibility in {PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW, PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0}
             ):
                 package_names.append(package)
         return package_names
