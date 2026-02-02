@@ -1,0 +1,7 @@
+name: 'test_config_quoted_strings'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+
+model-paths: ["models"]

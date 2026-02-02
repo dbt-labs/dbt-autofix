@@ -1,0 +1,3 @@
+{"mode": "applied", "file_path": "/tmp/project_issue_221/dbt_project.yml", "refactors": [{"deprecation": "MissingGenericTestArgumentsPropertyDeprecation", "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."}]}
+{"mode": "applied", "file_path": "/tmp/project_issue_221/models/my_autofix_model.sql", "refactors": [{"deprecation": "CustomKeyInConfigDeprecation", "log": "Moved custom configs ['my_custom_config_1', 'my_custom_config_2', 'my_custom_config_3'] to 'meta'"}], "warnings": []}
+{"mode": "complete"}
