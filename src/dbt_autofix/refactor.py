@@ -31,6 +31,10 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
     changeset_merge_simple_metrics_with_models,
     changeset_migrate_or_delete_top_level_metrics,
 )
+from dbt_autofix.refactors.changesets.dbt_python import (
+    move_custom_config_access_to_meta_python,
+    refactor_custom_configs_to_meta_python,
+)
 from dbt_autofix.refactors.changesets.dbt_sql import (
     refactor_custom_configs_to_meta_sql,
     remove_unmatched_endings,
@@ -331,6 +335,97 @@ def process_sql_files(
                     )
                 else:
                     error_console.print(f"Error processing {sql_file}: {e.__class__.__name__}: {e}", style="bold red")
+
+    return results
+
+
+def process_python_files(
+    path: Path,
+    python_paths_to_node_type: Dict[str, str],
+    schema_specs: SchemaSpecs,
+    dry_run: bool = False,
+    select: Optional[List[str]] = None,
+    behavior_change: bool = False,
+    all: bool = False,
+) -> List[SQLRefactorResult]:
+    """Process all Python model files in the given paths.
+
+    Applies refactoring rules to move custom configs to meta and update
+    dbt.config.get() calls to access custom configs from meta.
+
+    Args:
+        path: Base project path
+        python_paths_to_node_type: Dict mapping paths to node types (only 'models' paths are processed)
+        schema_specs: Schema specifications for determining allowed configs
+        dry_run: Whether to perform a dry run
+        select: Optional list of paths to select
+        behavior_change: Whether to apply fixes that may lead to behavior change
+        all: Whether to run all fixes
+
+    Returns:
+        List of SQLRefactorResult for each processed file
+    """
+    results: List[SQLRefactorResult] = []
+
+    # Python model rules - both are safe changes (don't require behavior_change flag)
+    safe_change_rules = [
+        (refactor_custom_configs_to_meta_python, False, True),
+        (move_custom_config_access_to_meta_python, False, True),
+    ]
+
+    process_python_file_rules = safe_change_rules
+
+    # Only process model paths (Python models are in model-paths)
+    for python_path, node_type in python_paths_to_node_type.items():
+        # Python models only exist in model paths
+        if node_type != "models":
+            continue
+
+        full_path = (path / python_path).resolve()
+        if not full_path.exists():
+            continue
+
+        python_files = full_path.glob("**/*.py")
+        for python_file in python_files:
+            if skip_file(full_path, select):
+                continue
+
+            try:
+                file_refactors: List[SQLRuleRefactorResult] = []
+
+                original_content = python_file.read_text()
+                new_content = original_content
+
+                for python_file_rule, requires_file_path, requires_schema_specs in process_python_file_rules:
+                    if requires_schema_specs:
+                        python_file_refactor_result = python_file_rule(new_content, schema_specs, node_type)
+                    else:
+                        python_file_refactor_result = python_file_rule(new_content)
+
+                    new_content = python_file_refactor_result.refactored_content
+                    file_refactors.append(python_file_refactor_result)
+
+                refactored = new_content != original_content
+                has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])
+                results.append(
+                    SQLRefactorResult(
+                        dry_run=dry_run,
+                        file_path=python_file,
+                        refactored=refactored,
+                        refactored_content=new_content,
+                        original_content=original_content,
+                        refactors=file_refactors,
+                        refactored_file_path=python_file,
+                        has_warnings=has_warnings,
+                    )
+                )
+            except Exception as e:
+                if all:
+                    error_console.print(
+                        f"Warning: Could not apply fixes to {python_file}: {e.__class__.__name__}: {e}", style="yellow"
+                    )
+                else:
+                    error_console.print(f"Error processing {python_file}: {e.__class__.__name__}: {e}", style="bold red")
 
     return results
 
