@@ -2,4 +2,3 @@ name: test_project
 version: "1.0"
 flags:
   require_generic_test_arguments_property: true
-

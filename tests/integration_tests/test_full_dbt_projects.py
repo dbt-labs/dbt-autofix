@@ -25,9 +25,7 @@ project_dir_to_semantic_layer_mode = defaultdict(lambda: False)
 project_dir_to_semantic_layer_mode["project_semantic_layer"] = True
 
 # Tests for features not yet implemented - these will xfail until the feature is complete
-project_dir_to_xfail: dict[str, str] = {
-    "project_issue_220": "Python model config.get() not yet updated when custom configs move to meta - see #220",
-}
+project_dir_to_xfail: dict[str, str] = {}
 
 
 def get_project_folders():
