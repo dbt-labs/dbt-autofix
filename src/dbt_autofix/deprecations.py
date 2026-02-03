@@ -18,3 +18,4 @@ class DeprecationType(str, Enum):
     MISSING_PLUS_PREFIX_DEPRECATION = "MissingPlusPrefixDeprecation"
     CUSTOM_TOP_LEVEL_KEY_DEPRECATION = "CustomTopLevelKeyDeprecation"
     CUSTOM_KEY_IN_CONFIG_DEPRECATION = "CustomKeyInConfigDeprecation"
+    PYTHON_MODEL_CONFIG_GET_DEPRECATION = "PythonModelConfigGetDeprecation"
