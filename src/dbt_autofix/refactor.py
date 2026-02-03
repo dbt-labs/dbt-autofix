@@ -13,6 +13,10 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_remove_deprecated_config,
     changeset_fix_space_after_plus,
 )
+from dbt_autofix.refactors.changesets.dbt_python import (
+    move_custom_config_access_to_meta_python,
+    refactor_custom_configs_to_meta_python,
+)
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
@@ -31,10 +35,6 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
     changeset_merge_simple_metrics_with_models,
     changeset_migrate_or_delete_top_level_metrics,
 )
-from dbt_autofix.refactors.changesets.dbt_python import (
-    move_custom_config_access_to_meta_python,
-    refactor_custom_configs_to_meta_python,
-)
 from dbt_autofix.refactors.changesets.dbt_sql import (
     refactor_custom_configs_to_meta_sql,
     remove_unmatched_endings,
@@ -46,6 +46,7 @@ from dbt_autofix.refactors.changesets.dbt_sql_improved import (
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     SQLRefactorResult,
+    SQLRuleRefactorResult,
     YMLRefactorResult,
     YMLRuleRefactorResult,
 )
@@ -425,7 +426,9 @@ def process_python_files(
                         f"Warning: Could not apply fixes to {python_file}: {e.__class__.__name__}: {e}", style="yellow"
                     )
                 else:
-                    error_console.print(f"Error processing {python_file}: {e.__class__.__name__}: {e}", style="bold red")
+                    error_console.print(
+                        f"Error processing {python_file}: {e.__class__.__name__}: {e}", style="bold red"
+                    )
 
     return results
 

@@ -66,6 +66,28 @@ def _find_matching_paren(content: str, start: int) -> int:
     return i - 1 if depth == 0 else -1
 
 
+def _single_to_double_quotes(s: str) -> str:
+    """Convert a single-quoted string to double-quoted string.
+
+    Only converts simple string literals like 'value' to "value".
+    Leaves other expressions unchanged.
+
+    Args:
+        s: A string that may be a single-quoted string literal
+
+    Returns:
+        The string with single quotes converted to double quotes if applicable
+    """
+    # Check if it's a simple single-quoted string (only quotes at start and end)
+    if s.startswith("'") and s.endswith("'") and "'" not in s[1:-1]:
+        # Extract content and convert to double quotes
+        content = s[1:-1]
+        # Escape any double quotes in the content
+        content = content.replace('"', '\\"')
+        return f'"{content}"'
+    return s
+
+
 def _parse_python_kwargs(call_content: str) -> dict[str, str]:
     """Parse keyword arguments from a Python function call.
 
@@ -92,8 +114,9 @@ def _parse_python_kwargs(call_content: str) -> dict[str, str]:
         for keyword in call_node.keywords:
             if keyword.arg is not None:
                 # Extract the source code for this value
-                # We need to find it in the original string
+                # ast.unparse produces single quotes, convert to double quotes
                 value_source = ast.unparse(keyword.value)
+                value_source = _single_to_double_quotes(value_source)
                 result[keyword.arg] = value_source
 
         return result
@@ -180,7 +203,7 @@ def refactor_custom_configs_to_meta_python(
                 existing_meta_parsed = ast.literal_eval(existing_meta)
                 if isinstance(existing_meta_parsed, dict):
                     for k, v in existing_meta_parsed.items():
-                        meta_items.append(f'"{k}": {repr(v)}')
+                        meta_items.append(f'"{k}": {v!r}')
             except (ValueError, SyntaxError):
                 # Can't parse existing meta, preserve it as-is in the string form
                 # This is a fallback - we'll just add to it
@@ -195,8 +218,8 @@ def refactor_custom_configs_to_meta_python(
         # Build the new call content
         new_kwargs: List[str] = []
         for key, value in native_configs.items():
-            new_kwargs.append(f'{key}={value}')
-        new_kwargs.append(f'meta={meta_str}')
+            new_kwargs.append(f"{key}={value}")
+        new_kwargs.append(f"meta={meta_str}")
 
         new_call_content = ", ".join(new_kwargs)
         new_call = f"dbt.config({new_call_content})"
@@ -204,9 +227,7 @@ def refactor_custom_configs_to_meta_python(
         # Replace in content
         full_match_start = match.start()
         full_match_end = close_paren_pos + 1
-        refactored_content = (
-            refactored_content[:full_match_start] + new_call + refactored_content[full_match_end:]
-        )
+        refactored_content = refactored_content[:full_match_start] + new_call + refactored_content[full_match_end:]
         refactored = True
 
         deprecation_refactors.append(
