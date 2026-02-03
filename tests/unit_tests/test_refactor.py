@@ -8,7 +8,7 @@ from dbt_autofix.refactor import (
     SQLRefactorResult,
     YMLRefactorResult,
     YMLRuleRefactorResult,
-    changeset_all_sql_yml_files,
+    changeset_all_files,
     changeset_dbt_project_remove_deprecated_config,
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
@@ -568,7 +568,7 @@ class TestYamlRefactoring:
         sub_dir.joinpath("other_schema.yaml").write_text(schema_yml_with_config_fields)
 
         # Get all refactored results
-        results = changeset_all_sql_yml_files(temp_project_dir, schema_specs)
+        results = changeset_all_files(temp_project_dir, schema_specs)
 
         # Check that we got results for both files
         assert len(results) == 2
