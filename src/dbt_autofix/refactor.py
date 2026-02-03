@@ -583,7 +583,7 @@ def get_dbt_roots_paths(
     return dbt_roots_paths
 
 
-def changeset_all_sql_yml_files(
+def changeset_all_files(
     path: Path,
     schema_specs: SchemaSpecs,
     dry_run: bool = False,
@@ -595,7 +595,7 @@ def changeset_all_sql_yml_files(
     all: bool = False,
     semantic_layer: bool = False,
 ) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult]]:
-    """Process all YAML files and SQL files in the project.
+    """Process all YAML, SQL, and Python files in the project.
 
     Args:
         path: Project root path
@@ -612,7 +612,7 @@ def changeset_all_sql_yml_files(
     Returns:
         Tuple containing:
         - List of YAML refactor results
-        - List of SQL refactor results
+        - List of SQL and Python refactor results
     """
     # Get dbt root paths first (doesn't parse dbt_project.yml)
     dbt_roots_paths = get_dbt_roots_paths(path, include_packages, include_private_packages)
@@ -635,6 +635,9 @@ def changeset_all_sql_yml_files(
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
     sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
+    python_results = process_python_files(
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
+    )
 
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
@@ -642,7 +645,7 @@ def changeset_all_sql_yml_files(
         path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
     )
 
-    return [*yaml_results, *dbt_project_yml_results], sql_results
+    return [*yaml_results, *dbt_project_yml_results], [*sql_results, *python_results]
 
 
 def apply_changesets(

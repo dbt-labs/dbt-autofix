@@ -19,7 +19,7 @@ from dbt_autofix.package_upgrade import (
     upgrade_package_versions,
 )
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files
+from dbt_autofix.refactor import apply_changesets, changeset_all_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 console = Console()
@@ -132,7 +132,7 @@ def refactor_yml(
 
     schema_specs = SchemaSpecs(json_schema_version, disable_ssl_verification)
 
-    changesets = changeset_all_sql_yml_files(
+    changesets = changeset_all_files(
         path,
         schema_specs,
         dry_run,
