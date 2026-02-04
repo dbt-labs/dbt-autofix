@@ -1,3 +1,0 @@
-{"mode": "applied", "file_path": "/tmp/project_issue_220/dbt_project.yml", "refactors": [{"deprecation": "MissingGenericTestArgumentsPropertyDeprecation", "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."}]}
-{"mode": "applied", "file_path": "/tmp/project_issue_220/models/process_ar.py", "refactors": [{"deprecation": "CustomKeyInConfigDeprecation", "log": "Moved custom configs ['random_config'] to 'meta'"}, {"deprecation": "PythonModelConfigGetDeprecation", "log": "Updated config.get('random_config') to config.get('meta').get('random_config')"}], "warnings": []}
-{"mode": "complete"}
