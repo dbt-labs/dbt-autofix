@@ -1,7 +1,11 @@
 """Unit tests for Python model refactoring functions."""
 
+import tempfile
+from pathlib import Path
+
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.fields_properties_configs import models_allowed_config
+from dbt_autofix.refactor import process_python_files
 from dbt_autofix.refactors.changesets.dbt_python import (
     move_custom_config_access_to_meta_python,
     refactor_custom_configs_to_meta_python,
@@ -27,13 +31,14 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", random_config="AR")
     return session.sql("SELECT 1")
 """
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"random_config": "AR"})
+    return session.sql("SELECT 1")
+"""
         result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
-        # Check that the config was moved to meta (quote style may vary due to ast.unparse)
-        assert "meta={" in result.refactored_content
-        assert '"random_config"' in result.refactored_content
-        assert "random_config=" not in result.refactored_content
+        assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 1
         assert result.deprecation_refactors[0].deprecation == DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
         assert "random_config" in result.deprecation_refactors[0].log
@@ -44,14 +49,14 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", custom_a="A", custom_b="B")
     return session.sql("SELECT 1")
 """
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_a": "A", "custom_b": "B"})
+    return session.sql("SELECT 1")
+"""
         result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
-        assert "meta={" in result.refactored_content
-        assert '"custom_a"' in result.refactored_content
-        assert '"custom_b"' in result.refactored_content
-        assert "custom_a=" not in result.refactored_content
-        assert "custom_b=" not in result.refactored_content
+        assert result.refactored_content == expected_python
 
     def test_native_configs_preserved(self):
         """Native configs like materialized should not be moved to meta."""
@@ -59,14 +64,14 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema", custom_key="value")
     return session.sql("SELECT 1")
 """
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", schema="my_schema", meta={"custom_key": "value"})
+    return session.sql("SELECT 1")
+"""
         result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
-        assert "materialized=" in result.refactored_content
-        assert "schema=" in result.refactored_content
-        assert '"custom_key"' in result.refactored_content
-        # custom_key should be inside meta, not a top-level kwarg
-        assert "custom_key=" not in result.refactored_content
+        assert result.refactored_content == expected_python
 
     def test_no_custom_configs_unchanged(self):
         """File should not change when there are no custom configs."""
@@ -97,10 +102,14 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", custom_count=42)
     return session.sql("SELECT 1")
 """
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_count": 42})
+    return session.sql("SELECT 1")
+"""
         result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
-        assert '"custom_count": 42' in result.refactored_content
+        assert result.refactored_content == expected_python
 
     def test_boolean_config_value(self):
         """Custom config with boolean value should be preserved correctly."""
@@ -108,10 +117,14 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", custom_flag=True)
     return session.sql("SELECT 1")
 """
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_flag": True})
+    return session.sql("SELECT 1")
+"""
         result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
-        assert '"custom_flag": True' in result.refactored_content
+        assert result.refactored_content == expected_python
 
 
 class TestMoveCustomConfigAccessToMetaPython:
@@ -120,12 +133,10 @@ class TestMoveCustomConfigAccessToMetaPython:
     def test_basic_config_get_refactored(self):
         """Basic dbt.config.get() should be refactored to access meta."""
         input_python = """def model(dbt, session):
-    dbt.config(materialized="table", meta={"random_config": "AR"})
     random_config = dbt.config.get("random_config")
     return session.sql(f"SELECT '{random_config}'")
 """
         expected_python = """def model(dbt, session):
-    dbt.config(materialized="table", meta={"random_config": "AR"})
     random_config = dbt.config.get("meta").get("random_config")
     return session.sql(f"SELECT '{random_config}'")
 """
@@ -158,11 +169,15 @@ class TestMoveCustomConfigAccessToMetaPython:
     val_b = dbt.config.get("custom_b", "default")
     return session.sql(f"SELECT '{val_a}', '{val_b}'")
 """
+        expected_python = """def model(dbt, session):
+    val_a = dbt.config.get("meta").get("custom_a")
+    val_b = dbt.config.get("meta").get("custom_b", "default")
+    return session.sql(f"SELECT '{val_a}', '{val_b}'")
+"""
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
-        assert 'dbt.config.get("meta").get("custom_a")' in result.refactored_content
-        assert 'dbt.config.get("meta").get("custom_b", "default")' in result.refactored_content
+        assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 2
 
     def test_native_config_access_unchanged(self):
@@ -196,40 +211,26 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom = dbt.config.get("custom_key")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
-
-        assert result.refactored
-        assert 'dbt.config.get("materialized")' in result.refactored_content
-        assert 'dbt.config.get("meta").get("custom_key")' in result.refactored_content
-        assert len(result.deprecation_refactors) == 1
-
-    def test_single_quotes_preserved(self):
-        """Single quotes in original should work correctly."""
-        input_python = """def model(dbt, session):
-    custom = dbt.config.get('custom_key')
+        expected_python = """def model(dbt, session):
+    mat = dbt.config.get("materialized")
+    custom = dbt.config.get("meta").get("custom_key")
     return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
-        assert 'dbt.config.get("meta").get("custom_key")' in result.refactored_content
+        assert result.refactored_content == expected_python
+        assert len(result.deprecation_refactors) == 1
 
-    def test_yaml_defined_custom_config_access(self):
-        """Custom config defined only in YAML should still have its access refactored.
-
-        This tests the edge case where a Python model only has dbt.config.get()
-        without a corresponding dbt.config() call - the config may be defined
-        in the schema.yml file instead.
-        """
+    def test_single_quotes_converted_to_double(self):
+        """Single quotes in original should work correctly."""
         input_python = """def model(dbt, session):
-    # Config is defined in schema.yml, not inline
-    custom_val = dbt.config.get("yaml_defined_custom")
-    return session.sql(f"SELECT '{custom_val}'")
+    custom = dbt.config.get('custom_key')
+    return session.sql("SELECT 1")
 """
         expected_python = """def model(dbt, session):
-    # Config is defined in schema.yml, not inline
-    custom_val = dbt.config.get("meta").get("yaml_defined_custom")
-    return session.sql(f"SELECT '{custom_val}'")
+    custom = dbt.config.get("meta").get("custom_key")
+    return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
@@ -238,25 +239,46 @@ class TestMoveCustomConfigAccessToMetaPython:
 
 
 class TestIntegration:
-    """Integration tests combining both refactor functions."""
+    """Integration tests using process_python_files with actual files."""
 
-    def test_full_transformation_pipeline(self):
-        """Test the full transformation: move configs to meta, then update access."""
-        input_python = """def model(dbt, session):
-    dbt.config(materialized="table", random_config="AR")
-    random_config = dbt.config.get("random_config")
-    return session.sql(f"SELECT '{random_config}' as config_value")
+    def test_multiple_files_transformed(self):
+        """Test that multiple Python files are all processed."""
+        input_with_config = """def model(dbt, session):
+    dbt.config(custom_key="value")
+    return session.sql("SELECT 1")
+"""
+        expected_with_config = """def model(dbt, session):
+    dbt.config(meta={"custom_key": "value"})
+    return session.sql("SELECT 1")
+"""
+        input_with_access = """def model(dbt, session):
+    val = dbt.config.get("custom_key")
+    return session.sql("SELECT 1")
+"""
+        expected_with_access = """def model(dbt, session):
+    val = dbt.config.get("meta").get("custom_key")
+    return session.sql("SELECT 1")
 """
 
-        # First pass: move configs to meta
-        result1 = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
-        assert result1.refactored
-        assert 'meta={"random_config"' in result1.refactored_content
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_path = Path(tmpdir)
+            models_path = project_path / "models"
+            models_path.mkdir()
 
-        # Second pass: update config access
-        result2 = move_custom_config_access_to_meta_python(result1.refactored_content, FakeSchemaSpecs(), "models")
-        assert result2.refactored
+            (models_path / "model_a.py").write_text(input_with_config)
+            (models_path / "model_b.py").write_text(input_with_access)
 
-        # Verify both transformations happened
-        assert 'dbt.config.get("meta").get("random_config")' in result2.refactored_content
-        assert 'meta={"random_config"' in result2.refactored_content
+            results = process_python_files(
+                path=project_path,
+                python_paths_to_node_type={"models": "models"},
+                schema_specs=FakeSchemaSpecs(),
+            )
+
+            assert len(results) == 2
+            results_by_name = {r.file_path.name: r for r in results}
+
+            assert results_by_name["model_a.py"].refactored
+            assert results_by_name["model_a.py"].refactored_content == expected_with_config
+
+            assert results_by_name["model_b.py"].refactored
+            assert results_by_name["model_b.py"].refactored_content == expected_with_access
