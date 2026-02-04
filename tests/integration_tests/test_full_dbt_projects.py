@@ -24,9 +24,6 @@ project_dir_to_behavior_change_mode["project_jinja_templates"] = True
 project_dir_to_semantic_layer_mode = defaultdict(lambda: False)
 project_dir_to_semantic_layer_mode["project_semantic_layer"] = True
 
-# Tests for features not yet implemented - these will xfail until the feature is complete
-project_dir_to_xfail: dict[str, str] = {}
-
 
 def get_project_folders():
     dbt_projects_dir = os.path.join(os.path.dirname(__file__), dbt_projects_dir_name)
@@ -115,10 +112,6 @@ def compare_json_logs(logs_io: StringIO, path: Path):
 
 @pytest.mark.parametrize("project_folder", get_project_folders())
 def test_project_refactor(project_folder, request):
-    # Apply xfail marker for tests documenting not-yet-implemented features
-    if project_folder in project_dir_to_xfail:
-        request.applymarker(pytest.mark.xfail(reason=project_dir_to_xfail[project_folder]))
-
     dbt_projects_dir = os.path.join(os.path.dirname(__file__), dbt_projects_dir_name)
     source_dir = os.path.join(dbt_projects_dir, project_folder)
 
