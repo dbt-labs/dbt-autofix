@@ -10,7 +10,7 @@ import re
 from typing import List, Optional, Set, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLRuleRefactorResult
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, PythonRuleRefactorResult
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 # Pattern to find dbt.config(...) calls - captures the full call including parentheses
@@ -126,7 +126,7 @@ def _parse_python_kwargs(call_content: str) -> dict[str, str]:
 
 def refactor_custom_configs_to_meta_python(
     python_content: str, schema_specs: SchemaSpecs, node_type: str
-) -> SQLRuleRefactorResult:
+) -> PythonRuleRefactorResult:
     """Move custom configs to meta in Python dbt.config() calls.
 
     Transforms:
@@ -140,14 +140,14 @@ def refactor_custom_configs_to_meta_python(
         node_type: The type of dbt node (e.g., "models")
 
     Returns:
-        SQLRuleRefactorResult with the refactored content
+        PythonRuleRefactorResult with the refactored content
     """
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     # Find all dbt.config() calls
     matches = list(DBT_CONFIG_CALL_PATTERN.finditer(python_content))
     if not matches:
-        return SQLRuleRefactorResult(
+        return PythonRuleRefactorResult(
             rule_name="move_custom_configs_to_meta_python",
             refactored=False,
             refactored_content=python_content,
@@ -237,7 +237,7 @@ def refactor_custom_configs_to_meta_python(
             )
         )
 
-    return SQLRuleRefactorResult(
+    return PythonRuleRefactorResult(
         rule_name="move_custom_configs_to_meta_python",
         refactored=refactored,
         refactored_content=refactored_content,
@@ -248,7 +248,7 @@ def refactor_custom_configs_to_meta_python(
 
 def move_custom_config_access_to_meta_python(
     python_content: str, schema_specs: SchemaSpecs, node_type: str
-) -> SQLRuleRefactorResult:
+) -> PythonRuleRefactorResult:
     """Update dbt.config.get() calls to access custom configs from meta.
 
     Transforms:
@@ -267,7 +267,7 @@ def move_custom_config_access_to_meta_python(
         node_type: The type of dbt node (e.g., "models")
 
     Returns:
-        SQLRuleRefactorResult with the refactored content
+        PythonRuleRefactorResult with the refactored content
     """
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -279,7 +279,7 @@ def move_custom_config_access_to_meta_python(
     # Find all dbt.config.get() calls
     matches = list(DBT_CONFIG_GET_PATTERN.finditer(python_content))
     if not matches:
-        return SQLRuleRefactorResult(
+        return PythonRuleRefactorResult(
             rule_name="move_custom_config_access_to_meta_python",
             refactored=False,
             refactored_content=python_content,
@@ -310,7 +310,7 @@ def move_custom_config_access_to_meta_python(
         replacements.append((start, end, replacement, original))
 
     if not replacements:
-        return SQLRuleRefactorResult(
+        return PythonRuleRefactorResult(
             rule_name="move_custom_config_access_to_meta_python",
             refactored=False,
             refactored_content=python_content,
@@ -334,7 +334,7 @@ def move_custom_config_access_to_meta_python(
             )
         )
 
-    return SQLRuleRefactorResult(
+    return PythonRuleRefactorResult(
         rule_name="move_custom_config_access_to_meta_python",
         refactored=True,
         refactored_content=refactored_content,

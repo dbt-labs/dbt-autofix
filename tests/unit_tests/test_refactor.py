@@ -5,6 +5,7 @@ import pytest
 from yaml import safe_load
 
 from dbt_autofix.refactor import (
+    PythonRefactorResult,
     SQLRefactorResult,
     YMLRefactorResult,
     YMLRuleRefactorResult,
@@ -570,12 +571,13 @@ class TestYamlRefactoring:
         # Get all refactored results
         results = changeset_all_files(temp_project_dir, schema_specs)
 
-        # Check that we got results for both files
-        assert len(results) == 2
+        # Check that we got results for all file types (3-tuple)
+        assert len(results) == 3
         # Unpack the tuple of lists
-        yaml_results, sql_results = results
+        yaml_results, sql_results, python_results = results
         assert all(isinstance(r, YMLRefactorResult) for r in yaml_results)
         assert all(isinstance(r, SQLRefactorResult) for r in sql_results)
+        assert all(isinstance(r, PythonRefactorResult) for r in python_results)
         assert all(r.refactored for r in yaml_results if r.file_path.name != "dbt_project.yml")
 
         # Check that both files were processed

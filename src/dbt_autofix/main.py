@@ -132,7 +132,7 @@ def refactor_yml(
 
     schema_specs = SchemaSpecs(json_schema_version, disable_ssl_verification)
 
-    changesets = changeset_all_files(
+    yaml_results, sql_results, python_results = changeset_all_files(
         path,
         schema_specs,
         dry_run,
@@ -144,7 +144,6 @@ def refactor_yml(
         all,
         semantic_layer,
     )
-    yaml_results, sql_results = changesets
     if dry_run:
         if not json_output:
             error_console.print("[red]-- Dry run mode, not applying changes --[/red]")
@@ -154,8 +153,11 @@ def refactor_yml(
         for changeset in sql_results:
             if changeset.refactored:
                 changeset.print_to_console(json_output)
+        for changeset in python_results:
+            if changeset.refactored:
+                changeset.print_to_console(json_output)
     else:
-        apply_changesets(yaml_results, sql_results, json_output)
+        apply_changesets(yaml_results, sql_results, python_results, json_output)
 
     if json_output:
         print(json.dumps({"mode": "complete"}))

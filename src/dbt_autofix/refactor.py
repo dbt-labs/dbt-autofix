@@ -45,8 +45,9 @@ from dbt_autofix.refactors.changesets.dbt_sql_improved import (
 )
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
+    PythonRefactorResult,
+    PythonRuleRefactorResult,
     SQLRefactorResult,
-    SQLRuleRefactorResult,
     YMLRefactorResult,
     YMLRuleRefactorResult,
 )
@@ -348,7 +349,7 @@ def process_python_files(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
-) -> List[SQLRefactorResult]:
+) -> List[PythonRefactorResult]:
     """Process all Python model files in the given paths.
 
     Applies refactoring rules to move custom configs to meta and update
@@ -364,9 +365,9 @@ def process_python_files(
         all: Whether to run all fixes
 
     Returns:
-        List of SQLRefactorResult for each processed file
+        List of PythonRefactorResult for each processed file
     """
-    results: List[SQLRefactorResult] = []
+    results: List[PythonRefactorResult] = []
 
     # Python model rules - both are safe changes (don't require behavior_change flag)
     safe_change_rules = [
@@ -392,7 +393,7 @@ def process_python_files(
                 continue
 
             try:
-                file_refactors: List[SQLRuleRefactorResult] = []
+                file_refactors: List[PythonRuleRefactorResult] = []
 
                 original_content = python_file.read_text()
                 new_content = original_content
@@ -409,14 +410,13 @@ def process_python_files(
                 refactored = new_content != original_content
                 has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])
                 results.append(
-                    SQLRefactorResult(
+                    PythonRefactorResult(
                         dry_run=dry_run,
                         file_path=python_file,
                         refactored=refactored,
                         refactored_content=new_content,
                         original_content=original_content,
                         refactors=file_refactors,
-                        refactored_file_path=python_file,
                         has_warnings=has_warnings,
                     )
                 )
@@ -597,7 +597,7 @@ def changeset_all_files(
     behavior_change: bool = False,
     all: bool = False,
     semantic_layer: bool = False,
-) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult]]:
+) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult], List[PythonRefactorResult]]:
     """Process all YAML, SQL, and Python files in the project.
 
     Args:
@@ -615,7 +615,8 @@ def changeset_all_files(
     Returns:
         Tuple containing:
         - List of YAML refactor results
-        - List of SQL and Python refactor results
+        - List of SQL refactor results
+        - List of Python refactor results
     """
     # Get dbt root paths first (doesn't parse dbt_project.yml)
     dbt_roots_paths = get_dbt_roots_paths(path, include_packages, include_private_packages)
@@ -648,19 +649,21 @@ def changeset_all_files(
         path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
     )
 
-    return [*yaml_results, *dbt_project_yml_results], [*sql_results, *python_results]
+    return [*yaml_results, *dbt_project_yml_results], sql_results, python_results
 
 
 def apply_changesets(
     yaml_results: List[YMLRefactorResult],
     sql_results: List[SQLRefactorResult],
+    python_results: List[PythonRefactorResult],
     json_output: bool = False,
 ) -> None:
-    """Apply both YAML and SQL refactoring changes.
+    """Apply YAML, SQL, and Python refactoring changes.
 
     Args:
         yaml_results: List of YAML refactoring results
         sql_results: List of SQL refactoring results
+        python_results: List of Python refactoring results
     """
     # Apply YAML changes
     for yaml_result in yaml_results:
@@ -673,3 +676,9 @@ def apply_changesets(
         if sql_result.refactored:
             sql_result.update_sql_file()
         sql_result.print_to_console(json_output)
+
+    # Apply Python changes
+    for python_result in python_results:
+        if python_result.refactored:
+            python_result.update_python_file()
+        python_result.print_to_console(json_output)
