@@ -1,6 +1,7 @@
 """Transformations for Python dbt models."""
 
 import ast
+import re
 from typing import List, Set
 
 from dbt_autofix.deprecations import DeprecationType
@@ -210,7 +211,6 @@ def move_custom_config_access_to_meta_python(
     # Check for chained access patterns by looking for dbt.meta_get().something
     if refactored:
         # Simple heuristic: look for patterns like ).attr or ).method
-        import re
         chained_pattern = re.compile(r'dbt\.meta_get\([^)]+\)\s*\.')
         if chained_pattern.search(refactored_content):
             refactor_warnings.append(

@@ -13,6 +13,9 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_remove_deprecated_config,
     changeset_fix_space_after_plus,
 )
+from dbt_autofix.refactors.changesets.dbt_python import (
+    move_custom_config_access_to_meta_python,
+)
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
@@ -38,9 +41,6 @@ from dbt_autofix.refactors.changesets.dbt_sql import (
 )
 from dbt_autofix.refactors.changesets.dbt_sql_improved import (
     move_custom_config_access_to_meta_sql_improved,
-)
-from dbt_autofix.refactors.changesets.dbt_python import (
-    move_custom_config_access_to_meta_python,
 )
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
