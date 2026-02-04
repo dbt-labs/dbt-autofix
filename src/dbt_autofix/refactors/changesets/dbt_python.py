@@ -330,7 +330,7 @@ def move_custom_config_access_to_meta_python(
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f"Updated config.get('{key_name}') to config.get('meta').get('{key_name}')",
-                deprecation=DeprecationType.PYTHON_MODEL_CONFIG_GET_DEPRECATION,
+                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
             )
         )
 

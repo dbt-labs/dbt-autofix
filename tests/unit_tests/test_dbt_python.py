@@ -133,7 +133,7 @@ class TestMoveCustomConfigAccessToMetaPython:
         assert result.refactored
         assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 1
-        assert result.deprecation_refactors[0].deprecation == DeprecationType.PYTHON_MODEL_CONFIG_GET_DEPRECATION
+        assert result.deprecation_refactors[0].deprecation == DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
 
     def test_config_get_with_default_value(self):
         """dbt.config.get() with default value should preserve the default."""
