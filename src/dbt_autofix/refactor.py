@@ -29,6 +29,7 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
     changeset_merge_complex_metrics_with_models,
     changeset_merge_semantic_models_with_models,
     changeset_merge_simple_metrics_with_models,
+    changeset_migrate_metric_tags_field_to_config,
     changeset_migrate_or_delete_top_level_metrics,
 )
 from dbt_autofix.refactors.changesets.dbt_sql import (
@@ -107,7 +108,10 @@ def process_yaml_files_except_dbt_project(
         # Certain changesets can only be applied after all the other changesets have been applied to all the files
         ordered_changesets = [
             [
+                (changeset_migrate_metric_tags_field_to_config, semantic_definitions),
                 (changeset_merge_semantic_models_with_models, semantic_definitions),
+            ],
+            [
                 (changeset_merge_simple_metrics_with_models, semantic_definitions),
             ],
             [

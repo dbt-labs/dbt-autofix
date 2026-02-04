@@ -41,6 +41,8 @@ models:
         description: Sum of the product revenue for each order item. Excludes tax.
         type: simple
         label: Revenue
+        config:
+          tags: [deprecated_tag_1, deprecated_tag_2]
         agg: sum
         expr: product_price
       - name: revenue_with_stacked_filters
@@ -48,6 +50,8 @@ models:
         type: simple
         label: Revenue
         filter: (revenue_filter_on_metric_itself) AND (revenue_filter_on_input)
+        config:
+          tags: [deprecated_tag_1, deprecated_tag_2, normal_tag_1, normal_tag_2]
         agg: sum
         expr: product_price
       - name: median_revenue
