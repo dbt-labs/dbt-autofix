@@ -27,7 +27,14 @@ This approach:
 
 ## Arguments
 
-- `$ARGUMENTS` - The test project name (e.g., `issue_123` becomes `project_issue_123`)
+- `$ARGUMENTS` - The test project name, passed as positional argument to `uv run pytest tests/integration_tests`
+
+**Naming guidance:** Use descriptive names that explain what the test covers, not issue numbers. For example:
+- `config_quoted_strings` (not `issue_221`)
+- `python_model_meta_config` (not `issue_220`)
+- `jinja_unmatched_endif`
+
+The name becomes `project_<name>` in the test projects directory.
 
 ## Test Structure
 
@@ -61,7 +68,7 @@ Run with `GOLDIE_UPDATE=1` to see what the tool currently does:
 GOLDIE_UPDATE=1 .venv/bin/python -m pytest "tests/integration_tests/test_full_dbt_projects.py::test_project_refactor[project_<name>]" -v
 ```
 
-This helps you understand the gap between current and desired behavior.
+**Note:** Do NOT commit the auto-generated `_expected` files from `GOLDIE_UPDATE` without review. They reflect current behavior, not necessarily desired behavior. Manually craft the expected output to reflect what the behavior *should* be.
 
 ### Step 3: Create Project Structure
 
@@ -80,8 +87,13 @@ tests/integration_tests/dbt_projects/
 
 **Minimal `dbt_project.yml`:**
 ```yaml
-name: test_project
-version: "1.0"
+name: '<test name>'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+
+model-paths: ["models"]
 ```
 
 ### Step 4: Create Test Models (Input)
@@ -111,19 +123,7 @@ project_dir_to_behavior_change_mode["project_<name>"] = True
 project_dir_to_semantic_layer_mode["project_<name>"] = True
 ```
 
-### Step 8: Mark as Expected Failure (if feature not yet implemented)
-
-If the test documents desired behavior that isn't implemented yet, add an xfail marker in `tests/integration_tests/test_full_dbt_projects.py`:
-
-```python
-project_dir_to_xfail = {
-    "project_<name>": "Feature not yet implemented - see issue #XXX",
-}
-```
-
-Then update the test to check this dict and apply the marker.
-
-### Step 9: Verify Test Behavior
+### Step 8: Verify Test Behavior
 
 ```bash
 # Should fail (or xfail) if feature not implemented
@@ -142,20 +142,18 @@ Then update the test to check this dict and apply the marker.
 
 ## Example Workflows
 
-### Bug Fix (issue #221 - quoted strings causing errors)
+### Bug Fix (quoted strings causing errors)
 
-1. Create `project_issue_221/` with a model containing the problematic quoted string
-2. Create `project_issue_221_expected/` showing correct handling (no error, proper transformation)
+1. Create `project_config_quoted_strings/` with a model containing the problematic quoted string
+2. Create `project_config_quoted_strings_expected/` showing correct handling (no error, proper transformation)
 3. Test fails initially (bug exists)
 4. Fix the bug
 5. Test passes (bug fixed)
 
-### Feature Request (issue #220 - update Python model config.get calls)
+### Feature Request (Python model custom config access)
 
-1. Create `project_issue_220/` with a Python model using `dbt.config.get("custom_key")`
-2. Create `project_issue_220_expected/` showing the Python code updated to `dbt.config.get("meta").get("custom_key")`
-3. Mark test as xfail with reference to issue
-4. Test xfails (feature not implemented)
-5. Implement feature
-6. Remove xfail marker
-7. Test passes (feature complete)
+1. Create `project_python_model_meta_config/` with a Python model using `dbt.config.get("custom_key")`
+2. Create `project_python_model_meta_config_expected/` showing the Python code updated to `dbt.config.get("meta").get("custom_key")`
+3. Test fails initially (feature not implemented)
+4. Implement feature
+5. Test passes (feature complete)
