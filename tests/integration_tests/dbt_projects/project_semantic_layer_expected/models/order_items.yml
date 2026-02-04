@@ -137,6 +137,9 @@ models:
         description: The cumulative revenue for all orders, but now with fill_nulls_with and join_to_timespine settings.
         label: Cumulative Revenue (All Time)
         type: cumulative
+        window: 1 month
+        grain_to_date: day
+        period_agg: first
         input_metric:
           name: revenue_fill_nulls_with_0_join_to_timespine
           filter: cumulative_filter
