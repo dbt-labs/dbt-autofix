@@ -126,6 +126,31 @@ class TestRefactorCustomConfigsToMetaPython:
         assert result.refactored
         assert result.refactored_content == expected_python
 
+    def test_complex_config_with_existing_meta(self):
+        """Complex case: native configs, existing meta keys, and custom keys to move."""
+        input_python = """def model(dbt, session):
+    dbt.config(
+        materialized="table",
+        schema="my_schema",
+        tags=["daily"],
+        meta={"already_meta_a": "A", "already_meta_b": "B"},
+        custom_x="X",
+        custom_y="Y",
+    )
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", schema="my_schema", tags=['daily'], meta={"already_meta_a": 'A', "already_meta_b": 'B', "custom_x": "X", "custom_y": "Y"})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+        assert len(result.deprecation_refactors) == 1
+        assert "custom_x" in result.deprecation_refactors[0].log
+        assert "custom_y" in result.deprecation_refactors[0].log
+
 
 class TestMoveCustomConfigAccessToMetaPython:
     """Tests for move_custom_config_access_to_meta_python function."""
@@ -236,6 +261,34 @@ class TestMoveCustomConfigAccessToMetaPython:
 
         assert result.refactored
         assert result.refactored_content == expected_python
+
+    def test_complex_access_with_native_and_existing_meta_access(self):
+        """Complex case: native config access, existing meta access, and custom keys to refactor."""
+        input_python = """def model(dbt, session):
+    mat = dbt.config.get("materialized")
+    schema = dbt.config.get("schema")
+    tags = dbt.config.get("tags")
+    already_meta_a = dbt.config.get("meta").get("already_meta_a")
+    already_meta_b = dbt.config.get("meta").get("already_meta_b")
+    custom_x = dbt.config.get("custom_x")
+    custom_y = dbt.config.get("custom_y", "default")
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    mat = dbt.config.get("materialized")
+    schema = dbt.config.get("schema")
+    tags = dbt.config.get("tags")
+    already_meta_a = dbt.config.get("meta").get("already_meta_a")
+    already_meta_b = dbt.config.get("meta").get("already_meta_b")
+    custom_x = dbt.config.get("meta").get("custom_x")
+    custom_y = dbt.config.get("meta").get("custom_y", "default")
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+        assert len(result.deprecation_refactors) == 2
 
 
 class TestIntegration:
