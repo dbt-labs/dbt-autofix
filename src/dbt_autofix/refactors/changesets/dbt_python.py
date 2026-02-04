@@ -130,9 +130,9 @@ def refactor_custom_configs_to_meta_python(
     """Move custom configs to meta in Python dbt.config() calls.
 
     Transforms:
-        dbt.config(materialized="table", random_config="AR")
+        dbt.config(materialized="table", sla="24h")
     To:
-        dbt.config(materialized="table", meta={"random_config": "AR"})
+        dbt.config(materialized="table", meta={"sla": "24h"})
 
     Args:
         python_content: The Python file content to process
