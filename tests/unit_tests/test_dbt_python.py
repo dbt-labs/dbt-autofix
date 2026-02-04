@@ -6,9 +6,10 @@ from dbt_autofix.refactors.changesets.dbt_python import (
     move_custom_config_access_to_meta_python,
     refactor_custom_configs_to_meta_python,
 )
+from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
-class MockSchemaSpecs:
+class FakeSchemaSpecs(SchemaSpecs):
     """Mock schema specs for testing."""
 
     def __init__(self):
@@ -26,7 +27,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", random_config="AR")
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         # Check that the config was moved to meta (quote style may vary due to ast.unparse)
@@ -43,7 +44,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", custom_a="A", custom_b="B")
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert "meta={" in result.refactored_content
@@ -58,7 +59,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema", custom_key="value")
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert "materialized=" in result.refactored_content
@@ -73,7 +74,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema")
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -84,7 +85,7 @@ class TestRefactorCustomConfigsToMetaPython:
         input_python = """def model(dbt, session):
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -96,7 +97,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", custom_count=42)
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert '"custom_count": 42' in result.refactored_content
@@ -107,7 +108,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", custom_flag=True)
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert '"custom_flag": True' in result.refactored_content
@@ -128,7 +129,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     random_config = dbt.config.get("meta").get("random_config")
     return session.sql(f"SELECT '{random_config}'")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -145,7 +146,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom_val = dbt.config.get("meta").get("custom_key", "default_value")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -157,7 +158,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val_b = dbt.config.get("custom_b", "default")
     return session.sql(f"SELECT '{val_a}', '{val_b}'")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert 'dbt.config.get("meta").get("custom_a")' in result.refactored_content
@@ -171,7 +172,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     schema = dbt.config.get("schema")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -183,7 +184,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     dbt.config(materialized="table")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -195,7 +196,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom = dbt.config.get("custom_key")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert 'dbt.config.get("materialized")' in result.refactored_content
@@ -208,7 +209,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom = dbt.config.get('custom_key')
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert 'dbt.config.get("meta").get("custom_key")' in result.refactored_content
@@ -230,7 +231,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom_val = dbt.config.get("meta").get("yaml_defined_custom")
     return session.sql(f"SELECT '{custom_val}'")
 """
-        result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -248,12 +249,12 @@ class TestIntegration:
 """
 
         # First pass: move configs to meta
-        result1 = refactor_custom_configs_to_meta_python(input_python, MockSchemaSpecs(), "models")
+        result1 = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
         assert result1.refactored
         assert 'meta={"random_config"' in result1.refactored_content
 
         # Second pass: update config access
-        result2 = move_custom_config_access_to_meta_python(result1.refactored_content, MockSchemaSpecs(), "models")
+        result2 = move_custom_config_access_to_meta_python(result1.refactored_content, FakeSchemaSpecs(), "models")
         assert result2.refactored
 
         # Verify both transformations happened
