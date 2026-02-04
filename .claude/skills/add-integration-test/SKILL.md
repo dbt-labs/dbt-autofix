@@ -53,6 +53,13 @@ Each integration test requires 3 artifacts in `tests/integration_tests/dbt_proje
 
 ### Step 1: Gather Information
 
+**Reference the README** for the authoritative list of deprecations: [README.md](../../../README.md)
+
+**Discover existing test projects** to see patterns and avoid duplication:
+```bash
+ls tests/integration_tests/dbt_projects/ | grep -v _expected
+```
+
 Ask the user:
 1. What deprecation, bug, or behavior is being tested?
 2. Is there a GitHub issue number to reference?
