@@ -287,7 +287,7 @@ def move_custom_config_access_to_meta_python(
             deprecation_refactors=[],
         )
 
-    # Collect replacements
+    # Collect replacements: (start, end, replacement, original)
     replacements: List[Tuple[int, int, str, str]] = []
 
     for match in matches:
