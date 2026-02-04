@@ -53,22 +53,14 @@ class ConfigGetTransformer(ast.NodeTransformer):
             # This is harder to detect in AST transformation, will handle in post-processing
 
             # Create new node: dbt.meta_get()
-            new_func = ast.Attribute(
-                value=ast.Name(id='dbt', ctx=ast.Load()),
-                attr='meta_get',
-                ctx=ast.Load()
-            )
+            new_func = ast.Attribute(value=ast.Name(id="dbt", ctx=ast.Load()), attr="meta_get", ctx=ast.Load())
 
             # Copy location info
             ast.copy_location(new_func, node.func)
             ast.copy_location(new_func.value, node.func)
 
             # Create new call with same arguments
-            new_call = ast.Call(
-                func=new_func,
-                args=node.args.copy(),
-                keywords=node.keywords.copy()
-            )
+            new_call = ast.Call(func=new_func, args=node.args.copy(), keywords=node.keywords.copy())
             ast.copy_location(new_call, node)
 
             # Record transformation for logging
@@ -86,19 +78,19 @@ class ConfigGetTransformer(ast.NodeTransformer):
         if not isinstance(node.func, ast.Attribute):
             return False
 
-        if node.func.attr != 'get':
+        if node.func.attr != "get":
             return False
 
         if not isinstance(node.func.value, ast.Attribute):
             return False
 
-        if node.func.value.attr != 'config':
+        if node.func.value.attr != "config":
             return False
 
         if not isinstance(node.func.value.value, ast.Name):
             return False
 
-        if node.func.value.value.id != 'dbt':
+        if node.func.value.value.id != "dbt":
             return False
 
         return True
@@ -109,11 +101,11 @@ class ConfigGetTransformer(ast.NodeTransformer):
 
         # Add positional args after the key
         if len(node.args) > 1:
-            args_parts.append('...')
+            args_parts.append("...")
 
         # Add keyword args
         if node.keywords:
-            args_parts.append('...')
+            args_parts.append("...")
 
         return f"dbt.config.get({', '.join(args_parts)})"
 
@@ -170,9 +162,7 @@ def move_custom_config_access_to_meta_python(
 
     # Check if config was shadowed
     if transformer.config_shadowed:
-        refactor_warnings.append(
-            "Detected 'config' variable assignment. Skipping refactor to avoid false positives."
-        )
+        refactor_warnings.append("Detected 'config' variable assignment. Skipping refactor to avoid false positives.")
         return SQLRuleRefactorResult(
             rule_name="move_custom_config_access_to_meta_python",
             refactored=False,
@@ -211,7 +201,7 @@ def move_custom_config_access_to_meta_python(
     # Check for chained access patterns by looking for dbt.meta_get().something
     if refactored:
         # Simple heuristic: look for patterns like ).attr or ).method
-        chained_pattern = re.compile(r'dbt\.meta_get\([^)]+\)\s*\.')
+        chained_pattern = re.compile(r"dbt\.meta_get\([^)]+\)\s*\.")
         if chained_pattern.search(refactored_content):
             refactor_warnings.append(
                 "Detected chained access after dbt.meta_get() call. "

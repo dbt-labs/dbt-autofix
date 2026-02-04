@@ -392,7 +392,9 @@ def process_python_files(
                 new_file_path = python_file
                 for python_file_rule, requires_file_path, requires_schema_specs in process_python_file_rules:
                     if requires_file_path and requires_schema_specs:
-                        python_file_refactor_result = python_file_rule(new_content, new_file_path, schema_specs, node_type)
+                        python_file_refactor_result = python_file_rule(
+                            new_content, new_file_path, schema_specs, node_type
+                        )
                     elif requires_file_path:
                         python_file_refactor_result = python_file_rule(new_content, new_file_path)
                     elif requires_schema_specs:
@@ -424,7 +426,9 @@ def process_python_files(
                         f"Warning: Could not apply fixes to {python_file}: {e.__class__.__name__}: {e}", style="yellow"
                     )
                 else:
-                    error_console.print(f"Error processing {python_file}: {e.__class__.__name__}: {e}", style="bold red")
+                    error_console.print(
+                        f"Error processing {python_file}: {e.__class__.__name__}: {e}", style="bold red"
+                    )
 
     return results
 
@@ -637,7 +641,9 @@ def changeset_all_sql_yml_files(
     sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
 
     # Process Python files
-    python_results = process_python_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
+    python_results = process_python_files(
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
+    )
 
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
