@@ -171,7 +171,7 @@ class SQLRefactorResult:
                     console.print(f"    Warning: {warning}", style="red")
 
 
-@dataclass
+@dataclass(frozen=True)
 class PythonRuleRefactorResult:
     rule_name: str
     refactored: bool
@@ -192,7 +192,7 @@ class PythonRuleRefactorResult:
         return ret_dict
 
 
-@dataclass
+@dataclass(frozen=True)
 class PythonRefactorResult:
     dry_run: bool
     file_path: Path
