@@ -27,7 +27,17 @@ This approach:
 
 ## Arguments
 
-- `$ARGUMENTS` - The test project name, passed as positional argument to `uv run pytest tests/integration_tests`
+- `$ARGUMENTS` - The test project name (e.g., `config_quoted_strings`)
+
+**Running a single test:**
+```bash
+uv run pytest "tests/integration_tests/test_full_dbt_projects.py::test_project_refactor[project_<name>]" -v
+```
+
+Example for a project named `config_quoted_strings`:
+```bash
+uv run pytest "tests/integration_tests/test_full_dbt_projects.py::test_project_refactor[project_config_quoted_strings]" -v
+```
 
 **Naming guidance:** Use descriptive names that explain what the test covers, not issue numbers. For example:
 - `config_quoted_strings` (not `issue_221`)
@@ -72,7 +82,7 @@ Ask the user:
 Run with `GOLDIE_UPDATE=1` to see what the tool currently does:
 
 ```bash
-GOLDIE_UPDATE=1 .venv/bin/python -m pytest "tests/integration_tests/test_full_dbt_projects.py::test_project_refactor[project_<name>]" -v
+GOLDIE_UPDATE=1 uv run pytest "tests/integration_tests/test_full_dbt_projects.py::test_project_refactor[project_<name>]" -v
 ```
 
 **Note:** Do NOT commit the auto-generated `_expected` files from `GOLDIE_UPDATE` without review. They reflect current behavior, not necessarily desired behavior. Manually craft the expected output to reflect what the behavior *should* be.
@@ -134,7 +144,7 @@ project_dir_to_semantic_layer_mode["project_<name>"] = True
 
 ```bash
 # Should fail (or xfail) if feature not implemented
-.venv/bin/python -m pytest "tests/integration_tests/test_full_dbt_projects.py::test_project_refactor[project_<name>]" -v
+uv run pytest "tests/integration_tests/test_full_dbt_projects.py::test_project_refactor[project_<name>]" -v
 
 # Should pass once feature is implemented
 ```
