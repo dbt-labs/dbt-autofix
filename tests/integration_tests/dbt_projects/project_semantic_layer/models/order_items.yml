@@ -43,6 +43,9 @@ semantic_models:
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
+        config:
+          meta:
+            label_in_meta: text in meta
       - name: revenue_measure_with_filter
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
