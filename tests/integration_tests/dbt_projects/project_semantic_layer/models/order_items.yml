@@ -69,6 +69,7 @@ metrics:
     description: Sum of the product revenue for each order item. Excludes tax.
     type: simple
     label: Revenue
+    tags: [deprecated_tag_1, deprecated_tag_2]
     type_params:
       measure: revenue
   - name: revenue_with_stacked_filters
@@ -76,6 +77,9 @@ metrics:
     type: simple
     label: Revenue
     filter: revenue_filter_on_metric_itself
+    tags: [deprecated_tag_1, deprecated_tag_2]
+    config:
+      tags: [normal_tag_1, normal_tag_2]
     type_params:
       measure:
         name: revenue_measure_with_filter
