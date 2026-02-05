@@ -58,6 +58,9 @@ build-backend = "pdm.backend"
 [tool.ruff]
 line-length = 120
 indent-width = 4
+extend-exclude = [
+    "tests/integration_tests/dbt_projects/**/models",
+]
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
