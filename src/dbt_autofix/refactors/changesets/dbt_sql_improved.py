@@ -17,7 +17,7 @@ CONFIG_ALIAS_PATTERN = re.compile(r"{%\s*set\s+\w+\s*=\s*config\s*%}")
 # - Optional default parameter
 # - Optional validator parameter
 CONFIG_ACCESS_PATTERN = re.compile(
-    r"config\.(get|require)\s*\("  # config.get( or config.require(
+    r"(model.)?config\.(get|require)\s*\("  # config.get( or config.require(
     r"(?P<pre_ws>\s*)"  # whitespace before the key
     r"(?P<quote>[\"'])(?P<key>[^\"']+)(?P=quote)"  # quoted key with captured quote style
     r"(?P<rest>.*?)"  # rest of the call including args and whitespace
@@ -77,7 +77,7 @@ def move_custom_config_access_to_meta_sql_improved(
     replacements: List[Tuple[int, int, str, str]] = []
 
     for match in matches:
-        method = match.group(1)  # 'get' or 'require'
+        method = match.group(2)  # 'get' or 'require'
         pre_whitespace = match.group("pre_ws")  # Whitespace before key
         quote_style = match.group("quote")  # Preserve original quote style
         config_key = match.group("key")

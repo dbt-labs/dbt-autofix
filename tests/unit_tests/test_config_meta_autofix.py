@@ -249,3 +249,34 @@ def test_config_get_with_named_default_parameter():
     assert result.refactored
     assert result.refactored_content == expected_sql
     assert len(result.deprecation_refactors) == 3
+
+
+def test_model_config_get_refactor():
+    """Test basic model.config.get() refactoring."""
+    input_sql = """
+{{ config(
+    materialized='table',
+    custom_key='custom_value'
+) }}
+
+SELECT
+    '{{ model.config.get('custom_key') }}' as custom,
+    '{{ model.config.get('materialized') }}' as mat
+"""
+
+    expected_sql = """
+{{ config(
+    materialized='table',
+    custom_key='custom_value'
+) }}
+
+SELECT
+    '{{ config.meta_get('custom_key') }}' as custom,
+    '{{ model.config.get('materialized') }}' as mat
+"""
+
+    result = move_custom_config_access_to_meta_sql_improved(input_sql, MockSchemaSpecs(), "models")
+
+    assert result.refactored
+    assert result.refactored_content == expected_sql
+    assert len(result.deprecation_refactors) == 1
