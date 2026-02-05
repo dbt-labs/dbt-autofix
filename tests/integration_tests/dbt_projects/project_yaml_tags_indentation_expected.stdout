@@ -1,0 +1,3 @@
+{"mode": "applied", "file_path": "dbt_project.yml", "refactors": [{"deprecation": "MissingGenericTestArgumentsPropertyDeprecation", "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."}]}
+{"mode": "applied", "file_path": "models/models.yml", "refactors": [{"deprecation": null, "log": "Model 'my_model' - Fixed indentation of sequence items under 'config.tags'"}]}
+{"mode": "complete"}

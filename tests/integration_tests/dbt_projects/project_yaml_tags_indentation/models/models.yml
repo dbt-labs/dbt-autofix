@@ -1,0 +1,6 @@
+models:
+  - name: my_model
+    config:
+      tags:
+      - tag_one
+      - tag_two

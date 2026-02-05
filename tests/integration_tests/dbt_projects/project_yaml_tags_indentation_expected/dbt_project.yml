@@ -1,0 +1,10 @@
+name: 'test_yaml_tags_indentation'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+
+model-paths: ["models"]
+
+flags:
+  require_generic_test_arguments_property: true
