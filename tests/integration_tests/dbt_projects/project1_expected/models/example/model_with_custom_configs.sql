@@ -7,9 +7,13 @@
 
 {{ config.meta_get('custom_config', 'default_value') }}
 
+{{ config.meta_get('custom_config') }}
+
 {{ config.get('materialized') }}
 
 {{ config.get('materialized', 'default_value') }}
+
+{{ model.config.get('materialized') }}
 
 {{ config.meta_get('custom_config_dict').a }}
 
