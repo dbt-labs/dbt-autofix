@@ -162,7 +162,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     return session.sql(f"SELECT '{random_config}'")
 """
         expected_python = """def model(dbt, session):
-    random_config = dbt.config.get("meta").get("random_config")
+    random_config = dbt.config.meta_get("random_config")
     return session.sql(f"SELECT '{random_config}'")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
@@ -179,7 +179,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     return session.sql("SELECT 1")
 """
         expected_python = """def model(dbt, session):
-    custom_val = dbt.config.get("meta").get("custom_key", "default_value")
+    custom_val = dbt.config.meta_get("custom_key", "default_value")
     return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
@@ -195,8 +195,8 @@ class TestMoveCustomConfigAccessToMetaPython:
     return session.sql(f"SELECT '{val_a}', '{val_b}'")
 """
         expected_python = """def model(dbt, session):
-    val_a = dbt.config.get("meta").get("custom_a")
-    val_b = dbt.config.get("meta").get("custom_b", "default")
+    val_a = dbt.config.meta_get("custom_a")
+    val_b = dbt.config.meta_get("custom_b", "default")
     return session.sql(f"SELECT '{val_a}', '{val_b}'")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
@@ -238,7 +238,7 @@ class TestMoveCustomConfigAccessToMetaPython:
 """
         expected_python = """def model(dbt, session):
     mat = dbt.config.get("materialized")
-    custom = dbt.config.get("meta").get("custom_key")
+    custom = dbt.config.meta_get("custom_key")
     return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
@@ -254,7 +254,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     return session.sql("SELECT 1")
 """
         expected_python = """def model(dbt, session):
-    custom = dbt.config.get("meta").get("custom_key")
+    custom = dbt.config.meta_get("custom_key")
     return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
@@ -268,8 +268,8 @@ class TestMoveCustomConfigAccessToMetaPython:
     mat = dbt.config.get("materialized")
     schema = dbt.config.get("schema")
     tags = dbt.config.get("tags")
-    already_meta_a = dbt.config.get("meta").get("already_meta_a")
-    already_meta_b = dbt.config.get("meta").get("already_meta_b")
+    already_meta_a = dbt.config.meta_get("already_meta_a")
+    already_meta_b = dbt.config.meta_get("already_meta_b")
     custom_x = dbt.config.get("custom_x")
     custom_y = dbt.config.get("custom_y", "default")
     return session.sql("SELECT 1")
@@ -278,10 +278,10 @@ class TestMoveCustomConfigAccessToMetaPython:
     mat = dbt.config.get("materialized")
     schema = dbt.config.get("schema")
     tags = dbt.config.get("tags")
-    already_meta_a = dbt.config.get("meta").get("already_meta_a")
-    already_meta_b = dbt.config.get("meta").get("already_meta_b")
-    custom_x = dbt.config.get("meta").get("custom_x")
-    custom_y = dbt.config.get("meta").get("custom_y", "default")
+    already_meta_a = dbt.config.meta_get("already_meta_a")
+    already_meta_b = dbt.config.meta_get("already_meta_b")
+    custom_x = dbt.config.meta_get("custom_x")
+    custom_y = dbt.config.meta_get("custom_y", "default")
     return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
@@ -309,7 +309,7 @@ class TestIntegration:
     return session.sql("SELECT 1")
 """
         expected_with_access = """def model(dbt, session):
-    val = dbt.config.get("meta").get("custom_key")
+    val = dbt.config.meta_get("custom_key")
     return session.sql("SELECT 1")
 """
 

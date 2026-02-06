@@ -249,17 +249,17 @@ def refactor_custom_configs_to_meta_python(
 def move_custom_config_access_to_meta_python(
     python_content: str, schema_specs: SchemaSpecs, node_type: str
 ) -> PythonRuleRefactorResult:
-    """Update dbt.config.get() calls to access custom configs from meta.
+    """Update dbt.config.get() calls to use meta_get for custom configs.
 
     Transforms:
         dbt.config.get("random_config")
     To:
-        dbt.config.get("meta").get("random_config")
+        dbt.config.meta_get("random_config")
 
     And with default values:
         dbt.config.get("random_config", "default")
     To:
-        dbt.config.get("meta").get("random_config", "default")
+        dbt.config.meta_get("random_config", "default")
 
     Args:
         python_content: The Python file content to process
@@ -303,9 +303,9 @@ def move_custom_config_access_to_meta_python(
 
         # Build the replacement
         if default_value:
-            replacement = f'dbt.config.get("meta").get("{config_key}", {default_value})'
+            replacement = f'dbt.config.meta_get("{config_key}", {default_value})'
         else:
-            replacement = f'dbt.config.get("meta").get("{config_key}")'
+            replacement = f'dbt.config.meta_get("{config_key}")'
 
         replacements.append((start, end, replacement, original))
 
@@ -329,7 +329,7 @@ def move_custom_config_access_to_meta_python(
 
         deprecation_refactors.append(
             DbtDeprecationRefactor(
-                log=f"Updated config.get('{key_name}') to config.get('meta').get('{key_name}')",
+                log=f"Updated config.get('{key_name}') to config.meta_get('{key_name}')",
                 deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
             )
         )
