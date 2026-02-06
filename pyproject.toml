@@ -58,6 +58,9 @@ build-backend = "pdm.backend"
 [tool.ruff]
 line-length = 120
 indent-width = 4
+extend-exclude = [
+    "tests/integration_tests/dbt_projects/**/models",
+]
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -148,6 +151,8 @@ reportMissingImports = false
 "tests/unit_tests/test_jinja.py" = ["PLC0415"]
 "tests/unit_tests/test_rec_check_yaml_path.py" = ["D415"]
 "tests/unit_tests/test_refactor.py" = ["D415", "E712"]
+"tests/integration_tests/dbt_projects/project_python_models/models/**/*.py" = ["F841"]
+"tests/integration_tests/dbt_projects/project_python_models_expected/models/**/*.py" = ["F841"]
 
 [tool.pytest.ini_options]
 pythonpath = [

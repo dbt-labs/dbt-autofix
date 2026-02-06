@@ -1,0 +1,10 @@
+name: "python_models_test"
+version: "1.0.0"
+profile: "python_models_test"
+
+model-paths: ["models"]
+
+models:
+  python_models_test:
+    example:
+      +materialized: "table"

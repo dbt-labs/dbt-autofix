@@ -13,6 +13,9 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_remove_deprecated_config,
     changeset_fix_space_after_plus,
 )
+from dbt_autofix.refactors.changesets.dbt_python import (
+    move_custom_config_access_to_meta_python,
+)
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
@@ -339,6 +342,101 @@ def process_sql_files(
     return results
 
 
+def process_python_files(
+    path: Path,
+    python_paths_to_node_type: Dict[str, str],
+    schema_specs: SchemaSpecs,
+    dry_run: bool = False,
+    select: Optional[List[str]] = None,
+    behavior_change: bool = False,
+    all: bool = False,
+) -> List[SQLRefactorResult]:
+    """Process all Python model files for config.get to meta_get transformation.
+
+    Args:
+        path: Base project path
+        python_paths_to_node_type: Dict mapping paths to node types
+        schema_specs: The schema specifications to use
+        dry_run: Whether to perform a dry run
+        select: Optional list of paths to select
+        behavior_change: Whether to apply fixes that may lead to behavior change
+        all: Whether to run all fixes, including those that may require a behavior change
+
+    Returns:
+        List of SQLRefactorResult for each processed file
+    """
+    results: List[SQLRefactorResult] = []
+
+    # Only safe change rules for now - Python transformation is safe
+    safe_change_rules = [
+        (move_custom_config_access_to_meta_python, False, True),
+    ]
+    behavior_change_rules = []
+    all_rules = [*behavior_change_rules, *safe_change_rules]
+
+    process_python_file_rules = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
+
+    for python_path, node_type in python_paths_to_node_type.items():
+        full_path = (path / python_path).resolve()
+        if not full_path.exists():
+            error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
+            continue
+
+        python_files = full_path.glob("**/*.py")
+        for python_file in python_files:
+            if skip_file(full_path, select):
+                continue
+
+            try:
+                file_refactors: List[SQLRefactorResult] = []
+
+                original_content = python_file.read_text()
+                new_content = original_content
+
+                new_file_path = python_file
+                for python_file_rule, requires_file_path, requires_schema_specs in process_python_file_rules:
+                    if requires_file_path and requires_schema_specs:
+                        python_file_refactor_result = python_file_rule(
+                            new_content, new_file_path, schema_specs, node_type
+                        )
+                    elif requires_file_path:
+                        python_file_refactor_result = python_file_rule(new_content, new_file_path)
+                    elif requires_schema_specs:
+                        python_file_refactor_result = python_file_rule(new_content, schema_specs, node_type)
+                    else:
+                        python_file_refactor_result = python_file_rule(new_content)
+
+                    new_content = python_file_refactor_result.refactored_content
+                    new_file_path = python_file_refactor_result.refactored_file_path or python_file
+                    file_refactors.append(python_file_refactor_result)
+
+                refactored = (new_content != original_content) or (new_file_path != python_file)
+                has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])
+                results.append(
+                    SQLRefactorResult(
+                        dry_run=dry_run,
+                        file_path=python_file,
+                        refactored=refactored,
+                        refactored_content=new_content,
+                        original_content=original_content,
+                        refactors=file_refactors,
+                        refactored_file_path=new_file_path,
+                        has_warnings=has_warnings,
+                    )
+                )
+            except Exception as e:
+                if all:
+                    error_console.print(
+                        f"Warning: Could not apply fixes to {python_file}: {e.__class__.__name__}: {e}", style="yellow"
+                    )
+                else:
+                    error_console.print(
+                        f"Error processing {python_file}: {e.__class__.__name__}: {e}", style="bold red"
+                    )
+
+    return results
+
+
 def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
     """Removes duplicate keys in the YAML files, keeping the first occurence only.
 
@@ -504,7 +602,7 @@ def changeset_all_sql_yml_files(
     all: bool = False,
     semantic_layer: bool = False,
 ) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult]]:
-    """Process all YAML files and SQL files in the project.
+    """Process all YAML files, SQL files, and Python files in the project.
 
     Args:
         path: Project root path
@@ -521,7 +619,7 @@ def changeset_all_sql_yml_files(
     Returns:
         Tuple containing:
         - List of YAML refactor results
-        - List of SQL refactor results
+        - List of SQL refactor results (includes both .sql and .py files)
     """
     # Get dbt root paths first (doesn't parse dbt_project.yml)
     dbt_roots_paths = get_dbt_roots_paths(path, include_packages, include_private_packages)
@@ -543,7 +641,13 @@ def changeset_all_sql_yml_files(
     dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages, include_private_packages)
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
+    # Process SQL files
     sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
+
+    # Process Python files
+    python_results = process_python_files(
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
+    )
 
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
@@ -551,7 +655,7 @@ def changeset_all_sql_yml_files(
         path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
     )
 
-    return [*yaml_results, *dbt_project_yml_results], sql_results
+    return [*yaml_results, *dbt_project_yml_results], [*sql_results, *python_results]
 
 
 def apply_changesets(
