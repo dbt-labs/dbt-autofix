@@ -391,6 +391,8 @@ def process_python_files(
 
         python_files = full_path.glob("**/*.py")
         for python_file in python_files:
+            # Note: skip_file checks the directory path, not individual files.
+            # This means --select skips/includes entire directories, matching SQL behavior.
             if skip_file(full_path, select):
                 continue
 
