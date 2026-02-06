@@ -291,6 +291,122 @@ class TestMoveCustomConfigAccessToMetaPython:
         assert len(result.deprecation_refactors) == 2
 
 
+class TestStructurePreservation:
+    """Tests that code structure outside config calls is preserved during refactoring."""
+
+    def test_comments_outside_config_call_preserved(self):
+        """Comments before, after, and between config calls should survive."""
+        input_python = """# Module-level comment
+def model(dbt, session):
+    # Setup comment
+    dbt.config(materialized="table", custom_key="value")
+    # Processing comment
+    data = session.sql("SELECT 1")
+    # Return comment
+    return data
+"""
+        expected_python = """# Module-level comment
+def model(dbt, session):
+    # Setup comment
+    dbt.config(materialized="table", meta={"custom_key": "value"})
+    # Processing comment
+    data = session.sql("SELECT 1")
+    # Return comment
+    return data
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_docstrings_and_imports_preserved(self):
+        """Docstrings, imports, and surrounding code should not be altered."""
+        input_python = """import pandas as pd
+
+def model(dbt, session):
+    \"\"\"Calculates customer metrics.
+
+    This model aggregates data from multiple sources.
+    \"\"\"
+    dbt.config(materialized="table", custom_key="value")
+    data = session.sql("SELECT 1")
+    return data
+"""
+        expected_python = """import pandas as pd
+
+def model(dbt, session):
+    \"\"\"Calculates customer metrics.
+
+    This model aggregates data from multiple sources.
+    \"\"\"
+    dbt.config(materialized="table", meta={"custom_key": "value"})
+    data = session.sql("SELECT 1")
+    return data
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_blank_lines_preserved(self):
+        """Blank lines in the function body should be byte-identical."""
+        input_python = """def model(dbt, session):
+    dbt.config(materialized="table", custom_key="value")
+
+    data = session.sql("SELECT 1")
+
+    return data
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_key": "value"})
+
+    data = session.sql("SELECT 1")
+
+    return data
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_config_get_preserves_surrounding_code(self):
+        """config.get refactoring should preserve all surrounding code."""
+        input_python = """import pandas as pd
+
+# Helper
+def helper():
+    return 42
+
+def model(dbt, session):
+    \"\"\"A model with custom config access.\"\"\"
+    # Get config
+    val = dbt.config.get("custom_key")
+
+    # Use it
+    data = session.sql(f"SELECT {val}")
+    return data
+"""
+        expected_python = """import pandas as pd
+
+# Helper
+def helper():
+    return 42
+
+def model(dbt, session):
+    \"\"\"A model with custom config access.\"\"\"
+    # Get config
+    val = dbt.config.meta_get("custom_key")
+
+    # Use it
+    data = session.sql(f"SELECT {val}")
+    return data
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+
 class TestIntegration:
     """Integration tests using process_python_files with actual files."""
 
