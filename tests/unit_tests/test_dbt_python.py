@@ -151,6 +151,21 @@ class TestRefactorCustomConfigsToMetaPython:
         assert "custom_x" in result.deprecation_refactors[0].log
         assert "custom_y" in result.deprecation_refactors[0].log
 
+    def test_quote_style_normalized_to_double(self):
+        """Config values are normalized to double quotes since AST reconstructs the call."""
+        input_python = """def model(dbt, session):
+    dbt.config(materialized='table', custom_key='single_quoted')
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_key": "single_quoted"})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
 
 class TestMoveCustomConfigAccessToMetaPython:
     """Tests for move_custom_config_access_to_meta_python function."""
@@ -247,20 +262,27 @@ class TestMoveCustomConfigAccessToMetaPython:
         assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 1
 
-    def test_single_quotes_preserved(self):
-        """Single quotes in original should be preserved in output."""
+    def test_quote_style_preserved(self):
+        """Both single and double quote styles should be preserved in output."""
         input_python = """def model(dbt, session):
-    custom = dbt.config.get('custom_key')
+    val_a = dbt.config.get("double_quoted")
+    val_b = dbt.config.get('single_quoted')
+    val_c = dbt.config.get("with_default", "fallback")
+    val_d = dbt.config.get('with_default_single', 'fallback')
     return session.sql("SELECT 1")
 """
         expected_python = """def model(dbt, session):
-    custom = dbt.config.meta_get('custom_key')
+    val_a = dbt.config.meta_get("double_quoted")
+    val_b = dbt.config.meta_get('single_quoted')
+    val_c = dbt.config.meta_get("with_default", "fallback")
+    val_d = dbt.config.meta_get('with_default_single', 'fallback')
     return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
 
         assert result.refactored
         assert result.refactored_content == expected_python
+        assert len(result.deprecation_refactors) == 4
 
     def test_complex_access_with_native_and_existing_meta_access(self):
         """Complex case: native config access, existing meta access, and custom keys to refactor."""
