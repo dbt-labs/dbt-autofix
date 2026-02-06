@@ -1,4 +1,22 @@
+import pandas as pd
+
+# Report configuration
+REPORT_NAME = "customer_metrics"
+
+
 def model(dbt, session):
+    """Calculates customer metrics.
+
+    This model aggregates data from multiple sources
+    and applies custom classification logic.
+    """
+    # Configure the model
     dbt.config(materialized="table", refresh_frequency="daily")
+
+    # Get custom classification
     classification = dbt.config.get("data_classification")
-    return session.sql(f"SELECT '{classification}' as data_class, current_date as report_date")
+
+    # Build the query
+    query = f"SELECT '{classification}' as data_class, current_date as report_date"
+
+    return session.sql(query)

@@ -35,12 +35,17 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"random_config": "AR"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 1
-        assert result.deprecation_refactors[0].deprecation == DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+        assert (
+            result.deprecation_refactors[0].deprecation
+            == DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+        )
         assert "random_config" in result.deprecation_refactors[0].log
 
     def test_multiple_custom_configs_moved_to_meta(self):
@@ -53,7 +58,9 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_a": "A", "custom_b": "B"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -68,7 +75,9 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema", meta={"custom_key": "value"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -79,7 +88,9 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema")
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -90,7 +101,9 @@ class TestRefactorCustomConfigsToMetaPython:
         input_python = """def model(dbt, session):
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -106,7 +119,9 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_count": 42})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -121,7 +136,9 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_flag": True})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -143,7 +160,9 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema", tags=['daily'], meta={"already_meta_a": "A", "already_meta_b": "B", "custom_x": "X", "custom_y": "Y"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -161,7 +180,9 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_key": "single_quoted"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -180,12 +201,17 @@ class TestMoveCustomConfigAccessToMetaPython:
     random_config = dbt.config.meta_get("random_config")
     return session.sql(f"SELECT '{random_config}'")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 1
-        assert result.deprecation_refactors[0].deprecation == DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+        assert (
+            result.deprecation_refactors[0].deprecation
+            == DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION
+        )
 
     def test_config_get_with_default_value(self):
         """dbt.config.get() with default value should preserve the default."""
@@ -197,7 +223,9 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom_val = dbt.config.meta_get("custom_key", "default_value")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -214,7 +242,9 @@ class TestMoveCustomConfigAccessToMetaPython:
     val_b = dbt.config.meta_get("custom_b", "default")
     return session.sql(f"SELECT '{val_a}', '{val_b}'")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -227,7 +257,9 @@ class TestMoveCustomConfigAccessToMetaPython:
     schema = dbt.config.get("schema")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -239,7 +271,9 @@ class TestMoveCustomConfigAccessToMetaPython:
     dbt.config(materialized="table")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -256,7 +290,9 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom = dbt.config.meta_get("custom_key")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -278,7 +314,9 @@ class TestMoveCustomConfigAccessToMetaPython:
     val_d = dbt.config.meta_get('with_default_single', 'fallback')
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -306,134 +344,92 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom_y = dbt.config.meta_get("custom_y", "default")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(
+            input_python, FakeSchemaSpecs(), "models"
+        )
 
         assert result.refactored
         assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 2
 
 
-class TestStructurePreservation:
-    """Tests that code structure outside config calls is preserved during refactoring."""
-
-    def test_comments_outside_config_call_preserved(self):
-        """Comments before, after, and between config calls should survive."""
-        input_python = """# Module-level comment
-def model(dbt, session):
-    # Setup comment
-    dbt.config(materialized="table", custom_key="value")
-    # Processing comment
-    data = session.sql("SELECT 1")
-    # Return comment
-    return data
-"""
-        expected_python = """# Module-level comment
-def model(dbt, session):
-    # Setup comment
-    dbt.config(materialized="table", meta={"custom_key": "value"})
-    # Processing comment
-    data = session.sql("SELECT 1")
-    # Return comment
-    return data
-"""
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
-
-        assert result.refactored
-        assert result.refactored_content == expected_python
-
-    def test_docstrings_and_imports_preserved(self):
-        """Docstrings, imports, and surrounding code should not be altered."""
-        input_python = """import pandas as pd
-
-def model(dbt, session):
-    \"\"\"Calculates customer metrics.
-
-    This model aggregates data from multiple sources.
-    \"\"\"
-    dbt.config(materialized="table", custom_key="value")
-    data = session.sql("SELECT 1")
-    return data
-"""
-        expected_python = """import pandas as pd
-
-def model(dbt, session):
-    \"\"\"Calculates customer metrics.
-
-    This model aggregates data from multiple sources.
-    \"\"\"
-    dbt.config(materialized="table", meta={"custom_key": "value"})
-    data = session.sql("SELECT 1")
-    return data
-"""
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
-
-        assert result.refactored
-        assert result.refactored_content == expected_python
-
-    def test_blank_lines_preserved(self):
-        """Blank lines in the function body should be byte-identical."""
-        input_python = """def model(dbt, session):
-    dbt.config(materialized="table", custom_key="value")
-
-    data = session.sql("SELECT 1")
-
-    return data
-"""
-        expected_python = """def model(dbt, session):
-    dbt.config(materialized="table", meta={"custom_key": "value"})
-
-    data = session.sql("SELECT 1")
-
-    return data
-"""
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
-
-        assert result.refactored
-        assert result.refactored_content == expected_python
-
-    def test_config_get_preserves_surrounding_code(self):
-        """config.get refactoring should preserve all surrounding code."""
-        input_python = """import pandas as pd
-
-# Helper
-def helper():
-    return 42
-
-def model(dbt, session):
-    \"\"\"A model with custom config access.\"\"\"
-    # Get config
-    val = dbt.config.get("custom_key")
-
-    # Use it
-    data = session.sql(f"SELECT {val}")
-    return data
-"""
-        expected_python = """import pandas as pd
-
-# Helper
-def helper():
-    return 42
-
-def model(dbt, session):
-    \"\"\"A model with custom config access.\"\"\"
-    # Get config
-    val = dbt.config.meta_get("custom_key")
-
-    # Use it
-    data = session.sql(f"SELECT {val}")
-    return data
-"""
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
-
-        assert result.refactored
-        assert result.refactored_content == expected_python
-
-
 class TestIntegration:
-    """Integration tests using process_python_files with actual files."""
+    """Integration tests using process_python_files with actual files.
+
+    These run both refactors (config-to-meta and config.get-to-meta_get)
+    through the full pipeline, verifying that surrounding code structure
+    (comments, docstrings, imports, blank lines) is preserved.
+    """
+
+    def test_full_pipeline_preserves_structure(self):
+        """Both refactors applied through process_python_files preserve surrounding code."""
+        input_python = """import pandas as pd
+
+# Constants
+REPORT_NAME = "metrics"
+
+
+def model(dbt, session):
+    \"\"\"Calculates customer metrics.
+
+    This model aggregates data from multiple sources
+    and applies custom classification logic.
+    \"\"\"
+    # Configure the model
+    dbt.config(materialized="table", refresh_frequency="daily")
+
+    # Get custom classification
+    classification = dbt.config.get("data_classification")
+
+    # Build the query
+    query = f"SELECT '{classification}' as data_class, current_date as report_date"
+
+    return session.sql(query)
+"""
+        expected_python = """import pandas as pd
+
+# Constants
+REPORT_NAME = "metrics"
+
+
+def model(dbt, session):
+    \"\"\"Calculates customer metrics.
+
+    This model aggregates data from multiple sources
+    and applies custom classification logic.
+    \"\"\"
+    # Configure the model
+    dbt.config(materialized="table", meta={"refresh_frequency": "daily"})
+
+    # Get custom classification
+    classification = dbt.config.meta_get("data_classification")
+
+    # Build the query
+    query = f"SELECT '{classification}' as data_class, current_date as report_date"
+
+    return session.sql(query)
+"""
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_path = Path(tmpdir)
+            models_path = project_path / "models"
+            models_path.mkdir()
+
+            (models_path / "customer_metrics.py").write_text(input_python)
+
+            results = process_python_files(
+                path=project_path,
+                python_paths_to_node_type={"models": "models"},
+                schema_specs=FakeSchemaSpecs(),
+            )
+
+            assert len(results) == 1
+            result = results[0]
+            assert result.refactored
+            assert result.refactored_content == expected_python
 
     def test_multiple_files_transformed(self):
-        """Test that multiple Python files are all processed."""
+        """Multiple Python files are all processed through the full pipeline."""
         input_with_config = """def model(dbt, session):
     dbt.config(custom_key="value")
     return session.sql("SELECT 1")
@@ -469,7 +465,11 @@ class TestIntegration:
             results_by_name = {r.file_path.name: r for r in results}
 
             assert results_by_name["model_a.py"].refactored
-            assert results_by_name["model_a.py"].refactored_content == expected_with_config
+            assert (
+                results_by_name["model_a.py"].refactored_content == expected_with_config
+            )
 
             assert results_by_name["model_b.py"].refactored
-            assert results_by_name["model_b.py"].refactored_content == expected_with_access
+            assert (
+                results_by_name["model_b.py"].refactored_content == expected_with_access
+            )
