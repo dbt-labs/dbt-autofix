@@ -7,7 +7,7 @@ This module provides functions to:
 
 import ast
 import re
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, PythonRuleRefactorResult
@@ -271,10 +271,7 @@ def move_custom_config_access_to_meta_python(
     """
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
-    # Get all allowed config fields
-    allowed_config_fields: Set[str] = set()
-    for specs in schema_specs.yaml_specs_per_node_type.values():
-        allowed_config_fields.update(specs.allowed_config_fields)
+    allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields
 
     # Find all dbt.config.get() calls
     matches = list(DBT_CONFIG_GET_PATTERN.finditer(python_content))
