@@ -10,7 +10,7 @@ from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
 class ConfigGetTransformer(ast.NodeTransformer):
-    """AST transformer to convert dbt.config.get() to dbt.meta_get() for custom configs."""
+    """AST transformer to convert dbt.config.get() to dbt.config.meta_get() for custom configs."""
 
     def __init__(self, allowed_config_fields: Set[str]):
         self.allowed_config_fields = allowed_config_fields
@@ -27,7 +27,7 @@ class ConfigGetTransformer(ast.NodeTransformer):
         return node
 
     def visit_Call(self, node: ast.Call) -> ast.Call:
-        """Transform dbt.config.get() calls to dbt.meta_get()."""
+        """Transform dbt.config.get() calls to dbt.config.meta_get()."""
         # Check if config is shadowed - skip transformation
         if self.config_shadowed:
             return node
@@ -52,8 +52,16 @@ class ConfigGetTransformer(ast.NodeTransformer):
             # Check for chained access (e.g., dbt.config.get('key').attr)
             # This is harder to detect in AST transformation, will handle in post-processing
 
-            # Create new node: dbt.meta_get()
-            new_func = ast.Attribute(value=ast.Name(id="dbt", ctx=ast.Load()), attr="meta_get", ctx=ast.Load())
+            # Create new node: dbt.config.meta_get()
+            new_func = ast.Attribute(
+                value=ast.Attribute(
+                    value=ast.Name(id="dbt", ctx=ast.Load()),
+                    attr="config",
+                    ctx=ast.Load(),
+                ),
+                attr="meta_get",
+                ctx=ast.Load(),
+            )
 
             # Copy location info
             ast.copy_location(new_func, node.func)
@@ -65,7 +73,7 @@ class ConfigGetTransformer(ast.NodeTransformer):
 
             # Record transformation for logging
             original = self._ast_to_code_snippet(node, config_key)
-            replacement = f"dbt.meta_get('{config_key}'{'...' if len(node.args) > 1 or node.keywords else ''})"
+            replacement = f"dbt.config.meta_get('{config_key}'{'...' if len(node.args) > 1 or node.keywords else ''})"
             self.transformations.append((original, replacement))
 
             return new_call
@@ -113,11 +121,11 @@ class ConfigGetTransformer(ast.NodeTransformer):
 def move_custom_config_access_to_meta_python(
     python_content: str, schema_specs: SchemaSpecs, node_type: str
 ) -> SQLRuleRefactorResult:
-    """Move custom config access to meta in Python files using dbt.meta_get().
+    """Move custom config access to meta in Python files using dbt.config.meta_get().
 
     This transforms:
-    - dbt.config.get('custom_key') -> dbt.meta_get('custom_key')
-    - dbt.config.get('custom_key', 'default') -> dbt.meta_get('custom_key', 'default')
+    - dbt.config.get('custom_key') -> dbt.config.meta_get('custom_key')
+    - dbt.config.get('custom_key', 'default') -> dbt.config.meta_get('custom_key', 'default')
 
     Only transforms custom configs (those not in allowed_config_fields).
     Preserves defaults and all other arguments.
@@ -198,13 +206,13 @@ def move_custom_config_access_to_meta_python(
                 )
             )
 
-    # Check for chained access patterns by looking for dbt.meta_get().something
+    # Check for chained access patterns by looking for dbt.config.meta_get().something
     if refactored:
         # Simple heuristic: look for patterns like ).attr or ).method
-        chained_pattern = re.compile(r"dbt\.meta_get\([^)]+\)\s*\.")
+        chained_pattern = re.compile(r"dbt\.config\.meta_get\([^)]+\)\s*\.")
         if chained_pattern.search(refactored_content):
             refactor_warnings.append(
-                "Detected chained access after dbt.meta_get() call. "
+                "Detected chained access after dbt.config.meta_get() call. "
                 "These patterns require manual review as the structure may need to be adjusted."
             )
 

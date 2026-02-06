@@ -32,7 +32,7 @@ def test_basic_python_config_get_refactor():
     result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
 
     assert result.refactored
-    assert "dbt.meta_get('custom_key')" in result.refactored_content
+    assert "dbt.config.meta_get('custom_key')" in result.refactored_content
     assert "dbt.config.get('materialized')" in result.refactored_content
     assert len(result.deprecation_refactors) == 1
 
@@ -48,8 +48,8 @@ def test_python_config_get_with_default():
     result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
 
     assert result.refactored
-    assert "dbt.meta_get('custom_key'" in result.refactored_content
-    assert "dbt.meta_get('another_key'" in result.refactored_content
+    assert "dbt.config.meta_get('custom_key'" in result.refactored_content
+    assert "dbt.config.meta_get('another_key'" in result.refactored_content
     assert len(result.deprecation_refactors) == 2
 
 
@@ -95,7 +95,7 @@ def test_python_chained_access_warning():
     result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
 
     assert result.refactored
-    assert "dbt.meta_get('custom_dict')" in result.refactored_content
+    assert "dbt.config.meta_get('custom_dict')" in result.refactored_content
     # No chained access in this case (it's on a separate variable)
     assert len(result.deprecation_refactors) == 1
 
@@ -110,7 +110,7 @@ def test_python_inline_chained_access_warning():
     result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
 
     assert result.refactored
-    assert "dbt.meta_get('custom_dict')" in result.refactored_content
+    assert "dbt.config.meta_get('custom_dict')" in result.refactored_content
     assert len(result.refactor_warnings) >= 1
     assert any("chained access" in w.lower() for w in result.refactor_warnings)
 
@@ -143,9 +143,9 @@ def test_python_complex_defaults():
     result = move_custom_config_access_to_meta_python(input_python, MockSchemaSpecs(), "models")
 
     assert result.refactored
-    assert "dbt.meta_get('custom_list'" in result.refactored_content
-    assert "dbt.meta_get('custom_dict'" in result.refactored_content
-    assert "dbt.meta_get('custom_none'" in result.refactored_content
+    assert "dbt.config.meta_get('custom_list'" in result.refactored_content
+    assert "dbt.config.meta_get('custom_dict'" in result.refactored_content
+    assert "dbt.config.meta_get('custom_none'" in result.refactored_content
     assert len(result.deprecation_refactors) == 3
 
 
@@ -186,9 +186,9 @@ def test_python_multiline_model():
     assert result.refactored
 
     # Custom configs should be transformed
-    assert "dbt.meta_get('owner'" in result.refactored_content
-    assert "dbt.meta_get('priority')" in result.refactored_content
-    assert "dbt.meta_get('custom_setting'" in result.refactored_content
+    assert "dbt.config.meta_get('owner'" in result.refactored_content
+    assert "dbt.config.meta_get('priority')" in result.refactored_content
+    assert "dbt.config.meta_get('custom_setting'" in result.refactored_content
 
     # dbt-native configs should NOT be transformed
     assert "dbt.config.get('materialized')" in result.refactored_content
