@@ -247,14 +247,14 @@ class TestMoveCustomConfigAccessToMetaPython:
         assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 1
 
-    def test_single_quotes_converted_to_double(self):
-        """Single quotes in original should work correctly."""
+    def test_single_quotes_preserved(self):
+        """Single quotes in original should be preserved in output."""
         input_python = """def model(dbt, session):
     custom = dbt.config.get('custom_key')
     return session.sql("SELECT 1")
 """
         expected_python = """def model(dbt, session):
-    custom = dbt.config.meta_get("custom_key")
+    custom = dbt.config.meta_get('custom_key')
     return session.sql("SELECT 1")
 """
         result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
