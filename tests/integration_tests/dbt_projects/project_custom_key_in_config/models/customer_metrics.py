@@ -1,4 +1,4 @@
-import pandas as pd
+import pandas as pd  # noqa: F401
 
 # Report configuration
 REPORT_NAME = "customer_metrics"
