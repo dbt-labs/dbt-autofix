@@ -140,7 +140,7 @@ class TestRefactorCustomConfigsToMetaPython:
     return session.sql("SELECT 1")
 """
         expected_python = """def model(dbt, session):
-    dbt.config(materialized="table", schema="my_schema", tags=['daily'], meta={"already_meta_a": 'A', "already_meta_b": 'B', "custom_x": "X", "custom_y": "Y"})
+    dbt.config(materialized="table", schema="my_schema", tags=['daily'], meta={"already_meta_a": "A", "already_meta_b": "B", "custom_x": "X", "custom_y": "Y"})
     return session.sql("SELECT 1")
 """
         result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")

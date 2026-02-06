@@ -32,6 +32,11 @@ DBT_CONFIG_GET_PATTERN = re.compile(
 def _find_matching_paren(content: str, start: int) -> int:
     """Find the position of the matching closing parenthesis.
 
+    Best-effort bracket matcher that tracks single/double-quoted strings.
+    Does not handle triple-quoted strings or double-escaped backslashes,
+    but these are not expected in dbt.config() calls. The AST parser in
+    _parse_python_kwargs handles the actual semantic parsing.
+
     Args:
         content: The string to search in
         start: Position of the opening parenthesis
@@ -47,7 +52,7 @@ def _find_matching_paren(content: str, start: int) -> int:
     while i < len(content) and depth > 0:
         char = content[i]
 
-        # Handle string boundaries
+        # Handle string boundaries (best-effort: single backslash escape only)
         if char in ('"', "'") and (i == 0 or content[i - 1] != "\\"):
             if not in_string:
                 in_string = True
@@ -203,7 +208,7 @@ def refactor_custom_configs_to_meta_python(
                 existing_meta_parsed = ast.literal_eval(existing_meta)
                 if isinstance(existing_meta_parsed, dict):
                     for k, v in existing_meta_parsed.items():
-                        meta_items.append(f'"{k}": {v!r}')
+                        meta_items.append(f'"{k}": {_single_to_double_quotes(repr(v))}')
             except (ValueError, SyntaxError):
                 # Can't parse existing meta, preserve it as-is in the string form
                 # This is a fallback - we'll just add to it

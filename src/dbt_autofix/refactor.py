@@ -370,6 +370,8 @@ def process_python_files(
     results: List[PythonRefactorResult] = []
 
     # Python model rules - both are safe changes (don't require behavior_change flag)
+    # Tuple format: (function, requires_file_path, requires_schema_specs)
+    # requires_file_path is always False for Python (kept for consistency with SQL rule tuples)
     safe_change_rules = [
         (refactor_custom_configs_to_meta_python, False, True),
         (move_custom_config_access_to_meta_python, False, True),
