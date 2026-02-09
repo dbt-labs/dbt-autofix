@@ -23,7 +23,6 @@ def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:
     if "config(" not in string:
         return None
 
-    # set 'capture_macros' to capture undefined
     env = get_jinja_environment()
 
     parsed = env.parse(string)
