@@ -15,7 +15,7 @@ def test_macro_parser_parses_simple_types() -> None:
     {% endmacro %}
     """
 
-    env = jinja2.Environment()
+    env = jinja2.Environment(autoescape=False)
     parser = MacroFuzzParser(env, macro_txt)
     result = parser.parse()
     arg_types = result.body[1].arg_types
@@ -32,7 +32,7 @@ def test_macro_parser_parses_complex_types() -> None:
     {% endmacro %}
     """
 
-    env = jinja2.Environment()
+    env = jinja2.Environment(autoescape=False)
     parser = MacroFuzzParser(env, macro_txt)
     result = parser.parse()
     arg_types = result.body[1].arg_types
