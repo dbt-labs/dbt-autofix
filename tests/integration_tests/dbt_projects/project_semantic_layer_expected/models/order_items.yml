@@ -41,6 +41,8 @@ models:
         description: Sum of the product revenue for each order item. Excludes tax.
         type: simple
         label: Revenue
+        config:
+          tags: [deprecated_tag_1, deprecated_tag_2]
         agg: sum
         expr: product_price
       - name: revenue_with_stacked_filters
@@ -48,6 +50,8 @@ models:
         type: simple
         label: Revenue
         filter: (revenue_filter_on_metric_itself) AND (revenue_filter_on_input)
+        config:
+          tags: [deprecated_tag_1, deprecated_tag_2, normal_tag_1, normal_tag_2]
         agg: sum
         expr: product_price
       - name: median_revenue
@@ -109,6 +113,9 @@ models:
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
+        config:
+          meta:
+            label_in_meta: text in meta
         type: simple
         hidden: true
       - name: cumulative_revenue
@@ -129,6 +136,9 @@ models:
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
+        config:
+          meta:
+            label_in_meta: text in meta
         type: simple
         hidden: true
         fill_nulls_with: 0
@@ -137,6 +147,9 @@ models:
         description: The cumulative revenue for all orders, but now with fill_nulls_with and join_to_timespine settings.
         label: Cumulative Revenue (All Time)
         type: cumulative
+        window: 1 month
+        grain_to_date: day
+        period_agg: first
         input_metric:
           name: revenue_fill_nulls_with_0_join_to_timespine
           filter: cumulative_filter
@@ -144,6 +157,9 @@ models:
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
+        config:
+          meta:
+            label_in_meta: text in meta
         type: simple
         hidden: true
         fill_nulls_with: test
@@ -175,6 +191,9 @@ models:
         description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
         agg: sum
         expr: product_price
+        config:
+          meta:
+            label_in_meta: text in meta
         type: simple
         hidden: true
         join_to_timespine: true

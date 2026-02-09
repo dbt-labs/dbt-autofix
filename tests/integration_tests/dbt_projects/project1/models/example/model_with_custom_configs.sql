@@ -12,9 +12,13 @@
 
 {{ config.get('custom_config', 'default_value') }}
 
+{{ model.config.get('custom_config') }}
+
 {{ config.get('materialized') }}
 
 {{ config.get('materialized', 'default_value') }}
+
+{{ model.config.get('materialized') }}
 
 {{ config.get('custom_config_dict').a }}
 
