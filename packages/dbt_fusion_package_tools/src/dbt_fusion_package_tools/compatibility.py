@@ -32,6 +32,13 @@ class ParseConformanceLogOutput(DataClassJSONMixin):
 
 
 @dataclass
+class FusionCompatibleDownload(DataClassJSONMixin):
+    tarball: str
+    format: str
+    sha1: str
+
+
+@dataclass
 class FusionConformanceResult(DataClassJSONMixin):
     version: Optional[str] = None
     require_dbt_version_defined: Optional[bool] = None
@@ -41,3 +48,4 @@ class FusionConformanceResult(DataClassJSONMixin):
     manually_verified_compatible: Optional[bool] = None
     manually_verified_incompatible: Optional[bool] = None
     download_failed: bool = False
+    fusion_compatible_download: Optional[FusionCompatibleDownload] = None
