@@ -13,7 +13,7 @@ Vendored from:
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Callable, Dict, List, NoReturn, Optional, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, NoReturn, Optional, Type, Union
 
 import jinja2
 import jinja2.ext
@@ -137,7 +137,7 @@ SUPPORTED_LANG_ARG = jinja2.nodes.Name("supported_languages", "param")
 
 
 class MaterializationExtension(jinja2.ext.Extension):
-    tags = ["materialization"]
+    tags: ClassVar[List[str]] = ["materialization"]
 
     def parse(self, parser: jinja2.parser.Parser) -> _ParseReturn:
         node = jinja2.nodes.Macro(lineno=next(parser.stream).lineno)
@@ -175,7 +175,7 @@ class MaterializationExtension(jinja2.ext.Extension):
 
 
 class DocumentationExtension(jinja2.ext.Extension):
-    tags = ["docs"]
+    tags: ClassVar[List[str]] = ["docs"]
 
     def parse(self, parser: jinja2.parser.Parser) -> _ParseReturn:
         node = jinja2.nodes.Macro(lineno=next(parser.stream).lineno)
@@ -189,7 +189,7 @@ class DocumentationExtension(jinja2.ext.Extension):
 
 
 class TestExtension(jinja2.ext.Extension):
-    tags = ["test"]
+    tags: ClassVar[List[str]] = ["test"]
 
     def parse(self, parser: jinja2.parser.Parser) -> _ParseReturn:
         node = jinja2.nodes.Macro(lineno=next(parser.stream).lineno)
