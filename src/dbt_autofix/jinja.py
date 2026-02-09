@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import jinja2
-from dbt_autofix._jinja_environment import get_jinja_environment
 from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
+
+from dbt_autofix._jinja_environment import get_jinja_environment
 
 
 def statically_parse_unrendered_config(string: str) -> Optional[Dict[str, Any]]:

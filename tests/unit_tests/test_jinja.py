@@ -1,7 +1,7 @@
 import jinja2
 import pytest
-from dbt_autofix._jinja_environment import get_jinja_environment
 
+from dbt_autofix._jinja_environment import get_jinja_environment
 from dbt_autofix.jinja import (
     _SourceCodeExtractor,
     construct_static_kwarg_value,

@@ -126,9 +126,7 @@ class MacroFuzzParser(jinja2.parser.Parser):
 
 
 class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
-    def _parse(
-        self, source: str, name: Optional[str], filename: Optional[str]
-    ) -> jinja2.nodes.Template:
+    def _parse(self, source: str, name: Optional[str], filename: Optional[str]) -> jinja2.nodes.Template:
         return MacroFuzzParser(self, source, name, filename).parse()
 
 
@@ -165,9 +163,7 @@ class MaterializationExtension(jinja2.ext.Extension):
                 languages = parser.parse_expression()
                 node.defaults.append(languages)
             else:
-                raise ValueError(
-                    f"Unexpected argument '{target.name}' to materialization '{materialization_name}'"
-                )
+                raise ValueError(f"Unexpected argument '{target.name}' to materialization '{materialization_name}'")
 
         if SUPPORTED_LANG_ARG not in node.args:
             node.args.append(SUPPORTED_LANG_ARG)
