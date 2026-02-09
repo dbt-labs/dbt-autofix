@@ -23,13 +23,14 @@ import jinja2.sandbox
 
 # ---------------------------------------------------------------------------
 # Constants (from dbt_common/utils/jinja.py)
+# https://github.com/dbt-labs/dbt-common/blob/5b331b9c50ca5fee959a9e4fa9ecca964549930c/dbt_common/utils/jinja.py#L6
 # ---------------------------------------------------------------------------
 MACRO_PREFIX = "dbt_macro__"
 DOCS_PREFIX = "dbt_docs__"
 
 
 # ---------------------------------------------------------------------------
-# Name-mangling helpers (from dbt_common/utils/jinja.py)
+# Name-prefixing helpers (from dbt_common/utils/jinja.py)
 # ---------------------------------------------------------------------------
 def get_dbt_macro_name(name: str) -> str:
     if name is None:
