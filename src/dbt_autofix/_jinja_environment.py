@@ -25,6 +25,7 @@ import jinja2.sandbox
 # Constants (from dbt_common/utils/jinja.py)
 # https://github.com/dbt-labs/dbt-common/blob/5b331b9c50ca5fee959a9e4fa9ecca964549930c/dbt_common/utils/jinja.py#L6
 # ---------------------------------------------------------------------------
+
 MACRO_PREFIX = "dbt_macro__"
 DOCS_PREFIX = "dbt_docs__"
 
@@ -33,6 +34,8 @@ DOCS_PREFIX = "dbt_docs__"
 # Name-prefixing helpers (from dbt_common/utils/jinja.py)
 # https://github.com/dbt-labs/dbt-common/blob/5b331b9c50ca5fee959a9e4fa9ecca964549930c/dbt_common/utils/jinja.py#L10
 # ---------------------------------------------------------------------------
+
+
 def get_dbt_macro_name(name: str) -> str:
     if name is None:
         raise ValueError("Got None for a macro name!")
@@ -64,7 +67,10 @@ def get_test_macro_name(test_name: str) -> str:
 # ---------------------------------------------------------------------------
 # MacroType / MacroFuzzParser / MacroFuzzEnvironment
 # (from dbt_common/clients/jinja.py)
+# https://github.com/dbt-labs/dbt-common/blob/5b331b9c50ca5fee959a9e4fa9ecca964549930c/dbt_common/clients/jinja.py#L101
 # ---------------------------------------------------------------------------
+
+
 @dataclasses.dataclass
 class MacroType:
     name: str
@@ -137,7 +143,9 @@ class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
 
 # ---------------------------------------------------------------------------
 # Extensions (from dbt_common/clients/jinja.py)
+# https://github.com/dbt-labs/dbt-common/blob/5b331b9c50ca5fee959a9e4fa9ecca964549930c/dbt_common/clients/jinja.py#L430
 # ---------------------------------------------------------------------------
+
 SUPPORTED_LANG_ARG = jinja2.nodes.Name("supported_languages", "param")
 
 
@@ -168,6 +176,8 @@ class MaterializationExtension(jinja2.ext.Extension):
                 languages = parser.parse_expression()
                 node.defaults.append(languages)
             else:
+                # Upstream raises MaterializationArgError (a dbt-common exception).
+                # We use ValueError to avoid the dbt-common dependency.
                 raise ValueError(f"Unexpected argument '{target.name}' to materialization '{materialization_name}'")
 
         if SUPPORTED_LANG_ARG not in node.args:
