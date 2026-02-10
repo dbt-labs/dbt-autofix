@@ -88,11 +88,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
                 latest_version_incl_prerelease = package_version.version
         elif not latest_version or package_version.version > latest_version:
             latest_version = package_version.version
-        
-        print()
-        pprint(package_version)
-        pprint(version)
-        
+
         dbt_version_defined = package_version.is_require_dbt_version_defined()
         # hubcap's require-dbt-version has some missing data for older versions 
         # so use the fusion_compatibility definition if it exists
@@ -117,10 +113,11 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             and version["package_id_from_path"] != "cerebriumai/github"
             and version["package_id_from_path"] != "cerebriumai/airbyte_dbt_github"
         ):
-            if hub_require_dbt_version_defined and package_version.is_require_dbt_version_defined():
-                assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
-            if hub_require_dbt_version_compatible is not None:
-                assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
+            if hub_require_dbt_version_defined:
+                if package_version.is_require_dbt_version_defined():
+                    assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
+                if hub_require_dbt_version_compatible is not None:
+                    assert hub_require_dbt_version_compatible == fusion_compatible_version
         
         # default: compatibility determined by require dbt version
         fusion_compatible_version: bool = (
@@ -174,7 +171,6 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             assert oldest_fusion_compatible_version == None
             assert len(fusion_compatible_versions) == 0
     return {
-        # "versions": versions,
         "latest_version": convert_version_spec_to_string(latest_version),
         "oldest_fusion_compatible_version": convert_version_spec_to_string(oldest_fusion_compatible_version),
         "latest_fusion_compatible_version": convert_version_spec_to_string(latest_fusion_version),
