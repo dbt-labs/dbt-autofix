@@ -264,7 +264,7 @@ requires-dist = [
     { name = "dbt-extractor", specifier = ">=0.5.0,<=0.6" },
     { name = "dbt-fusion-package-tools", editable = "packages/dbt_fusion_package_tools" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "jinja2", specifier = ">=3.1.3" },
+    { name = "jinja2", specifier = ">=3.1.3,<4" },
     { name = "nox", marker = "extra == 'test'" },
     { name = "pre-commit", marker = "extra == 'test'", specifier = ">=4.2.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=7.2.0" },
