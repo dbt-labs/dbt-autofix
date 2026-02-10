@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from pprint import pprint
 from typing import Any, Optional
 
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
@@ -90,11 +89,11 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             latest_version = package_version.version
 
         dbt_version_defined = package_version.is_require_dbt_version_defined()
-        # hubcap's require-dbt-version has some missing data for older versions 
+        # hubcap's require-dbt-version has some missing data for older versions
         # so use the fusion_compatibility definition if it exists
         if hub_require_dbt_version_defined is True and dbt_version_defined is False:
             dbt_version_defined = hub_require_dbt_version_defined
-        
+
         # default: compatibility determined by require dbt version
         if dbt_version_defined:
             # use package hub first
@@ -104,7 +103,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
                 fusion_compatible_version = package_version.is_require_dbt_version_fusion_compatible()
         else:
             fusion_compatible_version = False
-        
+
         # data quality checks
         if (
             # some older versions of this package are missing dbt project yml
@@ -115,15 +114,17 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         ):
             if hub_require_dbt_version_defined:
                 if package_version.is_require_dbt_version_defined():
-                    assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
+                    assert (
+                        hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
+                    )
                 if hub_require_dbt_version_compatible is not None:
                     assert hub_require_dbt_version_compatible == fusion_compatible_version
-        
+
         # default: compatibility determined by require dbt version
         fusion_compatible_version: bool = (
             dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
         )
-        
+
         # check for a manual override either in hub or autofix
         # hub overrides autofix
         if hub_manually_verified_incompatible:
@@ -141,7 +142,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         if not fusion_compatible_version and not dbt_version_defined:
             unknown_compatibility_versions.append(package_version.version)
             continue
-        
+
         # remaining versions: either compatible via require dbt version or manual override
         if fusion_compatible_version:
             fusion_compatible_versions.append(package_version.version)
@@ -151,7 +152,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
                 oldest_fusion_compatible_version = package_version.version
         else:
             fusion_incompatible_versions.append(package_version.version)
-        
+
     if latest_version_incl_prerelease is None:
         latest_version_incl_prerelease = latest_version
     if latest_version is None and latest_version_incl_prerelease:

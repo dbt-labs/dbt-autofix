@@ -1,5 +1,4 @@
 import json
-import time
 import warnings
 from collections import defaultdict
 from pathlib import Path
@@ -89,9 +88,13 @@ def process_json(file_path: str, parsed_json: Any) -> dict[str, Any]:
         if "fusion_compatibility" in parsed_json:
             fusion_compatibility = {
                 "manually_verified_compatible": parsed_json["fusion_compatibility"].get("manually_verified_compatible"),
-                "manually_verified_incompatible": parsed_json["fusion_compatibility"].get("manually_verified_incompatible"),
+                "manually_verified_incompatible": parsed_json["fusion_compatibility"].get(
+                    "manually_verified_incompatible"
+                ),
                 "require_dbt_version_defined": parsed_json["fusion_compatibility"].get("require_dbt_version_defined"),
-                "require_dbt_version_compatible": parsed_json["fusion_compatibility"].get("require_dbt_version_compatible"),
+                "require_dbt_version_compatible": parsed_json["fusion_compatibility"].get(
+                    "require_dbt_version_compatible"
+                ),
                 "parse_compatible": parsed_json["fusion_compatibility"].get("parse_compatible"),
                 "download_failed": parsed_json["fusion_compatibility"].get("download_failed"),
             }
