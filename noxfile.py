@@ -90,21 +90,17 @@ def test_pre_commit_installation(session):
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def test_wheel_installation(session):
-    """Test that both wheels build, install, and work outside the uv workspace.
+    """Dry-run the release pipeline: build, inspect, and install both wheels.
 
-    This replaces the old test_pre_commit_installation session which used
-    `pre-commit try-repo`. That approach broke because the metadata hook pins
-    dbt-fusion-package-tools=={version} and the dev version doesn't exist on
-    PyPI. Instead, we build both wheels locally and install them together —
-    which is what actually happens during a release.
+    Smoke test to prevent us from uploading broken wheels to PyPI. Exercises our dynamic versioning system.
 
-    Verifies:
-    1. Both packages build successfully via `uv build --all`
-    2. The dbt-autofix wheel contains the pre_commit_hooks package
-    3. The dbt-autofix wheel metadata pins dbt-fusion-package-tools=={version}
-    4. Both wheels install together in an isolated (non-workspace) venv
-    5. The CLI entry point works
-    6. The pre-commit hook entry point is importable
+    This mirrors what .github/workflows/release.yml does (`uv build --all`)
+    and is the only test that explicitly inspects the built artifacts. Unlike
+    test_pre_commit_installation (which relies on pre-commit's installer),
+    this test directly examines wheel contents and metadata to catch:
+    - Missing pre_commit_hooks package in the dbt-autofix wheel
+    - Broken Jinja templating of the dbt-fusion-package-tools dependency
+    - Wheels that fail to install together outside the uv workspace
     """
     dist = Path("dist")
 
@@ -129,7 +125,7 @@ def test_wheel_installation(session):
         hook_files = [f for f in wheel_files if f.startswith("pre_commit_hooks/")]
         assert hook_files, "pre_commit_hooks/ not found in dbt-autofix wheel"
 
-        # Read METADATA and check for the version-pinned dependency.
+        # Read METADATA and check the dbt-fusion-package-tools dependency.
         metadata_files = [f for f in wheel_files if f.endswith("/METADATA")]
         assert metadata_files, "METADATA not found in wheel"
         metadata = zf.read(metadata_files[0]).decode()
@@ -142,14 +138,26 @@ def test_wheel_installation(session):
                 break
         assert version, "Version not found in wheel METADATA"
 
-        expected_pin = f"dbt-fusion-package-tools=={version}"
-        assert expected_pin in metadata, (
-            f"Expected '{expected_pin}' in wheel METADATA, but not found.\n"
-            f"Metadata Requires-Dist lines:\n"
-            + "\n".join(line for line in metadata.splitlines() if line.startswith("Requires-Dist:"))
+        requires_lines = [line for line in metadata.splitlines() if line.startswith("Requires-Dist:")]
+        tools_deps = [line for line in requires_lines if "dbt-fusion-package-tools" in line]
+        assert tools_deps, "dbt-fusion-package-tools not found in wheel METADATA.\nRequires-Dist lines:\n" + "\n".join(
+            requires_lines
         )
 
-    session.log(f"Wheel metadata looks good: version={version}, pin={expected_pin}")
+        # On a tagged release (no .dev or + in version), the dependency should
+        # be pinned to the exact version. Off a tag, it should be unpinned.
+        is_release = ".dev" not in version and "+" not in version and not version.startswith("0.0")
+        if is_release:
+            expected = f"Requires-Dist: dbt-fusion-package-tools=={version}"
+            assert any(expected in line for line in tools_deps), (
+                f"Release build: expected '{expected}' but got:\n" + "\n".join(tools_deps)
+            )
+            session.log(f"Wheel metadata looks good: version={version}, pin=={version}")
+        else:
+            assert any("==" not in line for line in tools_deps), (
+                "Dev build: expected unpinned dbt-fusion-package-tools but got:\n" + "\n".join(tools_deps)
+            )
+            session.log(f"Wheel metadata looks good: version={version}, unpinned (dev build)")
 
     # Install both wheels into the nox venv (bypassing workspace resolution)
     # and verify the CLI and pre-commit hook entry point work.
