@@ -23,6 +23,11 @@ semantic_models:
       - name: my_complex_dimension
         expr: CONCAT(location_name, ' ', opened_at)
         type: categorical
+      - name: my_complex_dimension_with_granularity
+        expr: CONCAT(location_name, ' ', opened_at)
+        type: categorical
+        type_params:
+          time_granularity: day
     measures:
       - name: average_tax_rate
         description: Average tax rate.
