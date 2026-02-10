@@ -3,21 +3,7 @@ name = "dbt-autofix"
 description = "CLI to autofix deprecations in dbt projects"
 readme = "README.md"
 requires-python = ">=3.10, <3.14" # can't support 3.14 without mashumaro 3.15
-dependencies = [
-    "pyyaml>=6.0.2 ; python_version >= '3.13'", # need 6.0.2 for python 3.13 support
-    "pyyaml>=6.0 ; python_version < '3.13'", # matches dbt-core
-    "typer>=0.16.0",
-    "yamllint>=1.37.0",
-    "rich>=13.7.0",
-    "click>=8.2.0,<9.0.0",
-    "ruamel-yaml>=0.18.10,<0.18.15",
-    "httpx>=0.27.0",
-    "dbt-common>=1.27,<2",
-    "dbt-extractor>=0.5.0,<=0.6",
-    "dbt-fusion-package-tools",
-]
-
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 
 [tool.uv]
 package = true
@@ -42,18 +28,34 @@ test = [
     "nox",
 ]
 
-[tool.pdm.build]
-# Include pre_commit_hooks/ directory in distribution
-# To enable .pre-commit-hooks.yaml functionality
-includes = ["src/dbt_autofix", "pre_commit_hooks", "packages/dbt_fusion_package_tools"]
-
-[tool.pdm.version]
-source = "scm"
-version_format = "pdm_build:format_version"
-
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling", "uv-dynamic-versioning>=0.7.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dbt_autofix", "pre_commit_hooks"]
+
+[tool.hatch.metadata.hooks.uv-dynamic-versioning]
+dependencies = [
+    "pyyaml>=6.0.2 ; python_version >= '3.13'",
+    "pyyaml>=6.0 ; python_version < '3.13'",
+    "typer>=0.16.0",
+    "yamllint>=1.37.0",
+    "rich>=13.7.0",
+    "click>=8.2.0,<9.0.0",
+    "ruamel-yaml>=0.18.10,<0.18.15",
+    "httpx>=0.27.0",
+    "dbt-common>=1.27,<2",
+    "dbt-extractor>=0.5.0,<=0.6",
+    "dbt-fusion-package-tools=={{ version }}",
+]
 
 [tool.ruff]
 line-length = 120
