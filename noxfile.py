@@ -64,7 +64,7 @@ def test_pre_commit_installation(session):
     )
     # Use try-repo with a non-existent file to test installation without execution.
     # This avoids the requirement for a dbt_project.yml file while still
-    # triggering the pdm_build.py logic we want to verify.
+    # verifying that the package can be built and installed as a pre-commit hook.
     session.run(
         "pre-commit",
         "try-repo",

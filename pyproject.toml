@@ -21,6 +21,10 @@ dynamic = ["version"]
 
 [tool.uv]
 package = true
+# Invalidate uv cache when git state changes, since version is derived from git tags/commits.
+# Without this, uv's aggressive caching may serve stale version metadata.
+# See: https://github.com/ninoseki/uv-dynamic-versioning/blob/main/docs/tips.md
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
 
 [tool.uv.workspace]
 members = [
@@ -42,18 +46,22 @@ test = [
     "nox",
 ]
 
-[tool.pdm.build]
-# Include pre_commit_hooks/ directory in distribution
-# To enable .pre-commit-hooks.yaml functionality
-includes = ["src/dbt_autofix", "pre_commit_hooks", "packages/dbt_fusion_package_tools"]
-
-[tool.pdm.version]
-source = "scm"
-version_format = "pdm_build:format_version"
-
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling", "uv-dynamic-versioning>=0.7.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+# Fallback when git tags are unavailable (e.g. Dependabot running uv lock in a shallow clone).
+# See: https://github.com/ninoseki/uv-dynamic-versioning/blob/main/docs/tips.md
+fallback-version = "0.0.0"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dbt_autofix", "pre_commit_hooks"]
 
 [tool.ruff]
 line-length = 120
