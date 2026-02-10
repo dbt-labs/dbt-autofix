@@ -35,3 +35,5 @@ source = "uv-dynamic-versioning"
 [tool.uv-dynamic-versioning]
 vcs = "git"
 style = "pep440"
+# Fallback when git tags are unavailable (e.g. Dependabot running uv lock in a shallow clone)
+fallback-version = "0.0.0"

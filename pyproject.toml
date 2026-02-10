@@ -7,6 +7,9 @@ dynamic = ["version", "dependencies"]
 
 [tool.uv]
 package = true
+# Invalidate uv cache when git state changes, since version is derived from git tags/commits.
+# Without this, uv's aggressive caching may serve stale version metadata.
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
 
 [tool.uv.workspace]
 members = [
@@ -38,6 +41,8 @@ source = "uv-dynamic-versioning"
 [tool.uv-dynamic-versioning]
 vcs = "git"
 style = "pep440"
+# Fallback when git tags are unavailable (e.g. Dependabot running uv lock in a shallow clone)
+fallback-version = "0.0.0"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dbt_autofix", "pre_commit_hooks"]
