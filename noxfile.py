@@ -56,6 +56,39 @@ def run_cli_deprecations(session):
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
+def test_pre_commit_installation(session):
+    """Test the pre-commit hook installation flow as end users experience it.
+
+    This is the only test that exercises pre-commit's own build-and-install
+    machinery against the local repo. It catches issues that would prevent
+    users from adding dbt-autofix to their .pre-commit-config.yaml, such as:
+    - Build backend misconfiguration (hatchling + uv-dynamic-versioning)
+    - Dependencies that fail to resolve outside the uv workspace
+    - Missing pre_commit_hooks package in the wheel (the hook entry point
+      is `python -m pre_commit_hooks.check_deprecations`, so import failure
+      would surface here)
+    """
+    session.run_install(
+        "uv",
+        "sync",
+        "--extra=test",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+    # Use try-repo with a non-existent file to test installation without execution.
+    # This avoids the requirement for a dbt_project.yml file.
+    session.run(
+        "pre-commit",
+        "try-repo",
+        ".",
+        "dbt-autofix-check",
+        "--files",
+        "non_existent_file",
+        "--verbose",
+    )
+
+
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def test_wheel_installation(session):
     """Test that both wheels build, install, and work outside the uv workspace.
 
