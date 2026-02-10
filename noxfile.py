@@ -113,7 +113,7 @@ def test_wheel_installation(session):
         assert expected_pin in metadata, (
             f"Expected '{expected_pin}' in wheel METADATA, but not found.\n"
             f"Metadata Requires-Dist lines:\n"
-            + "\n".join(l for l in metadata.splitlines() if l.startswith("Requires-Dist:"))
+            + "\n".join(line for line in metadata.splitlines() if line.startswith("Requires-Dist:"))
         )
 
     session.log(f"Wheel metadata looks good: version={version}, pin={expected_pin}")
