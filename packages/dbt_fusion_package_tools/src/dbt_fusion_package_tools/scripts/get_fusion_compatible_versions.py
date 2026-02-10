@@ -68,28 +68,65 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             raw_require_dbt_version_range=version["package_version_require_dbt_version"],
             package_id=version["package_id_from_path"],
         )
+        fusion_compatibility = version.get("fusion_compatibility")
+        if "fusion_compatibility" in version:
+            hub_manually_verified_compatible = fusion_compatibility.get("manually_verified_compatible")
+            hub_manually_verified_incompatible = fusion_compatibility.get("manually_verified_incompatible")
+            hub_require_dbt_version_compatible = fusion_compatibility.get("require_dbt_version_compatible")
+            hub_require_dbt_version_defined = fusion_compatibility.get("require_dbt_version_defined")
+        else:
+            hub_manually_verified_compatible = False
+            hub_manually_verified_incompatible = False
+            hub_require_dbt_version_compatible = None
+            hub_require_dbt_version_defined = None
         versions.append(version)
+
+        # update package latest version - should match what's in hub at end
+        if package_version.is_prerelease_version():
+            if not latest_version_incl_prerelease or package_version.version > latest_version_incl_prerelease:
+                latest_version_incl_prerelease = package_version.version
+        elif not latest_version or package_version.version > latest_version:
+            latest_version = package_version.version
+        
         dbt_version_defined = package_version.is_require_dbt_version_defined()
+        if hub_require_dbt_version_defined:
+            assert dbt_version_defined == hub_require_dbt_version_defined
+        
+        # default: compatibility determined by require dbt version
         fusion_compatible_version: bool = (
             dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
         )
-        if package_version.is_version_explicitly_disallowed_on_fusion():
+        if hub_require_dbt_version_compatible:
+            assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
+        
+        # check for a manual override either in hub or autofix
+        # hub overrides autofix
+        if hub_manually_verified_incompatible:
             fusion_compatible_version = False
+            fusion_incompatible_versions.append(package_version.version)
+            continue
+        elif hub_manually_verified_compatible:
+            fusion_compatible_version = True
+        elif package_version.is_version_explicitly_disallowed_on_fusion():
+            fusion_compatible_version = False
+            fusion_incompatible_versions.append(package_version.version)
+            continue
+
+        # add to unknown compatibility if require dbt version missing and no override
+        if not fusion_compatible_version and not dbt_version_defined:
+            unknown_compatibility_versions.append(package_version.version)
+            continue
+        
+        # remaining versions: either compatible via require dbt version or manual override
         if fusion_compatible_version:
             fusion_compatible_versions.append(package_version.version)
             if not latest_fusion_version or package_version.version > latest_fusion_version:
                 latest_fusion_version = package_version.version
             if not oldest_fusion_compatible_version or package_version.version < oldest_fusion_compatible_version:
                 oldest_fusion_compatible_version = package_version.version
-        elif not dbt_version_defined:
-            unknown_compatibility_versions.append(package_version.version)
-        elif dbt_version_defined and not fusion_compatible_version:
+        else:
             fusion_incompatible_versions.append(package_version.version)
-        if package_version.is_prerelease_version():
-            if not latest_version_incl_prerelease or package_version.version > latest_version_incl_prerelease:
-                latest_version_incl_prerelease = package_version.version
-        elif not latest_version or package_version.version > latest_version:
-            latest_version = package_version.version
+        
     if latest_version_incl_prerelease is None:
         latest_version_incl_prerelease = latest_version
     if latest_version is None and latest_version_incl_prerelease:
