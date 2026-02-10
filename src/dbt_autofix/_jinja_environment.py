@@ -20,6 +20,7 @@ import jinja2.ext
 import jinja2.nodes
 import jinja2.parser
 import jinja2.sandbox
+from jinja2 import select_autoescape
 
 # ---------------------------------------------------------------------------
 # Constants (from dbt_common/utils/jinja.py)
@@ -290,6 +291,11 @@ def get_jinja_environment() -> jinja2.Environment:
             TestExtension,
         ],
         "undefined": create_undefined(),
+        # A difference from dbt-common's implementation
+        # This disables autoescaping when rendering HTML / XML templates, to improve security posture
+        # But it should be irrelevant, as we only parse templates in autofix, and those should always be sql and yaml
+        # But let's prefer secure settings for prevention
+        "autoescape": select_autoescape(),
     }
 
     env = MacroFuzzEnvironment(**args)
