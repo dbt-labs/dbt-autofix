@@ -29,7 +29,12 @@ GOLDIE_UPDATE=1 pytest tests/integration_tests
 ```
 
 to automatically update the expected *.stdout files.
+## Adding new dependencies
 
+`dbt-autofix` declares `dependencies` as dynamic (managed by the `uv-dynamic-versioning` metadata hook), so `uv add` cannot write to `[project].dependencies`.
+
+- **Runtime dependency:** Manually add it to the `[tool.hatch.metadata.hooks.uv-dynamic-versioning].dependencies` list in `pyproject.toml`, then run `uv sync`.
+- **Dev/test dependency:** `uv add --optional test <package>` works as normal since `[project.optional-dependencies]` is static.
 
 ## Releasing
 
