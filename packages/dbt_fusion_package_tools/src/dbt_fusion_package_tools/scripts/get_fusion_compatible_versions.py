@@ -70,7 +70,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             package_id=version["package_id_from_path"],
         )
         fusion_compatibility = version.get("fusion_compatibility")
-        if "fusion_compatibility" in version:
+        if "fusion_compatibility" in version and fusion_compatibility.get("download_failed") is not True:
             hub_manually_verified_compatible = fusion_compatibility.get("manually_verified_compatible")
             hub_manually_verified_incompatible = fusion_compatibility.get("manually_verified_incompatible")
             hub_require_dbt_version_compatible = fusion_compatibility.get("require_dbt_version_compatible")
@@ -109,15 +109,17 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         else:
             fusion_compatible_version = False
         
-        # data quality check
-        if hub_require_dbt_version_defined and package_version.is_require_dbt_version_defined():
+        # data quality checks
+        if (
             # some older versions of this package are missing dbt project yml
-            if version["package_name_version_json"] != "yuki_snowflake_dbt_tags":
+            version["package_name_version_json"] != "yuki_snowflake_dbt_tags"
+            # oldest version of package is duplicated
+            and version["package_id_from_path"] != "cerebriumai/github"
+            and version["package_id_from_path"] != "cerebriumai/airbyte_dbt_github"
+        ):
+            if hub_require_dbt_version_defined and package_version.is_require_dbt_version_defined():
                 assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
-        # data quality check
-        if hub_require_dbt_version_compatible is not None:
-            # some older versions of this package are missing dbt project yml
-            if version["package_name_version_json"] != "yuki_snowflake_dbt_tags":
+            if hub_require_dbt_version_compatible is not None:
                 assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
         
         # default: compatibility determined by require dbt version
