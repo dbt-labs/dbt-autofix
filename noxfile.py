@@ -161,23 +161,18 @@ def test_wheel_installation(session):
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def test_core_1_10_installation(session):
     """Test that dbt-autofix can be installed with dbt-core"""
-    session.run_install(
-        "uv",
-        "sync",
-        "--all-packages",
-        f"--python={session.virtualenv.location}",
-        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
-    )
     # Use `uv pip install` instead of `uv add` because [project].dependencies is
     # dynamic (managed by the uv-dynamic-versioning metadata hook), so `uv add`
     # would fail trying to write to it. We just need dbt-core in the venv to
     # verify compatibility, not as a permanent project dependency.
+    session.run("uv", "add", "--optional", "dbt", "dbt-core==1.10.6", f"--python={session.virtualenv.location}")
     session.run_install(
         "uv",
-        "pip",
-        "install",
-        "dbt-core==1.10.6",
+        "sync",
+        "--extra=dbt",
+        "--all-packages",
         f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
     session.run("dbt-autofix", "--help")
 
@@ -185,19 +180,13 @@ def test_core_1_10_installation(session):
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def test_core_1_12_installation(session):
     """Test that dbt-autofix can be installed with dbt-core"""
+    session.run("uv", "add", "--optional", "dbt", "dbt-core==1.11.2", f"--python={session.virtualenv.location}")
     session.run_install(
         "uv",
         "sync",
+        "--extra=dbt",
         "--all-packages",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
-    )
-    # Use `uv pip install` instead of `uv add` — see comment in test_core_1_10_installation.
-    session.run_install(
-        "uv",
-        "pip",
-        "install",
-        "dbt-core==1.11.2",
-        f"--python={session.virtualenv.location}",
     )
     session.run("dbt-autofix", "--help")
