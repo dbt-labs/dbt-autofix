@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from pprint import pprint
 from typing import Any, Optional
 
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
@@ -88,16 +89,41 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         elif not latest_version or package_version.version > latest_version:
             latest_version = package_version.version
         
+        print()
+        pprint(package_version)
+        pprint(version)
+        
         dbt_version_defined = package_version.is_require_dbt_version_defined()
-        if hub_require_dbt_version_defined:
-            assert dbt_version_defined == hub_require_dbt_version_defined
+        # hubcap's require-dbt-version has some missing data for older versions 
+        # so use the fusion_compatibility definition if it exists
+        if hub_require_dbt_version_defined is True and dbt_version_defined is False:
+            dbt_version_defined = hub_require_dbt_version_defined
+        
+        # default: compatibility determined by require dbt version
+        if dbt_version_defined:
+            # use package hub first
+            if hub_require_dbt_version_defined and hub_require_dbt_version_compatible is not None:
+                fusion_compatible_version = hub_require_dbt_version_compatible
+            else:
+                fusion_compatible_version = package_version.is_require_dbt_version_fusion_compatible()
+        else:
+            fusion_compatible_version = False
+        
+        # data quality check
+        if hub_require_dbt_version_defined and package_version.is_require_dbt_version_defined():
+            # some older versions of this package are missing dbt project yml
+            if version["package_name_version_json"] != "yuki_snowflake_dbt_tags":
+                assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
+        # data quality check
+        if hub_require_dbt_version_compatible is not None:
+            # some older versions of this package are missing dbt project yml
+            if version["package_name_version_json"] != "yuki_snowflake_dbt_tags":
+                assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
         
         # default: compatibility determined by require dbt version
         fusion_compatible_version: bool = (
             dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
         )
-        if hub_require_dbt_version_compatible:
-            assert hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
         
         # check for a manual override either in hub or autofix
         # hub overrides autofix
