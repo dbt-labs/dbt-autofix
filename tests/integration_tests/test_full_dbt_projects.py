@@ -11,6 +11,7 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
+import typer
 
 from dbt_autofix.main import refactor_yml
 
@@ -126,13 +127,21 @@ def test_project_refactor(project_folder, request):
     # Run refactor_yml on the project
     refactor_logs_io = StringIO()
     with redirect_stdout(refactor_logs_io):
-        refactor_yml(
-            path=Path(project_path),
-            dry_run=False,
-            json_output=True,
-            behavior_change=project_dir_to_behavior_change_mode[project_folder],
-            semantic_layer=project_dir_to_semantic_layer_mode[project_folder],
-        )
+        try:
+            refactor_yml(
+                path=Path(project_path),
+                dry_run=False,
+                json_output=True,
+                behavior_change=project_dir_to_behavior_change_mode[project_folder],
+                semantic_layer=project_dir_to_semantic_layer_mode[project_folder],
+                check=True,
+            )
+        except typer.Exit as e:
+            assert e.exit_code == 1
+
+    # Reset the buffer to read its content
+    refactor_logs_io.seek(0)
+    refactor_logs = refactor_logs_io.read()
 
     # Compare with expected output
     expected_dir = os.path.join(dbt_projects_dir, f"{project_folder}{postfix_expected}")

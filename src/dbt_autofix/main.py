@@ -123,9 +123,6 @@ def refactor_yml(
         bool, typer.Option("--all", help="Run all fixes, including those that may require a behavior change")
     ] = False,
     semantic_layer: Annotated[bool, typer.Option("--semantic-layer", help="Run fixes to semantic layer")] = False,
-    disable_ssl_verification: Annotated[
-        bool, typer.Option("--disable-ssl-verification", help="Disable SSL verification", hidden=True)
-    ] = False,
 ):
     if semantic_layer and include_packages:
         raise typer.BadParameter("--include-packages is not supported with --semantic-layer")
@@ -156,6 +153,9 @@ def refactor_yml(
                 changeset.print_to_console(json_output)
     else:
         apply_changesets(yaml_results, sql_results, json_output)
+
+    if check and any(changeset.refactored for changeset in [*yaml_results, *sql_results]):
+        raise typer.Exit(code=1)
 
     if json_output:
         print(json.dumps({"mode": "complete"}))
