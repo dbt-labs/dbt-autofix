@@ -1,3 +1,5 @@
+import shutil
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -88,27 +90,23 @@ def test_pre_commit_installation(session):
     )
 
 
-@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
-def test_wheel_installation(session):
-    """Dry-run the release pipeline: build, inspect, and install both wheels.
+def _build_and_install_wheels(session):
+    """Build both wheels, install them, verify entry points, and return metadata.
 
-    Smoke test to prevent us from uploading broken wheels to PyPI. Exercises our dynamic versioning system.
+    Clears dist/, runs `uv build --all`, inspects the dbt-autofix wheel for
+    structural correctness (pre_commit_hooks included, metadata present),
+    installs both wheels, and verifies CLI entry points.
 
-    This mirrors what .github/workflows/release.yml does (`uv build --all`)
-    and is the only test that explicitly inspects the built artifacts. Unlike
-    test_pre_commit_installation (which relies on pre-commit's installer),
-    this test directly examines wheel contents and metadata to catch:
-    - Missing pre_commit_hooks package in the dbt-autofix wheel
-    - Broken Jinja templating of the dbt-fusion-package-tools dependency
-    - Wheels that fail to install together outside the uv workspace
+    Returns:
+        A (version, tools_dep) tuple where version is the wheel's Version string
+        and tools_dep is the Requires-Dist line for dbt-fusion-package-tools.
     """
     dist = Path("dist")
+    if dist.exists():
+        shutil.rmtree(dist)
 
-    # Build both packages. This exercises the hatchling + uv-dynamic-versioning
-    # build pipeline and the metadata hook that templates the dependency pin.
     session.run("uv", "build", "--all", external=True)
 
-    # Find the built wheels.
     autofix_wheels = sorted(dist.glob("dbt_autofix-*.whl"))
     tools_wheels = sorted(dist.glob("dbt_fusion_package_tools-*.whl"))
     assert autofix_wheels, "dbt-autofix wheel not found in dist/"
@@ -116,21 +114,16 @@ def test_wheel_installation(session):
     autofix_whl = autofix_wheels[-1]
     tools_whl = tools_wheels[-1]
 
-    # Inspect the dbt-autofix wheel: verify pre_commit_hooks is included
-    # and that the metadata contains the dbt-fusion-package-tools pin.
     with zipfile.ZipFile(autofix_whl) as zf:
         wheel_files = zf.namelist()
 
-        # Check that pre_commit_hooks package is in the wheel.
         hook_files = [f for f in wheel_files if f.startswith("pre_commit_hooks/")]
         assert hook_files, "pre_commit_hooks/ not found in dbt-autofix wheel"
 
-        # Read METADATA and check the dbt-fusion-package-tools dependency.
         metadata_files = [f for f in wheel_files if f.endswith("/METADATA")]
         assert metadata_files, "METADATA not found in wheel"
         metadata = zf.read(metadata_files[0]).decode()
 
-        # Extract version from the metadata.
         version = None
         for line in metadata.splitlines():
             if line.startswith("Version: "):
@@ -140,30 +133,49 @@ def test_wheel_installation(session):
 
         requires_lines = [line for line in metadata.splitlines() if line.startswith("Requires-Dist:")]
         tools_deps = [line for line in requires_lines if "dbt-fusion-package-tools" in line]
-        assert tools_deps, "dbt-fusion-package-tools not found in wheel METADATA.\nRequires-Dist lines:\n" + "\n".join(
-            requires_lines
+        assert tools_deps, (
+            "dbt-fusion-package-tools not found in wheel METADATA.\nRequires-Dist lines:\n"
+            + "\n".join(requires_lines)
         )
 
-        # On a tagged release (no .dev or + in version), the dependency should
-        # be pinned to the exact version. Off a tag, it should be unpinned.
-        is_release = ".dev" not in version and "+" not in version and not version.startswith("0.0")
-        if is_release:
-            expected = f"Requires-Dist: dbt-fusion-package-tools=={version}"
-            assert any(expected in line for line in tools_deps), (
-                f"Release build: expected '{expected}' but got:\n" + "\n".join(tools_deps)
-            )
-            session.log(f"Wheel metadata looks good: version={version}, pin=={version}")
-        else:
-            assert any("==" not in line for line in tools_deps), (
-                "Dev build: expected unpinned dbt-fusion-package-tools but got:\n" + "\n".join(tools_deps)
-            )
-            session.log(f"Wheel metadata looks good: version={version}, unpinned (dev build)")
-
-    # Install both wheels into the nox venv (bypassing workspace resolution)
-    # and verify the CLI and pre-commit hook entry point work.
     session.install(str(tools_whl), str(autofix_whl))
     session.run("dbt-autofix", "--help")
     session.run("python", "-m", "pre_commit_hooks.check_deprecations", "--help")
+
+    return version, tools_deps[0]
+
+
+_SIMULATED_TAG = "v99.99.99"
+
+
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
+def test_wheel_installation(session):
+    """Dry-run the release pipeline for a dev build.
+
+    Builds both wheels from the current (untagged) git state, installs them,
+    and verifies that dbt-fusion-package-tools is an unpinned dependency.
+    """
+    version, tools_dep = _build_and_install_wheels(session)
+    assert "==" not in tools_dep, f"Dev build: expected unpinned dbt-fusion-package-tools but got: {tools_dep}"
+    session.log(f"version={version}, unpinned (dev build)")
+
+
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
+def test_wheel_installation_release(session):
+    """Dry-run the release pipeline for a simulated tagged release.
+
+    Creates a temporary git tag on HEAD so uv-dynamic-versioning sees
+    distance=0, builds both wheels, and verifies that dbt-fusion-package-tools
+    is pinned to the exact release version.
+    """
+    subprocess.run(["git", "tag", _SIMULATED_TAG], check=True)
+    try:
+        version, tools_dep = _build_and_install_wheels(session)
+    finally:
+        subprocess.run(["git", "tag", "-d", _SIMULATED_TAG], check=True)
+    expected = f"Requires-Dist: dbt-fusion-package-tools=={version}"
+    assert expected in tools_dep, f"Release build: expected '{expected}' but got: {tools_dep}"
+    session.log(f"version={version}, pin=={version}")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
