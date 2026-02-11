@@ -1,13 +1,10 @@
 import jinja2
 import pytest
-from dbt_autofix_jinja import (
-    construct_static_kwarg_value,
-    get_jinja_environment,
-    statically_parse_unrendered_config,
-)
-from dbt_autofix_jinja.jinja import _SourceCodeExtractor
+from dbt_autofix_jinja import statically_parse_unrendered_config
+from dbt_autofix_jinja._jinja_environment import get_jinja_environment
+from dbt_autofix_jinja.jinja import _SourceCodeExtractor, construct_static_kwarg_value
 
-from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_call  # noqa: PLC0415
+from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_call
 
 
 @pytest.mark.parametrize(
