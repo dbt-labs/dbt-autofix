@@ -133,9 +133,8 @@ def _build_and_install_wheels(session):
 
         requires_lines = [line for line in metadata.splitlines() if line.startswith("Requires-Dist:")]
         tools_deps = [line for line in requires_lines if "dbt-fusion-package-tools" in line]
-        assert tools_deps, (
-            "dbt-fusion-package-tools not found in wheel METADATA.\nRequires-Dist lines:\n"
-            + "\n".join(requires_lines)
+        assert tools_deps, "dbt-fusion-package-tools not found in wheel METADATA.\nRequires-Dist lines:\n" + "\n".join(
+            requires_lines
         )
 
     session.install(str(tools_whl), str(autofix_whl))
