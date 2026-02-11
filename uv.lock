@@ -263,7 +263,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.2.0,<9.0.0" },
-    { name = "dbt-autofix-jinja", editable = "packages/dbt-autofix-jinja" },
+    { name = "dbt-autofix-jinja", editable = "packages/dbt_autofix_jinja" },
     { name = "dbt-extractor", specifier = ">=0.5.0,<=0.6" },
     { name = "dbt-fusion-package-tools", editable = "packages/dbt_fusion_package_tools" },
     { name = "httpx", specifier = ">=0.27.0" },
@@ -283,7 +283,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "dbt-autofix-jinja"
-source = { editable = "packages/dbt-autofix-jinja" }
+source = { editable = "packages/dbt_autofix_jinja" }
 dependencies = [
     { name = "dbt-extractor" },
     { name = "jinja2" },
