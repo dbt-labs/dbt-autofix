@@ -3,7 +3,13 @@ name = "dbt-autofix"
 description = "CLI to autofix deprecations in dbt projects"
 readme = "README.md"
 requires-python = ">=3.10, <3.14" # can't support 3.14 without mashumaro 3.15
+authors = [{ name = "dbt Labs", email = "info@dbtlabs.com" }]
+maintainers = [{ name = "dbt Labs", email = "info@dbtlabs.com" }]
 dynamic = ["version", "dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/dbt-labs/dbt-autofix"
+Repository = "https://github.com/dbt-labs/dbt-autofix"
 
 [tool.uv]
 package = true
