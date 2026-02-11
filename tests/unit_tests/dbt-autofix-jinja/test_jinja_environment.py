@@ -5,9 +5,8 @@ Ported from dbt-common: tests/unit/test_jinja.py
 """
 
 import jinja2
+from dbt_autofix_jinja._jinja_environment import MacroFuzzParser, MacroType
 from jinja2 import select_autoescape
-
-from dbt_autofix._jinja_environment import MacroFuzzParser, MacroType
 
 
 def test_macro_parser_parses_simple_types() -> None:

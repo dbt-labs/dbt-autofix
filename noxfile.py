@@ -90,16 +90,17 @@ def test_pre_commit_installation(session):
     )
 
 
-def _build_and_install_wheels(session):
-    """Build both wheels, install them, verify entry points, and return metadata.
+def _build_and_install_wheels(session) -> tuple[str, dict[str, str]]:
+    """Build all wheels, install them, verify entry points, and return metadata.
 
     Clears dist/, runs `uv build --all`, inspects the dbt-autofix wheel for
     structural correctness (pre_commit_hooks included, metadata present),
-    installs both wheels, and verifies CLI entry points.
+    installs all wheels, and verifies CLI entry points.
 
     Returns:
-        A (version, tools_dep) tuple where version is the wheel's Version string
-        and tools_dep is the Requires-Dist line for dbt-fusion-package-tools.
+        A (version, workspace_deps) tuple where version is the wheel's Version
+        string and workspace_deps is a dict mapping workspace package names to
+        their Requires-Dist lines.
     """
     dist = Path("dist")
     if dist.exists():
@@ -109,10 +110,13 @@ def _build_and_install_wheels(session):
 
     autofix_wheels = sorted(dist.glob("dbt_autofix-*.whl"))
     tools_wheels = sorted(dist.glob("dbt_fusion_package_tools-*.whl"))
+    jinja_wheels = sorted(dist.glob("dbt_autofix_jinja-*.whl"))
     assert autofix_wheels, "dbt-autofix wheel not found in dist/"
     assert tools_wheels, "dbt-fusion-package-tools wheel not found in dist/"
+    assert jinja_wheels, "dbt-autofix-jinja wheel not found in dist/"
     autofix_whl = autofix_wheels[-1]
     tools_whl = tools_wheels[-1]
+    jinja_whl = jinja_wheels[-1]
 
     with zipfile.ZipFile(autofix_whl) as zf:
         wheel_files = zf.namelist()
@@ -132,16 +136,20 @@ def _build_and_install_wheels(session):
         assert version, "Version not found in wheel METADATA"
 
         requires_lines = [line for line in metadata.splitlines() if line.startswith("Requires-Dist:")]
-        tools_deps = [line for line in requires_lines if "dbt-fusion-package-tools" in line]
-        assert tools_deps, "dbt-fusion-package-tools not found in wheel METADATA.\nRequires-Dist lines:\n" + "\n".join(
-            requires_lines
-        )
 
-    session.install(str(tools_whl), str(autofix_whl))
+        workspace_deps: dict[str, str] = {}
+        for pkg_name in ("dbt-fusion-package-tools", "dbt-autofix-jinja"):
+            matched = [line for line in requires_lines if pkg_name in line]
+            assert matched, f"{pkg_name} not found in wheel METADATA.\nRequires-Dist lines:\n" + "\n".join(
+                requires_lines
+            )
+            workspace_deps[pkg_name] = matched[0]
+
+    session.install(str(tools_whl), str(jinja_whl), str(autofix_whl))
     session.run("dbt-autofix", "--help")
     session.run("python", "-m", "pre_commit_hooks.check_deprecations", "--help")
 
-    return version, tools_deps[0]
+    return version, workspace_deps
 
 
 _SIMULATED_TAG = "v99.99.99"
@@ -151,11 +159,12 @@ _SIMULATED_TAG = "v99.99.99"
 def test_wheel_installation(session):
     """Dry-run the release pipeline for a dev build.
 
-    Builds both wheels from the current (untagged) git state, installs them,
-    and verifies that dbt-fusion-package-tools is an unpinned dependency.
+    Builds all wheels from the current (untagged) git state, installs them,
+    and verifies that workspace dependencies are unpinned.
     """
-    version, tools_dep = _build_and_install_wheels(session)
-    assert "==" not in tools_dep, f"Dev build: expected unpinned dbt-fusion-package-tools but got: {tools_dep}"
+    version, workspace_deps = _build_and_install_wheels(session)
+    for pkg_name, dep_line in workspace_deps.items():
+        assert "==" not in dep_line, f"Dev build: expected unpinned {pkg_name} but got: {dep_line}"
     session.log(f"version={version}, unpinned (dev build)")
 
 
@@ -164,16 +173,17 @@ def test_wheel_installation_release(session):
     """Dry-run the release pipeline for a simulated tagged release.
 
     Creates a temporary git tag on HEAD so uv-dynamic-versioning sees
-    distance=0, builds both wheels, and verifies that dbt-fusion-package-tools
-    is pinned to the exact release version.
+    distance=0, builds all wheels, and verifies that workspace dependencies
+    are pinned to the exact release version.
     """
     subprocess.run(["git", "tag", _SIMULATED_TAG], check=True)
     try:
-        version, tools_dep = _build_and_install_wheels(session)
+        version, workspace_deps = _build_and_install_wheels(session)
     finally:
         subprocess.run(["git", "tag", "-d", _SIMULATED_TAG], check=True)
-    expected = f"Requires-Dist: dbt-fusion-package-tools=={version}"
-    assert expected in tools_dep, f"Release build: expected '{expected}' but got: {tools_dep}"
+    for pkg_name, dep_line in workspace_deps.items():
+        expected = f"Requires-Dist: {pkg_name}=={version}"
+        assert expected in dep_line, f"Release build: expected '{expected}' but got: {dep_line}"
     session.log(f"version={version}, pin=={version}")
 
 

@@ -3,7 +3,13 @@ name = "dbt-autofix"
 description = "CLI to autofix deprecations in dbt projects"
 readme = "README.md"
 requires-python = ">=3.10, <3.14" # can't support 3.14 without mashumaro 3.15
+authors = [{ name = "dbt Labs", email = "info@dbtlabs.com" }]
+maintainers = [{ name = "dbt Labs", email = "info@dbtlabs.com" }]
 dynamic = ["version", "dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/dbt-labs/dbt-autofix"
+Repository = "https://github.com/dbt-labs/dbt-autofix"
 
 [tool.uv]
 package = true
@@ -14,10 +20,12 @@ cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true 
 [tool.uv.workspace]
 members = [
     "packages/dbt_fusion_package_tools",
+    "packages/dbt_autofix_jinja",
 ]
 
 [tool.uv.sources]
 dbt-fusion-package-tools = { workspace = true }
+dbt-autofix-jinja = { workspace = true }
 
 [project.scripts]
 dbt-autofix = "dbt_autofix.main:app"
@@ -60,6 +68,7 @@ dependencies = [
     "jinja2>=3.1.3,<4", # matches dbt-core: https://github.com/dbt-labs/dbt-core/blob/d1334866b1541d3b91e3ca36adcfbdf6c6c41059/core/pyproject.toml#L35
     "dbt-extractor>=0.5.0,<=0.6",
     "dbt-fusion-package-tools{% if distance == 0 %}=={{ base }}{% endif %}",
+    "dbt-autofix-jinja{% if distance == 0 %}=={{ base }}{% endif %}",
 ]
 
 [tool.ruff]
@@ -131,7 +140,7 @@ reportMissingImports = false
 "pre_commit_hooks/check_deprecations.py" = ["D205", "D415"]
 "src/dbt_autofix/dbt_api.py" = ["D415", "T201"]
 "src/dbt_autofix/fields_properties_configs.py" = ["PLC0415"]
-"src/dbt_autofix/jinja.py" = ["D205", "D301", "PLC0415", "RUF015"]
+"packages/dbt_autofix_jinja/src/dbt_autofix_jinja/jinja.py" = ["D205", "D301", "PLC0415", "RUF015"]
 "src/dbt_autofix/main.py" = ["E722"]
 "src/dbt_autofix/package_upgrade.py" = ["PLR1714", "T201"]
 "src/dbt_autofix/packages/dbt_package_file.py" = ["D415", "E722", "PLC0206", "PLR1714"]
@@ -152,7 +161,6 @@ reportMissingImports = false
 "tests/unit_tests/package_upgrades/test_package_hub_fusion_compatibility.py" = ["F841"]
 "tests/unit_tests/test_dict_config_subkeys.py" = ["D415"]
 "tests/unit_tests/test_fix_space_after_plus.py" = ["D415"]
-"tests/unit_tests/test_jinja.py" = ["PLC0415"]
 "tests/unit_tests/test_rec_check_yaml_path.py" = ["D415"]
 "tests/unit_tests/test_refactor.py" = ["D415", "E712"]
 

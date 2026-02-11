@@ -3,6 +3,8 @@ name = "dbt-fusion-package-tools"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10, <3.14" # can't support 3.14 without mashumaro 3.15
+authors = [{ name = "dbt Labs", email = "info@dbtlabs.com" }]
+maintainers = [{ name = "dbt Labs", email = "info@dbtlabs.com" }]
 dependencies = [
     "mashumaro>=3.9,<3.15", # matches dbt-core
     "pyyaml>=6.0.2 ; python_version >= '3.13'", # need 6.0.2 for python 3.13 support
@@ -15,6 +17,10 @@ dependencies = [
 ]
 
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/dbt-labs/dbt-autofix"
+Repository = "https://github.com/dbt-labs/dbt-autofix"
 
 [project.scripts]
 dbt-fusion-package-tools = "dbt_fusion_package_tools:main"
