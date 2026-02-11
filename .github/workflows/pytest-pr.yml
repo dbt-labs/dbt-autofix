@@ -26,7 +26,7 @@ jobs:
           enable-cache: true
           cache-suffix: test
 
-      - run: uv sync --all-extras --all-packages 
+      - run: uv sync --all-packages
       - run: uv run pytest
 
   lint:
@@ -40,5 +40,6 @@ jobs:
           python-version: "3.10"
           enable-cache: true
           cache-suffix: lint
-      - run: uv tool run ruff@0.14.14 check . --config pyproject.toml
-      - run: uv tool run ruff@0.14.14 format --check --diff . --config pyproject.toml
+      - run: uv sync
+      - run: uv run ruff check . --config pyproject.toml
+      - run: uv run ruff format --check --diff . --config pyproject.toml

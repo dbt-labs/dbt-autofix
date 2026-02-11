@@ -34,12 +34,13 @@ dbt-fusion-package-tools = { workspace = true }
 dbt-autofix = "dbt_autofix.main:app"
 
 
-[project.optional-dependencies]
-test = [
+[dependency-groups]
+dev = [
     "pytest>=7.2.0",
     "pytest-cov>=4.1.0",
     "pre-commit>=4.2.0",
     "nox",
+    "ruff>=0.14",
 ]
 
 [tool.pdm.build]

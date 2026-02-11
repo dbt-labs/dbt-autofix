@@ -11,8 +11,8 @@ Please describe the changes made and why they were made. Link to any relevant is
 
 ## Checklist
 
-*   [ ] Ran `uvx ruff@0.14.14 check . --config pyproject.toml`
-*   [ ] Ran `uvx ruff@0.14.14 format --config pyproject.toml`
+*   [ ] Ran `uv run ruff check . --config pyproject.toml`
+*   [ ] Ran `uv run ruff format --config pyproject.toml`
 *   [ ] If this is a bug fix:
     *   [ ] Updated integration tests with bug repro
     *   [ ] Linked to bug report ticket
