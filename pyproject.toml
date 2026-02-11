@@ -20,7 +20,7 @@ cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true 
 [tool.uv.workspace]
 members = [
     "packages/dbt_fusion_package_tools",
-    "packages/dbt-autofix-jinja",
+    "packages/dbt_autofix_jinja",
 ]
 
 [tool.uv.sources]
