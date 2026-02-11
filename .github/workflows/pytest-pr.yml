@@ -26,7 +26,7 @@ jobs:
           enable-cache: true
           cache-suffix: test
 
-      - run: uv sync --all-extras --all-packages 
+      - run: uv sync --all-packages
       - run: uv run pytest
 
   lint:
