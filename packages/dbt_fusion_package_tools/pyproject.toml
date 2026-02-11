@@ -26,9 +26,14 @@ update-package-hub = "dbt_fusion_package_tools.scripts.update_package_hub_json:a
 package = true
 
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling", "uv-dynamic-versioning>=0.7.0"]
+build-backend = "hatchling.build"
 
-[tool.pdm.version]
-source = "scm"
-version_format = "pdm_build:format_version"
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+# Fallback when git tags are unavailable (e.g. Dependabot running uv lock in a shallow clone)
+fallback-version = "0.0.0"
