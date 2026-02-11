@@ -68,28 +68,91 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             raw_require_dbt_version_range=version["package_version_require_dbt_version"],
             package_id=version["package_id_from_path"],
         )
+        fusion_compatibility = version.get("fusion_compatibility")
+        if "fusion_compatibility" in version and fusion_compatibility.get("download_failed") is not True:
+            hub_manually_verified_compatible = fusion_compatibility.get("manually_verified_compatible")
+            hub_manually_verified_incompatible = fusion_compatibility.get("manually_verified_incompatible")
+            hub_require_dbt_version_compatible = fusion_compatibility.get("require_dbt_version_compatible")
+            hub_require_dbt_version_defined = fusion_compatibility.get("require_dbt_version_defined")
+        else:
+            hub_manually_verified_compatible = False
+            hub_manually_verified_incompatible = False
+            hub_require_dbt_version_compatible = None
+            hub_require_dbt_version_defined = None
         versions.append(version)
+
+        # update package latest version - should match what's in hub at end
+        if package_version.is_prerelease_version():
+            if not latest_version_incl_prerelease or package_version.version > latest_version_incl_prerelease:
+                latest_version_incl_prerelease = package_version.version
+        elif not latest_version or package_version.version > latest_version:
+            latest_version = package_version.version
+
         dbt_version_defined = package_version.is_require_dbt_version_defined()
+        # hubcap's require-dbt-version has some missing data for older versions
+        # so use the fusion_compatibility definition if it exists
+        if hub_require_dbt_version_defined is True and dbt_version_defined is False:
+            dbt_version_defined = hub_require_dbt_version_defined
+
+        # default: compatibility determined by require dbt version
+        if dbt_version_defined:
+            # use package hub first
+            if hub_require_dbt_version_defined and hub_require_dbt_version_compatible is not None:
+                fusion_compatible_version = hub_require_dbt_version_compatible
+            else:
+                fusion_compatible_version = package_version.is_require_dbt_version_fusion_compatible()
+        else:
+            fusion_compatible_version = False
+
+        # data quality checks
+        if (
+            # some older versions of this package are missing dbt project yml
+            version["package_name_version_json"] != "yuki_snowflake_dbt_tags"
+            # oldest version of package is duplicated
+            and version["package_id_from_path"] != "cerebriumai/github"
+            and version["package_id_from_path"] != "cerebriumai/airbyte_dbt_github"
+        ):
+            if hub_require_dbt_version_defined:
+                if package_version.is_require_dbt_version_defined():
+                    assert (
+                        hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
+                    )
+                if hub_require_dbt_version_compatible is not None:
+                    assert hub_require_dbt_version_compatible == fusion_compatible_version
+
+        # default: compatibility determined by require dbt version
         fusion_compatible_version: bool = (
             dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
         )
-        if package_version.is_version_explicitly_disallowed_on_fusion():
+
+        # check for a manual override either in hub or autofix
+        # hub overrides autofix
+        if hub_manually_verified_incompatible:
             fusion_compatible_version = False
+            fusion_incompatible_versions.append(package_version.version)
+            continue
+        elif hub_manually_verified_compatible:
+            fusion_compatible_version = True
+        elif package_version.is_version_explicitly_disallowed_on_fusion():
+            fusion_compatible_version = False
+            fusion_incompatible_versions.append(package_version.version)
+            continue
+
+        # add to unknown compatibility if require dbt version missing and no override
+        if not fusion_compatible_version and not dbt_version_defined:
+            unknown_compatibility_versions.append(package_version.version)
+            continue
+
+        # remaining versions: either compatible via require dbt version or manual override
         if fusion_compatible_version:
             fusion_compatible_versions.append(package_version.version)
             if not latest_fusion_version or package_version.version > latest_fusion_version:
                 latest_fusion_version = package_version.version
             if not oldest_fusion_compatible_version or package_version.version < oldest_fusion_compatible_version:
                 oldest_fusion_compatible_version = package_version.version
-        elif not dbt_version_defined:
-            unknown_compatibility_versions.append(package_version.version)
-        elif dbt_version_defined and not fusion_compatible_version:
+        else:
             fusion_incompatible_versions.append(package_version.version)
-        if package_version.is_prerelease_version():
-            if not latest_version_incl_prerelease or package_version.version > latest_version_incl_prerelease:
-                latest_version_incl_prerelease = package_version.version
-        elif not latest_version or package_version.version > latest_version:
-            latest_version = package_version.version
+
     if latest_version_incl_prerelease is None:
         latest_version_incl_prerelease = latest_version
     if latest_version is None and latest_version_incl_prerelease:
@@ -109,7 +172,6 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             assert oldest_fusion_compatible_version == None
             assert len(fusion_compatible_versions) == 0
     return {
-        # "versions": versions,
         "latest_version": convert_version_spec_to_string(latest_version),
         "oldest_fusion_compatible_version": convert_version_spec_to_string(oldest_fusion_compatible_version),
         "latest_fusion_compatible_version": convert_version_spec_to_string(latest_fusion_version),

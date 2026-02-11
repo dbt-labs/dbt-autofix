@@ -1,5 +1,4 @@
 import json
-import time
 import warnings
 from collections import defaultdict
 from pathlib import Path
@@ -86,15 +85,39 @@ def process_json(file_path: str, parsed_json: Any) -> dict[str, Any]:
             tarball_url = parsed_json["downloads"].get("tarball")
         else:
             tarball_url = None
-        return {
-            "package_id_from_path": package_id,
-            "package_id_with_version": parsed_json.get("id"),
-            "package_name_version_json": parsed_json.get("name"),
-            "package_version_string": clean_version(parsed_json.get("version")),
-            "package_version_require_dbt_version": parsed_json.get("require_dbt_version"),
-            "package_version_github_url": github_url,
-            "package_version_download_url": tarball_url,
-        }
+        if "fusion_compatibility" in parsed_json:
+            fusion_compatibility = {
+                "manually_verified_compatible": parsed_json["fusion_compatibility"].get("manually_verified_compatible"),
+                "manually_verified_incompatible": parsed_json["fusion_compatibility"].get(
+                    "manually_verified_incompatible"
+                ),
+                "require_dbt_version_defined": parsed_json["fusion_compatibility"].get("require_dbt_version_defined"),
+                "require_dbt_version_compatible": parsed_json["fusion_compatibility"].get(
+                    "require_dbt_version_compatible"
+                ),
+                "parse_compatible": parsed_json["fusion_compatibility"].get("parse_compatible"),
+                "download_failed": parsed_json["fusion_compatibility"].get("download_failed"),
+            }
+            return {
+                "package_id_from_path": package_id,
+                "package_id_with_version": parsed_json.get("id"),
+                "package_name_version_json": parsed_json.get("name"),
+                "package_version_string": clean_version(parsed_json.get("version")),
+                "package_version_require_dbt_version": parsed_json.get("require_dbt_version"),
+                "package_version_github_url": github_url,
+                "package_version_download_url": tarball_url,
+                "fusion_compatibility": fusion_compatibility,
+            }
+        else:
+            return {
+                "package_id_from_path": package_id,
+                "package_id_with_version": parsed_json.get("id"),
+                "package_name_version_json": parsed_json.get("name"),
+                "package_version_string": clean_version(parsed_json.get("version")),
+                "package_version_require_dbt_version": parsed_json.get("require_dbt_version"),
+                "package_version_github_url": github_url,
+                "package_version_download_url": tarball_url,
+            }
     else:
         return {}
 
@@ -103,95 +126,6 @@ def write_dict_to_json(data: Dict[str, Any], dest_dir: Path, *, indent: int = 2,
     out_file = dest_dir / "package_output.json"
     with out_file.open("w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
-
-
-def download_package_jsons_from_hub_repo(
-    owner: str = "dbt-labs",
-    repo: str = "hub.getdbt.com",
-    path: str = "data/packages",
-    branch: Optional[str] = "master",
-    github_token: Optional[str] = None,
-    file_count_limit: int = 0,
-) -> defaultdict[str, list[dict[str, Any]]]:
-    """Download and parse all JSON files under `data/packages` in a GitHub repo.
-
-    This function performs the following steps:
-    - Discover the repository's default branch (if `branch` is not provided).
-    - Fetch the git tree for the branch recursively and find all files under
-      ``{path}`` that end with ``.json``.
-    - Download each JSON file via the raw.githubusercontent.com URL and parse
-      it into Python objects.
-
-    Returns:
-        A list of parsed JSON objects typed as ``PackageJSON``.
-
-    Args:
-        owner: GitHub repo owner (default: "dbt-labs").
-        repo: GitHub repository name (default: "hub.getdbt.com").
-        path: Path within the repo to search (default: "data/packages").
-        branch: Branch name to use; if omitted the repository default branch is
-            discovered via the GitHub API.
-        github_token: Optional GitHub token to increase rate limits.
-    """
-    base_api = "https://api.github.com"
-    headers: Dict[str, str] = {"User-Agent": "dbt-autofix-agent"}
-    if github_token:
-        headers["Authorization"] = f"token {github_token}"
-
-    # 1) Find default branch if not provided
-    if not branch:
-        repo_url = f"{base_api}/repos/{owner}/{repo}"
-        try:
-            repo_info = _http_get_json(repo_url, headers=headers)
-            branch = repo_info.get("default_branch")
-        except Exception as exc:  # pragma: no cover - network error handling
-            raise RuntimeError(f"Failed to get repo info for {owner}/{repo}: {exc}")
-        if not branch:
-            raise RuntimeError("Could not determine repository default branch")
-
-    # 2) Get the git tree recursively
-    tree_url = f"{base_api}/repos/{owner}/{repo}/git/trees/{branch}?recursive=1"
-    try:
-        tree_json = _http_get_json(tree_url, headers=headers)
-    except Exception as exc:  # pragma: no cover - network error handling
-        raise RuntimeError(f"Failed to fetch git tree for {owner}/{repo}@{branch}: {exc}")
-
-    if "tree" not in tree_json:
-        raise RuntimeError("Unexpected response from GitHub API when fetching tree")
-
-    files: List[Dict[str, Any]] = []
-    prefix = path.rstrip("/") + "/"
-    for entry in tree_json["tree"]:
-        # entry has keys: path, mode, type (blob/tree), sha, url
-        if entry.get("type") != "blob":
-            continue
-        p = entry.get("path", "")
-        if p.startswith(prefix) and p.endswith(".json"):
-            files.append(entry)
-        if file_count_limit > 0 and len(files) >= file_count_limit:
-            break
-
-    packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    if not files:
-        # No files found; return empty list rather than error.
-        return packages
-
-    # 3) Download each JSON using raw.githubusercontent.com
-    for entry in files:
-        file_path = entry["path"]
-        raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{file_path}"
-        # Use simple GET; raw.githubusercontent does not require auth for public repos.
-        try:
-            parsed = _http_get_json(raw_url, headers={"User-Agent": headers["User-Agent"]})
-            output = process_json(file_path, parsed)
-            if output != {}:
-                packages[output["package_id_from_path"]].append(output)
-            time.sleep(1)
-        except Exception as exc:  # network/file parsing issues
-            warnings.warn(f"Failed to fetch/parse {file_path}: {exc}")
-            time.sleep(5)
-
-    return packages
 
 
 def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
@@ -275,7 +209,8 @@ def reload_packages_from_file(
 
 def main():
     file_count_limit = 0
-    results = read_json_from_local_hub_repo(path="~/workplace/hub.getdbt.com", file_count_limit=file_count_limit)
+    # assumes hub repo and dbt-autofix repo are cloned in the same directory
+    results = read_json_from_local_hub_repo(path="../../../hub.getdbt.com", file_count_limit=file_count_limit)
     print(f"Downloaded {len(results)} packages from hub.getdbt.com")
     output_path: Path = Path.cwd() / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
     write_dict_to_json(results, output_path)
