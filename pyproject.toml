@@ -19,6 +19,7 @@ members = [
 
 [tool.uv.sources]
 dbt-fusion-package-tools = { workspace = true }
+dbt-autofix-jinja = { workspace = true }
 
 [project.scripts]
 dbt-autofix = "dbt_autofix.main:app"
