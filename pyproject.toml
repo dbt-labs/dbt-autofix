@@ -41,6 +41,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "pre-commit>=4.2.0",
     "nox",
+    "ruff>=0.14",
 ]
 
 [tool.pdm.build]
