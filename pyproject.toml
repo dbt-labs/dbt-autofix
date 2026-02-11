@@ -140,7 +140,7 @@ reportMissingImports = false
 "pre_commit_hooks/check_deprecations.py" = ["D205", "D415"]
 "src/dbt_autofix/dbt_api.py" = ["D415", "T201"]
 "src/dbt_autofix/fields_properties_configs.py" = ["PLC0415"]
-"src/dbt_autofix/jinja.py" = ["D205", "D301", "PLC0415", "RUF015"]
+"packages/dbt_autofix_jinja/src/dbt_autofix_jinja/jinja.py" = ["D205", "D301", "PLC0415", "RUF015"]
 "src/dbt_autofix/main.py" = ["E722"]
 "src/dbt_autofix/package_upgrade.py" = ["PLR1714", "T201"]
 "src/dbt_autofix/packages/dbt_package_file.py" = ["D415", "E722", "PLC0206", "PLR1714"]
@@ -161,7 +161,6 @@ reportMissingImports = false
 "tests/unit_tests/package_upgrades/test_package_hub_fusion_compatibility.py" = ["F841"]
 "tests/unit_tests/test_dict_config_subkeys.py" = ["D415"]
 "tests/unit_tests/test_fix_space_after_plus.py" = ["D415"]
-"tests/unit_tests/test_jinja.py" = ["PLC0415"]
 "tests/unit_tests/test_rec_check_yaml_path.py" = ["D415"]
 "tests/unit_tests/test_refactor.py" = ["D415", "E712"]
 
