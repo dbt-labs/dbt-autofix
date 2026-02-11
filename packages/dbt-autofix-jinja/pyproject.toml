@@ -1,0 +1,14 @@
+[project]
+name = "dbt-autofix-jinja"
+version = "0.1.0"
+description = "Jinja utilities to support dbt-autofix"
+readme = "README.md"
+authors = [
+    { name = "David Harting", email = "hartingdavid@icloud.com" }
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
