@@ -76,8 +76,7 @@ def test_pre_commit_installation(session):
         "try-repo",
         ".",
         "dbt-autofix-check",
-        "--files",
-        "non_existent_file",
+        "--all-files",
         "--verbose",
     )
     # Dump the build-time debug log so it's visible in the nox output.
