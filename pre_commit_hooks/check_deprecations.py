@@ -3,6 +3,12 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+# DEBUG: report where dbt_fusion_package_tools was installed from
+import dbt_fusion_package_tools as _dfpt
+_has_marker = getattr(_dfpt, "_LOCAL_DEV_MARKER", False)
+print(f"[DEBUG] dbt_fusion_package_tools loaded from: {_dfpt.__file__}", file=sys.stderr)
+print(f"[DEBUG] _LOCAL_DEV_MARKER present: {_has_marker} (True=local, False=PyPI)", file=sys.stderr)
+
 from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files, get_dbt_files_paths
 from dbt_autofix.refactors.results import SQLRefactorResult, YMLRefactorResult
 from dbt_autofix.retrieve_schemas import SchemaSpecs
