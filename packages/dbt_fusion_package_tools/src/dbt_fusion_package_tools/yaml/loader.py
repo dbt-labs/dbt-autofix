@@ -9,14 +9,14 @@ from yaml.scanner import Scanner
 class SafeConstructorWithOutput(SafeConstructor):
     def get_single_data(self):
         # Ensure that the stream contains a single document and construct it.
-        node = self.get_single_node()
+        node = self.get_single_node()  # ty: ignore[unresolved-attribute]
         if node is not None:
             document = self.construct_document(node)
             return document
         return None
 
     def get_single_data_and_document(self):
-        node = self.get_single_node()
+        node = self.get_single_node()  # ty: ignore[unresolved-attribute]
         if node is not None:
             return (node, self.construct_document(node))
         return None

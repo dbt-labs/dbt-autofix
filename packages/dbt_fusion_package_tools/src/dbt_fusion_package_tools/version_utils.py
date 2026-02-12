@@ -219,7 +219,7 @@ class VersionSpecifier(VersionSpecification):
         a_parts_2 = [int(x) if re.match(r"^\d+$", x) else x for x in a_parts]
         b_parts_2 = [int(x) if re.match(r"^\d+$", x) else x for x in b_parts]
         for sub_a, sub_b in zip(a_parts_2, b_parts_2):
-            cmp_result = cmp_prerelease_tag(sub_a, sub_b)  # type: ignore
+            cmp_result = cmp_prerelease_tag(sub_a, sub_b)
             if cmp_result != 0:
                 return cmp_result
         return _cmp(len(a), len(b))
@@ -464,9 +464,9 @@ def get_versions(version: Union[RawVersion, list[RawVersion]]) -> list[str]:
 def construct_version_list(raw_versions: Union[str, list[str], None]) -> list[str]:
     if raw_versions is None:
         return []
-    elif type(raw_versions) == str:
+    elif isinstance(raw_versions, str):
         return [raw_versions]
-    elif type(raw_versions) == list:
+    elif isinstance(raw_versions, list):
         return raw_versions
     else:
         return []
@@ -508,7 +508,7 @@ def convert_version_specifiers_to_range(specs: list[VersionSpecifier]) -> Versio
 
 def convert_optional_version_string_to_spec(version_string: Optional[str]) -> Optional[VersionSpecifier]:
     try:
-        if type(version_string) == str:
+        if isinstance(version_string, str):
             return VersionSpecifier.from_version_string(version_string)
         else:
             return None

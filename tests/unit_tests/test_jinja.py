@@ -1,4 +1,5 @@
 import jinja2
+import jinja2.nodes
 import pytest
 
 from dbt_autofix._jinja_environment import get_jinja_environment

@@ -226,11 +226,11 @@ def process_dbt_project_yml(
 
     for changeset_func, *changeset_args in changesets:
         if changeset_args[0] is None:
-            changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
+            changeset_result = changeset_func(yml_refactor_result.refactored_yaml)  # ty: ignore[missing-argument]
         elif len(changeset_args) == 1:
-            changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args[0])
+            changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args[0])  # ty: ignore[missing-argument, invalid-argument-type, too-many-positional-arguments]
         else:
-            changeset_result = changeset_func(yml_refactor_result.refactored_yaml, *changeset_args)
+            changeset_result = changeset_func(yml_refactor_result.refactored_yaml, *changeset_args)  # ty: ignore[invalid-argument-type]
 
         if changeset_result.refactored:
             yml_refactor_result.refactors.append(changeset_result)
@@ -302,20 +302,20 @@ def process_sql_files(
                 new_file_path = sql_file
                 for sql_file_rule, requires_file_path, requires_schema_specs in process_sql_file_rules:
                     if requires_file_path and requires_schema_specs:
-                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path, schema_specs, node_type)
+                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path, schema_specs, node_type)  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
                     elif requires_file_path:
-                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path)
+                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path)  # ty: ignore[too-many-positional-arguments, missing-argument, invalid-argument-type]
                     elif requires_schema_specs:
-                        sql_file_refactor_result = sql_file_rule(new_content, schema_specs, node_type)
+                        sql_file_refactor_result = sql_file_rule(new_content, schema_specs, node_type)  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
                     else:
-                        sql_file_refactor_result = sql_file_rule(new_content)
+                        sql_file_refactor_result = sql_file_rule(new_content)  # ty: ignore[missing-argument]
 
                     new_content = sql_file_refactor_result.refactored_content
                     new_file_path = sql_file_refactor_result.refactored_file_path or sql_file
-                    file_refactors.append(sql_file_refactor_result)
+                    file_refactors.append(sql_file_refactor_result)  # ty: ignore[invalid-argument-type]
 
                 refactored = (new_content != original_content) or (new_file_path != sql_file)
-                has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])
+                has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])  # ty: ignore[unresolved-attribute]
                 results.append(
                     SQLRefactorResult(
                         dry_run=dry_run,
@@ -323,7 +323,7 @@ def process_sql_files(
                         refactored=refactored,
                         refactored_content=new_content,
                         original_content=original_content,
-                        refactors=file_refactors,
+                        refactors=file_refactors,  # ty: ignore[invalid-argument-type]
                         refactored_file_path=new_file_path,
                         has_warnings=has_warnings,
                     )
@@ -360,7 +360,7 @@ def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
         import yaml
 
         # we use dump from ruamel to keep indentation style but this loses quite a bit of formatting though
-        refactored_yaml = DbtYAML().dump_to_string(yaml.safe_load(yml_str))  # type: ignore
+        refactored_yaml = DbtYAML().dump_to_string(yaml.safe_load(yml_str))
     else:
         refactored_yaml = yml_str
 

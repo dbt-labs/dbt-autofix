@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import jinja2
+import jinja2.nodes
 from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
 
 from dbt_autofix._jinja_environment import get_jinja_environment
