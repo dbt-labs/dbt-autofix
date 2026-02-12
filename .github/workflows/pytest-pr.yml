@@ -29,8 +29,8 @@ jobs:
       - run: uv sync --all-packages
       - run: uv run pytest
 
-  lint:
-    name: lint
+  static-analysis:
+    name: static analysis
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -39,7 +39,8 @@ jobs:
         with:
           python-version: "3.10"
           enable-cache: true
-          cache-suffix: lint
-      - run: uv sync
+          cache-suffix: static-analysis
+      - run: uv sync --all-packages
       - run: uv run ruff check . --config pyproject.toml
       - run: uv run ruff format --check --diff . --config pyproject.toml
+      - run: uv run ty check --output-format github
