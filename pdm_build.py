@@ -45,3 +45,8 @@ def pdm_build_initialize(context):
             sys.stderr.write(
                 "[dbt-autofix build] Non-release/fallback version detected. Skipping strict dependency pin.\n"
             )
+
+        # DEBUG: write to file since pre-commit captures stderr
+        with open("/tmp/pdm_build_debug.log", "a") as f:
+            f.write(f"version={version} is_release={is_release}\n")
+            f.write(f"dependencies={metadata['dependencies']}\n")
