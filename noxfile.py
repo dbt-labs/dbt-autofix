@@ -62,8 +62,6 @@ def test_pre_commit_installation(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    # Clear the debug log before running, then use --all-files so the hook
-    # actually executes and the DEBUG lines in check_deprecations.py fire.
     import os
 
     try:
@@ -71,14 +69,19 @@ def test_pre_commit_installation(session):
     except FileNotFoundError:
         pass
 
+    # Use --files with an existing file so pre-commit invokes the hook
+    # (triggering the DEBUG import lines in check_deprecations.py) but
+    # noxfile.py isn't .sql/.yml so it gets filtered out immediately — clean pass.
     session.run(
         "pre-commit",
         "try-repo",
         ".",
         "dbt-autofix-check",
-        "--all-files",
+        "--files",
+        "noxfile.py",
         "--verbose",
     )
+
     # Dump the build-time debug log so it's visible in the nox output.
     try:
         with open("/tmp/pdm_build_debug.log") as f:
