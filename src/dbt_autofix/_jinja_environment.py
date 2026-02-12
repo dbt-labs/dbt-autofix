@@ -93,8 +93,8 @@ class MacroFuzzParser(jinja2.parser.Parser):
         setattr(node, "arg_types", [])
         setattr(node, "has_type_annotations", False)
 
-        args = node.args = []  # type: ignore
-        defaults = node.defaults = []  # type: ignore
+        args = node.args = []
+        defaults = node.defaults = []
 
         self.stream.expect("lparen")
         while self.stream.current.type != "rparen":

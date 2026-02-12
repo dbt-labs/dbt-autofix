@@ -75,7 +75,7 @@ def find_duplicate_keys(
         if file_with_duplicate and not dry_run:
             without_duplicates = yaml.safe_load(file_content)
             ruamel_yaml = DbtYAML()
-            ruamel_yaml.dump_to_string(without_duplicates)  # type: ignore
+            ruamel_yaml.dump_to_string(without_duplicates)
 
     # Check package YML files
     for file in yml_files_packages_not_integration_tests:
