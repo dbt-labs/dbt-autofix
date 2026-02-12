@@ -43,4 +43,4 @@ jobs:
       - run: uv sync --all-packages
       - run: uv run ruff check . --config pyproject.toml
       - run: uv run ruff format --check --diff . --config pyproject.toml
-      - run: uv run ty check --output-format github
+      - run: uv run ty check --error-on-warning --output-format github
