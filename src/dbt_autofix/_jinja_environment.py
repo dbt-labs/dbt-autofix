@@ -107,7 +107,7 @@ class MacroFuzzParser(jinja2.parser.Parser):
             type_name: Optional[str]
             if self.stream.skip_if("colon"):
                 node.has_type_annotations = True  # type: ignore
-                type_name = self.parse_type_name()
+                type_name = self.parse_type_name()  # ty: ignore[invalid-assignment]
             else:
                 type_name = ""
 
@@ -169,7 +169,7 @@ class MaterializationExtension(jinja2.ext.Extension):
             elif target.name == "adapter":
                 parser.stream.expect("assign")
                 value = parser.parse_expression()
-                adapter_name = value.value
+                adapter_name = value.value  # ty: ignore[unresolved-attribute]
             elif target.name == "supported_languages":
                 target.set_ctx("param")
                 node.args.append(target)

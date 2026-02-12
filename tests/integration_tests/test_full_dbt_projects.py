@@ -46,9 +46,8 @@ def compare_dirs(dir1, dir2):
 
     # Check for files that exist in only one directory
     if left_only or right_only:
-        pytest.fail(
-            f"Files differ between {dir1} and {dir2}\nOnly in actual: {left_only}\nOnly in expected: {right_only}"
-        )
+        msg = f"Files differ between {dir1} and {dir2}\nOnly in actual: {left_only}\nOnly in expected: {right_only}"
+        pytest.fail(msg)  # ty: ignore[invalid-argument-type]
 
     # Check for files that differ
     if comparison.diff_files:
@@ -69,7 +68,7 @@ def compare_dirs(dir1, dir2):
                     difflib.unified_diff(actual, expected, fromfile=f"actual/{file}", tofile=f"expected/{file}")
                 )
         if real_diffs:
-            pytest.fail(diff_message)
+            pytest.fail(diff_message)  # ty: ignore[invalid-argument-type]
 
     # Recursively check subdirectories
     for subdir in comparison.common_dirs:
@@ -137,7 +136,7 @@ def test_project_refactor(project_folder, request):
     # Compare with expected output
     expected_dir = os.path.join(dbt_projects_dir, f"{project_folder}{postfix_expected}")
     if not os.path.exists(expected_dir):
-        pytest.fail(f"Expected output directory not found: {expected_dir}")
+        pytest.fail(f"Expected output directory not found: {expected_dir}")  # ty: ignore[invalid-argument-type]
 
     compare_dirs(project_path, expected_dir)
 

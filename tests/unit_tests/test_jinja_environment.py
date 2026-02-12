@@ -19,7 +19,7 @@ def test_macro_parser_parses_simple_types() -> None:
     env = jinja2.Environment(autoescape=select_autoescape())
     parser = MacroFuzzParser(env, macro_txt)
     result = parser.parse()
-    arg_types = result.body[1].arg_types
+    arg_types = result.body[1].arg_types  # ty: ignore[unresolved-attribute]
     assert arg_types[0] == MacroType("str")
     assert arg_types[1] == MacroType("int")
     assert arg_types[2] == MacroType("bool")
@@ -36,7 +36,7 @@ def test_macro_parser_parses_complex_types() -> None:
     env = jinja2.Environment(autoescape=select_autoescape())
     parser = MacroFuzzParser(env, macro_txt)
     result = parser.parse()
-    arg_types = result.body[1].arg_types
+    arg_types = result.body[1].arg_types  # ty: ignore[unresolved-attribute]
     assert arg_types[0] == MacroType("List", [MacroType("str")])
     assert arg_types[1] == MacroType("Dict", [MacroType("int"), MacroType("str")])
     assert arg_types[2] == MacroType("Optional", [MacroType("List", [MacroType("str")])])

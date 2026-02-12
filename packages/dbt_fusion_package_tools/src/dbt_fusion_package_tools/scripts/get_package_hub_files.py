@@ -188,8 +188,8 @@ def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
             # ensure returned path still starts with 'data/packages'
             if not file_path.startswith("data/packages") and base.name == "packages" and base.parent.name == "data":
                 rel = file.relative_to(base)
-                file_path = Path("data") / "packages" / rel
-                file_path = file_path.as_posix()
+                file_path = Path("data") / "packages" / rel  # ty: ignore[invalid-assignment]
+                file_path = file_path.as_posix()  # ty: ignore[unresolved-attribute]
 
             output = process_json(file_path, parsed)
             if output != {}:
