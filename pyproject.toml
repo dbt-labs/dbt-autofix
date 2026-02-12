@@ -112,7 +112,7 @@ include = [
     "tests/unit_tests/test_fix_space_after_plus.py",
 ]
 [tool.ty.overrides.rules]
-invalid-argument-type = "warn"
+invalid-argument-type = "ignore"
 
 [tool.ruff.lint.per-file-ignores]
 # Global patterns
