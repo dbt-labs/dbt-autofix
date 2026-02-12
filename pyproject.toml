@@ -40,6 +40,7 @@ test = [
     "pytest-cov>=4.1.0",
     "pre-commit>=4.2.0",
     "nox",
+    "pytest-clarity>=1.0.1",
 ]
 
 [tool.pdm.build]

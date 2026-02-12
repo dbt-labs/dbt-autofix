@@ -15,6 +15,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | --------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------ | ------- | --------------- |
 | `PropertyMovedToConfigDeprecation`    | YAML files        | Move all deprecated property-level configs under `config:` in YAML files across all resource types (models, exposures, owners, etc)      |   Full  | No |
 | `CustomKeyInObjectDeprecation`    | YAML files        | Move all models extra config (not valid or custom) under `meta:` and `meta` under `config:`      |   Full  | No |
+| `CustomKeyInConfigDeprecation`    | YAML, SQL, Python | Move custom configs in `config:` blocks to `meta` and update Python `config.get()` calls to access from `meta` |   Full  | No |
 | `DuplicateYAMLKeysDeprecation`    | YAML files        | Remove duplicate keys in YAML files, keeping the second one to keep the same behaviour           |   Full  | No |
 | `CustomTopLevelKeyDeprecation` | YAML files | Delete custom top-level key-value pairs in YAML files | Full | No |
 | `UnexpectedJinjaBlockDeprecation` | SQL files         | Remove extra `{% endmacro %}` and `{% endif %}` that don't have corresponding opening statements |   Full  | No |
