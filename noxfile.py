@@ -62,9 +62,15 @@ def test_pre_commit_installation(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    # Use try-repo with a non-existent file to test installation without execution.
-    # This avoids the requirement for a dbt_project.yml file while still
-    # triggering the pdm_build.py logic we want to verify.
+    # Clear the debug log before running, then use --all-files so the hook
+    # actually executes and the DEBUG lines in check_deprecations.py fire.
+    import os
+
+    try:
+        os.remove("/tmp/pdm_build_debug.log")
+    except FileNotFoundError:
+        pass
+
     session.run(
         "pre-commit",
         "try-repo",
@@ -74,6 +80,12 @@ def test_pre_commit_installation(session):
         "non_existent_file",
         "--verbose",
     )
+    # Dump the build-time debug log so it's visible in the nox output.
+    try:
+        with open("/tmp/pdm_build_debug.log") as f:
+            session.log(f"pdm_build debug log:\n{f.read()}")
+    except FileNotFoundError:
+        session.log("No pdm_build_debug.log found")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
