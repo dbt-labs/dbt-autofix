@@ -166,6 +166,129 @@ class TestRefactorCustomConfigsToMetaPython:
         assert result.refactored
         assert result.refactored_content == expected_python
 
+    def test_none_config_value(self):
+        """Custom config with None value should be preserved correctly."""
+        input_python = """def model(dbt, session):
+    dbt.config(materialized="table", custom_key=None)
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_key": None})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_empty_list_and_dict_config_values(self):
+        """Custom configs with empty list and dict values should be preserved."""
+        input_python = """def model(dbt, session):
+    dbt.config(materialized="table", custom_list=[], custom_dict={})
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_list": [], "custom_dict": {}})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_list_config_value(self):
+        """Custom config with a list value should be preserved correctly."""
+        input_python = """def model(dbt, session):
+    dbt.config(materialized="table", custom_tags=[1, 2, 3])
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_tags": [1, 2, 3]})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_dict_config_value(self):
+        """Custom config with a dict value should be preserved correctly.
+
+        Note: ast.unparse normalizes inner string quotes to single quotes.
+        """
+        input_python = """def model(dbt, session):
+    dbt.config(materialized="table", custom_mapping={"nested": "value"})
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_mapping": {'nested': 'value'}})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_variable_reference_config_value(self):
+        """Custom config with a variable reference should be preserved.
+
+        Analogous to SQL tests for var() and env_var() Jinja expressions.
+        """
+        input_python = """def model(dbt, session):
+    dbt.config(materialized="table", custom_key=some_variable)
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_key": some_variable})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_function_call_config_value(self):
+        """Custom config with a function call value should be preserved.
+
+        Analogous to SQL test_jinja_function_call_preserved for get_warehouse('medium').
+        Note: ast.unparse normalizes inner string quotes to single quotes.
+        """
+        input_python = """def model(dbt, session):
+    dbt.config(materialized="table", custom_warehouse=get_warehouse("medium"))
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_warehouse": get_warehouse('medium')})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_mixed_complex_value_types(self):
+        """Multiple custom configs with various value types in a single call."""
+        input_python = """def model(dbt, session):
+    dbt.config(
+        materialized="table",
+        custom_string="hello",
+        custom_int=42,
+        custom_bool=True,
+        custom_none=None,
+        custom_list=[1, 2],
+        custom_dict={"a": "b"},
+    )
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    dbt.config(materialized="table", meta={"custom_string": "hello", "custom_int": 42, "custom_bool": True, "custom_none": None, "custom_list": [1, 2], "custom_dict": {'a': 'b'}})
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
 
 class TestMoveCustomConfigAccessToMetaPython:
     """Tests for move_custom_config_access_to_meta_python function."""
@@ -311,6 +434,135 @@ class TestMoveCustomConfigAccessToMetaPython:
         assert result.refactored
         assert result.refactored_content == expected_python
         assert len(result.deprecation_refactors) == 2
+
+    def test_none_default(self):
+        """config.get() with None default should be preserved."""
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", None)
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", None)
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_empty_list_default(self):
+        """config.get() with empty list default should be preserved."""
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", [])
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", [])
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_empty_dict_default(self):
+        """config.get() with empty dict default should be preserved."""
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", {})
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", {})
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_integer_default(self):
+        """config.get() with integer default should be preserved."""
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", 42)
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", 42)
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_boolean_default(self):
+        """config.get() with boolean default should be preserved."""
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", True)
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", True)
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_list_literal_default(self):
+        """config.get() with list literal default should be preserved."""
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", [1, 2, 3])
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", [1, 2, 3])
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_variable_default(self):
+        """config.get() with variable reference as default should be preserved.
+
+        Analogous to SQL test for var('my_var') as default.
+        """
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", fallback_value)
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", fallback_value)
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_function_call_default(self):
+        """config.get() with function call as default should be preserved.
+
+        Analogous to SQL test for var.get('my_var') as default.
+        The regex captures the function name and open paren as the default,
+        and the replacement template's closing paren pairs with the original
+        outer paren to produce correct output.
+        """
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", get_default())
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", get_default())
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
 
 
 class TestIntegration:
