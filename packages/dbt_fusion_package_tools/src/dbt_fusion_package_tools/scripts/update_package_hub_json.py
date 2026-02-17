@@ -58,8 +58,6 @@ def check_for_rename(hub_path: str, package_name: str) -> VersionSpecifier:
     file_path = dir_path / "index.json"
     with file_path.open("r", encoding="utf-8") as fh:
         index_json = json.load(fh)
-    # if "redirectname" in index_json or "redirectnamespace" in index_json:
-    #     print(f"package {package_name} renamed after version {index_json['latest']}")
     return VersionSpecifier.from_version_string(index_json["latest"])
 
 
@@ -101,13 +99,18 @@ def update_hub_json(
     updated_json["downloads"] = original_json["downloads"]
 
     new_conformance = conformance_output.to_dict()
+    # these fields are manually set so when updating parse conformance,
+    # we carry forward the previously set values
     if "fusion_compatibility" in original_json:
         manually_verified_compatible = original_json["fusion_compatibility"].get("manually_verified_compatible")
         manually_verified_incompatible = original_json["fusion_compatibility"].get("manually_verified_incompatible")
+        fusion_compatible_download = original_json["fusion_compatibility"].get("fusion_compatible_download")
         if manually_verified_compatible:
             new_conformance["manually_verified_compatible"] = manually_verified_compatible
         if manually_verified_incompatible:
             new_conformance["manually_verified_incompatible"] = manually_verified_incompatible
+        if fusion_compatible_download:
+            new_conformance["fusion_compatible_download"] = fusion_compatible_download
     updated_json["fusion_compatibility"] = new_conformance
     return updated_json
 
