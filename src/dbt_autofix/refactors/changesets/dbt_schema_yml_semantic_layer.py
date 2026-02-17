@@ -870,7 +870,7 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
                 }
             )
             logs.append(f"Added new column '{dimension_col_name}' with '{dimension['type']}' dimension.")
-        # Create entity as derived semantic entity
+        # Otherwise, create entity as derived semantic entity
         else:
             if "derived_semantics" not in model_node:
                 model_node["derived_semantics"] = {"entities": []}
@@ -882,7 +882,7 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
                 "type": dimension["type"],
             }
             if dimension_time_granularity:
-                new_dim["time_granularity"] = dimension_time_granularity
+                new_dim["granularity"] = dimension_time_granularity
             if dim_expr:
                 new_dim["expr"] = dim_expr
             model_node["derived_semantics"]["dimensions"].append(new_dim)
