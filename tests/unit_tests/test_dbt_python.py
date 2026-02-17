@@ -564,6 +564,44 @@ class TestMoveCustomConfigAccessToMetaPython:
         assert result.refactored
         assert result.refactored_content == expected_python
 
+    def test_nested_function_call_default(self):
+        """config.get() with nested function calls as default should be preserved.
+
+        The regex match boundary falls inside the nested parens, but the
+        in-place replacement correctly preserves the full expression.
+        """
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", outer(inner()))
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", outer(inner()))
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
+    def test_default_string_containing_paren(self):
+        """config.get() with a default string containing ')' should be preserved.
+
+        The regex match boundary falls at the ')' inside the string, but the
+        in-place replacement correctly preserves the full string value.
+        """
+        input_python = """def model(dbt, session):
+    val = dbt.config.get("custom_key", "value (with parens)")
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get("custom_key", "value (with parens)")
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
     def test_multiline_config_get_with_default(self):
         """Multiline config.get() should not bleed trailing whitespace into the default.
 
