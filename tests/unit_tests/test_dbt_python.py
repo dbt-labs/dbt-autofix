@@ -564,6 +564,30 @@ class TestMoveCustomConfigAccessToMetaPython:
         assert result.refactored
         assert result.refactored_content == expected_python
 
+    def test_multiline_config_get_with_default(self):
+        """Multiline config.get() should not bleed trailing whitespace into the default.
+
+        Analogous to SQL test_multiline_config_calls.
+        """
+        input_python = """def model(dbt, session):
+    val = dbt.config.get(
+        "custom_key",
+        "default_value"
+    )
+    return session.sql("SELECT 1")
+"""
+        expected_python = """def model(dbt, session):
+    val = dbt.config.meta_get(
+        "custom_key",
+        "default_value"
+    )
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+
+        assert result.refactored
+        assert result.refactored_content == expected_python
+
 
 class TestIntegration:
     """Integration tests using process_python_files with actual files.

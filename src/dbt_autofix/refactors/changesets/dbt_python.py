@@ -294,8 +294,6 @@ def move_custom_config_access_to_meta_python(
 
     for match in matches:
         config_key = match.group("key")
-        quote_style = match.group("quote")
-        default_value = match.group("default")
 
         # Skip if this is a dbt-native config
         if config_key in allowed_config_fields:
@@ -304,11 +302,8 @@ def move_custom_config_access_to_meta_python(
         start, end = match.span()
         original = match.group(0)
 
-        # Build the replacement, preserving original quote style
-        if default_value:
-            replacement = f"dbt.config.meta_get({quote_style}{config_key}{quote_style}, {default_value})"
-        else:
-            replacement = f"dbt.config.meta_get({quote_style}{config_key}{quote_style})"
+        # Swap method name in-place to preserve original formatting (quotes, whitespace, etc.)
+        replacement = original.replace("dbt.config.get", "dbt.config.meta_get", 1)
 
         replacements.append((start, end, replacement, original))
 
