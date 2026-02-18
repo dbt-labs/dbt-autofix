@@ -73,6 +73,7 @@ def test_pre_commit_installation(session):
     session.run_install(
         "uv",
         "sync",
+        "--all-packages",
         "--extra=test",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
