@@ -163,8 +163,8 @@ def test_wheel_installation(session):
     and verifies that dbt-fusion-package-tools is an unpinned dependency.
     """
     version, tools_dep = _build_and_install_wheels(session)
-    assert "==" not in tools_dep, f"Dev build: expected unpinned dbt-fusion-package-tools but got: {tools_dep}"
-    session.log(f"version={version}, unpinned (dev build)")
+    assert "dev" in tools_dep, f"Dev build: dbt-fusion-package-tools version should include dev but got: {tools_dep}"
+    session.log(f"version={version}, dev build")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
