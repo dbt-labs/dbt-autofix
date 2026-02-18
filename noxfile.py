@@ -94,7 +94,7 @@ def test_pre_commit_installation(session):
         "--files",
         "non_existent_file",
         "--verbose",
-        env={"PIP_FIND_LINKS": "./dist/"}
+        env={"PIP_FIND_LINKS": "./dist/"},
     )
 
 
