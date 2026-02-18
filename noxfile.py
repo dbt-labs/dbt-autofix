@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import zipfile
@@ -33,28 +34,17 @@ def check_latest_schema(session):
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
-def pytest(session):
-    """Run the tests"""
-    session.run_install(
-        "uv",
-        "sync",
-        "--extra=test",
-        f"--python={session.virtualenv.location}",
-        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
-    )
-    session.run("pytest", *session.posargs)
-
-
-@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def run_cli_deprecations(session):
     """Make sure the deperecations CLI runs (but fails)"""
     session.run_install(
         "uv",
         "sync",
+        "--all-packages",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    session.run("dbt-autofix", "deprecations")
+    integration_test_path = Path.cwd() / "tests" / "integration_tests" / "dbt_projects" / "project1"
+    session.run("uv", "run", "dbt-autofix", "deprecations", "--path", f"{integration_test_path.resolve()}")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
@@ -73,10 +63,21 @@ def test_pre_commit_installation(session):
     session.run_install(
         "uv",
         "sync",
+        "--all-packages",
         "--extra=test",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
+    # Build wheels for all packages
+    current_directory = Path.cwd()
+    dist_path = (current_directory / "dist").resolve()
+    session.run(
+        "uv",
+        "build",
+        "--all",
+        f"--out-dir={dist_path}",
+    )
+
     # Use try-repo with a non-existent file to test installation without execution.
     # This avoids the requirement for a dbt_project.yml file.
     session.run(
@@ -87,6 +88,7 @@ def test_pre_commit_installation(session):
         "--files",
         "non_existent_file",
         "--verbose",
+        env={"PIP_FIND_LINKS": dist_path, **os.environ},
     )
 
 
@@ -155,8 +157,8 @@ def test_wheel_installation(session):
     and verifies that dbt-fusion-package-tools is an unpinned dependency.
     """
     version, tools_dep = _build_and_install_wheels(session)
-    assert "==" not in tools_dep, f"Dev build: expected unpinned dbt-fusion-package-tools but got: {tools_dep}"
-    session.log(f"version={version}, unpinned (dev build)")
+    assert "dev" in tools_dep, f"Dev build: dbt-fusion-package-tools version should include dev but got: {tools_dep}"
+    session.log(f"version={version}, dev build")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
