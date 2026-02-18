@@ -1,5 +1,8 @@
 name: Build uv cache
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
