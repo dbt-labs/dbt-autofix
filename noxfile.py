@@ -87,7 +87,6 @@ def test_pre_commit_installation(session):
     # Use try-repo with a non-existent file to test installation without execution.
     # This avoids the requirement for a dbt_project.yml file.
     session.run(
-        "PIP_FIND_LINKS=./dist/",
         "pre-commit",
         "try-repo",
         ".",
@@ -95,6 +94,7 @@ def test_pre_commit_installation(session):
         "--files",
         "non_existent_file",
         "--verbose",
+        env={"PIP_FIND_LINKS": "./dist/"}
     )
 
 
