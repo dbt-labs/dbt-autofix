@@ -124,7 +124,11 @@ def _build_wheels(session):
     tools_wheels = sorted(dist.glob("dbt_fusion_package_tools-*.whl"))
     assert autofix_wheels, "dbt-autofix wheel not found in dist/"
     assert tools_wheels, "dbt-fusion-package-tools wheel not found in dist/"
-    return BuiltWheels(dist.resolve(), autofix_wheels[-1], tools_wheels[-1])
+    return BuiltWheels(
+        dist_path=dist.resolve(),
+        autofix_whl=autofix_wheels[-1],
+        tools_whl=tools_wheels[-1],
+    )
 
 
 def _build_and_install_wheels(session):
