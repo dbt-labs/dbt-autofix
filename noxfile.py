@@ -39,10 +39,12 @@ def run_cli_deprecations(session):
     session.run_install(
         "uv",
         "sync",
+        "--all-packages",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    session.run("dbt-autofix", "deprecations")
+    integration_test_path = Path.cwd() / "tests" / "integration_tests" / "dbt_projects" / "project1"
+    session.run("uv", "run", "dbt-autofix", "deprecations", "--path", f"{integration_test_path.resolve()}")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
