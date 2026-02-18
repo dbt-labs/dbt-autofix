@@ -18,6 +18,11 @@ def _exact_head_tags() -> list[str]:
 
 
 def test_wheel_installation_dev(tmp_path):
+    """Dry-run the release pipeline for a dev build.
+
+    Builds both wheels from the current (untagged) git state, installs them,
+    and verifies that dbt-fusion-package-tools is an unpinned dependency.
+    """
     if _exact_head_tags():
         pytest.skip("HEAD is exactly tagged; dev build test requires untagged commits above the last tag")
     autofix_whl, tools_whl = build_wheels(tmp_path / "dist")
@@ -29,6 +34,13 @@ def test_wheel_installation_dev(tmp_path):
 
 
 def test_wheel_installation_release(tmp_path):
+    """Dry-run the release pipeline for a simulated tagged release.
+
+    Creates a temporary git tag on HEAD so uv-dynamic-versioning sees
+    distance=0, builds both wheels, and verifies that dbt-fusion-package-tools
+    is pinned to the exact release version. Any competing HEAD tags are removed
+    before tagging and restored in the finally block.
+    """
     # Remove any existing HEAD tags so the simulated release tag is unambiguous
     # to uv-dynamic-versioning (competing tags cause it to pick the wrong one).
     existing_tags = _exact_head_tags()
