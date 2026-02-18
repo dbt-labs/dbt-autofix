@@ -1,0 +1,38 @@
+name: Check Latest Pypi Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        type: string
+        description: Choose which release tag to test
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            tests/integration_tests/dbt_projects/project1
+            tests/integration_tests/package_upgrades/mixed_versions
+          sparse-checkout-cone-mode: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7
+
+      - name: Create new uv project
+        run: uv init
+    
+      - name: Install specified release
+        run: uv add dbt-autofix==${{ inputs.release-version }}
+    
+      - name: Check version
+        run: uv run dbt-autofix --version
+      
+      - name: Test deprecations
+        run: uv run dbt-autofix deprecations --all --path tests/integration_tests/dbt_projects/project1
+      
+      - name: Test package upgrade
+        run: uv run dbt-autofix packages --force-upgrade --path tests/integration_tests/package_upgrades/mixed_versions
