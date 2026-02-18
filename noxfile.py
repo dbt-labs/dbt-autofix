@@ -77,6 +77,8 @@ def test_pre_commit_installation(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
+    # Build both wheels so pip can find dbt-fusion-package-tools locally
+    dist_path, _, _ = _build_wheels(session)
     # Use try-repo with a non-existent file to test installation without execution.
     # This avoids the requirement for a dbt_project.yml file.
     session.run(
@@ -87,19 +89,18 @@ def test_pre_commit_installation(session):
         "--files",
         "non_existent_file",
         "--verbose",
+        env={"PIP_FIND_LINKS": str(dist_path)},
     )
 
 
-def _build_and_install_wheels(session):
-    """Build both wheels, install them, verify entry points, and return metadata.
+def _build_wheels(session):
+    """Build both workspace wheels and return their paths.
 
-    Clears dist/, runs `uv build --all`, inspects the dbt-autofix wheel for
-    structural correctness (pre_commit_hooks included, metadata present),
-    installs both wheels, and verifies CLI entry points.
+    Clears dist/, runs `uv build --all`, and asserts that both wheels exist.
 
     Returns:
-        A (version, tools_dep) tuple where version is the wheel's Version string
-        and tools_dep is the Requires-Dist line for dbt-fusion-package-tools.
+        A (dist_path, autofix_whl, tools_whl) tuple where dist_path is the
+        resolved absolute path to dist/, and the wheel paths are Path objects.
     """
     dist = Path("dist")
     if dist.exists():
@@ -111,8 +112,21 @@ def _build_and_install_wheels(session):
     tools_wheels = sorted(dist.glob("dbt_fusion_package_tools-*.whl"))
     assert autofix_wheels, "dbt-autofix wheel not found in dist/"
     assert tools_wheels, "dbt-fusion-package-tools wheel not found in dist/"
-    autofix_whl = autofix_wheels[-1]
-    tools_whl = tools_wheels[-1]
+    return dist.resolve(), autofix_wheels[-1], tools_wheels[-1]
+
+
+def _build_and_install_wheels(session):
+    """Build both wheels, install them, verify entry points, and return metadata.
+
+    Builds both workspace wheels, inspects the dbt-autofix wheel for
+    structural correctness (pre_commit_hooks included, metadata present),
+    installs both wheels, and verifies CLI entry points.
+
+    Returns:
+        A (version, tools_dep) tuple where version is the wheel's Version string
+        and tools_dep is the Requires-Dist line for dbt-fusion-package-tools.
+    """
+    _, autofix_whl, tools_whl = _build_wheels(session)
 
     with zipfile.ZipFile(autofix_whl) as zf:
         wheel_files = zf.namelist()
@@ -152,11 +166,12 @@ def test_wheel_installation(session):
     """Dry-run the release pipeline for a dev build.
 
     Builds both wheels from the current (untagged) git state, installs them,
-    and verifies that dbt-fusion-package-tools is an unpinned dependency.
+    and verifies that dbt-fusion-package-tools is pinned to the exact version.
     """
     version, tools_dep = _build_and_install_wheels(session)
-    assert "==" not in tools_dep, f"Dev build: expected unpinned dbt-fusion-package-tools but got: {tools_dep}"
-    session.log(f"version={version}, unpinned (dev build)")
+    expected = f"Requires-Dist: dbt-fusion-package-tools=={version}"
+    assert expected in tools_dep, f"Dev build: expected '{expected}' but got: {tools_dep}"
+    session.log(f"version={version}, pin=={version}")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
