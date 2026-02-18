@@ -77,8 +77,13 @@ def test_pre_commit_installation(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    # Build both wheels so pip can find dbt-fusion-package-tools locally
-    dist_path, _, _ = _build_wheels(session)
+    # Build both wheels so pip can find dbt-fusion-package-tools locally.
+    # Also extract the version and pass UV_DYNAMIC_VERSIONING_BYPASS so that
+    # when pre-commit re-builds dbt-autofix from source in its temp clone
+    # (which has no git tags), it produces the same version as our pre-built
+    # wheel, making the pinned dbt-fusion-package-tools== dep resolvable.
+    dist_path, autofix_whl, _ = _build_wheels(session)
+    version = autofix_whl.stem.split("-")[1]  # dbt_autofix-<version>-py3-none-any
     # Use try-repo with a non-existent file to test installation without execution.
     # This avoids the requirement for a dbt_project.yml file.
     session.run(
@@ -89,7 +94,10 @@ def test_pre_commit_installation(session):
         "--files",
         "non_existent_file",
         "--verbose",
-        env={"PIP_FIND_LINKS": str(dist_path)},
+        env={
+            "PIP_FIND_LINKS": str(dist_path),
+            "UV_DYNAMIC_VERSIONING_BYPASS": version,
+        },
     )
 
 
