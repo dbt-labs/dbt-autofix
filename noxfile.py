@@ -78,9 +78,16 @@ def test_pre_commit_installation(session):
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
+    # Build wheels for all packages
+    session.run(
+        "uv",
+        "build",
+        "--all",
+    )
     # Use try-repo with a non-existent file to test installation without execution.
     # This avoids the requirement for a dbt_project.yml file.
     session.run(
+        "PIP_FIND_LINKS=./dist/",
         "pre-commit",
         "try-repo",
         ".",
