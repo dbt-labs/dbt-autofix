@@ -108,8 +108,6 @@ def _build_and_install_wheels(session):
         shutil.rmtree(dist)
 
     session.run("uv", "build", "--all", external=True)
-    # Output the detailed dependency tree for debugging
-    session.run("uv", "tree", "--verbose")
 
     autofix_wheels = sorted(dist.glob("dbt_autofix-*.whl"))
     tools_wheels = sorted(dist.glob("dbt_fusion_package_tools-*.whl"))
