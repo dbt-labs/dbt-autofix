@@ -73,7 +73,7 @@ def test_pre_commit_installation(session):
         "uv",
         "build",
         "--all",
-        f"--out-dir={dist_path}"
+        f"--out-dir={dist_path}",
     )
 
     # Use try-repo with a non-existent file to test installation without execution.
