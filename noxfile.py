@@ -1,11 +1,19 @@
 import shutil
 import subprocess
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 
 import nox
 
 nox.options.default_venv_backend = "uv"
+
+
+@dataclass(frozen=True)
+class BuiltWheels:
+    dist_path: Path
+    autofix_whl: Path
+    tools_whl: Path
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
@@ -82,8 +90,8 @@ def test_pre_commit_installation(session):
     # when pre-commit re-builds dbt-autofix from source in its temp clone
     # (which has no git tags), it produces the same version as our pre-built
     # wheel, making the pinned dbt-fusion-package-tools== dep resolvable.
-    dist_path, autofix_whl, _ = _build_wheels(session)
-    version = autofix_whl.stem.split("-")[1]  # dbt_autofix-<version>-py3-none-any
+    wheels = _build_wheels(session)
+    version = wheels.autofix_whl.stem.split("-")[1]  # dbt_autofix-<version>-py3-none-any
     # Use try-repo with a non-existent file to test installation without execution.
     # This avoids the requirement for a dbt_project.yml file.
     session.run(
@@ -95,7 +103,7 @@ def test_pre_commit_installation(session):
         "non_existent_file",
         "--verbose",
         env={
-            "PIP_FIND_LINKS": str(dist_path),
+            "PIP_FIND_LINKS": str(wheels.dist_path),
             "UV_DYNAMIC_VERSIONING_BYPASS": version,
         },
     )
@@ -105,10 +113,6 @@ def _build_wheels(session):
     """Build both workspace wheels and return their paths.
 
     Clears dist/, runs `uv build --all`, and asserts that both wheels exist.
-
-    Returns:
-        A (dist_path, autofix_whl, tools_whl) tuple where dist_path is the
-        resolved absolute path to dist/, and the wheel paths are Path objects.
     """
     dist = Path("dist")
     if dist.exists():
@@ -120,7 +124,7 @@ def _build_wheels(session):
     tools_wheels = sorted(dist.glob("dbt_fusion_package_tools-*.whl"))
     assert autofix_wheels, "dbt-autofix wheel not found in dist/"
     assert tools_wheels, "dbt-fusion-package-tools wheel not found in dist/"
-    return dist.resolve(), autofix_wheels[-1], tools_wheels[-1]
+    return BuiltWheels(dist.resolve(), autofix_wheels[-1], tools_wheels[-1])
 
 
 def _build_and_install_wheels(session):
@@ -134,9 +138,9 @@ def _build_and_install_wheels(session):
         A (version, tools_dep) tuple where version is the wheel's Version string
         and tools_dep is the Requires-Dist line for dbt-fusion-package-tools.
     """
-    _, autofix_whl, tools_whl = _build_wheels(session)
+    wheels = _build_wheels(session)
 
-    with zipfile.ZipFile(autofix_whl) as zf:
+    with zipfile.ZipFile(wheels.autofix_whl) as zf:
         wheel_files = zf.namelist()
 
         hook_files = [f for f in wheel_files if f.startswith("pre_commit_hooks/")]
@@ -159,7 +163,7 @@ def _build_and_install_wheels(session):
             requires_lines
         )
 
-    session.install(str(tools_whl), str(autofix_whl))
+    session.install(str(wheels.tools_whl), str(wheels.autofix_whl))
     session.run("dbt-autofix", "--help")
     session.run("python", "-m", "pre_commit_hooks.check_deprecations", "--help")
 
