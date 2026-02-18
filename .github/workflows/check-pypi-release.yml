@@ -5,7 +5,10 @@ on:
     inputs:
       release-version:
         type: string
-        description: Choose which release tag to test
+        description: Choose which release tag to test (no leading v)
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -27,6 +30,9 @@ jobs:
     
       - name: Install specified release
         run: uv add dbt-autofix==${{ inputs.release-version }}
+      
+      - name: Display uv dependencies
+        run: uv tree
     
       - name: Check version
         run: uv run dbt-autofix --version
