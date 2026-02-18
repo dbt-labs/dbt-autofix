@@ -19,7 +19,8 @@ def _exact_head_tags() -> list[str]:
 @contextmanager
 def _head_tag_override(tags_to_add: list[str]):
     """Temporarily override HEAD tags. Removes existing HEAD tags, adds the given
-    tags, and restores the original state on exit — whether or not the body raises."""
+    tags, and restores the original state on exit — whether or not the body raises.
+    """
     existing = _exact_head_tags()
     for t in existing:
         subprocess.run(["git", "tag", "-d", t], check=True)
@@ -43,7 +44,9 @@ def test_wheel_installation_dev(tmp_path):
     with _head_tag_override([]):  # ensure HEAD is untagged
         autofix_whl, tools_whl = build_wheels(tmp_path / "dist")
         _version, tools_dep = inspect_autofix_wheel(autofix_whl)
-        assert "dev" in tools_dep, f"Dev build: dbt-fusion-package-tools version should include dev but got: {tools_dep}"
+        assert "dev" in tools_dep, (
+            f"Dev build: dbt-fusion-package-tools version should include dev but got: {tools_dep}"
+        )
         venv = tmp_path / "venv"
         make_venv(venv)
         install_wheels_in_venv(venv, tools_whl, autofix_whl)
