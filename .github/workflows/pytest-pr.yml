@@ -1,4 +1,4 @@
-name: Run Pytest on PR
+name: CI
 
 on:
   pull_request:
@@ -8,33 +8,12 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: test on ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-          cache-suffix: test
-
-      - run: uv sync --all-extras --all-packages 
-      - run: uv run pytest
-
   lint:
     name: lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
         with:
           python-version: "3.10"
@@ -42,3 +21,25 @@ jobs:
           cache-suffix: lint
       - run: uv tool run ruff@0.14.14 check . --config pyproject.toml
       - run: uv tool run ruff@0.14.14 format --check --diff . --config pyproject.toml
+
+  test:
+    name: test on ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-suffix: test
+
+      - run: uv sync --all-extras --all-packages
+      - run: uv run pytest
+      - run: uv run pytest tests/e2e_tests/ -v

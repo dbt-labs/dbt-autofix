@@ -28,7 +28,6 @@ test = [
     "pytest>=7.2.0",
     "pytest-cov>=4.1.0",
     "pre-commit>=4.2.0",
-    "nox",
 ]
 
 [build-system]
@@ -116,7 +115,6 @@ reportMissingImports = false
     "T203",  # `pprint` found
 ]
 # Baseline ignores for existing violations (to be fixed incrementally)
-"noxfile.py" = ["D415"]
 "packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/__init__.py" = ["T201"]
 "packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/check_parse_conformance.py" = ["D417"]
 "packages/dbt_fusion_package_tools/src/dbt_fusion_package_tools/dbt_package.py" = ["E722"]
@@ -162,6 +160,7 @@ reportMissingImports = false
 pythonpath = [
   "."
 ]
+testpaths = ["tests/unit_tests", "tests/integration_tests"]
 addopts = "--ignore-glob=**/dbt_packages/**"
 
 [tool.ruff.lint.pydocstyle]
