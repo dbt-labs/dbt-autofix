@@ -440,6 +440,304 @@ def check_fusion_schema_compatibility(
         return
 
 
+
+def parse_ls_log_output(
+    output: str,
+) -> list[str]:
+    log_output = [json.loads(x) for x in output.splitlines()]
+    result: list[str] = []
+    for line in log_output:
+        if line.get("event_type") == "v1.public.events.fusion.log.ListItemOutput":
+            attributes = line.get("attributes")
+            if attributes:
+                result.append(attributes.get("content"))
+
+    return result
+
+
+def check_fusion_models(
+    repo_path: Path = Path.cwd(),
+    fusion_binary: Optional[str] = None,
+    show_fusion_output=True,
+) -> Optional[ParseConformanceLogOutput]:
+    """Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
+
+    Args:
+        fusion_binary_name: name of a valid Fusion binary
+        repo_path: Path to the dbt package repository
+
+    Returns:
+        True if fusion compatible (dbtf parse exits with code 0), False otherwise
+    """
+    # Add a test profiles.yml to the current directory
+    profiles_path = repo_path / Path("profiles.yml")
+    try:
+        with open(profiles_path, "a") as f:
+            f.write(
+                "\n"
+                "test_schema_compat:\n"
+                "  target: dev\n"
+                "  outputs:\n"
+                "    dev:\n"
+                "      type: postgres\n"
+                "      host: localhost\n"
+                "      port: 5432\n"
+                "      user: postgres\n"
+                "      password: postgres\n"
+                "      dbname: postgres\n"
+                "      schema: public\n"
+            )
+
+        # Ensure the `_DBT_FUSION_STRICT_MODE` is set (this will ensure fusion errors on schema violations)
+        os.environ["_DBT_FUSION_STRICT_MODE"] = "1"
+
+        # Find correct name for Fusion binary if none provided
+        fusion_binary_name: Optional[str] = fusion_binary
+        if fusion_binary_name is None:
+            fusion_binary_name = find_fusion_binary()
+        # If still no valid name, return
+        if fusion_binary_name is None:
+            raise FusionBinaryNotAvailable()
+
+        # Get the Fusion version
+        fusion_version: Optional[str] = check_fusion_version(fusion_binary_name)
+        if fusion_version is None:
+            raise FusionBinaryNotAvailable()
+
+        try:
+            # Run dbt deps to install package dependencies
+            if show_fusion_output:
+                console.log("\n\nRunning dbt deps", style="green")
+            deps_result = subprocess.run(
+                [
+                    fusion_binary_name,
+                    "deps",
+                    "--profile",
+                    "test_schema_compat",
+                    "--project-dir",
+                    str(repo_path),
+                    "--log-format",
+                    "otel",
+                ],
+                check=False,
+                text=True,
+                capture_output=True,
+                timeout=60,
+            )
+            deps_output = parse_log_output(
+                deps_result.stdout, deps_result.returncode, repo_path, fusion_version=fusion_version
+            )
+            if deps_result.returncode != 0:
+                error_console.log("dbt deps returned errors")
+                error_console.log(deps_output)
+
+            # Now try parse
+            if show_fusion_output:
+                console.log("\n\nRunning dbt ls", style="green")
+            parse_result = subprocess.run(
+                [
+                    fusion_binary_name,
+                    "ls",
+                    "--profile",
+                    "test_schema_compat",
+                    "--project-dir",
+                    str(repo_path),
+                    "--log-format",
+                    "otel",
+                ],
+                check=False,
+                text=True,
+                capture_output=True,
+                timeout=60,
+            )
+            parse_output: list[str] = parse_ls_log_output(
+                parse_result.stdout,
+            )
+            if parse_result.returncode == 0 and len(parse_output) == 0:
+                parse_output = ["none"]
+            elif parse_result.returncode != 0:
+                parse_output = ["error running ls"]
+
+            if parse_result.returncode != 0:
+                error_console.log("dbt ls returned errors")
+                error_console.log(parse_output)
+                error_console.log(parse_result.stdout)
+                error_console.log(parse_result.stderr)
+            if deps_result.returncode != 0:
+                parse_output.append("error running deps")
+        except Exception as e:
+            error_console.log(f"{e}: An unknown error occurred when running dbt ls")
+            return
+
+        # Return True if exit code is 0 (success)
+        is_compatible = parse_result.returncode == 0
+
+        if show_fusion_output:
+            if is_compatible:
+                console.log(f"dbt ls succeeded for package at {repo_path}")
+            else:
+                console.log(f"dbt ls failed for package at {repo_path}")
+
+        # Clean up deps
+        if show_fusion_output:
+            console.log("\n\nRunning dbt clean", style="green")
+        subprocess.run(
+            [
+                fusion_binary_name,
+                "clean",
+                "--profile",
+                "test_schema_compat",
+                "--project-dir",
+                str(repo_path),
+                "--log-format",
+                "otel",
+            ],
+            check=False,
+            timeout=60,
+            text=True,
+            capture_output=True,
+        )
+        # Remove the test profile
+        os.remove(profiles_path)
+
+        return parse_output
+
+    except Exception as e:
+        error_console.log(f"Error checking fusion compatibility for {repo_path}: {e!s}")
+        try:
+            os.remove(profiles_path)
+        except Exception:
+            pass
+        return
+
+
+def download_tarball_and_run_ls(
+    package_name: str,
+    package_id: str,
+    package_version_str: str,
+    package_version_download_url: str,
+    latest_package_version_download_url: Optional[str],
+    fusion_binary: Optional[str] = None,
+) -> list[str]:
+    with TemporaryDirectory() as tmpdir:
+        # download tarball from version json
+        tar_path: Optional[Path] = None
+        # track exceptions across both checks
+        exceptions: list[str] = []
+        # use explicitly provided version first
+        try:
+            # Download the tarball
+            response = requests.get(package_version_download_url, stream=True)
+            response.raise_for_status()
+
+            # Save to a temporary file
+            tar_path = Path(tmpdir) / "archive.tar.gz"
+            with open(tar_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        except requests.exceptions.HTTPError as http_error:
+            exceptions.append(
+                f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}"
+            )
+        except Exception as other_error:
+            exceptions.append(f"Error when downloading tarball: {other_error}")
+        # if that errors or doesn't exist, construct from the latest version
+        if not tar_path and latest_package_version_download_url:
+            constructed_url: str = construct_download_url_from_latest(
+                latest_package_version_download_url, package_version_download_url
+            )
+            try:
+                # Download the tarball
+                response = requests.get(constructed_url, stream=True)
+                response.raise_for_status()
+
+                # Save to a temporary file
+                tar_path = Path(tmpdir) / "archive.tar.gz"
+                with open(tar_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+            except requests.exceptions.HTTPError as http_error:
+                exceptions.append(
+                    f"{http_error.request.url}: {http_error.response.status_code}, {http_error.response.reason}"
+                )
+            except Exception as other_error:
+                exceptions.append(f"Error when downloading tarball: {other_error}")
+        # if still no download, error
+        if not tar_path:
+            console.log(f"Could not download {package_name} {package_version_str}")
+            for exception in exceptions:
+                console.log(exception)
+            return ["download failed"]
+
+        # if we do have a file, extract the archive
+        try:
+            extract_dir = Path(tmpdir) / "extracted"
+            extract_dir.mkdir(parents=True, exist_ok=True)
+
+            with tarfile.open(tar_path, "r:gz") as tar:
+                for entry in tar:
+                    if os.path.isabs(entry.name) or ".." in entry.name:
+                        raise ValueError("Illegal tar archive entry")
+                    tar.extract(entry, extract_dir)
+
+            # Clean up the tar file
+            tar_path.unlink()
+
+            # Check that only 1 directory is inside
+            tar_contents = os.listdir(extract_dir)
+            if len(tar_contents) != 1:
+                console.log("Error downloading tar")
+            extracted_package = extract_dir / tar_contents[0]
+        except Exception as e:
+            console.log(f"Error when extracting tarball: {e}")
+            return ["tarball extract failed"]
+
+        # run conformance if possible
+        try:
+            console.log(f"Running parse conformance for {package_id} version {package_version_str}")
+            return run_ls_for_version(
+                extracted_package, package_name, package_version_str, package_id, fusion_binary=fusion_binary
+            )
+        except Exception as e:
+            console.log(f"Error when running conformance: {e}")
+            return ["ls failed"]
+
+
+def run_ls_for_version(
+    path, package_name, tag_version, package_id, fusion_binary=None
+) -> list[str]:
+    result = FusionConformanceResult(version=tag_version, download_failed=False)
+    # check require dbt version
+    try:
+        dbt_project_yml = safe_load((Path(f"{path}/dbt_project.yml")).read_text()) or (
+            {},
+            {},
+        )
+        require_dbt_version_string = dbt_project_yml[1].get("require-dbt-version")
+    except Exception as e:
+        error_console.log(f"dbt_project.yml load failed for {package_id} {tag_version}: {e}")
+        return
+    # try to add profile to suppress warning about profiles
+    if "profile" not in dbt_project_yml[1]:
+        console.log("Adding profile to dbt project")
+        try:
+            with open(Path(f"{path}/dbt_project.yml"), "a") as f:
+                f.write("\nprofile: test_schema_compat\n")
+        except Exception as e:
+            error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag_version}: {e}")
+    new_version: DbtPackageVersion = DbtPackageVersion(
+        package_name,
+        tag_version,
+        package_id=package_id,
+        raw_require_dbt_version_range=require_dbt_version_string,
+    )
+    ls_result = check_fusion_models(
+        Path(path), fusion_binary=fusion_binary, show_fusion_output=True
+    )
+    return ls_result
+
 def main():
     check_fusion_schema_compatibility(repo_path=Path.cwd())
 
