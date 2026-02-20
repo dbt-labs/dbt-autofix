@@ -440,7 +440,6 @@ def check_fusion_schema_compatibility(
         return
 
 
-
 def parse_ls_log_output(
     output: str,
 ) -> list[str]:
@@ -705,17 +704,13 @@ def download_tarball_and_run_ls(
             return ["ls failed"]
 
 
-def run_ls_for_version(
-    path, package_name, tag_version, package_id, fusion_binary=None
-) -> list[str]:
-    result = FusionConformanceResult(version=tag_version, download_failed=False)
-    # check require dbt version
+def run_ls_for_version(path, package_name, tag_version, package_id, fusion_binary=None) -> list[str]:
+    # check that dbt_project.yml exists
     try:
         dbt_project_yml = safe_load((Path(f"{path}/dbt_project.yml")).read_text()) or (
             {},
             {},
         )
-        require_dbt_version_string = dbt_project_yml[1].get("require-dbt-version")
     except Exception as e:
         error_console.log(f"dbt_project.yml load failed for {package_id} {tag_version}: {e}")
         return
@@ -727,16 +722,10 @@ def run_ls_for_version(
                 f.write("\nprofile: test_schema_compat\n")
         except Exception as e:
             error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag_version}: {e}")
-    new_version: DbtPackageVersion = DbtPackageVersion(
-        package_name,
-        tag_version,
-        package_id=package_id,
-        raw_require_dbt_version_range=require_dbt_version_string,
-    )
-    ls_result = check_fusion_models(
-        Path(path), fusion_binary=fusion_binary, show_fusion_output=True
-    )
+
+    ls_result = check_fusion_models(Path(path), fusion_binary=fusion_binary, show_fusion_output=True)
     return ls_result
+
 
 def main():
     check_fusion_schema_compatibility(repo_path=Path.cwd())
