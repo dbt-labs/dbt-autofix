@@ -429,7 +429,7 @@ def main(
         output, package_latest_version_urls, package_limit, fusion_binary
     )
     csv_output: list[dict[str, str]] = []
-    model_errors = set(['download failed', 'error running ls', 'error running deps'])
+    model_errors = set(["download failed", "error running ls", "error running deps"])
     for package_name in ls_results:
         package: dict[str, list[str]] = ls_results[package_name]
         for version in package:
