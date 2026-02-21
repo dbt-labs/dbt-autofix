@@ -372,7 +372,7 @@ flags:
 
 ### UnexpectedJinjaBlockDeprecation
 
-> **Fires for:** `sql`, `py`
+> **Fires for:** `sql`
 
 Orphaned or out-of-context Jinja block tags (e.g., a stray `{% endmacro %}` before the opening
 `{% macro %}`) are currently silently ignored. dbt-fusion will treat them as errors.
@@ -434,17 +434,24 @@ models:
         custom_config_key: value
 ````
 
-**Before (SQL / Python):**
+**Before (SQL):**
 
 ```sql
 {{ config(materialized='table', custom_config_key='value') }}
 ```
 
-**After (SQL / Python):**
+**After (SQL):**
 
 ```sql
 {{ config(materialized='table', meta={'custom_config_key': 'value'}) }}
 ```
+
+**Before / After (Python):**
+
+> [!NOTE] TODO
+> Python models use `dbt.config(...)` rather than Jinja `{{ config(...) }}`, so the
+> before/after example needs to be written separately. The autofix also does not cover
+> Python models for this deprecation.
 
 **Autofix covers:** Move any custom key into `meta:` within the config block in yaml and sql jinja
 **Autofix does not cover:** Moving custom keys into meta in python models
