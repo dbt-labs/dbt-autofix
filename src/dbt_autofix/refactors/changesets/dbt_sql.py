@@ -3,8 +3,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from dbt_autofix_jinja import statically_parse_unrendered_config
+
 from dbt_autofix.deprecations import DeprecationType
-from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLRuleRefactorResult
 from dbt_autofix.retrieve_schemas import SchemaSpecs
