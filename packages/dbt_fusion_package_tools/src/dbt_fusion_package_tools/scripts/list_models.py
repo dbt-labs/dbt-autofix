@@ -12,7 +12,7 @@ Writes output to `output/conformance_output.json`, which is used in two other sc
 import csv
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import typer
 from rich import print
@@ -429,15 +429,25 @@ def main(
         output, package_latest_version_urls, package_limit, fusion_binary
     )
     csv_output: list[dict[str, str]] = []
+    model_errors = set(['download failed', 'error running ls', 'error running deps'])
     for package_name in ls_results:
         package: dict[str, list[str]] = ls_results[package_name]
         for version in package:
             package_models: list[str] = package[version]
             for model in package_models:
+                error: bool = model in model_errors
+                error_type: Optional[str] = model if error else ""
+                if error or model == "none":
+                    model_count = 0
+                else:
+                    model_count = 1
                 model_summary: dict[str, str] = {
                     "package_name": package_name,
                     "package_version": version,
                     "model": model,
+                    "error": str(error),
+                    "error_type": error_type,
+                    "model_count": str(model_count),
                 }
                 csv_output.append(model_summary)
 
@@ -445,7 +455,7 @@ def main(
         writer = csv.DictWriter(file, fieldnames=[field for field in csv_output[0]])
         writer.writeheader()
         writer.writerows(csv_output)
-    print(f"Wrote {len(csv_output)} rows to {output_path}'/model_summary.csv")
+    print(f"Wrote {len(csv_output)} rows to {output_path}/model_summary.csv")
 
 
 if __name__ == "__main__":
