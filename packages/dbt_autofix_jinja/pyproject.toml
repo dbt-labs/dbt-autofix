@@ -30,3 +30,5 @@ vcs = "git"
 style = "pep440"
 # Fallback when git tags are unavailable (e.g. Dependabot running uv lock in a shallow clone)
 fallback-version = "0.0.0"
+# Don't include the commit ID in the version - required for TestPypi
+metadata = false
