@@ -158,8 +158,8 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:
     clean_content_chars = list(sql_content)
     for start, end in comment_regions:
         for i in range(start, end):
-            clean_content_chars[i] = ' '
-    clean_content = ''.join(clean_content_chars)
+            clean_content_chars[i] = " "
+    clean_content = "".join(clean_content_chars)
 
     # Find all Jinja tags
     for match in JINJA_TAG_PATTERN.finditer(clean_content):
