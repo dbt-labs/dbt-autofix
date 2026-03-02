@@ -152,8 +152,17 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:
     # Track positions to remove
     to_remove: List[Tuple[int, int]] = []  # [(start_pos, end_pos), ...]
 
+    # Neutralize comment regions so JINJA_TAG_PATTERN can't start matches inside them.
+    # Without this, a malformed tag ending like -%#} inside a comment causes the regex
+    # to extend past the comment boundary and consume later valid tags.
+    clean_content_chars = list(sql_content)
+    for start, end in comment_regions:
+        for i in range(start, end):
+            clean_content_chars[i] = ' '
+    clean_content = ''.join(clean_content_chars)
+
     # Find all Jinja tags
-    for match in JINJA_TAG_PATTERN.finditer(sql_content):
+    for match in JINJA_TAG_PATTERN.finditer(clean_content):
         tag_content = match.group(1)
         start_pos = match.start()
         end_pos = match.end()
