@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -90,6 +91,64 @@ def test_pre_commit_installation(session):
         "--verbose",
         env={"PIP_FIND_LINKS": dist_path, **os.environ},
     )
+
+
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
+def test_pre_commit_installation_shallow_clone(session):
+    """Test pre-commit hook installation from a shallow clone without tags.
+
+    pre-commit clones repos without tags, which causes uv-dynamic-versioning
+    to fall back to the fallback-version (0.0.0). This test simulates that
+    behavior to ensure the hook can still be installed correctly.
+
+    See: https://github.com/dbt-labs/dbt-autofix/issues/337
+    """
+    session.run_install(
+        "uv",
+        "sync",
+        "--all-packages",
+        "--extra=test",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+
+    repo_root = Path.cwd()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        shallow_clone = Path(tmpdir) / "dbt-autofix"
+
+        # Simulate pre-commit's clone behavior: shallow, no tags.
+        session.run(
+            "git",
+            "clone",
+            "--depth=1",
+            "--no-tags",
+            f"file://{repo_root}",
+            str(shallow_clone),
+            external=True,
+        )
+
+        # Build wheels from the shallow clone (where version will fall back)
+        dist_path = (shallow_clone / "dist").resolve()
+        session.run(
+            "uv",
+            "build",
+            "--all",
+            f"--out-dir={dist_path}",
+            external=True,
+            env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+        )
+
+        # Use try-repo against the shallow clone, just like a real user would
+        session.run(
+            "pre-commit",
+            "try-repo",
+            str(shallow_clone),
+            "dbt-autofix-check",
+            "--files",
+            "non_existent_file",
+            "--verbose",
+            env={"PIP_FIND_LINKS": str(dist_path), **os.environ},
+        )
 
 
 def _build_and_install_wheels(session):
