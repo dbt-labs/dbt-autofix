@@ -2,7 +2,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from dbt_fusion_package_tools.dbt_package import DbtPackage
 from dbt_fusion_package_tools.upgrade_status import PackageFusionCompatibilityState
 
