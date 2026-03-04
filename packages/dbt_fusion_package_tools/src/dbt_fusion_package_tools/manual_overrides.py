@@ -1,6 +1,5 @@
 EXPLICIT_DISALLOW_ALL_VERSIONS: set[str] = set(
     [
-        "Snowflake-Labs/dbt_constraints",
         "get-select/dbt_snowflake_query_tags",
         "data-mie/dbt_profiler",
         "dbt-labs/logging",
