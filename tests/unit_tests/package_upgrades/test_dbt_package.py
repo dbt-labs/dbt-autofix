@@ -3,6 +3,9 @@ from pathlib import Path
 
 import pytest
 
+from dbt_fusion_package_tools.dbt_package import DbtPackage
+from dbt_fusion_package_tools.upgrade_status import PackageFusionCompatibilityState
+
 
 @pytest.fixture
 def temp_project_dir():
@@ -132,3 +135,30 @@ models:
 # def test_fusion_compatible_dbt_version_ranges(version_range: list[str], expected_result: bool):
 #     package = DbtPackage(package_name="test_package")
 #     assert package.is_dbt_version_fusion_compatible(version_range) == expected_result
+
+
+def test_dbt_constraints_has_fusion_compatible_upgrade_path():
+    """Regression test for issue #343.
+
+    dbt_constraints is in EXPLICIT_DISALLOW_ALL_VERSIONS but version 1.0.8 is
+    fusion-compatible. The package-level state should reflect that some versions
+    are compatible so the upgrade logic can offer 1.0.8.
+    """
+    pkg = DbtPackage(
+        package_name="dbt_constraints",
+        package_id="Snowflake-Labs/dbt_constraints",
+        project_config_raw_version_specifier="1.0.7",
+    )
+
+    # The compatibility output shows 1.0.8 is fusion-compatible
+    assert len(pkg.fusion_compatible_versions) > 0
+
+    # The package-level state should NOT be NO_VERSIONS_COMPATIBLE
+    # since 1.0.8 is available as an upgrade
+    state = pkg.get_package_fusion_compatibility_state()
+    assert state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
+
+    # And the upgrade path should find 1.0.8
+    upgrade_versions = pkg.find_fusion_compatible_versions_above_requested_range()
+    version_strings = [v.to_version_string(skip_matcher=True) for v in upgrade_versions]
+    assert "1.0.8" in version_strings
