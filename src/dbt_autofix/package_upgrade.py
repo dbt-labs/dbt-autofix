@@ -266,20 +266,6 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 )
             )
             packages_to_check.remove(package)
-        # package has manual override for all versions so can't upgrade
-        elif package in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW,
-                    upgraded_version_compatibility_state=None,
-                )
-            )
-            packages_to_check.remove(package)
         # all versions have require-dbt-version < 2.0
         elif package in no_versions_compatible:
             package_version_upgrade_results.append(
