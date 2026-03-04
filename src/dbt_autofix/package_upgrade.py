@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
-from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
+from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS
 from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
     PackageVersionFusionCompatibilityState,
