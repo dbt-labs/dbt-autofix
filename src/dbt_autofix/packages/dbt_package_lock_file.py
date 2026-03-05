@@ -22,7 +22,7 @@ def load_yaml_from_package_lock_file_path(package_lock_yml_path: Path) -> dict[A
     """
 
     if package_lock_yml_path.name != "package-lock.yml":
-        console.log("File must be dbt_project.yml")
+        console.log("File must be package-lock.yml")
         return {}
     try:
         parsed_package_lock_file = yaml.safe_load(package_lock_yml_path.read_text())
