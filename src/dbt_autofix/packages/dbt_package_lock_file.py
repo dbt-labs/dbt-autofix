@@ -61,6 +61,10 @@ class DbtPackageLockFile:
         """Extracts project dependencies from a given path or dict."""
         self.installed_package_versions = {}
         self.unknown_packages = set()
+        if self.yml_dependencies is not None:
+            self.parse_packages_from_yml(self.yml_dependencies)
+        elif self.file_path is not None:
+            self.load_yaml_from_package_lock_yml_path(self.file_path)
 
     def load_yaml_from_package_lock_yml_path(self, package_lock_yml_path: Path) -> bool:
         """Loads package-lock.yml from a given path.
