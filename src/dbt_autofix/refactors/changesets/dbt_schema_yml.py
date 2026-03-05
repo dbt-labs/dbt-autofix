@@ -109,7 +109,17 @@ def _process_line_fancy_quotes(line: str) -> Tuple[str, bool, List[int]]:
                 # Ending a string that was started with regular quote
                 inside_string = False
                 string_start_char = None
-            # else: it's a regular quote inside a fancy-quote-delimited string (shouldn't happen in practice)
+            elif string_start_char == "\u201c":
+                # Regular quote inside a fancy-quote-delimited string.
+                # If there's a fancy closing quote later, this is content — escape it.
+                # Otherwise it's a mismatched closing delimiter.
+                if "\u201d" in line[i + 1 :]:
+                    refactored = True
+                    result.append("\\")
+                else:
+                    # Mismatched pair: fancy open + regular close
+                    inside_string = False
+                    string_start_char = None
             result.append(char)
             i += 1
             continue
