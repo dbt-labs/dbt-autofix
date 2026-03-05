@@ -121,13 +121,13 @@ from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_cal
         # Single-quoted source value containing double quotes should NOT be converted to double quotes
         (
             {"warn_if": '== "never true"'},
-            {"warn_if": '\'== "never true"\''},
+            {"warn_if": "'== \"never true\"'"},
             "\n    warn_if='== \"never true\"'",
         ),
         # Meta value from single-quoted source containing double quotes
         (
             {"meta": {"custom": '== "never true"'}},
-            {"custom": '\'== "never true"\''},
+            {"custom": "'== \"never true\"'"},
             "\n    meta={'custom': '== \"never true\"'}",
         ),
     ],

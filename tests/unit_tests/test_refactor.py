@@ -1950,9 +1950,7 @@ models:
         result = changeset_replace_fancy_quotes(input_yaml)
         assert result.refactored
         # The output must be valid YAML - inner quotes need to be escaped
-        import yaml
-
-        parsed = yaml.safe_load(result.refactored_yaml)
+        parsed = safe_load(result.refactored_yaml)
         assert parsed["description"] == 'The status changes to "Graduated" after one year.'
 
 
