@@ -1,0 +1,49 @@
+name: Build uv cache
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "uv.lock"
+      - "**/pyproject.toml"
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  build-cache:
+    name: build cache on ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: false
+
+      - name: Install dependencies and populate cache
+        run: |
+          echo "Building global UV cache..."
+          uv sync --all-packages --all-extras
+          echo "Cache populated successfully"
+
+      - name: Save uv caches
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.local/share/uv
+            .venv
+          key: uv-main-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}

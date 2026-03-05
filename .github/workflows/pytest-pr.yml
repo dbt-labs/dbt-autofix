@@ -20,14 +20,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
+      - name: Restore global uv cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.local/share/uv
+            .venv
+          key: uv-main-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            uv-main-${{ matrix.python-version }}-
+
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7
         with:
           python-version: ${{ matrix.python-version }}
-          enable-cache: true
-          cache-suffix: test
+          enable-cache: false
 
       - run: uv sync --all-extras --all-packages 
       - run: uv run pytest
+ 
+      - name: Save uv caches
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.local/share/uv
+            .venv
+          key: uv-main-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
 
   lint:
     name: lint
@@ -35,10 +56,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7
         with:
           python-version: "3.10"
           enable-cache: true
           cache-suffix: lint
       - run: uv tool run ruff@0.14.14 check . --config pyproject.toml
       - run: uv tool run ruff@0.14.14 format --check --diff . --config pyproject.toml
+  
