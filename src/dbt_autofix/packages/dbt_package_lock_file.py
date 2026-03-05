@@ -9,7 +9,7 @@ from rich.console import Console
 console = Console()
 
 
-def load_yaml_from_package_lock_file_path(package_lock_yml_path: Path) -> dict[Any, Any]:
+def load_yaml_from_package_lock_file_path(package_lock_yml_path: Path) -> Optional[dict[Any, Any]]:
     """Extracts YAML content from a project's package-lock file.
 
     Parses a package-lock.yml file for an installed package into an untyped dict
@@ -18,20 +18,19 @@ def load_yaml_from_package_lock_file_path(package_lock_yml_path: Path) -> dict[A
         package_lock_yml_path (Path): the path for the package's dbt_project.yml file
 
     Returns:
-        dict[Any, Any]: the result produced by the YAML parser; {} if no results
+        Optional[dict[Any, Any]]: the result produced by the YAML parser; None if an error occurs
     """
-
     if package_lock_yml_path.name != "package-lock.yml":
         console.log("File must be package-lock.yml")
-        return {}
+        return
     try:
         parsed_package_lock_file = yaml.safe_load(package_lock_yml_path.read_text())
     except FileNotFoundError:
         console.log(f"File not found at {package_lock_yml_path}")
-        return {}
+        return
     except Exception as e:
         console.log(f"Error when parsing package file {package_lock_yml_path}: {type(e)}, {e!s}")
-        return {}
+        return
     if isinstance(parsed_package_lock_file, dict) and parsed_package_lock_file != {}:
         return parsed_package_lock_file
     else:
@@ -55,6 +54,7 @@ class DbtPackageLockFile:
     yml_dependencies: Optional[dict[Any, Any]] = None
     # this is indexed by package id for uniqueness (hopefully)
     installed_package_versions: dict[str, DbtPackageVersion] = field(init=False, default_factory=dict)
+    # Used to track if the lock file has non-hub packages
     unknown_packages: set[str] = field(init=False, default_factory=set)
 
     def __post_init__(self):
@@ -96,7 +96,7 @@ class DbtPackageLockFile:
             block (dict[Any, Any]): package version block from package-lock.yml
 
         Returns:
-            Union[DbtPackageVersion, str, None]: DbtPackageVersion for public package, str for non-public package, None if not parsed
+            Union[DbtPackageVersion, str]: DbtPackageVersion for public package, str for non-public package, None if not parsed
         """
         package_name = block.get("name")
         package_id = block.get("package")
