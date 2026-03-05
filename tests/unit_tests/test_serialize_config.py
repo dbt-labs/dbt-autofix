@@ -118,6 +118,18 @@ from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_cal
             {"hook1": '"select 1"', "hook2": '"select 2"'},
             '\n    materialized="table", \n    meta={\'hook1\': "select 1", \'hook2\': "select 2"}',
         ),
+        # Single-quoted source value containing double quotes should NOT be converted to double quotes
+        (
+            {"warn_if": '== "never true"'},
+            {"warn_if": '\'== "never true"\''},
+            "\n    warn_if='== \"never true\"'",
+        ),
+        # Meta value from single-quoted source containing double quotes
+        (
+            {"meta": {"custom": '== "never true"'}},
+            {"custom": '\'== "never true"\''},
+            "\n    meta={'custom': '== \"never true\"'}",
+        ),
     ],
 )
 def test_serialize_config_macro_call(config_dict, config_source_map, expected_output):

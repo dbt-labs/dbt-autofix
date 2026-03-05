@@ -1939,6 +1939,22 @@ models:
         assert len(result.refactor_logs) == 2  # Two lines with fancy quotes in name fields
         assert result.refactored_yaml == expected_yaml
 
+    def test_fancy_delimiters_with_regular_quotes_inside(self):
+        """Test that fancy quotes as delimiters are replaced AND inner regular quotes are escaped.
+
+        This is the bug from issue #341: when fancy quotes are used as YAML string delimiters
+        and the value contains regular double quotes, the replacement produces invalid YAML
+        like: description: "...equals "Rate After One Year"..."
+        """
+        input_yaml = 'description: \u201cThe status changes to "Graduated" after one year.\u201d'
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        # The output must be valid YAML - inner quotes need to be escaped
+        import yaml
+
+        parsed = yaml.safe_load(result.refactored_yaml)
+        assert parsed["description"] == 'The status changes to "Graduated" after one year.'
+
 
 class TestRemoveDuplicateKeys:
     """Tests for changeset_remove_duplicate_keys function"""
