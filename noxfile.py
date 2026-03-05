@@ -106,7 +106,6 @@ def test_pre_commit_installation_shallow_clone(session):
         "uv",
         "sync",
         "--all-packages",
-        "--extra=test",
         f"--python={session.virtualenv.location}",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
