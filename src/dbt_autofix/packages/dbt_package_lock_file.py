@@ -78,7 +78,7 @@ class DbtPackageLockFile:
         return False
 
     @staticmethod
-    def parse_package_version_from_block(block: dict[Any, Any]) -> Union[DbtPackageVersion, str, None]:
+    def parse_package_version_from_block(block: dict[Any, Any]) -> Union[DbtPackageVersion, str]:
         """Extract package version from YAML block.
 
         Args:
@@ -87,7 +87,30 @@ class DbtPackageLockFile:
         Returns:
             Union[DbtPackageVersion, str, None]: DbtPackageVersion for public package, str for non-public package, None if not parsed
         """
-        return
+        package_name = block.get("name")
+        package_id = block.get("package")
+        package_version = block.get("version")
+        local = block.get("local")
+        git = block.get("git")
+        tarball = block.get("tarball")
+        # "package" key indicates that it's a hub package
+        if isinstance(package_id, str) and isinstance(package_version, str):
+            # for old lock files that don't have a name, use the second half of the id
+            short_package_name = package_name if isinstance(package_name, str) else package_id.split("/")[-1]
+            return DbtPackageVersion(
+                package_name=(short_package_name), package_id=package_id, package_version_str=package_version
+            )
+        # otherwise, it's a private package of some kind
+        elif isinstance(package_name, str):
+            return str(package_name)
+        elif isinstance(local, str):
+            return "local"
+        elif isinstance(git, str):
+            return "git"
+        elif isinstance(tarball, str):
+            return "tarball"
+        else:
+            return "unknown"
 
     def parse_packages_from_yml(self, yml_dependencies: dict[Any, Any]) -> bool:
         """Extracts package dependencies from YAML parsed to a dict.
