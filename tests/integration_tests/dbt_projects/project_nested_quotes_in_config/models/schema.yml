@@ -1,0 +1,24 @@
+# Fancy quotes (also called curly or smart quotes) are the Unicode characters
+# “ (U+201C) and ” (U+201D) for double quotes, and ‘ (U+2018) and ’ (U+2019) for single quotes.
+# They are often inserted by word processors and can appear in YAML files via copy-paste.
+models:
+  - name: fancy_delimiters_regular_inside
+    description: “This description uses fancy quotes as delimiters with regular "double quotes" inside the value.”
+    config:
+      materialized: view
+      custom_config_1: some_value
+  - name: regular_delimiters_fancy_inside
+    description: "This description uses regular delimiters with fancy “double quotes” inside the value."
+    config:
+      materialized: view
+      custom_config_2: some_value
+  - name: unquoted_with_fancy_inside
+    description: This description is unquoted with fancy “double quotes” inside the value.
+    config:
+      materialized: view
+      custom_config_3: some_value
+  - name: regular_delimiters_escaped_inside
+    description: "This description uses regular delimiters with escaped \"double quotes\" inside the value."
+    config:
+      materialized: view
+      custom_config_4: some_value
