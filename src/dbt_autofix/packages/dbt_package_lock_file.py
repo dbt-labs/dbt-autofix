@@ -9,7 +9,7 @@ from rich.console import Console
 console = Console()
 
 
-def load_yaml_from_package_lock_yml_path(package_lock_yml_path: Path) -> dict[Any, Any]:
+def load_yaml_from_package_lock_file_path(package_lock_yml_path: Path) -> dict[Any, Any]:
     """Extracts YAML content from a project's package-lock file.
 
     Parses a package-lock.yml file for an installed package into an untyped dict
@@ -18,7 +18,7 @@ def load_yaml_from_package_lock_yml_path(package_lock_yml_path: Path) -> dict[An
         package_lock_yml_path (Path): the path for the package's dbt_project.yml file
 
     Returns:
-        dict[Any, Any]: the result produced by the YAML parser
+        dict[Any, Any]: the result produced by the YAML parser; {} if no results
     """
 
     if package_lock_yml_path.name != "package-lock.yml":
@@ -59,7 +59,7 @@ class DbtPackageLockFile:
 
     def __post_init__(self):
         """Extracts project dependencies from a given path or dict."""
-        self.package_dependencies = {}
+        self.installed_package_versions = {}
         self.unknown_packages = set()
 
     def load_yaml_from_package_lock_yml_path(self, package_lock_yml_path: Path) -> bool:
@@ -73,9 +73,16 @@ class DbtPackageLockFile:
         Returns:
             bool: true if file load was successful
         """
-        self.file_path = package_lock_yml_path
-        self.yml_dependencies = {}
-        return False
+        parsed_yaml = load_yaml_from_package_lock_file_path(package_lock_yml_path)
+        if len(parsed_yaml) == 0:
+            return False
+        parsed_packages = self.parse_packages_from_yml(parsed_yaml)
+        if parsed_packages is True:
+            self.file_path = package_lock_yml_path
+            self.yml_dependencies = parsed_yaml
+            return True
+        else:
+            return False
 
     @staticmethod
     def parse_package_version_from_block(block: dict[Any, Any]) -> Union[DbtPackageVersion, str]:
@@ -126,6 +133,19 @@ class DbtPackageLockFile:
         Returns:
             bool: true if package versions extracted
         """
-        self.package_dependencies = {}
+        if "packages" in yml_dependencies:
+            self.yml_dependencies = yml_dependencies
+        else:
+            console.log("YAML input does not contain packages")
+            return False
+        self.installed_package_versions = {}
         self.unknown_packages = set()
-        return False
+        for block in yml_dependencies["packages"]:
+            parsed_block = self.parse_package_version_from_block(block)
+            if isinstance(parsed_block, DbtPackageVersion):
+                package_key = parsed_block.package_id or parsed_block.package_name
+                self.installed_package_versions[package_key] = parsed_block
+            else:
+                self.unknown_packages.add(parsed_block)
+        # true if some packages were loaded successfully, else false
+        return len(self.installed_package_versions) > 0 or len(self.unknown_packages) > 0

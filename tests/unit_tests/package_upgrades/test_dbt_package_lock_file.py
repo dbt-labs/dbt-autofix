@@ -2,14 +2,14 @@ from pathlib import Path
 
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 
-from dbt_autofix.packages.dbt_package_lock_file import DbtPackageLockFile, load_yaml_from_package_lock_yml_path
+from dbt_autofix.packages.dbt_package_lock_file import DbtPackageLockFile, load_yaml_from_package_lock_file_path
 
 
 def test_load_yaml():
     file_path = Path(
         "tests/integration_tests/package_upgrades/dbt_utils_package_lookup_map_2/package-lock.yml"
     ).resolve()
-    output = load_yaml_from_package_lock_yml_path(file_path)
+    output = load_yaml_from_package_lock_file_path(file_path)
     assert output == {
         "packages": [
             {"package": "dbt-labs/codegen", "name": "codegen", "version": "0.7.0"},
