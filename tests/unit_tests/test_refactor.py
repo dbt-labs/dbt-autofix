@@ -2538,12 +2538,12 @@ select 1 as id
 select 1 as id
 """
         expected_content = """{{ config(
-    materialized="incremental", 
-    unique_key="data_date", 
+    materialized='incremental', 
+    unique_key='data_date', 
     tags=['gsc', 'mapquest'], 
     persist_docs={"relation": true, "columns": true}, 
     incremental_strategy='delete+insert', 
-    on_schema_change="append_new_columns", 
+    on_schema_change='append_new_columns', 
     contract={'enforced': true}, 
     meta={'incremental_predicate': "data_date = '{{ var('run_date') }}'"}
 ) }}

@@ -426,21 +426,9 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
                     meta_items.append(f"'{meta_k}': {meta_v_str}")
                 v_str = "{" + ", ".join(meta_items) + "}"
             elif k in config_source_map:
-                # Use original source code to preserve Jinja expressions
-                # But convert simple string literals to double quotes to match expected format
-                source_value = config_source_map[k]
-                # Check if it's a simple quoted string (not a Jinja expression)
-                if (
-                    (source_value.startswith("'") and source_value.endswith("'"))
-                    or (source_value.startswith('"') and source_value.endswith('"'))
-                ) and not any(c in source_value for c in ["(", ")", "[", "]", "{", "}", "+", "-", "*", "/", "%"]):
-                    # Simple string - convert to double quotes
-                    # Extract the content between quotes
-                    content = source_value[1:-1]
-                    v_str = f'"{content}"'
-                else:
-                    # Preserve original format for Jinja expressions
-                    v_str = source_value
+                # Preserve original source code exactly — this keeps the user's quoting style
+                # and avoids breaking values that contain nested quotes
+                v_str = config_source_map[k]
             elif isinstance(v, str):
                 # Check if it's already a string representation of an AST node
                 # (starts with a class name like "Keyword" or "Call")
