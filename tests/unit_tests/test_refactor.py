@@ -483,6 +483,35 @@ class TestUnmatchedEndingsRemoval:
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
 
+    def test_malformed_tag_ending_in_comment_does_not_consume_later_tag(self):
+        # A {# ... -%#} comment with a malformed ending should not cause
+        # the regex to skip past a later valid {% if %} tag
+        sql_content = """{#%- if old_condition -%}
+    {%- do something() -%}
+{%- endif -%#}
+{%- if new_condition -%}
+select 1
+{%- endif -%}"""
+        result = remove_unmatched_endings(sql_content)
+        assert result.refactored_content == sql_content
+        assert len(result.deprecation_refactors) == 0
+
+    def test_malformed_comment_ending_in_real_world_macro(self):
+        # Full reproduction: macro + if execute + nested comment with -%#} ending
+        sql_content = """{% macro test() %}
+{% if execute -%}
+    {#%- if column_name not in excluded_columns -%}
+        {%- do column_names.append(column_name) -%}
+    {%- endif -%#}
+    {%- if column_name not in excluded_columns and column_name!='_FIVETRAN_DELETED' -%}
+        select 1
+    {%- endif -%}
+{%-endif-%}
+{%- endmacro -%}"""
+        result = remove_unmatched_endings(sql_content)
+        assert result.refactored_content == sql_content
+        assert len(result.deprecation_refactors) == 0
+
     def test_after_other_tags(self):
         # After for loop
         sql_content = """{% for item in items %}
