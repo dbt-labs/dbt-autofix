@@ -83,10 +83,10 @@ def process_yaml_files_except_dbt_project(
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
-    behavior_change_rules = [
+    behavior_change_rules: List[Tuple[Callable, Any]] = [
         (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
     ]
-    safe_change_rules = [
+    safe_change_rules: List[Tuple[Callable, Any]] = [
         (changeset_replace_fancy_quotes, None),
         (changeset_remove_tab_only_lines, None),
         (changeset_remove_indentation_version, None),
@@ -96,10 +96,10 @@ def process_yaml_files_except_dbt_project(
         (changeset_refactor_yml_str, schema_specs),
         (changeset_owner_properties_yml_str, schema_specs),
     ]
-    all_rules = [*safe_change_rules, *behavior_change_rules]
+    all_rules: List[Tuple[Callable, Any]] = [*safe_change_rules, *behavior_change_rules]
     changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
-    ordered_changesets = [
+    ordered_changesets: List[List[Tuple[Callable, Any]]] = [
         changesets,
     ]
 
