@@ -30,7 +30,7 @@ dev = [
     "pre-commit>=4.2.0",
     "nox",
     "ruff>=0.14",
-    "ty>=0.0.16",
+    "ty>=0.0.21",
 ]
 
 [build-system]
