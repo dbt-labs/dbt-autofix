@@ -104,7 +104,9 @@ class MacroFuzzParser(jinja2.parser.Parser):
             arg = self.parse_assign_target(name_only=True)
             arg.set_ctx("param")
 
+            # TODO: Naming and typing is odd here. Probably better as macro_type: Optional[MacroType]
             type_name: Union[MacroType, Literal[""]]
+
             if self.stream.skip_if("colon"):
                 node.has_type_annotations = True  # ty:ignore[invalid-assignment]
                 type_name = self.parse_type_name()
