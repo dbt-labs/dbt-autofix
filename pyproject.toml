@@ -111,11 +111,6 @@ error-on-warning = true
 [tool.ty.environment]
 python-version = "3.10"
 
-# Build-time-only files that import pdm.backend (not installed at check time)
-[[tool.ty.overrides]]
-include = ["pdm_build.py", "packages/dbt_fusion_package_tools/pdm_build.py"]
-[tool.ty.overrides.rules]
-unresolved-import = "ignore"
 
 # Test files using MockSchemaSpecs (structural mismatch with SchemaSpecs — not worth redesigning mocks for)
 [[tool.ty.overrides]]
