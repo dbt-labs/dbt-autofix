@@ -59,7 +59,7 @@ def main():
     unique_warning_codes: Counter[str] = Counter()
     all_errors = []
     for package_name in conformance_output:
-        package: dict[str, Any] = conformance_output[package_name]
+        package: dict[str, Any] = conformance_output[package_name]  # ty: ignore[invalid-assignment]
         for version in package:
             package_version: dict[str, Any] = package[version]
             parse_errors: set[str] = set()

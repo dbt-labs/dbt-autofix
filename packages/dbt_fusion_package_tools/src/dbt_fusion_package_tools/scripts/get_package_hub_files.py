@@ -171,7 +171,7 @@ def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
                 parsed = json.load(fh)
 
             # Try to produce a repo-style path like 'data/packages/...'
-            file_path: str
+            file_path: str | Path
             parts = list(file.parts)
             if "data" in parts:
                 idx = parts.index("data")

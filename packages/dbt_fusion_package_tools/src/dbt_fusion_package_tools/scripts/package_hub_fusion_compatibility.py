@@ -169,7 +169,7 @@ def read_json_from_local_hub_repo(path: str, file_count_limit: int = 0):
                 parsed = json.load(fh)
 
             # Try to produce a repo-style path like 'data/packages/...'
-            file_path: str
+            file_path: str | Path
             parts = list(file.parts)
             if "data" in parts:
                 idx = parts.index("data")
@@ -444,7 +444,7 @@ def main(
     parse_conformance_results = run_conformance_from_tarballs(
         output, package_latest_version_urls, package_limit, fusion_binary
     )
-    write_conformance_output_to_json(parse_conformance_results, output_path)
+    write_conformance_output_to_json(parse_conformance_results, output_path)  # ty: ignore[invalid-argument-type]
     console.log(f"Successfully wrote output to {output_path}/conformance_output.json")
 
 
