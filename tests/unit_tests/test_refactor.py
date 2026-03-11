@@ -1972,6 +1972,73 @@ models:
         assert parsed["key1"] == 'has "inner" quotes'
         assert parsed["key2"] == 'has "more" quotes'
 
+    def test_fancy_open_inside_regular_quotes_preserved(self):
+        """Fancy open quote inside a regular-quote-delimited string is kept as-is.
+
+        This is correct: the fancy quote is content within a properly quoted YAML scalar,
+        not a delimiter. No refactoring needed.
+        """
+        input_yaml = 'desc: "has \u201c inside"'
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert not result.refactored
+        assert result.refactored_yaml == input_yaml
+
+    def test_fancy_close_inside_regular_quotes_preserved(self):
+        """Fancy close quote inside a regular-quote-delimited string is kept as-is.
+
+        Same reasoning as the open-quote case: the fancy quote is content, not a delimiter.
+        """
+        input_yaml = 'desc: "has \u201d inside"'
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert not result.refactored
+        assert result.refactored_yaml == input_yaml
+
+    def test_nested_fancy_open_inside_fancy_delimiters_not_escaped(self):
+        """A fancy open quote nested inside fancy delimiters is replaced but NOT escaped.
+
+        Input like \u201chas \u201cinner\u201d is inherently ambiguous — is the second \u201c
+        content or a nested opening delimiter? In practice this doesn't occur in real YAML
+        files because users don't nest fancy quotes inside fancy-delimited strings. Word
+        processors produce matched \u201c...\u201d pairs, not nested ones. Handling this
+        correctly would require understanding YAML structure beyond single-line processing,
+        which is out of scope for this character-level replacement function.
+
+        We document the current behavior here rather than attempting to fix it.
+        """
+        input_yaml = "desc: \u201chas \u201cinner\u201d value"
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        # The inner \u201c is replaced with an unescaped " — this produces invalid YAML,
+        # but the input is degenerate and doesn't occur in practice.
+        assert result.refactored_yaml == 'desc: "has "inner" value'
+
+    def test_unpaired_fancy_open_quote(self):
+        """An unpaired fancy open quote is replaced with a regular double quote.
+
+        This produces an unterminated quoted scalar in YAML, but the input was already
+        malformed — an unmatched \u201c with no corresponding \u201d is not something
+        word processors produce. We replace it to avoid leaving non-ASCII characters in
+        the output, accepting that the result may not be valid YAML since the input wasn't
+        either.
+        """
+        input_yaml = "desc: \u201cunterminated value"
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        assert result.refactored_yaml == 'desc: "unterminated value'
+
+    def test_unpaired_fancy_close_quote(self):
+        """An unpaired fancy close quote is replaced with a regular double quote.
+
+        Unlike the open-quote case, this produces valid YAML because the unquoted scalar
+        simply contains a literal " character. The replacement is correct.
+        """
+        input_yaml = "desc: unterminated\u201d value"
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        assert result.refactored_yaml == 'desc: unterminated" value'
+        parsed = safe_load(result.refactored_yaml)
+        assert parsed["desc"] == 'unterminated" value'
+
 
 class TestRemoveDuplicateKeys:
     """Tests for changeset_remove_duplicate_keys function"""
