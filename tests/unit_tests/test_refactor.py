@@ -1946,14 +1946,14 @@ models:
 
         This is the bug from issue #341: when fancy quotes are used as YAML string delimiters
         and the value contains regular double quotes, the replacement produces invalid YAML
-        like: description: "...equals "Rate After One Year"..."
+        like: description: "...equals "High Priority"..."
         """
-        input_yaml = 'description: \u201cThe status changes to "Graduated" after one year.\u201d'
+        input_yaml = 'description: \u201cThe value equals "High Priority" when set.\u201d'
         result = changeset_replace_fancy_quotes(input_yaml)
         assert result.refactored
         # The output must be valid YAML - inner quotes need to be escaped
         parsed = safe_load(result.refactored_yaml)
-        assert parsed["description"] == 'The status changes to "Graduated" after one year.'
+        assert parsed["description"] == 'The value equals "High Priority" when set.'
 
     def test_multiple_fancy_quoted_strings_on_same_line(self):
         """Test that multiple fancy-quote-delimited strings on the same line are handled correctly.
