@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: customer_metrics
+    config:
+      meta:
+        owner_team: analytics
+        data_classification: pii
+  - name: order_summary
+    config:
+      meta:
+        owner_team: finance
