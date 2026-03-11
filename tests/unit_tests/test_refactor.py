@@ -1964,8 +1964,9 @@ models:
         but the escaping is still correct because the regular " IS content within the current
         fancy-quoted region regardless.
 
-        Uses a YAML flow mapping so the output is parseable and we can validate correctness
-        end-to-end.
+        The input is a single-line YAML dict ({key: value, ...}) so that both strings
+        live on the same line. This also lets us parse the output back into a Python dict
+        and assert on the final values, not just the raw string.
         """
         input_yaml = '{key1: \u201chas "inner" quotes\u201d, key2: \u201chas "more" quotes\u201d}'
         result = changeset_replace_fancy_quotes(input_yaml)
