@@ -78,7 +78,7 @@ class DbtPackageLockFile:
             bool: true if file load was successful
         """
         parsed_yaml = load_yaml_from_package_lock_file_path(package_lock_yml_path)
-        if len(parsed_yaml) == 0:
+        if parsed_yaml is None or len(parsed_yaml) == 0:
             return False
         parsed_packages = self.parse_packages_from_yml(parsed_yaml)
         if parsed_packages is True:

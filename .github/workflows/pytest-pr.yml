@@ -1,6 +1,8 @@
-name: Run Pytest on PR
+name: Run Pytest
 
 on:
+  push:
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
 

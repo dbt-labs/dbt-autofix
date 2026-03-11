@@ -406,11 +406,8 @@ def process_python_files(
                 original_content = python_file.read_text()
                 new_content = original_content
 
-                for python_file_rule, requires_file_path, requires_schema_specs in process_python_file_rules:
-                    if requires_schema_specs:
-                        python_file_refactor_result = python_file_rule(new_content, schema_specs, node_type)
-                    else:
-                        python_file_refactor_result = python_file_rule(new_content)
+                for python_file_rule, _requires_file_path, _requires_schema_specs in process_python_file_rules:
+                    python_file_refactor_result = python_file_rule(new_content, schema_specs, node_type)
 
                     new_content = python_file_refactor_result.refactored_content
                     file_refactors.append(python_file_refactor_result)
