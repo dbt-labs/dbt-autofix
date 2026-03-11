@@ -169,3 +169,81 @@ class SQLRefactorResult:
                 console.print(f"  {refactor.rule_name}", style="yellow")
                 for warning in refactor.refactor_warnings:
                     console.print(f"    Warning: {warning}", style="red")
+
+
+@dataclass(frozen=True)
+class PythonRuleRefactorResult:
+    rule_name: str
+    refactored: bool
+    refactored_content: str
+    original_content: str
+    deprecation_refactors: list[DbtDeprecationRefactor]
+    refactor_warnings: list[str] = field(default_factory=list)
+
+    @property
+    def refactor_logs(self):
+        return [refactor.log for refactor in self.deprecation_refactors]
+
+    def to_dict(self) -> dict:
+        ret_dict = {
+            "rule_name": self.rule_name,
+            "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
+        }
+        return ret_dict
+
+
+@dataclass(frozen=True)
+class PythonRefactorResult:
+    dry_run: bool
+    file_path: Path
+    refactored: bool
+    refactored_content: str
+    original_content: str
+    refactors: list[PythonRuleRefactorResult]
+    has_warnings: bool = False
+
+    def update_python_file(self) -> None:
+        """Update the Python file with the refactored content"""
+        Path(self.file_path).write_text(self.refactored_content)
+
+    def print_to_console(self, json_output: bool = True):
+        if not self.refactored and not self.has_warnings:
+            return
+
+        if json_output:
+            flattened_refactors = []
+            for refactor in self.refactors:
+                if refactor.refactored:
+                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+
+            flattened_warnings = []
+            for refactor in self.refactors:
+                if refactor.refactor_warnings:
+                    flattened_warnings.extend(refactor.refactor_warnings)
+
+            to_print = {
+                "mode": "dry_run" if self.dry_run else "applied",
+                "file_path": str(self.file_path),
+                "refactors": flattened_refactors,
+                "warnings": flattened_warnings,
+            }
+            print(json.dumps(to_print))
+            return
+
+        console.print(
+            f"\n{'DRY RUN - NOT APPLIED: ' if self.dry_run else ''}Refactored {self.file_path}:",
+            style="green",
+        )
+        for refactor in self.refactors:
+            if refactor.refactored:
+                console.print(f"  {refactor.rule_name}", style="yellow")
+
+                for log in refactor.refactor_logs:
+                    console.print(f"    {log}")
+
+                for warning in refactor.refactor_warnings:
+                    console.print(f"    Warning: {warning}", style="red")
+            elif refactor.refactor_warnings:
+                console.print(f"  {refactor.rule_name}", style="yellow")
+                for warning in refactor.refactor_warnings:
+                    console.print(f"    Warning: {warning}", style="red")
