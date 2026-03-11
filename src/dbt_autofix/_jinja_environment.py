@@ -13,7 +13,7 @@ Vendored from:
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Callable, ClassVar, Dict, List, NoReturn, Optional, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, Literal, NoReturn, Optional, Type, Union
 
 import jinja2
 import jinja2.ext
@@ -93,8 +93,8 @@ class MacroFuzzParser(jinja2.parser.Parser):
         setattr(node, "arg_types", [])
         setattr(node, "has_type_annotations", False)
 
-        args = node.args = []  # type: ignore
-        defaults = node.defaults = []  # type: ignore
+        args = node.args = []
+        defaults = node.defaults = []
 
         self.stream.expect("lparen")
         while self.stream.current.type != "rparen":
@@ -104,9 +104,11 @@ class MacroFuzzParser(jinja2.parser.Parser):
             arg = self.parse_assign_target(name_only=True)
             arg.set_ctx("param")
 
-            type_name: Optional[str]
+            # TODO: Naming and typing is odd here. Probably better as macro_type: Optional[MacroType]
+            type_name: Union[MacroType, Literal[""]]
+
             if self.stream.skip_if("colon"):
-                node.has_type_annotations = True  # type: ignore
+                node.has_type_annotations = True  # ty:ignore[invalid-assignment]
                 type_name = self.parse_type_name()
             else:
                 type_name = ""
@@ -169,7 +171,7 @@ class MaterializationExtension(jinja2.ext.Extension):
             elif target.name == "adapter":
                 parser.stream.expect("assign")
                 value = parser.parse_expression()
-                adapter_name = value.value
+                adapter_name = value.value  # ty: ignore[unresolved-attribute]
             elif target.name == "supported_languages":
                 target.set_ctx("param")
                 node.args.append(target)

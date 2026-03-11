@@ -55,5 +55,5 @@ def dict_to_yaml_str(content: Dict[str, Any], write_empty: bool = False) -> str:
         return ""
 
     yaml = DbtYAML()
-    file_text = yaml.dump_to_string(content)  # type: ignore
+    file_text = yaml.dump_to_string(content)
     return file_text

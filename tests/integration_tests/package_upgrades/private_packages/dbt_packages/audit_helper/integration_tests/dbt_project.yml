@@ -1,0 +1,30 @@
+name: 'audit_helper_integration_tests'
+version: '1.0'
+config-version: 2
+
+profile: 'integration_tests'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+target-path: "target"  # directory which will store compiled SQL files
+clean-targets:         # directories to be removed by `dbt clean`
+    - "target"
+    - "dbt_packages"
+
+seeds:
+  +quote_columns: false
+
+vars:
+  compare_queries_summarize: true
+  primary_key_columns_var: ['col1']
+  columns_var: ['col1']
+  event_time_var:
+  quick_are_queries_identical_cols: ['col1']
+
+flags:
+  send_anonymous_usage_stats: False
+  use_colors: True

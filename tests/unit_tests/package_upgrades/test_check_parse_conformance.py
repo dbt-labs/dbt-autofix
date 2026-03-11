@@ -430,6 +430,7 @@ class TestFusionConformanceResult:
 
         assert result.version == "v1.0.0"
         assert result.parse_compatible is True
+        assert result.parse_compatibility_result is not None
         assert result.parse_compatibility_result.fusion_version == "v2.0.0"
 
 
