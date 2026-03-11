@@ -1953,6 +1953,25 @@ models:
         parsed = safe_load(result.refactored_yaml)
         assert parsed["description"] == 'The status changes to "Graduated" after one year.'
 
+    def test_multiple_fancy_quoted_strings_on_same_line(self):
+        """Test that multiple fancy-quote-delimited strings on the same line are handled correctly.
+
+        The lookahead heuristic checks whether a fancy closing quote (\u201d) exists later in
+        the line to decide if a regular " is content that should be escaped. With multiple
+        fancy-quoted strings, the lookahead could find the closing quote from a *later* string,
+        but the escaping is still correct because the regular " IS content within the current
+        fancy-quoted region regardless.
+
+        Uses a YAML flow mapping so the output is parseable and we can validate correctness
+        end-to-end.
+        """
+        input_yaml = '{key1: \u201chas "inner" quotes\u201d, key2: \u201chas "more" quotes\u201d}'
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        parsed = safe_load(result.refactored_yaml)
+        assert parsed["key1"] == 'has "inner" quotes'
+        assert parsed["key2"] == 'has "more" quotes'
+
 
 class TestRemoveDuplicateKeys:
     """Tests for changeset_remove_duplicate_keys function"""
