@@ -1996,7 +1996,7 @@ models:
         assert not result.refactored
         assert result.refactored_yaml == input_yaml
 
-    def test_nested_fancy_open_inside_fancy_delimiters_not_escaped(self):
+    def test_known_limitation__nested_fancy_open_inside_fancy_delimiters_not_escaped(self):
         """A fancy open quote nested inside fancy delimiters is replaced but NOT escaped.
 
         Input like \u201chas \u201cinner\u201d is inherently ambiguous — is the second \u201c
@@ -2015,7 +2015,7 @@ models:
         # but the input is degenerate and doesn't occur in practice.
         assert result.refactored_yaml == 'desc: "has "inner" value'
 
-    def test_unpaired_fancy_open_quote(self):
+    def test_known_limitation__unpaired_fancy_open_quote(self):
         """An unpaired fancy open quote is replaced with a regular double quote.
 
         This produces an unterminated quoted scalar in YAML, but the input was already
