@@ -197,6 +197,19 @@ def test_serialize_quote_preservation():
     assert 'key2="value2"' in result
 
 
+def test_serialize_unbalanced_quotes_in_source_map():
+    """Test that a source map value with unbalanced quotes is passed through verbatim.
+
+    Since the source map comes from parsing valid source, malformed values should be
+    rare. But if one slips through, we should not crash — just pass it through as-is.
+    """
+    config_dict = {"key": "some value"}
+    config_source_map = {"key": "'some value"}  # Missing closing quote
+    result = _serialize_config_macro_call(config_dict, config_source_map)
+    # The unbalanced value is passed through verbatim from the source map
+    assert "key='some value" in result
+
+
 def test_serialize_does_not_convert_jinja_quotes():
     """Test that quotes in Jinja expressions are NOT converted."""
     config_dict = {"schema": "var('my_schema')", "path": 'target.name + "_" + var("suffix")'}
