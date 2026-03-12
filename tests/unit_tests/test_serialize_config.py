@@ -24,8 +24,8 @@ from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_cal
         ),
         # Meta block with multiple keys
         ({"meta": {"key1": "value1", "key2": "value2"}}, {}, "\n    meta={'key1': 'value1', 'key2': 'value2'}"),
-        # Source map with single-quoted value (should convert to double quotes)
-        ({"materialized": "table"}, {"materialized": "'table'"}, '\n    materialized="table"'),
+        # Source map with single-quoted value (should preserve original quotes)
+        ({"materialized": "table"}, {"materialized": "'table'"}, "\n    materialized='table'"),
         # Source map with double-quoted value (should preserve)
         ({"materialized": "table"}, {"materialized": '"table"'}, '\n    materialized="table"'),
         # Source map with Jinja expression (should preserve)
@@ -56,8 +56,8 @@ from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_cal
             {"config1": "'value1'", "config2": "var('x')"},
             "\n    meta={'config1': 'value1', 'config2': var('x')}",
         ),
-        # String with spaces (single quotes in source map)
-        ({"description": "my description"}, {"description": "'my description'"}, '\n    description="my description"'),
+        # String with spaces (single quotes in source map - preserved)
+        ({"description": "my description"}, {"description": "'my description'"}, "\n    description='my description'"),
         # String with spaces (double quotes in source map)
         ({"description": "my description"}, {"description": '"my description"'}, '\n    description="my description"'),
         # Complex expression with double quotes
@@ -118,6 +118,18 @@ from dbt_autofix.refactors.changesets.dbt_sql import _serialize_config_macro_cal
             {"hook1": '"select 1"', "hook2": '"select 2"'},
             '\n    materialized="table", \n    meta={\'hook1\': "select 1", \'hook2\': "select 2"}',
         ),
+        # Single-quoted source value containing double quotes should NOT be converted to double quotes
+        (
+            {"warn_if": '== "never true"'},
+            {"warn_if": "'== \"never true\"'"},
+            "\n    warn_if='== \"never true\"'",
+        ),
+        # Meta value from single-quoted source containing double quotes
+        (
+            {"meta": {"custom": '== "never true"'}},
+            {"custom": "'== \"never true\"'"},
+            "\n    meta={'custom': '== \"never true\"'}",
+        ),
     ],
 )
 def test_serialize_config_macro_call(config_dict, config_source_map, expected_output):
@@ -171,8 +183,8 @@ def test_serialize_complex_nested_structure():
     assert "simple" in result
 
 
-def test_serialize_quote_conversion():
-    """Test that single-quoted simple strings are converted to double quotes."""
+def test_serialize_quote_preservation():
+    """Test that original quote style from source map is preserved."""
     config_dict = {"key1": "value1", "key2": "value2"}
     config_source_map = {
         "key1": "'value1'",  # Single quotes
@@ -180,9 +192,22 @@ def test_serialize_quote_conversion():
     }
     result = _serialize_config_macro_call(config_dict, config_source_map)
 
-    # Both should be converted to double quotes
-    assert 'key1="value1"' in result
+    # Original quote styles should be preserved
+    assert "key1='value1'" in result
     assert 'key2="value2"' in result
+
+
+def test_serialize_unbalanced_quotes_in_source_map():
+    """Test that a source map value with unbalanced quotes is passed through verbatim.
+
+    Since the source map comes from parsing valid source, malformed values should be
+    rare. But if one slips through, we should not crash — just pass it through as-is.
+    """
+    config_dict = {"key": "some value"}
+    config_source_map = {"key": "'some value"}  # Missing closing quote
+    result = _serialize_config_macro_call(config_dict, config_source_map)
+    # The unbalanced value is passed through verbatim from the source map
+    assert "key='some value" in result
 
 
 def test_serialize_does_not_convert_jinja_quotes():

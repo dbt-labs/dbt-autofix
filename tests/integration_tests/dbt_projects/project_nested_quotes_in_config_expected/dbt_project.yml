@@ -1,0 +1,10 @@
+name: 'test_nested_quotes_in_config'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+flags:
+  require_generic_test_arguments_property: true
