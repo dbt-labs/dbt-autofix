@@ -2042,6 +2042,36 @@ models:
         parsed = safe_load(result.refactored_yaml)
         assert parsed["desc"] == 'unterminated" value'
 
+    def test_closing_fancy_quotes_used_as_delimiters(self):
+        """Closing fancy quotes (\u201d\u201d) used where open+close quotes are expected.
+
+        When a closing fancy quote appears outside a string context, the handler at
+        line 169 replaces it with a regular " but does NOT enter string-tracking mode
+        (inside_string stays False). This means both \u201d characters are independently
+        replaced as content, producing valid YAML. The string context is never opened,
+        so no escaping logic is triggered — it just happens to work because YAML sees
+        the two regular " characters as matched delimiters.
+        """
+        input_yaml = "desc: \u201dvalue\u201d"
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        assert result.refactored_yaml == 'desc: "value"'
+        parsed = safe_load(result.refactored_yaml)
+        assert parsed["desc"] == "value"
+
+    def test_known_limitation__unpaired_fancy_close_quote_as_opener(self):
+        """A lone closing fancy quote used as an opening delimiter produces unterminated YAML.
+
+        Similar to test_known_limitation__unpaired_fancy_open_quote but mirrored: the
+        \u201d is replaced with " but since inside_string is never set to True, there is
+        no string context to close. The result is an unterminated quoted scalar. The input
+        was already malformed, so we just document the behavior.
+        """
+        input_yaml = "desc: \u201dvalue"
+        result = changeset_replace_fancy_quotes(input_yaml)
+        assert result.refactored
+        assert result.refactored_yaml == 'desc: "value'
+
 
 class TestRemoveDuplicateKeys:
     """Tests for changeset_remove_duplicate_keys function"""
