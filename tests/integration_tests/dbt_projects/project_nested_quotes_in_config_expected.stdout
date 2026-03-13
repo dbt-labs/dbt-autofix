@@ -8,15 +8,33 @@
     "refactors": [
       {
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 2"
+        "edited_location": {
+          "line": 2
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 2",
+        "original_location": {
+          "line": 2
+        }
       },
       {
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 6"
+        "edited_location": {
+          "line": 6
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 6",
+        "original_location": {
+          "line": 6
+        }
       },
       {
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 16"
+        "edited_location": {
+          "line": 16
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 16",
+        "original_location": {
+          "line": 16
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
