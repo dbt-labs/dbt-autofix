@@ -2738,10 +2738,11 @@ select 1 as id
 
         assert result.refactored
         assert result.refactored_content == expected_content
-        assert len(result.deprecation_refactors) == 1
+        assert len(result.deprecation_refactors) == 2
         assert "custom_config1" in result.deprecation_refactors[0].log
-        assert "custom_config2" in result.deprecation_refactors[0].log
         assert "meta" in result.deprecation_refactors[0].log
+        assert "custom_config2" in result.deprecation_refactors[1].log
+        assert "meta" in result.deprecation_refactors[1].log
 
     def test_valid_configs_not_moved_to_meta(self, schema_specs: SchemaSpecs):
         """Test that valid configs are not moved to meta (no custom configs present)"""
