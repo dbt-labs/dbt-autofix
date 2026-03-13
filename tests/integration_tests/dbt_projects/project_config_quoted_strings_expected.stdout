@@ -15,7 +15,13 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom configs ['my_custom_config_1', 'my_custom_config_2', 'my_custom_config_3'] to 'meta'"
+        "log": "Moved custom configs ['my_custom_config_1', 'my_custom_config_2', 'my_custom_config_3'] to 'meta'",
+        "original_location": {
+          "line": 1
+        },
+        "edited_location": {
+          "line": 1
+        }
       }
     ],
     "warnings": []

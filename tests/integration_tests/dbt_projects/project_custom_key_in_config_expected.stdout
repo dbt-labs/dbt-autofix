@@ -23,7 +23,13 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['sla_hours'] to 'meta'"
+        "log": "Moved custom config ['sla_hours'] to 'meta'",
+        "original_location": {
+          "line": 1
+        },
+        "edited_location": {
+          "line": 1
+        }
       }
     ],
     "warnings": []

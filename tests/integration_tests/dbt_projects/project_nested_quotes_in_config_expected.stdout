@@ -57,7 +57,13 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['type_of_dq_test'] to 'meta'"
+        "log": "Moved custom config ['type_of_dq_test'] to 'meta'",
+        "original_location": {
+          "line": 1
+        },
+        "edited_location": {
+          "line": 1
+        }
       }
     ],
     "warnings": []
