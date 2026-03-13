@@ -55,13 +55,10 @@ seeds:
     +dataset: my_dataset
     +project: my_project
     +data_space: my_data_space
-
 exposures:
   +enabled: true
-
 unit-tests:
   +enabled: true
   +tags: ["test_tag"]
-
 flags:
   require_generic_test_arguments_property: true
