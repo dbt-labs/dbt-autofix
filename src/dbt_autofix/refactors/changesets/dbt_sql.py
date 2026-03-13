@@ -5,7 +5,13 @@ from typing import Any, Dict, List, Optional, Tuple
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    Location,
+    SQLContent,
+    SQLRefactorConfig,
+    SQLRuleRefactorResult,
+)
 
 CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
 
@@ -188,10 +194,14 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
                     line_num = 1
                 else:
                     line_num = prefix.count("\n", first_newline) + 1
+                line_start = prefix.rfind("\n") + 1
+                start_col = start_pos - line_start
+                end_col = end_pos - line_start
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endmacro %}} near line {line_num}",
                         deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
+                        original_location=Location(line=line_num, start=start_col, end=end_col),
                     )
                 )
             else:
@@ -209,10 +219,14 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
                     line_num = 1
                 else:
                     line_num = prefix.count("\n", first_newline) + 1
+                line_start = prefix.rfind("\n") + 1
+                start_col = start_pos - line_start
+                end_col = end_pos - line_start
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endif %}} near line {line_num}",
                         deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
+                        original_location=Location(line=line_num, start=start_col, end=end_col),
                     )
                 )
             else:
@@ -490,12 +504,18 @@ def move_custom_config_access_to_meta_sql(content: SQLContent, config: SQLRefact
 
     # Apply replacements in reverse order to avoid messing up indices
     for start, end, replacement, original in reversed(replacements):
+        prefix = refactored_content[:start]
+        line_num = prefix.count("\n") + 1
+        line_start = prefix.rfind("\n") + 1
+        col = start - line_start
         refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f'Refactored "{original}" to "{replacement}"',
                 # Core does not explicitly raise a deprecation for usage of config.get() in SQL files
                 deprecation=None,
+                original_location=Location(line=line_num, start=col, end=end - line_start),
+                edited_location=Location(line=line_num, start=col),
             )
         )
 
