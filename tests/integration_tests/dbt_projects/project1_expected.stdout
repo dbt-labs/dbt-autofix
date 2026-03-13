@@ -121,7 +121,10 @@
     "refactors": [
       {
         "deprecation": null,
-        "log": "Removed line containing only tabs on line 72"
+        "log": "Removed line containing only tabs on line 72",
+        "original_location": {
+          "line": 72
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
@@ -183,7 +186,13 @@
     "refactors": [
       {
         "deprecation": null,
-        "log": "Removed the extra indentation around 'version: 2' on line 1"
+        "log": "Removed the extra indentation around 'version: 2' on line 1",
+        "original_location": {
+          "line": 1
+        },
+        "edited_location": {
+          "line": 1
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
@@ -229,7 +238,15 @@
     "refactors": [
       {
         "deprecation": null,
-        "log": "Found extra tabs: line 5 - column 21"
+        "log": "Found extra tabs: line 5 - column 21",
+        "original_location": {
+          "line": 5,
+          "start": 21
+        },
+        "edited_location": {
+          "line": 5,
+          "start": 21
+        }
       }
     ]
   },
@@ -253,7 +270,13 @@
     "refactors": [
       {
         "deprecation": null,
-        "log": "Replaced 1 fancy quotes with regular quotes on line 13"
+        "log": "Replaced 1 fancy quotes with regular quotes on line 13",
+        "original_location": {
+          "line": 13
+        },
+        "edited_location": {
+          "line": 13
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",

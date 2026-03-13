@@ -7,6 +7,7 @@ import yamllint.config
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     DbtProjectYMLRefactorConfig,
+    Location,
     YMLContent,
     YMLRuleRefactorResult,
 )
@@ -437,7 +438,9 @@ def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRef
             deprecation_refactors.insert(
                 0,
                 DbtDeprecationRefactor(
-                    log=f"Removed space after '+' in key '+ {key_name}' on line {line_num}, changed to '{corrected_key}'"
+                    log=f"Removed space after '+' in key '+ {key_name}' on line {line_num}, changed to '{corrected_key}'",
+                    original_location=Location(line=line_num),
+                    edited_location=Location(line=line_num),
                 ),
             )
         else:  # action == 'remove'
@@ -483,7 +486,8 @@ def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRef
             deprecation_refactors.insert(
                 0,
                 DbtDeprecationRefactor(
-                    log=f"Removed invalid key '+ {key_name}' on line {line_num} (not a valid config key)"
+                    log=f"Removed invalid key '+ {key_name}' on line {line_num} (not a valid config key)",
+                    original_location=Location(line=line_num),
                 ),
             )
 
