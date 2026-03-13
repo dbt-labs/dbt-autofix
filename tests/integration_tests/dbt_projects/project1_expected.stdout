@@ -142,27 +142,129 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom configs ['custom_config', 'custom_config_int', 'custom_config_list', 'custom_config_dict'] to 'meta'"
+        "edited_location": {
+          "end": 72,
+          "line": 3,
+          "start": 59
+        },
+        "log": "Moved custom config 'custom_config' to 'meta'",
+        "original_location": {
+          "end": 17,
+          "line": 3,
+          "start": 4
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Refactored \"config.get('custom_config_dict')\" to \"config.meta_get('custom_config_dict')\""
+        "edited_location": {
+          "end": 110,
+          "line": 3,
+          "start": 93
+        },
+        "log": "Moved custom config 'custom_config_int' to 'meta'",
+        "original_location": {
+          "end": 21,
+          "line": 4,
+          "start": 4
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Refactored \"config.get('custom_config_dict')\" to \"config.meta_get('custom_config_dict')\""
+        "edited_location": {
+          "end": 135,
+          "line": 3,
+          "start": 117
+        },
+        "log": "Moved custom config 'custom_config_list' to 'meta'",
+        "original_location": {
+          "end": 22,
+          "line": 5,
+          "start": 4
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Refactored \"model.config.get('custom_config')\" to \"config.meta_get('custom_config')\""
+        "edited_location": {
+          "end": 174,
+          "line": 3,
+          "start": 156
+        },
+        "log": "Moved custom config 'custom_config_dict' to 'meta'",
+        "original_location": {
+          "end": 22,
+          "line": 6,
+          "start": 4
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Refactored \"config.get('custom_config', 'default_value')\" to \"config.meta_get('custom_config', 'default_value')\""
+        "edited_location": {
+          "end": 40,
+          "line": 21,
+          "start": 3
+        },
+        "log": "Refactored \"config.get('custom_config_dict')\" to \"config.meta_get('custom_config_dict')\"",
+        "original_location": {
+          "end": 35,
+          "line": 25,
+          "start": 3
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Refactored \"config.get('custom_config')\" to \"config.meta_get('custom_config')\""
+        "edited_location": {
+          "end": 40,
+          "line": 19,
+          "start": 3
+        },
+        "log": "Refactored \"config.get('custom_config_dict')\" to \"config.meta_get('custom_config_dict')\"",
+        "original_location": {
+          "end": 35,
+          "line": 23,
+          "start": 3
+        }
+      },
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "edited_location": {
+          "end": 35,
+          "line": 11,
+          "start": 3
+        },
+        "log": "Refactored \"model.config.get('custom_config')\" to \"config.meta_get('custom_config')\"",
+        "original_location": {
+          "end": 36,
+          "line": 15,
+          "start": 3
+        }
+      },
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "edited_location": {
+          "end": 52,
+          "line": 9,
+          "start": 3
+        },
+        "log": "Refactored \"config.get('custom_config', 'default_value')\" to \"config.meta_get('custom_config', 'default_value')\"",
+        "original_location": {
+          "end": 47,
+          "line": 13,
+          "start": 3
+        }
+      },
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "edited_location": {
+          "end": 35,
+          "line": 7,
+          "start": 3
+        },
+        "log": "Refactored \"config.get('custom_config')\" to \"config.meta_get('custom_config')\"",
+        "original_location": {
+          "end": 30,
+          "line": 11,
+          "start": 3
+        }
       }
     ],
     "warnings": [
@@ -176,7 +278,17 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['myconf'] to 'meta'"
+        "edited_location": {
+          "end": 17,
+          "line": 5,
+          "start": 11
+        },
+        "log": "Moved custom config 'myconf' to 'meta'",
+        "original_location": {
+          "end": 10,
+          "line": 5,
+          "start": 4
+        }
       }
     ],
     "warnings": []
@@ -187,15 +299,45 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed."
+        "edited_location": {
+          "end": 12,
+          "line": 4,
+          "start": 4
+        },
+        "log": "Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed.",
+        "original_location": {
+          "end": 13,
+          "line": 4,
+          "start": 5
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed."
+        "edited_location": {
+          "end": 13,
+          "line": 5,
+          "start": 4
+        },
+        "log": "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed.",
+        "original_location": {
+          "end": 14,
+          "line": 5,
+          "start": 5
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['myconf'] to 'meta'"
+        "edited_location": {
+          "end": 17,
+          "line": 6,
+          "start": 11
+        },
+        "log": "Moved custom config 'myconf' to 'meta'",
+        "original_location": {
+          "end": 11,
+          "line": 6,
+          "start": 5
+        }
       }
     ],
     "warnings": []
@@ -206,11 +348,31 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed."
+        "edited_location": {
+          "end": 12,
+          "line": 2,
+          "start": 4
+        },
+        "log": "Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed.",
+        "original_location": {
+          "end": 20,
+          "line": 1,
+          "start": 12
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed."
+        "edited_location": {
+          "end": 13,
+          "line": 3,
+          "start": 4
+        },
+        "log": "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed.",
+        "original_location": {
+          "end": 45,
+          "line": 1,
+          "start": 36
+        }
       }
     ],
     "warnings": []
@@ -444,7 +606,17 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['custom_config'] to 'meta'"
+        "edited_location": {
+          "end": 24,
+          "line": 4,
+          "start": 11
+        },
+        "log": "Moved custom config 'custom_config' to 'meta'",
+        "original_location": {
+          "end": 77,
+          "line": 2,
+          "start": 64
+        }
       }
     ],
     "warnings": []
@@ -455,7 +627,17 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['custom_config'] to 'meta'"
+        "edited_location": {
+          "end": 24,
+          "line": 4,
+          "start": 11
+        },
+        "log": "Moved custom config 'custom_config' to 'meta'",
+        "original_location": {
+          "end": 41,
+          "line": 2,
+          "start": 28
+        }
       }
     ],
     "warnings": []
