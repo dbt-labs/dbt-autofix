@@ -9,6 +9,7 @@ from collections import defaultdict
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
+from typing import Optional
 
 import pytest
 
@@ -75,7 +76,12 @@ def compare_dirs(dir1, dir2):
         compare_dirs(os.path.join(dir1, subdir), os.path.join(dir2, subdir))
 
 
-def compare_json_logs(logs_io: StringIO, path: Path):
+def compare_json_logs(
+    logs_io: StringIO,
+    path: Path,
+    actual_project_path: Optional[Path] = None,
+    expected_project_dir: Optional[Path] = None,
+):
     ignore_keys = ["file_path"]
 
     logs = logs_io.getvalue()
@@ -85,6 +91,10 @@ def compare_json_logs(logs_io: StringIO, path: Path):
         with open(path, "w") as f:
             json.dump(log_dicts, f, indent=2)
             f.write("\n")
+        if actual_project_path is not None and expected_project_dir is not None:
+            if expected_project_dir.exists():
+                shutil.rmtree(expected_project_dir)
+            shutil.copytree(actual_project_path, expected_project_dir)
 
     log_dicts_filtered = [{k: v for k, v in log_dict.items() if k not in ignore_keys} for log_dict in log_dicts]
     for log_dict in log_dicts_filtered:
@@ -141,7 +151,12 @@ def test_project_refactor(project_folder, request):
     compare_dirs(project_path, expected_dir)
 
     expected_logs_path = Path(dbt_projects_dir, f"{project_folder}_expected.stdout")
-    compare_json_logs(refactor_logs_io, expected_logs_path)
+    compare_json_logs(
+        refactor_logs_io,
+        expected_logs_path,
+        actual_project_path=Path(project_path),
+        expected_project_dir=Path(expected_dir),
+    )
 
     # Clean up temporary directory after test
     def cleanup_temp_dir():

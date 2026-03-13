@@ -9,6 +9,7 @@ models:
         description: The ID.
         data_tests:
           - not_null
+
         config:
           meta:
             my_config: mine
@@ -17,7 +18,6 @@ models:
       meta:
         invalid_field: "invalid"
         my_config: mine
-        
   - name: my_second_dbt_model
     description: *description
     columns:
