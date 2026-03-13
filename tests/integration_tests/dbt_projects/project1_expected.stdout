@@ -1,17 +1,31 @@
 [
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/yml_with_custom_keys.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/analyses.yml",
     "refactors": [
       {
-        "deprecation": "CustomTopLevelKeyDeprecation",
-        "log": "Removed custom top-level key: 'custom_key'"
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Analyse 'analysis_name' - Field 'custom_field' is not an allowed config - Moved under config.meta."
+      },
+      {
+        "deprecation": "PropertyMovedToConfigDeprecation",
+        "log": "Analyse 'analysis_name' - Field 'docs' moved under config."
       }
     ]
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/model_with_config.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/groups.yml",
+    "refactors": [
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Group 'finance' - Field 'custom_field' is not an allowed config - Moved under config.meta."
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/model_with_config.yml",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -29,91 +43,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/yml_with_dupes.yml",
-    "refactors": [
-      {
-        "deprecation": "DuplicateYAMLKeysDeprecation",
-        "log": "Found duplicate keys: line 4 - duplication of key \"description\" in mapping"
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/yml_with_tabs.yml",
-    "refactors": [
-      {
-        "deprecation": null,
-        "log": "Found extra tabs: line 5 - column 21"
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/groups.yml",
-    "refactors": [
-      {
-        "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Group 'finance' - Field 'custom_field' is not an allowed config - Moved under config.meta."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/yml_with_anchors.yml",
-    "refactors": [
-      {
-        "deprecation": null,
-        "log": "Removed the extra indentation around 'version: 2' on line 1"
-      },
-      {
-        "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Model 'my_first_dbt_model' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config."
-      },
-      {
-        "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Column 'id' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config."
-      },
-      {
-        "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Column 'id' - Moved all the meta fields under config.meta and merged with existing config.meta."
-      },
-      {
-        "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Test 'not_null' - Field 'where' moved under config."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/analyses.yml",
-    "refactors": [
-      {
-        "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Analyse 'analysis_name' - Field 'custom_field' is not an allowed config - Moved under config.meta."
-      },
-      {
-        "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Analyse 'analysis_name' - Field 'docs' moved under config."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/exposures.yml",
-    "refactors": [
-      {
-        "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Exposure 'my_exposure' - Field 'tags' moved under config."
-      },
-      {
-        "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Exposure 'my_exposure' - Moved all the meta fields under config.meta and merged with existing config.meta."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/schema_yml_with_tests.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/schema_yml_with_tests.yml",
     "refactors": [
       {
         "deprecation": "CustomKeyInObjectDeprecation",
@@ -187,7 +117,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/sources.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/sources.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -249,7 +179,77 @@
   },
   {
     "mode": "applied",
-    "file_path": "/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/dbt_project.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/yml_with_anchors.yml",
+    "refactors": [
+      {
+        "deprecation": null,
+        "log": "Removed the extra indentation around 'version: 2' on line 1"
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Model 'my_first_dbt_model' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config."
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Column 'id' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config."
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Column 'id' - Moved all the meta fields under config.meta and merged with existing config.meta."
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Test 'not_null' - Field 'where' moved under config."
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/yml_with_custom_keys.yml",
+    "refactors": [
+      {
+        "deprecation": "CustomTopLevelKeyDeprecation",
+        "log": "Removed custom top-level key: 'custom_key'"
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/yml_with_dupes.yml",
+    "refactors": [
+      {
+        "deprecation": "DuplicateYAMLKeysDeprecation",
+        "log": "Found duplicate keys: line 4 - duplication of key \"description\" in mapping"
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/yml_with_tabs.yml",
+    "refactors": [
+      {
+        "deprecation": null,
+        "log": "Found extra tabs: line 5 - column 21"
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/exposures.yml",
+    "refactors": [
+      {
+        "deprecation": "PropertyMovedToConfigDeprecation",
+        "log": "Exposure 'my_exposure' - Field 'tags' moved under config."
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Exposure 'my_exposure' - Moved all the meta fields under config.meta and merged with existing config.meta."
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/dbt_project.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -335,37 +335,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/model_with_dbt_jinja.sql",
-    "refactors": [
-      {
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['myconf'] to 'meta'"
-      }
-    ],
-    "warnings": []
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/model_with_dbt_jinja_hook.sql",
-    "refactors": [
-      {
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed."
-      },
-      {
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed."
-      },
-      {
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['myconf'] to 'meta'"
-      }
-    ],
-    "warnings": []
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/model_with_custom_configs.sql",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/model_with_custom_configs.sql",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -399,7 +369,37 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/models/example/model_with_post_hook.sql",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/model_with_dbt_jinja.sql",
+    "refactors": [
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "log": "Moved custom config ['myconf'] to 'meta'"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/model_with_dbt_jinja_hook.sql",
+    "refactors": [
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "log": "Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed."
+      },
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "log": "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed."
+      },
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "log": "Moved custom config ['myconf'] to 'meta'"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/models/example/model_with_post_hook.sql",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -414,7 +414,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/tests/null_email.sql",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/tests/null_email.sql",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -425,7 +425,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_g1pe91wq/project1/tests/null_email2.sql",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project1_f69lbnzu/project1/tests/null_email2.sql",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",

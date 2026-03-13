@@ -1,7 +1,71 @@
 [
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_n082o_wc/project_semantic_layer/models/locations_model.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/customers.yml",
+    "refactors": [
+      {
+        "deprecation": null,
+        "log": "Model 'customers' - Merged with semantic model 'customers'.\n\t* Appended semantic model 'description' to model 'description'.\n\t* Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.\n\t* Added 'primary' entity to column 'customer_id'.\n\t* Added 'categorical' dimension to column 'customer_name'.\n\t* Added 'categorical' dimension to column 'customer_type'.\n\t* Added 'time' dimension to column 'first_ordered_at'.\n\t* Added 'time' dimension to column 'last_ordered_at'."
+      },
+      {
+        "deprecation": null,
+        "log": "Folded input measure 'lifetime_spend_pretax' into simple metric 'lifetime_spend_pretax' and moved 'lifetime_spend_pretax' to model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Folded input measure 'count_lifetime_orders' into simple metric 'count_lifetime_orders' and moved 'count_lifetime_orders' to model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Added simple metric 'customers' to model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Added simple metric 'lifetime_spend' to model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Added simple metric 'lifetime_spend_p99_discrete' to model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Added simple metric 'lifetime_spend_p95_approximate' to model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Added derived metric 'average_order_value' with to model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level semantic model 'customers'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level metric 'average_order_value'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level metric 'count_lifetime_orders'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level metric 'lifetime_spend_pretax'."
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/locations.yml",
+    "refactors": [
+      {
+        "deprecation": null,
+        "log": "Deleted top-level semantic model 'locations'."
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/locations_model.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -19,91 +83,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_n082o_wc/project_semantic_layer/models/products.yml",
-    "refactors": [
-      {
-        "deprecation": null,
-        "log": "Model 'products' - Merged with semantic model 'products'.\n\t* Set model 'description' to semantic model 'description'.\n\t* Added new column 'product_id' with 'primary' entity.\n\t* Added new column 'product_name' with 'categorical' dimension.\n\t* Added new column 'product_type' with 'categorical' dimension.\n\t* Added new column 'product_description' with 'categorical' dimension.\n\t* Added new column 'is_food_item' with 'categorical' dimension.\n\t* Added new column 'is_drink_item' with 'categorical' dimension.\n\t* Added new column 'product_price' with 'categorical' dimension."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level semantic model 'products'."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_n082o_wc/project_semantic_layer/models/orders.yml",
-    "refactors": [
-      {
-        "deprecation": null,
-        "log": "Model 'orders' - Merged with semantic model 'orders'.\n\t* Appended semantic model 'description' to model 'description'.\n\t* Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.\n\t* Added 'primary' entity to column 'order_id'.\n\t* Added new column 'location_id' with 'foreign' entity.\n\t* Added 'foreign' entity to column 'customer_id'.\n\t* Added 'time' dimension to column 'ordered_at'.\n\t* Added 'categorical' dimension to column 'order_total'.\n\t* Added 'categorical' dimension to column 'is_food_order'.\n\t* Added 'categorical' dimension to column 'is_drink_order'.\n\t* Added new column 'customer_order_number' with 'categorical' dimension."
-      },
-      {
-        "deprecation": null,
-        "log": "Folded input measure 'order_cost' into simple metric 'order_cost' and moved 'order_cost' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Folded input measure 'order_total' into simple metric 'order_total' and moved 'order_total' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Folded input measure 'order_count' into simple metric 'new_customer_orders' and moved 'new_customer_orders' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Folded input measure 'order_count' into simple metric 'large_orders' and moved 'large_orders' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Folded input measure 'order_count' into simple metric 'orders' and moved 'orders' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Folded input measure 'order_count' into simple metric 'food_orders' and moved 'food_orders' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Folded input measure 'order_count' into simple metric 'drink_orders' and moved 'drink_orders' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Added simple metric 'tax_paid' to model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level semantic model 'orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level metric 'drink_orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level metric 'food_orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level metric 'large_orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level metric 'new_customer_orders'."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level metric 'order_total'."
-      },
-      {
-        "deprecation": null,
-        "log": "Deleted top-level metric 'orders'."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_n082o_wc/project_semantic_layer/models/order_items.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/order_items.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -265,61 +245,91 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_n082o_wc/project_semantic_layer/models/customers.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/orders.yml",
     "refactors": [
       {
         "deprecation": null,
-        "log": "Model 'customers' - Merged with semantic model 'customers'.\n\t* Appended semantic model 'description' to model 'description'.\n\t* Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.\n\t* Added 'primary' entity to column 'customer_id'.\n\t* Added 'categorical' dimension to column 'customer_name'.\n\t* Added 'categorical' dimension to column 'customer_type'.\n\t* Added 'time' dimension to column 'first_ordered_at'.\n\t* Added 'time' dimension to column 'last_ordered_at'."
+        "log": "Model 'orders' - Merged with semantic model 'orders'.\n\t* Appended semantic model 'description' to model 'description'.\n\t* Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.\n\t* Added 'primary' entity to column 'order_id'.\n\t* Added new column 'location_id' with 'foreign' entity.\n\t* Added 'foreign' entity to column 'customer_id'.\n\t* Added 'time' dimension to column 'ordered_at'.\n\t* Added 'categorical' dimension to column 'order_total'.\n\t* Added 'categorical' dimension to column 'is_food_order'.\n\t* Added 'categorical' dimension to column 'is_drink_order'.\n\t* Added new column 'customer_order_number' with 'categorical' dimension."
       },
       {
         "deprecation": null,
-        "log": "Folded input measure 'lifetime_spend_pretax' into simple metric 'lifetime_spend_pretax' and moved 'lifetime_spend_pretax' to model 'customers'."
+        "log": "Folded input measure 'order_cost' into simple metric 'order_cost' and moved 'order_cost' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Folded input measure 'count_lifetime_orders' into simple metric 'count_lifetime_orders' and moved 'count_lifetime_orders' to model 'customers'."
+        "log": "Folded input measure 'order_total' into simple metric 'order_total' and moved 'order_total' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Added simple metric 'customers' to model 'customers'."
+        "log": "Folded input measure 'order_count' into simple metric 'new_customer_orders' and moved 'new_customer_orders' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Added simple metric 'lifetime_spend' to model 'customers'."
+        "log": "Folded input measure 'order_count' into simple metric 'large_orders' and moved 'large_orders' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Added simple metric 'lifetime_spend_p99_discrete' to model 'customers'."
+        "log": "Folded input measure 'order_count' into simple metric 'orders' and moved 'orders' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Added simple metric 'lifetime_spend_p95_approximate' to model 'customers'."
+        "log": "Folded input measure 'order_count' into simple metric 'food_orders' and moved 'food_orders' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Added derived metric 'average_order_value' with to model 'customers'."
+        "log": "Folded input measure 'order_count' into simple metric 'drink_orders' and moved 'drink_orders' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Deleted top-level semantic model 'customers'."
+        "log": "Added simple metric 'tax_paid' to model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Deleted top-level metric 'average_order_value'."
+        "log": "Deleted top-level semantic model 'orders'."
       },
       {
         "deprecation": null,
-        "log": "Deleted top-level metric 'count_lifetime_orders'."
+        "log": "Deleted top-level metric 'drink_orders'."
       },
       {
         "deprecation": null,
-        "log": "Deleted top-level metric 'lifetime_spend_pretax'."
+        "log": "Deleted top-level metric 'food_orders'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level metric 'large_orders'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level metric 'new_customer_orders'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level metric 'order_total'."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level metric 'orders'."
       }
     ]
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_n082o_wc/project_semantic_layer/models/supplies.yml",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/products.yml",
+    "refactors": [
+      {
+        "deprecation": null,
+        "log": "Model 'products' - Merged with semantic model 'products'.\n\t* Set model 'description' to semantic model 'description'.\n\t* Added new column 'product_id' with 'primary' entity.\n\t* Added new column 'product_name' with 'categorical' dimension.\n\t* Added new column 'product_type' with 'categorical' dimension.\n\t* Added new column 'product_description' with 'categorical' dimension.\n\t* Added new column 'is_food_item' with 'categorical' dimension.\n\t* Added new column 'is_drink_item' with 'categorical' dimension.\n\t* Added new column 'product_price' with 'categorical' dimension."
+      },
+      {
+        "deprecation": null,
+        "log": "Deleted top-level semantic model 'products'."
+      }
+    ]
+  },
+  {
+    "mode": "applied",
+    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/supplies.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -328,16 +338,6 @@
       {
         "deprecation": null,
         "log": "Deleted top-level semantic model 'supplies'."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_n082o_wc/project_semantic_layer/models/locations.yml",
-    "refactors": [
-      {
-        "deprecation": null,
-        "log": "Deleted top-level semantic model 'locations'."
       }
     ]
   },
