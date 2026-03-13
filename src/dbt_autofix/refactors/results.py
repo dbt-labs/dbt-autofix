@@ -15,13 +15,33 @@ console = Console()
 
 
 @dataclass
+class Location:
+    line: int
+    start: Optional[int] = None
+    end: Optional[int] = None
+
+    def to_dict(self) -> dict:
+        d: dict = {"line": self.line}
+        if self.start is not None:
+            d["start"] = self.start
+        if self.end is not None:
+            d["end"] = self.end
+        return d
+
+
+@dataclass
 class DbtDeprecationRefactor:
     log: str
     deprecation: Optional[str] = None
+    original_location: Optional[Location] = None
+    edited_location: Optional[Location] = None
 
     def to_dict(self) -> dict:
-        ret_dict = {"deprecation": self.deprecation, "log": self.log}
-
+        ret_dict: dict = {"deprecation": self.deprecation, "log": self.log}
+        if self.original_location is not None:
+            ret_dict["original_location"] = self.original_location.to_dict()
+        if self.edited_location is not None:
+            ret_dict["edited_location"] = self.edited_location.to_dict()
         return ret_dict
 
 
@@ -211,8 +231,10 @@ class YMLRefactorResult:
         for refactor in self.refactors:
             if refactor.refactored:
                 console.print(f"  {refactor.rule_name}", style="yellow")
-                for log in refactor.refactor_logs:
-                    console.print(f"    {log}")
+
+                for dr in refactor.deprecation_refactors:
+                    loc_suffix = f" (line {dr.original_location.line})" if dr.original_location else ""
+                    console.print(f"    {dr.log}{loc_suffix}")
 
 
 @dataclass
@@ -284,8 +306,9 @@ class SQLRefactorResult:
             if refactor.refactored:
                 console.print(f"  {refactor.rule_name}", style="yellow")
 
-                for log in refactor.refactor_logs:
-                    console.print(f"    {log}")
+                for dr in refactor.deprecation_refactors:
+                    loc_suffix = f" (line {dr.original_location.line})" if dr.original_location else ""
+                    console.print(f"    {dr.log}{loc_suffix}")
 
                 for warning in refactor.refactor_warnings:
                     console.print(f"    Warning: {warning}", style="red")

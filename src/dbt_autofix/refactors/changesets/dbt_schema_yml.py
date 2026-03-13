@@ -9,7 +9,13 @@ from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    Location,
+    YMLContent,
+    YMLRefactorConfig,
+    YMLRuleRefactorResult,
+)
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
 
 NUM_SPACES_TO_REPLACE_TAB = 2
@@ -62,7 +68,9 @@ class _ReplaceFancyQuotesImpl:
                 if delimiter_count > 0:
                     self._refactors.append(
                         DbtDeprecationRefactor(
-                            log=f"Replaced {delimiter_count} fancy quotes with regular quotes on line {line_num}"
+                            log=f"Replaced {delimiter_count} fancy quotes with regular quotes on line {line_num}",
+                            original_location=Location(line=line_num),
+                            edited_location=Location(line=line_num),
                         )
                     )
 
@@ -272,7 +280,12 @@ class _RemoveTabOnlyLinesImpl:
         for i, line in enumerate(lines):
             if "\t" in line and line.strip() == "":
                 self._refactored = True
-                self._refactors.append(DbtDeprecationRefactor(log=f"Removed line containing only tabs on line {i + 1}"))
+                self._refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"Removed line containing only tabs on line {i + 1}",
+                        original_location=Location(line=i + 1),
+                    )
+                )
                 new_lines.append("")
             else:
                 new_lines.append(line)
@@ -317,7 +330,11 @@ class _RemoveIndentationVersionImpl:
                     self._refactored = True
                     lines[i] = replacement
                     self._refactors.append(
-                        DbtDeprecationRefactor(log=f"Removed the extra indentation around 'version: 2' on line {i + 1}")
+                        DbtDeprecationRefactor(
+                            log=f"Removed the extra indentation around 'version: 2' on line {i + 1}",
+                            original_location=Location(line=i + 1),
+                            edited_location=Location(line=i + 1),
+                        )
                     )
 
         return "\n".join(lines) if self._refactored else self.yml_str
@@ -355,7 +372,11 @@ class _RemoveExtraTabsImpl:
                     found_tab_error = True
                     self._refactored = True
                     self._refactors.append(
-                        DbtDeprecationRefactor(log=f"Found extra tabs: line {p.line} - column {p.column}")
+                        DbtDeprecationRefactor(
+                            log=f"Found extra tabs: line {p.line} - column {p.column}",
+                            original_location=Location(line=p.line, start=p.column),
+                            edited_location=Location(line=p.line, start=p.column),
+                        )
                     )
                     lines = current_yaml.split("\n")
                     if p.line <= len(lines):
