@@ -112,6 +112,9 @@ def update_hub_json(
         if fusion_compatible_download:
             new_conformance["fusion_compatible_download"] = fusion_compatible_download
     updated_json["fusion_compatibility"] = new_conformance
+    # verify that empty dict is used to match expected data type in fusion
+    if updated_json["fusion_compatibility"]["fusion_compatible_download"] is None:
+        updated_json["fusion_compatibility"]["fusion_compatible_download"] = {}
     return updated_json
 
 
