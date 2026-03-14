@@ -1,7 +1,7 @@
 [
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_custom_key_in_config_f8hdhz74/project_custom_key_in_config/models/models.yaml",
+    "file_path": "project_custom_key_in_config/models/models.yaml",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -19,7 +19,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_custom_key_in_config_f8hdhz74/project_custom_key_in_config/models/order_summary.sql",
+    "file_path": "project_custom_key_in_config/models/order_summary.sql",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -30,7 +30,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_custom_key_in_config_f8hdhz74/project_custom_key_in_config/models/customer_metrics.py",
+    "file_path": "project_custom_key_in_config/models/customer_metrics.py",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",

@@ -1,7 +1,7 @@
 [
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_jinja_templates_3i8gczl2/project_jinja_templates/models/schema.yml",
+    "file_path": "project_jinja_templates/models/schema.yml",
     "refactors": [
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",

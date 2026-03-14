@@ -1,7 +1,7 @@
 [
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_behavior_changes_kyhfddob/project_behavior_changes/models/example/schema.yml",
+    "file_path": "project_behavior_changes/models/example/schema.yml",
     "refactors": [
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",
@@ -15,7 +15,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_behavior_changes_kyhfddob/project_behavior_changes/dbt_project.yml",
+    "file_path": "project_behavior_changes/dbt_project.yml",
     "refactors": [
       {
         "deprecation": "SourceFreshnessProjectHooksNotRun",
@@ -25,7 +25,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_behavior_changes_kyhfddob/project_behavior_changes/models/example/model with spaces.sql",
+    "file_path": "project_behavior_changes/models/example/model with spaces.sql",
     "refactors": [
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",

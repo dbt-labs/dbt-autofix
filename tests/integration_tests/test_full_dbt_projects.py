@@ -76,47 +76,51 @@ def compare_dirs(dir1, dir2):
         compare_dirs(os.path.join(dir1, subdir), os.path.join(dir2, subdir))
 
 
+def normalize_log_dicts(log_dicts: list, project_path: Optional[Path] = None, sort_refactors: bool = False) -> list:
+    normalized = []
+    for log_dict in log_dicts:
+        d = dict(log_dict)
+        if "file_path" in d and project_path is not None:
+            try:
+                d["file_path"] = str(Path(d["file_path"]).resolve().relative_to(project_path.resolve().parent))
+            except ValueError:
+                pass
+        if sort_refactors and "refactors" in d:
+            d["refactors"] = sorted(d["refactors"], key=lambda x: x["log"])
+        normalized.append(d)
+    return normalized
+
+
 def compare_json_logs(
     logs_io: StringIO,
     path: Path,
     actual_project_path: Optional[Path] = None,
     expected_project_dir: Optional[Path] = None,
 ):
-    ignore_keys = ["file_path"]
-
     logs = logs_io.getvalue()
     log_dicts = [json.loads(log) for log in logs.strip().split("\n")]
+    normalized_log_dicts = normalize_log_dicts(log_dicts, actual_project_path)
 
     if os.getenv("GOLDIE_UPDATE"):
         with open(path, "w") as f:
-            json.dump(log_dicts, f, indent=2)
+            json.dump(normalized_log_dicts, f, indent=2)
             f.write("\n")
         if actual_project_path is not None and expected_project_dir is not None:
             if expected_project_dir.exists():
                 shutil.rmtree(expected_project_dir)
             shutil.copytree(actual_project_path, expected_project_dir)
 
-    log_dicts_filtered = [{k: v for k, v in log_dict.items() if k not in ignore_keys} for log_dict in log_dicts]
-    for log_dict in log_dicts_filtered:
-        if "refactors" in log_dict:
-            log_dict["refactors"] = sorted(log_dict["refactors"], key=lambda x: x["log"])
-
     expected_log_dicts = json.loads(path.read_text())
-    expected_log_dicts_filtered = [
-        {k: v for k, v in log_dict.items() if k not in ignore_keys} for log_dict in expected_log_dicts
-    ]
-    for expected_log_dict in expected_log_dicts_filtered:
-        if "refactors" in expected_log_dict:
-            expected_log_dict["refactors"] = sorted(expected_log_dict["refactors"], key=lambda x: x["log"])
+    expected_log_dicts_normalized = normalize_log_dicts(expected_log_dicts, sort_refactors=True)
 
-    for log_dict in log_dicts_filtered:
-        if log_dict not in expected_log_dicts_filtered:
+    normalized_log_dicts_for_cmp = normalize_log_dicts(normalized_log_dicts, sort_refactors=True)
+    for log_dict in normalized_log_dicts_for_cmp:
+        if log_dict not in expected_log_dicts_normalized:
             print("Log dict not in expected log dicts:")
             pprint.pprint(log_dict)
             print("Expected log dicts:")
-            pprint.pprint(expected_log_dicts_filtered)
-
-        assert log_dict in expected_log_dicts_filtered
+            pprint.pprint(expected_log_dicts_normalized)
+        assert log_dict in expected_log_dicts_normalized
 
 
 @pytest.mark.parametrize("project_folder", get_project_folders())
