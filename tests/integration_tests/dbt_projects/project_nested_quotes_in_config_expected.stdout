@@ -1,7 +1,7 @@
 [
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_nested_quotes_in_config_ycc8rbv4/project_nested_quotes_in_config/models/schema.yml",
+    "file_path": "project_nested_quotes_in_config/models/schema.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -35,7 +35,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_nested_quotes_in_config_ycc8rbv4/project_nested_quotes_in_config/tests/data_quality_test.sql",
+    "file_path": "project_nested_quotes_in_config/tests/data_quality_test.sql",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",

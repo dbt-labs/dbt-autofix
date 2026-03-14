@@ -1,7 +1,7 @@
 [
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/customers.yml",
+    "file_path": "project_semantic_layer/models/customers.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -55,7 +55,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/locations.yml",
+    "file_path": "project_semantic_layer/models/locations.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -65,7 +65,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/locations_model.yml",
+    "file_path": "project_semantic_layer/models/locations_model.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -83,7 +83,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/order_items.yml",
+    "file_path": "project_semantic_layer/models/order_items.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -245,7 +245,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/orders.yml",
+    "file_path": "project_semantic_layer/models/orders.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -315,7 +315,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/products.yml",
+    "file_path": "project_semantic_layer/models/products.yml",
     "refactors": [
       {
         "deprecation": null,
@@ -329,7 +329,7 @@
   },
   {
     "mode": "applied",
-    "file_path": "/private/var/folders/qq/8ffwd7r12s35d1prv83jblnh0000gp/T/dbt_autofix_test_project_semantic_layer_31ussshm/project_semantic_layer/models/supplies.yml",
+    "file_path": "project_semantic_layer/models/supplies.yml",
     "refactors": [
       {
         "deprecation": null,
