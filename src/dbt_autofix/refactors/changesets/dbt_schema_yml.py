@@ -1,15 +1,16 @@
 import difflib
 import re
 from copy import deepcopy
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import yaml
 import yamllint.linter
+from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
-from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, load_yaml, yaml_config
+from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
@@ -203,7 +204,7 @@ def changeset_owner_properties_yml_str(content: YMLContent, config: YMLRefactorC
 
     for node_type in schema_specs.nodes_with_owner:
         if node_type in yml_dict:
-            for i, node in enumerate(yml_dict.get(node_type) or []):
+            for i, node in enumerate(get_list(yml_dict, node_type)):
                 processed_node, node_refactored, node_refactor_logs = restructure_owner_properties(
                     node, node_type, schema_specs
                 )
@@ -227,8 +228,8 @@ def changeset_owner_properties_yml_str(content: YMLContent, config: YMLRefactorC
 
 
 def restructure_owner_properties(
-    node: Dict[str, Any], node_type: str, schema_specs: SchemaSpecs
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+    node: CommentedMap, node_type: str, schema_specs: SchemaSpecs
+) -> Tuple[CommentedMap, bool, List[str]]:
     """Restructure owner properties according to dbt conventions.
 
     Args:
@@ -399,7 +400,7 @@ def changeset_refactor_yml_str(content: YMLContent, config: YMLRefactorConfig) -
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:
-            for i, node in enumerate(yml_dict.get(node_type) or []):
+            for i, node in enumerate(get_list(yml_dict, node_type)):
                 processed_node, node_refactored, node_deprecation_refactors = restructure_yaml_keys_for_node(
                     node, node_type, schema_specs
                 )
@@ -517,8 +518,8 @@ def changeset_refactor_yml_str(content: YMLContent, config: YMLRefactorConfig) -
 
 
 def restructure_yaml_keys_for_test(
-    test: Dict[str, Any], schema_specs: SchemaSpecs
-) -> Tuple[Dict[str, Any], bool, List[DbtDeprecationRefactor]]:
+    test: CommentedMap, schema_specs: SchemaSpecs
+) -> Tuple[CommentedMap, bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys for tests according to dbt conventions.
     Tests are separated from other nodes because
     - they don't support meta
@@ -559,7 +560,7 @@ def restructure_yaml_keys_for_test(
 
 
 def refactor_test_config_fields(
-    test_definition: Dict[str, Any], test_name: str, schema_specs: SchemaSpecs
+    test_definition: CommentedMap, test_name: str, schema_specs: SchemaSpecs
 ) -> List[DbtDeprecationRefactor]:
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -575,7 +576,7 @@ def refactor_test_config_fields(
 
         # field is a config and not a property
         if field in test_configs and field not in test_properties:
-            node_config = test_definition.get("config", {})
+            node_config = get_dict(test_definition, "config")
 
             # if the field is not under config, move it under config
             if field not in node_config:
@@ -603,7 +604,7 @@ def refactor_test_config_fields(
     return deprecation_refactors
 
 
-def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
+def refactor_test_common_misspellings(test_definition: CommentedMap, test_name: str) -> List[DbtDeprecationRefactor]:
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     for field in test_definition:
@@ -620,7 +621,7 @@ def refactor_test_common_misspellings(test_definition: Dict[str, Any], test_name
     return deprecation_refactors
 
 
-def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[DbtDeprecationRefactor]:
+def refactor_test_args(test_definition: CommentedMap, test_name: str) -> List[DbtDeprecationRefactor]:
     """Move non-config args under 'arguments' key
     This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
     """
@@ -641,7 +642,7 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
                 deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION,
             )
         )
-        test_definition["arguments"] = test_definition.get("arguments", {})
+        test_definition["arguments"] = get_dict(test_definition, "arguments")
         test_definition["arguments"].update({field: test_definition[field]})
         del test_definition[field]
 
@@ -649,8 +650,8 @@ def refactor_test_args(test_definition: Dict[str, Any], test_name: str) -> List[
 
 
 def restructure_yaml_keys_for_node(
-    node: Dict[str, Any], node_type: str, schema_specs: SchemaSpecs
-) -> Tuple[Dict[str, Any], bool, List[DbtDeprecationRefactor]]:
+    node: CommentedMap, node_type: str, schema_specs: SchemaSpecs
+) -> Tuple[CommentedMap, bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys according to dbt conventions.
 
     Args:
@@ -666,8 +667,8 @@ def restructure_yaml_keys_for_node(
     """
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    existing_meta = node.get("meta", {}).copy()
-    existing_config = node.get("config", {}).copy()
+    existing_meta = get_dict(node, "meta").copy()
+    existing_config = get_dict(node, "config").copy()
     pretty_node_type = node_type[:-1].title()
 
     for field in existing_config:
@@ -695,9 +696,9 @@ def restructure_yaml_keys_for_node(
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                 )
             )
-            node_config_meta = node.get("config", {}).get("meta", {})
+            node_config_meta = get_dict(get_dict(node, "config"), "meta")
             node_config_meta.update({field: node["config"][field]})
-            node["config"] = node.get("config", {})
+            node["config"] = get_dict(node, "config")
             node["config"].update({"meta": node_config_meta})
             del node["config"][field]
 
@@ -723,7 +724,7 @@ def restructure_yaml_keys_for_node(
 
         if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields_without_meta:
             refactored = True
-            node_config = node.get("config", {})
+            node_config = get_dict(node, "config")
 
             # if the field is not under config, move it under config
             if field not in node_config:
@@ -769,9 +770,9 @@ def restructure_yaml_keys_for_node(
                         deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                     )
                 )
-            node_meta = node.get("config", {}).get("meta", {})
+            node_meta = get_dict(get_dict(node, "config"), "meta")
             node_meta.update({field: node[field]})
-            node["config"] = node.get("config", {})
+            node["config"] = get_dict(node, "config")
             node["config"].update({"meta": node_meta})
             del node[field]
 
@@ -805,7 +806,7 @@ def changeset_replace_non_alpha_underscores_in_name_values(
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:
-            for i, node in enumerate(yml_dict.get(node_type) or []):
+            for i, node in enumerate(get_list(yml_dict, node_type)):
                 processed_node, node_deprecation_refactors = replace_node_name_non_alpha_with_underscores(
                     node, node_type
                 )
@@ -909,7 +910,7 @@ def _remove_non_alpha_outside_jinja(text: str) -> str:
     return "".join(result)
 
 
-def replace_node_name_non_alpha_with_underscores(node: dict[str, str], node_type: str):
+def replace_node_name_non_alpha_with_underscores(node: CommentedMap, node_type: str):
     node_deprecation_refactors: List[DbtDeprecationRefactor] = []
     node_copy = node.copy()
     pretty_node_type = node_type[:-1].title()

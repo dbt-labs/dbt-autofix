@@ -4,7 +4,7 @@ from typing import Any, Dict, Union
 
 import yamllint.config
 from ruamel.yaml import YAML
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.compat import StringIO
 
 config = """
@@ -41,6 +41,14 @@ class DbtYAML(YAML):
             return buf.getvalue().decode("utf-8")
         else:
             return buf.getvalue()[:-1].decode("utf-8")
+
+
+def get_list(node: CommentedMap, key: str) -> CommentedSeq:
+    return node.get(key) or CommentedSeq()
+
+
+def get_dict(node: CommentedMap, key: str) -> CommentedMap:
+    return node.get(key) or CommentedMap()
 
 
 def load_yaml(path_or_str: Union[Path, str]) -> CommentedMap:

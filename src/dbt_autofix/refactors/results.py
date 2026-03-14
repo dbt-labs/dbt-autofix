@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from rich.console import Console
+from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes
 from dbt_autofix.semantic_definitions import SemanticDefinitions
@@ -31,7 +32,7 @@ class DbtDeprecationRefactor:
 @dataclass
 class YMLContent:
     original_str: str
-    original_parsed: Any  # CommentedMap from ruamel, parsed once at YMLRefactorResult creation
+    original_parsed: CommentedMap
     current_str: str
 
 
