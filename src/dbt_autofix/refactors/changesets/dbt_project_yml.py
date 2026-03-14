@@ -10,7 +10,7 @@ from dbt_autofix.refactors.results import (
     YMLContent,
     YMLRuleRefactorResult,
 )
-from dbt_autofix.refactors.yml import DbtYAML, load_yaml
+from dbt_autofix.refactors.yml import DbtYAML, get_dict, load_yaml
 from dbt_autofix.retrieve_schemas import DbtProjectSpecs, SchemaSpecs
 
 config = """
@@ -149,7 +149,7 @@ def rec_check_yaml_path(
                 # Custom config not in meta (leaf value)
                 else:
                     log_msg = f"Moved custom config '{k}' to '+meta'"
-                    meta = yml_dict.get("+meta", {})
+                    meta = get_dict(yml_dict, "+meta")
                     meta.update({k: v})
                     yml_dict["+meta"] = meta
 
@@ -183,7 +183,7 @@ def rec_check_yaml_path(
                                 if subkey.startswith("+"):
                                     # +prefixed subkey in a dict config - move to +meta
                                     log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)"
-                                    meta = yml_dict.get("+meta", {})
+                                    meta = get_dict(yml_dict, "+meta")
                                     meta[subkey] = subvalue
                                     yml_dict["+meta"] = meta
                                     del v[subkey]
@@ -196,7 +196,7 @@ def rec_check_yaml_path(
                                 elif subkey not in allowed_props:
                                     # Subkey not in allowed properties - move to +meta
                                     log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})"
-                                    meta = yml_dict.get("+meta", {})
+                                    meta = get_dict(yml_dict, "+meta")
                                     meta[subkey] = subvalue
                                     yml_dict["+meta"] = meta
                                     del v[subkey]
@@ -210,7 +210,7 @@ def rec_check_yaml_path(
                 # Unrecognized config (not in schema), move to +meta
                 else:
                     log_msg = f"Moved unrecognized config '{k}' to '+meta'"
-                    meta = yml_dict.get("+meta", {})
+                    meta = get_dict(yml_dict, "+meta")
                     meta.update({key_without_plus: v})
                     yml_dict["+meta"] = meta
                     del yml_dict[k]
@@ -249,7 +249,7 @@ def changeset_dbt_project_prefix_plus_for_config(
     yml_dict = load_yaml(yml_str)
 
     for node_type, node_fields in schema_specs.dbtproject_specs_per_node_type.items():
-        for k, v in (yml_dict.get(node_type) or {}).copy().items():
+        for k, v in get_dict(yml_dict, node_type).copy().items():
             # check if this is the project name
             if k == yml_dict["name"]:
                 # Only recurse if v is a dict (should be project configs)
@@ -341,7 +341,7 @@ def changeset_dbt_project_flip_test_arguments_behavior_flag(
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     refactored = False
 
-    existing_flags = yml_dict.get("flags", {})
+    existing_flags = get_dict(yml_dict, "flags")
     if (
         existing_flags.get("require_generic_test_arguments_property") is False
         or "require_generic_test_arguments_property" not in existing_flags

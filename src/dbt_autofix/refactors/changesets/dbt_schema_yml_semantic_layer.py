@@ -1,8 +1,10 @@
 import copy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+from ruamel.yaml.comments import CommentedMap
+
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
-from dbt_autofix.refactors.yml import dict_to_yaml_str, load_yaml
+from dbt_autofix.refactors.yml import dict_to_yaml_str, get_dict, get_list, load_yaml
 from dbt_autofix.semantic_definitions import MeasureInput, ModelAccessHelpers, SemanticDefinitions
 
 
@@ -38,7 +40,7 @@ def run_change_function_against_each_model(
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = load_yaml(yml_str)
 
-    for i, node in enumerate(yml_dict.get("models") or []):
+    for i, node in enumerate(get_list(yml_dict, "models")):
         processed_node, node_refactored, node_refactor_logs = merge_fn(node, semantic_definitions)
 
         if node_refactored:
@@ -57,8 +59,8 @@ def run_change_function_against_each_model(
 
 
 def append_metric_to_model(
-    model_node: Dict[str, Any],
-    metric: Dict[str, Any],
+    model_node: CommentedMap,
+    metric: CommentedMap,
 ) -> None:
     if "metrics" not in model_node:
         model_node["metrics"] = []
@@ -66,12 +68,12 @@ def append_metric_to_model(
 
 
 def combine_simple_metrics_with_their_input_measure(
-    model_node: Dict[str, Any], semantic_definitions: SemanticDefinitions
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+    model_node: CommentedMap, semantic_definitions: SemanticDefinitions
+) -> Tuple[CommentedMap, bool, List[str]]:
     refactored = False
     refactor_logs: List[str] = []
 
-    semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
+    semantic_model = semantic_definitions.get_semantic_model(model_node["name"])
 
     # for each simple metric in our semantic definitions, check if its measure is on this model
     # then flatten it by pulling the measure settings up into the metric.
@@ -82,7 +84,7 @@ def combine_simple_metrics_with_their_input_measure(
 
         # Extract measure name from top-level simple metric
         measure_input = MeasureInput.parse_from_yaml(
-            metric.get("type_params", {}).get("measure"),
+            get_dict(metric, "type_params").get("measure"),
         )
         if measure_input is None:
             # we've already fixed this one, so skip it.
@@ -147,9 +149,9 @@ def combine_simple_metrics_with_their_input_measure(
 
 
 def _maybe_merge_cumulative_metric_with_model(
-    metric: Dict[str, Any],
-    model_node: Dict[str, Any],
-    semantic_model: Dict[str, Any],
+    metric: CommentedMap,
+    model_node: CommentedMap,
+    semantic_model: CommentedMap,
     semantic_definitions: SemanticDefinitions,
 ) -> Tuple[bool, List[str], bool]:
     refactored = False
@@ -160,7 +162,7 @@ def _maybe_merge_cumulative_metric_with_model(
         # we've already merged this metric, so no need to do anything further!
         return refactored, refactor_logs, moved_to_model
 
-    measure_input = MeasureInput.parse_from_yaml(metric.get("type_params", {}).get("measure"))
+    measure_input = MeasureInput.parse_from_yaml(get_dict(metric, "type_params").get("measure"))
     if measure_input is None:
         # This shouldn't happen; it seems like the measure was missing in the original yaml.
         return refactored, refactor_logs, moved_to_model
@@ -211,9 +213,9 @@ def _maybe_merge_cumulative_metric_with_model(
 
 
 def _maybe_merge_conversion_metric_with_model(
-    metric: Dict[str, Any],
-    model_node: Dict[str, Any],
-    semantic_model: Dict[str, Any],
+    metric: CommentedMap,
+    model_node: CommentedMap,
+    semantic_model: CommentedMap,
     semantic_definitions: SemanticDefinitions,
 ) -> Tuple[bool, List[str], bool]:
     refactored = False
@@ -227,8 +229,8 @@ def _maybe_merge_conversion_metric_with_model(
         # we've already merged this metric, so no need to do anything further!
         return refactored, refactor_logs, moved_to_model
     # Try to turn the base measure input into a base metric input
-    type_params = metric.get("type_params", {})
-    conversion_type_params = type_params.get("conversion_type_params", {})
+    type_params = get_dict(metric, "type_params")
+    conversion_type_params = get_dict(type_params, "conversion_type_params")
     base_measure_input = MeasureInput.parse_from_yaml(conversion_type_params.get("base_measure", None))
     if base_measure_input and (
         base_measure := ModelAccessHelpers.maybe_get_measure_from_model(semantic_model, base_measure_input.name)
@@ -298,13 +300,13 @@ def _maybe_merge_conversion_metric_with_model(
     return refactored, refactor_logs, moved_to_model
 
 
-def get_metric_input_dict(metric: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+def get_metric_input_dict(metric: Union[str, CommentedMap]) -> CommentedMap:
     if isinstance(metric, str):
-        return {"name": metric}
+        return CommentedMap({"name": metric})
     return metric
 
 
-def change_metrics_to_input_metrics(metric: Dict[str, Any]) -> None:
+def change_metrics_to_input_metrics(metric: CommentedMap) -> None:
     """Currently only used for derived metrics."""
     if "metrics" in metric:
         metric["input_metrics"] = [get_metric_input_dict(input_metric) for input_metric in metric.pop("metrics", [])]
@@ -312,19 +314,19 @@ def change_metrics_to_input_metrics(metric: Dict[str, Any]) -> None:
 
 def _get_metric_from_model_or_top_level(
     metric_name: str,
-    model_node: Dict[str, Any],
+    model_node: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[CommentedMap]:
     """Returns the metric from the model if possible, else falls back to initial top-level metrics."""
     metric_from_model = next(
-        (metric for metric in model_node.get("metrics", []) if metric["name"] == metric_name), None
+        (metric for metric in get_list(model_node, "metrics") if metric["name"] == metric_name), None
     )
     if metric_from_model:
         return metric_from_model
     return semantic_definitions.initial_metrics.get(metric_name)
 
 
-def _get_metric_name_from_metric_input(metric_input: Union[str, Dict[str, Any]]) -> str:
+def _get_metric_name_from_metric_input(metric_input: Union[str, CommentedMap]) -> str:
     if isinstance(metric_input, str):
         return metric_input
     # should be a dict then
@@ -332,9 +334,9 @@ def _get_metric_name_from_metric_input(metric_input: Union[str, Dict[str, Any]])
 
 
 def try_to_merge_complex_metric_with_model_recursive(
-    metric: Dict[str, Any],
-    model_node: Dict[str, Any],
-    semantic_model: Dict[str, Any],
+    metric: CommentedMap,
+    model_node: CommentedMap,
+    semantic_model: CommentedMap,
     semantic_definitions: SemanticDefinitions,
 ) -> Tuple[bool, List[str], bool]:
     refactored = False
@@ -345,7 +347,7 @@ def try_to_merge_complex_metric_with_model_recursive(
     # base recursion case: simple metrics should already be on their appropriate model
     # (and also don't repeat work on already-merged metrics)
     if metric["type"] == "simple" or metric_name in semantic_definitions.merged_metrics:
-        is_on_model = metric_name in [metric["name"] for metric in model_node.get("metrics", [])]
+        is_on_model = metric_name in [metric["name"] for metric in get_list(model_node, "metrics")]
         return refactored, refactor_logs, is_on_model
 
     # if a cumulative metric, call that function
@@ -375,7 +377,7 @@ def try_to_merge_complex_metric_with_model_recursive(
     if metric["type"] == "derived":
         # try to merge all the input metrics first
         input_metric_names: List[str] = []
-        for input_metric in metric.get("type_params", {}).get("metrics", []):
+        for input_metric in get_list(get_dict(metric, "type_params"), "metrics"):
             input_metric_names.append(_get_metric_name_from_metric_input(input_metric))
 
         moved_to_model = True
@@ -415,8 +417,8 @@ def try_to_merge_complex_metric_with_model_recursive(
 
     if metric["type"] == "ratio":
         moved_to_model = False
-        numerator_name = _get_metric_name_from_metric_input(metric.get("type_params", {}).get("numerator"))
-        denominator_name = _get_metric_name_from_metric_input(metric.get("type_params", {}).get("denominator"))
+        numerator_name = _get_metric_name_from_metric_input(get_dict(metric, "type_params").get("numerator"))
+        denominator_name = _get_metric_name_from_metric_input(get_dict(metric, "type_params").get("denominator"))
         numerator_metric = _get_metric_from_model_or_top_level(numerator_name, model_node, semantic_definitions)
         denominator_metric = _get_metric_from_model_or_top_level(denominator_name, model_node, semantic_definitions)
         if not numerator_metric or not denominator_metric:
@@ -460,12 +462,12 @@ def try_to_merge_complex_metric_with_model_recursive(
 
 
 def merge_complex_metrics_with_model(
-    model_node: Dict[str, Any],
+    model_node: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+) -> Tuple[CommentedMap, bool, List[str]]:
     refactored = False
     refactor_logs: List[str] = []
-    semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
+    semantic_model = semantic_definitions.get_semantic_model(model_node["name"])
     if not semantic_model:
         # Nothing to work with here, so we should just skip this model.
         return model_node, refactored, refactor_logs
@@ -531,13 +533,13 @@ def is_useful_fill_nulls_with_value(fill_nulls_with: Optional[str]) -> bool:
 
 
 def get_or_create_metric_for_measure(
-    measure: Dict[str, Any],
+    measure: CommentedMap,
     fill_nulls_with: Optional[str],
     join_to_timespine: Optional[bool],
     is_hidden: bool,
     semantic_definitions: SemanticDefinitions,
-    dbt_model_node: Dict[str, Any],
-) -> Tuple[Dict[str, Any], bool]:
+    dbt_model_node: CommentedMap,
+) -> Tuple[CommentedMap, bool]:
     """Returns tuple(metric, is_new_metric)."""
     measure_name = measure["name"]
 
@@ -607,16 +609,16 @@ def get_or_create_metric_for_measure(
 
 
 def add_metric_for_measures_in_model(
-    model_node: Dict[str, Any],
+    model_node: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+) -> Tuple[CommentedMap, bool, List[str]]:
     """Add metrics for the measures in a semantic model."""
     refactored = False
     refactor_logs: List[str] = []
 
-    semantic_model = semantic_definitions.get_semantic_model(model_node["name"]) or {}
+    semantic_model = semantic_definitions.get_semantic_model(model_node["name"])
 
-    def create_simple_metric_from_measure(measure: Dict[str, Any], is_hidden: bool) -> Tuple[Dict[str, Any], bool]:
+    def create_simple_metric_from_measure(measure: CommentedMap, is_hidden: bool) -> Tuple[CommentedMap, bool]:
         # since these are measures with no measure input wrapper, there are no available
         # values for fill_nulls_with and join_to_timespine.
         return get_or_create_metric_for_measure(
@@ -680,7 +682,7 @@ def changeset_merge_semantic_models_with_models(
     yml_dict = load_yaml(yml_str)
 
     # Merge semantic models with existing models in yml
-    for i, node in enumerate(yml_dict.get("models") or []):
+    for i, node in enumerate(get_list(yml_dict, "models")):
         processed_node, node_refactored, node_refactor_logs = merge_semantic_models_with_model(
             node, semantic_definitions
         )
@@ -693,16 +695,14 @@ def changeset_merge_semantic_models_with_models(
 
     # Create new model entries for semantic models that don't have a corresponding model entry in any .yml file
     # and merge semantic models with them
-    for semantic_model in yml_dict.get("semantic_models", []):
+    for semantic_model in get_list(yml_dict, "semantic_models"):
         model_key = semantic_definitions.get_model_key_for_semantic_model(semantic_model)
         # Semantic model has valid model 'ref' but no corresponding model entry in any .yml file
         if model_key and not semantic_definitions.model_key_exists_for_semantic_model(model_key):
             if "models" not in yml_dict:
                 yml_dict["models"] = []
 
-            new_model_node = {
-                "name": model_key[0],
-            }
+            new_model_node = CommentedMap({"name": model_key[0]})
 
             processed_new_model_node, new_model_node_refactored, new_model_node_refactor_logs = (
                 merge_semantic_models_with_model(new_model_node, semantic_definitions)
@@ -723,8 +723,8 @@ def changeset_merge_semantic_models_with_models(
 
 
 def merge_semantic_models_with_model(
-    node: Dict[str, Any], semantic_definitions: SemanticDefinitions
-) -> Tuple[Dict[str, Any], bool, List[str]]:
+    node: CommentedMap, semantic_definitions: SemanticDefinitions
+) -> Tuple[CommentedMap, bool, List[str]]:
     refactored = False
     refactor_logs: List[str] = []
 
@@ -752,15 +752,15 @@ def merge_semantic_models_with_model(
                 node["description"] = semantic_model["description"]
                 node_logs.append("Set model 'description' to semantic model 'description'.")
 
-        if agg_time_dimension := semantic_model.get("defaults", {}).get("agg_time_dimension"):
+        if agg_time_dimension := get_dict(semantic_model, "defaults").get("agg_time_dimension"):
             node["agg_time_dimension"] = agg_time_dimension
             node_logs.append("Set model 'agg_time_dimension' to semantic model 'agg_time_dimension'.")
 
         # Propagate entities to model columns or derived_semantics
-        node_logs.extend(merge_entities_with_model_columns(node, semantic_model.get("entities", [])))
+        node_logs.extend(merge_entities_with_model_columns(node, get_list(semantic_model, "entities")))
 
         # Propagate dimensions to model columns or derived_semantics
-        node_logs.extend(merge_dimensions_with_model_columns(node, semantic_model.get("dimensions", [])))
+        node_logs.extend(merge_dimensions_with_model_columns(node, get_list(semantic_model, "dimensions")))
 
         # propagate measures to model metrics
 
@@ -774,14 +774,14 @@ def merge_semantic_models_with_model(
     return node, refactored, refactor_logs
 
 
-def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[str, Any]]) -> List[str]:
+def merge_entities_with_model_columns(node: CommentedMap, entities: List[CommentedMap]) -> List[str]:
     """Merges entities from a semantic model into the model's columns.
 
     This function assumes you've already limited the entity list to those that could be
     on this model, based on matching the model and semantic model.
     """
     logs: List[str] = []
-    node_columns = {column["name"]: column for column in node.get("columns", [])}
+    node_columns = {column["name"]: column for column in get_list(node, "columns")}
 
     for entity in entities:
         entity_name = entity["name"]
@@ -829,9 +829,9 @@ def merge_entities_with_model_columns(node: Dict[str, Any], entities: List[Dict[
     return logs
 
 
-def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: List[Dict[str, Any]]) -> List[str]:
+def merge_dimensions_with_model_columns(model_node: CommentedMap, dimensions: List[CommentedMap]) -> List[str]:
     logs: List[str] = []
-    model_node_columns = {column["name"]: column for column in model_node.get("columns", [])}
+    model_node_columns = {column["name"]: column for column in get_list(model_node, "columns")}
 
     for dimension in dimensions:
         dimension_col_name = dimension.get("expr") or dimension["name"]
@@ -841,7 +841,7 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
         def is_valid_name(name: str) -> bool:
             return not any(char in name for char in (" ", "|", "("))
 
-        dimension_time_granularity = dimension.get("type_params", {}).get("time_granularity")
+        dimension_time_granularity = get_dict(dimension, "type_params").get("time_granularity")
 
         def get_mergeable_dimension_fields() -> Dict[str, Any]:
             base_dim_dict = {
@@ -901,7 +901,7 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = load_yaml(yml_str)
 
-    top_level_semantic_models = yml_dict.get("semantic_models", [])
+    top_level_semantic_models = get_list(yml_dict, "semantic_models")
     new_semantic_models = []
 
     for semantic_model in top_level_semantic_models:
@@ -938,15 +938,15 @@ def changeset_migrate_metric_tags_field_to_config(
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = load_yaml(yml_str)
-    metrics = yml_dict.get("metrics", [])
+    metrics = get_list(yml_dict, "metrics")
     transformed_metrics = []
 
     for metric in metrics:
         if deprecated_tags := metric.pop("tags", None):
             if not isinstance(deprecated_tags, list):
                 break
-            metric_config = metric.get("config", {})
-            metric_tags = metric_config.get("tags", [])
+            metric_config = get_dict(metric, "config")
+            metric_tags = get_list(metric_config, "tags")
             if isinstance(metric_tags, str):
                 metric_tags = [metric_tags]
             deprecated_tags.extend(metric_tags)
@@ -984,7 +984,7 @@ def changeset_migrate_or_delete_top_level_metrics(
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = load_yaml(yml_str)
 
-    top_level_metrics = sorted(yml_dict.get("metrics", []), key=lambda x: x.get("name"))
+    top_level_metrics = sorted(get_list(yml_dict, "metrics"), key=lambda x: x.get("name"))
     transformed_metrics = []
 
     for metric in top_level_metrics:
