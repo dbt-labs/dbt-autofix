@@ -6,7 +6,7 @@ import yaml
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from rich.console import Console
 
-from dbt_autofix.refactors.yml import read_file
+from dbt_autofix.refactors.yml import load_yaml
 
 console = Console()
 
@@ -89,7 +89,7 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
         console.log("File must be dbt_project.yml")
         return {}
     try:
-        parsed_package_file = read_file(package_project_yml_path)
+        parsed_package_file = load_yaml(package_project_yml_path)
     except:
         console.log(f"Error when parsing package file {package_project_yml_path}")
         return {}

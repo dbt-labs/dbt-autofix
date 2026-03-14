@@ -53,7 +53,7 @@ from dbt_autofix.refactors.results import (
     YMLRefactorConfig,
     YMLRefactorResult,
 )
-from dbt_autofix.refactors.yml import DbtYAML
+from dbt_autofix.refactors.yml import load_yaml
 from dbt_autofix.retrieve_schemas import (
     SchemaSpecs,
 )
@@ -146,7 +146,7 @@ def process_yaml_files_except_dbt_project(
                 else:
                     yml_str = yml_file.read_text()
                     try:
-                        original_parsed = DbtYAML().load(yml_str) or {}
+                        original_parsed = load_yaml(yml_str)
                     except Exception:
                         original_parsed = {}
                     yml_refactor_result = YMLRefactorResult(
@@ -207,7 +207,7 @@ def process_dbt_project_yml(
 
     yml_str = (root_path / "dbt_project.yml").read_text()
     try:
-        original_parsed = DbtYAML().load(yml_str) or {}
+        original_parsed = load_yaml(yml_str)
     except Exception:
         original_parsed = {}
     yml_refactor_result = YMLRefactorResult(

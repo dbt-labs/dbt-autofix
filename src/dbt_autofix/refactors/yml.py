@@ -1,9 +1,10 @@
 import io
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import yamllint.config
 from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.compat import StringIO
 
 config = """
@@ -42,9 +43,9 @@ class DbtYAML(YAML):
             return buf.getvalue()[:-1].decode("utf-8")
 
 
-def read_file(path: Path) -> Dict:
+def load_yaml(path_or_str: Union[Path, str]) -> CommentedMap:
     yaml = DbtYAML()
-    return yaml.load(path)
+    return yaml.load(path_or_str) or CommentedMap()
 
 
 def dict_to_yaml_str(content: Dict[str, Any], write_empty: bool = False) -> str:

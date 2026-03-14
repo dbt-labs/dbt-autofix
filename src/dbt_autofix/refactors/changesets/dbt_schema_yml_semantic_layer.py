@@ -2,7 +2,7 @@ import copy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
-from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
+from dbt_autofix.refactors.yml import dict_to_yaml_str, load_yaml
 from dbt_autofix.semantic_definitions import MeasureInput, ModelAccessHelpers, SemanticDefinitions
 
 
@@ -36,7 +36,7 @@ def run_change_function_against_each_model(
 ) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     for i, node in enumerate(yml_dict.get("models") or []):
         processed_node, node_refactored, node_refactor_logs = merge_fn(node, semantic_definitions)
@@ -677,7 +677,7 @@ def changeset_merge_semantic_models_with_models(
     assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     # Merge semantic models with existing models in yml
     for i, node in enumerate(yml_dict.get("models") or []):
@@ -899,7 +899,7 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
     assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     top_level_semantic_models = yml_dict.get("semantic_models", [])
     new_semantic_models = []
@@ -937,7 +937,7 @@ def changeset_migrate_metric_tags_field_to_config(
     assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
     metrics = yml_dict.get("metrics", [])
     transformed_metrics = []
 
@@ -982,7 +982,7 @@ def changeset_migrate_or_delete_top_level_metrics(
     assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     top_level_metrics = sorted(yml_dict.get("metrics", []), key=lambda x: x.get("name"))
     transformed_metrics = []

@@ -10,7 +10,7 @@ from dbt_autofix.refactors.results import (
     YMLContent,
     YMLRuleRefactorResult,
 )
-from dbt_autofix.refactors.yml import DbtYAML
+from dbt_autofix.refactors.yml import DbtYAML, load_yaml
 from dbt_autofix.retrieve_schemas import DbtProjectSpecs, SchemaSpecs
 
 config = """
@@ -47,7 +47,7 @@ def changeset_dbt_project_remove_deprecated_config(
         "source-paths": "ConfigSourcePathDeprecation",
     }
 
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     for deprecated_field, _ in dict_deprecated_fields_with_defaults.items():
         if deprecated_field in yml_dict:
@@ -246,7 +246,7 @@ def changeset_dbt_project_prefix_plus_for_config(
     schema_specs = config.schema_specs
     all_refactor_logs: List[str] = []
 
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     for node_type, node_fields in schema_specs.dbtproject_specs_per_node_type.items():
         for k, v in (yml_dict.get(node_type) or {}).copy().items():
@@ -303,7 +303,7 @@ def changeset_dbt_project_flip_behavior_flags(
     content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
     yml_str = content.current_str
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     refactored = False
 
@@ -337,7 +337,7 @@ def changeset_dbt_project_flip_test_arguments_behavior_flag(
     content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
     yml_str = content.current_str
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     refactored = False
 

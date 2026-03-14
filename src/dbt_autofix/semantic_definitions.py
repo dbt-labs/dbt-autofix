@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from dbt_autofix.jinja import statically_parse_ref
-from dbt_autofix.refactors.yml import DbtYAML
+from dbt_autofix.refactors.yml import load_yaml
 
 
 class SemanticDefinitions:
@@ -90,8 +90,7 @@ class SemanticDefinitions:
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
             for yml_file in yaml_files:
-                yml_str = yml_file.read_text()
-                yml_dict = DbtYAML().load(yml_str) or {}
+                yml_dict = load_yaml(yml_file)
                 if "semantic_models" in yml_dict:
                     for semantic_model in yml_dict["semantic_models"]:
                         ref = statically_parse_ref(semantic_model["model"])
@@ -106,8 +105,7 @@ class SemanticDefinitions:
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
             for yml_file in yaml_files:
-                yml_str = yml_file.read_text()
-                yml_dict = DbtYAML().load(yml_str) or {}
+                yml_dict = load_yaml(yml_file)
                 if "models" in yml_dict:
                     for model in yml_dict["models"]:
                         if not model.get("versions"):
@@ -125,8 +123,7 @@ class SemanticDefinitions:
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
             for yml_file in sorted(yaml_files):
-                yml_str = yml_file.read_text()
-                yml_dict = DbtYAML().load(yml_str) or {}
+                yml_dict = load_yaml(yml_file)
                 if "metrics" in yml_dict:
                     for metric in yml_dict["metrics"]:
                         metrics[metric["name"]] = metric

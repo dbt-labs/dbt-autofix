@@ -9,7 +9,7 @@ import yamllint.linter
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
-from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, yaml_config
+from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, load_yaml, yaml_config
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
@@ -199,7 +199,7 @@ def changeset_owner_properties_yml_str(content: YMLContent, config: YMLRefactorC
     schema_specs = config.schema_specs
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     for node_type in schema_specs.nodes_with_owner:
         if node_type in yml_dict:
@@ -383,7 +383,7 @@ def changeset_refactor_yml_str(content: YMLContent, config: YMLRefactorConfig) -
     schema_specs = config.schema_specs
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     yml_dict_keys = list(yml_dict.keys())
     for key in yml_dict_keys:
@@ -801,7 +801,7 @@ def changeset_replace_non_alpha_underscores_in_name_values(
     yml_str = content.current_str
     schema_specs = config.schema_specs
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:
@@ -948,7 +948,7 @@ def changeset_remove_duplicate_models(content: YMLContent, config: YMLRefactorCo
     yml_str = content.current_str
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     if "models" not in yml_dict or not isinstance(yml_dict["models"], list):
         return YMLRuleRefactorResult(
