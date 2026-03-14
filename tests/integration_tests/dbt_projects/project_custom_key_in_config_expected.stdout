@@ -70,11 +70,31 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom configs ['refresh_frequency'] to 'meta'"
+        "log": "Moved custom configs ['refresh_frequency'] to 'meta'",
+        "original_location": {
+          "line": 14,
+          "start": 4,
+          "end": 63
+        },
+        "edited_location": {
+          "line": 14,
+          "start": 4,
+          "end": 73
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Updated config.get('data_classification') to config.meta_get('data_classification')"
+        "log": "Updated config.get('data_classification') to config.meta_get('data_classification')",
+        "original_location": {
+          "line": 17,
+          "start": 21,
+          "end": 58
+        },
+        "edited_location": {
+          "line": 17,
+          "start": 21,
+          "end": 63
+        }
       }
     ],
     "warnings": []

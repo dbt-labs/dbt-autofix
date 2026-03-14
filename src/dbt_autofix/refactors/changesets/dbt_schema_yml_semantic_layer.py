@@ -951,7 +951,9 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
                 DbtDeprecationRefactor(
                     log=f"Deleted top-level semantic model '{semantic_model['name']}'.",
                     deprecation=None,
-                    original_location=location_of_node(orig_semantic_models[semantic_model["name"]]) if semantic_model["name"] in orig_semantic_models else None,
+                    original_location=location_of_node(orig_semantic_models[semantic_model["name"]])
+                    if semantic_model["name"] in orig_semantic_models
+                    else None,
                 )
             )
         else:
