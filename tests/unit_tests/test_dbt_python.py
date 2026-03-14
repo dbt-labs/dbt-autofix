@@ -10,6 +10,7 @@ from dbt_autofix.refactors.changesets.dbt_python import (
     move_custom_config_access_to_meta_python,
     refactor_custom_configs_to_meta_python,
 )
+from dbt_autofix.refactors.results import PythonContent, PythonRefactorConfig
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
@@ -20,6 +21,14 @@ class FakeSchemaSpecs(SchemaSpecs):
         self.yaml_specs_per_node_type = {
             "models": models_allowed_config,
         }
+
+
+def _py(py_str: str) -> PythonContent:
+    return PythonContent(original_str=py_str, current_str=py_str)
+
+
+def _py_cfg(schema_specs=None, node_type: str = "models") -> PythonRefactorConfig:
+    return PythonRefactorConfig(schema_specs=schema_specs or FakeSchemaSpecs(), node_type=node_type)
 
 
 class TestRefactorCustomConfigsToMetaPython:
@@ -35,7 +44,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"random_config": "AR"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -53,7 +62,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_a": "A", "custom_b": "B"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -68,7 +77,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema", meta={"custom_key": "value"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -79,7 +88,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema")
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -90,7 +99,7 @@ class TestRefactorCustomConfigsToMetaPython:
         input_python = """def model(dbt, session):
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -106,7 +115,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_count": 42})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -121,7 +130,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_flag": True})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -143,7 +152,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", schema="my_schema", tags=['daily'], meta={"already_meta_a": "A", "already_meta_b": "B", "custom_x": "X", "custom_y": "Y"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -161,7 +170,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_key": "single_quoted"})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -176,7 +185,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_key": None})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -191,7 +200,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_list": [], "custom_dict": {}})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -206,7 +215,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_tags": [1, 2, 3]})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -224,7 +233,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_mapping": {'nested': 'value'}})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -242,7 +251,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_key": some_variable})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -261,7 +270,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_warehouse": get_warehouse('medium')})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -284,7 +293,7 @@ class TestRefactorCustomConfigsToMetaPython:
     dbt.config(materialized="table", meta={"custom_string": "hello", "custom_int": 42, "custom_bool": True, "custom_none": None, "custom_list": [1, 2], "custom_dict": {'a': 'b'}})
     return session.sql("SELECT 1")
 """
-        result = refactor_custom_configs_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -303,7 +312,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     random_config = dbt.config.meta_get("random_config")
     return session.sql(f"SELECT '{random_config}'")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -320,7 +329,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom_val = dbt.config.meta_get("custom_key", "default_value")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -337,7 +346,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val_b = dbt.config.meta_get("custom_b", "default")
     return session.sql(f"SELECT '{val_a}', '{val_b}'")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -350,7 +359,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     schema = dbt.config.get("schema")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -362,7 +371,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     dbt.config(materialized="table")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert not result.refactored
         assert result.refactored_content == input_python
@@ -379,7 +388,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom = dbt.config.meta_get("custom_key")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -401,7 +410,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val_d = dbt.config.meta_get('with_default_single', 'fallback')
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -429,7 +438,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     custom_y = dbt.config.meta_get("custom_y", "default")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -445,7 +454,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", None)
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -460,7 +469,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", [])
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -475,7 +484,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", {})
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -490,7 +499,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", 42)
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -505,7 +514,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", True)
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -520,7 +529,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", [1, 2, 3])
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -538,7 +547,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", fallback_value)
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -559,7 +568,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", get_default())
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -578,7 +587,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", outer(inner()))
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -597,7 +606,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     val = dbt.config.meta_get("custom_key", "value (with parens)")
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python
@@ -621,7 +630,7 @@ class TestMoveCustomConfigAccessToMetaPython:
     )
     return session.sql("SELECT 1")
 """
-        result = move_custom_config_access_to_meta_python(input_python, FakeSchemaSpecs(), "models")
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
 
         assert result.refactored
         assert result.refactored_content == expected_python

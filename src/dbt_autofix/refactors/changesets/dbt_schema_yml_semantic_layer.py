@@ -1,28 +1,28 @@
 import copy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLRuleRefactorResult
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str
 from dbt_autofix.semantic_definitions import MeasureInput, ModelAccessHelpers, SemanticDefinitions
 
 
-def changeset_merge_simple_metrics_with_models(
-    yml_str: str, semantic_definitions: SemanticDefinitions
-) -> YMLRuleRefactorResult:
+def changeset_merge_simple_metrics_with_models(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    assert config.semantic_definitions is not None
     return run_change_function_against_each_model(
-        yml_str,
-        semantic_definitions,
+        content.current_str,
+        config.semantic_definitions,
         combine_simple_metrics_with_their_input_measure,
         "merge_simple_metrics_with_model_metrics",
     )
 
 
 def changeset_merge_complex_metrics_with_models(
-    yml_str: str, semantic_definitions: SemanticDefinitions
+    content: YMLContent, config: YMLRefactorConfig
 ) -> YMLRuleRefactorResult:
+    assert config.semantic_definitions is not None
     return run_change_function_against_each_model(
-        yml_str,
-        semantic_definitions,
+        content.current_str,
+        config.semantic_definitions,
         merge_complex_metrics_with_model,
         "merge_complex_metrics_with_model_metrics",
     )
@@ -659,21 +659,22 @@ def add_metric_for_measures_in_model(
     return model_node, refactored, refactor_logs
 
 
-def changeset_add_metrics_for_measures(
-    yml_str: str,
-    semantic_definitions: SemanticDefinitions,
-) -> YMLRuleRefactorResult:
+def changeset_add_metrics_for_measures(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    assert config.semantic_definitions is not None
     return run_change_function_against_each_model(
-        yml_str,
-        semantic_definitions,
+        content.current_str,
+        config.semantic_definitions,
         add_metric_for_measures_in_model,
         "add_new_metrics_for_measures_to_model",
     )
 
 
 def changeset_merge_semantic_models_with_models(
-    yml_str: str, semantic_definitions: SemanticDefinitions
+    content: YMLContent, config: YMLRefactorConfig
 ) -> YMLRuleRefactorResult:
+    yml_str = content.current_str
+    semantic_definitions = config.semantic_definitions
+    assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -892,9 +893,10 @@ def merge_dimensions_with_model_columns(model_node: Dict[str, Any], dimensions: 
     return logs
 
 
-def changeset_delete_top_level_semantic_models(
-    yml_str: str, semantic_definitions: SemanticDefinitions
-) -> YMLRuleRefactorResult:
+def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    yml_str = content.current_str
+    semantic_definitions = config.semantic_definitions
+    assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -928,9 +930,11 @@ def changeset_delete_top_level_semantic_models(
 
 
 def changeset_migrate_metric_tags_field_to_config(
-    yml_str: str,
-    semantic_definitions: SemanticDefinitions,
+    content: YMLContent, config: YMLRefactorConfig
 ) -> YMLRuleRefactorResult:
+    yml_str = content.current_str
+    semantic_definitions = config.semantic_definitions
+    assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -971,8 +975,11 @@ def changeset_migrate_metric_tags_field_to_config(
 
 
 def changeset_migrate_or_delete_top_level_metrics(
-    yml_str: str, semantic_definitions: SemanticDefinitions
+    content: YMLContent, config: YMLRefactorConfig
 ) -> YMLRuleRefactorResult:
+    yml_str = content.current_str
+    semantic_definitions = config.semantic_definitions
+    assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}

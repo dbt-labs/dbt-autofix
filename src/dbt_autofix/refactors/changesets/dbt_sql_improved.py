@@ -2,8 +2,7 @@ import re
 from typing import List, Set, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLRuleRefactorResult
-from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
 
 # Statically compiled regex patterns for performance
 # Pattern to detect config variable shadowing
@@ -32,7 +31,7 @@ CHAINED_ACCESS_PATTERN = re.compile(
 
 
 def move_custom_config_access_to_meta_sql_improved(
-    sql_content: str, schema_specs: SchemaSpecs, node_type: str
+    content: SQLContent, config: SQLRefactorConfig
 ) -> SQLRuleRefactorResult:
     """Move custom config access to meta in SQL files using the new meta_get/meta_require methods.
 
@@ -42,12 +41,10 @@ def move_custom_config_access_to_meta_sql_improved(
     - Handles defaults correctly
     - Preserves validators (now supported in CompileConfig.meta_get())
     - Avoids false positives with better variable detection
-
-    Args:
-        sql_content: The SQL content to process
-        schema_specs: The schema specifications to use
-        node_type: The type of node to process
     """
+    sql_content = content.current_str
+    schema_specs = config.schema_specs
+    node_type = config.node_type
     refactored = False
     refactored_content = sql_content
     deprecation_refactors: List[DbtDeprecationRefactor] = []

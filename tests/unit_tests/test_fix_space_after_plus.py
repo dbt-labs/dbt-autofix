@@ -1,10 +1,20 @@
 """Tests for changeset_fix_space_after_plus function"""
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
 
 from dbt_autofix.refactors.changesets.dbt_project_yml import changeset_fix_space_after_plus
+from dbt_autofix.refactors.results import DbtProjectYMLRefactorConfig, YMLContent
+
+
+def _yml(yml_str: str) -> YMLContent:
+    return YMLContent(original_str=yml_str, original_parsed={}, current_str=yml_str)
+
+
+def _dbt_cfg(schema_specs=None) -> DbtProjectYMLRefactorConfig:
+    return DbtProjectYMLRefactorConfig(schema_specs=schema_specs, root_path=Path("."))
 
 
 @dataclass
@@ -70,7 +80,7 @@ models:
     +tags:
       - my-tag
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert not result.refactored
         assert len(result.deprecation_refactors) == 0
         assert result.refactored_yaml == input_yaml
@@ -95,7 +105,7 @@ models:
     +tags:
       - my-tag
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 1
         assert "Removed space after '+' in key '+ tags'" in result.deprecation_refactors[0].log
@@ -114,7 +124,7 @@ models:
     + materialized: table
     + schema: my_schema
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 3
 
@@ -141,7 +151,7 @@ models:
       - my-tag
     +schema: my_schema
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 1
 
@@ -167,7 +177,7 @@ models:
       subfolder:
         + materialized: view
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 2
 
@@ -190,7 +200,7 @@ models:
       - my-tag
     description: "Some description"
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
 
         # Verify comments are preserved
@@ -218,7 +228,7 @@ models:
       + tags:
         - folder-level
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 3
 
@@ -234,7 +244,7 @@ models:
     def test_empty_yaml(self, schema_specs: MockSchemaSpecs):
         """Test that empty YAML is handled correctly"""
         input_yaml = ""
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert not result.refactored
         assert len(result.deprecation_refactors) == 0
 
@@ -250,7 +260,7 @@ models:
     tags:
       - my-tag
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert not result.refactored
         assert len(result.deprecation_refactors) == 0
         assert result.refactored_yaml == input_yaml
@@ -265,7 +275,7 @@ models:
     + tags:
       - my-tag
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 1
         # The '+ tags:' is on line 6
@@ -281,7 +291,7 @@ models:
     + my tags:  # This is invalid and won't be matched by our regex
       - tag1
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         # Should not match because "my tags" has a space in the key name itself
         assert not result.refactored
         assert len(result.deprecation_refactors) == 0
@@ -297,7 +307,7 @@ seeds:
     + tags:
       - seed-tag
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 2
         assert "+schema:" in result.refactored_yaml
@@ -313,7 +323,7 @@ tests:
     + schema: tests
     + store_failures: true
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 2
         assert "+schema:" in result.refactored_yaml
@@ -330,7 +340,7 @@ snapshots:
     + tags:
       - snapshot-tag
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 2
         assert "+target_schema:" in result.refactored_yaml
@@ -352,7 +362,7 @@ models:
     +tags:
       - et_lapsed_credit_automation
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
         assert result.refactored
         assert len(result.deprecation_refactors) == 1
 
@@ -377,7 +387,7 @@ models:
     + tags:
       - my-tag
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
 
         # Should fix the valid key (+tags) and remove the invalid one
         assert result.refactored
@@ -406,7 +416,7 @@ models:
     + invalid_key1: value
     + invalid_key2: value
 """
-        result = changeset_fix_space_after_plus(input_yaml, schema_specs)
+        result = changeset_fix_space_after_plus(_yml(input_yaml), _dbt_cfg(schema_specs))
 
         # Invalid keys should be removed
         assert result.refactored

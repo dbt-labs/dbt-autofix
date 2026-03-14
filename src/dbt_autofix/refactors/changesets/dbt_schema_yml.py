@@ -3,30 +3,26 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
+import yaml
 import yamllint.linter
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLRuleRefactorResult
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, yaml_config
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
 
-def changeset_replace_fancy_quotes(yml_str: str) -> YMLRuleRefactorResult:
+def changeset_replace_fancy_quotes(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
     """Replace fancy quotes with appropriate handling based on context.
 
     Fancy quotes (U+201C ", U+201D ") are handled differently based on their position:
     - Fancy quotes used as YAML delimiters: Replaced with regular quotes
     - Fancy quotes inside string values: Preserved using placeholders (restored later)
-
-    Args:
-        yml_str: The YAML string to process
-
-    Returns:
-        YMLRuleRefactorResult containing the refactored YAML
     """
+    yml_str = content.current_str
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     # Check if we have any fancy quotes to replace
@@ -195,10 +191,12 @@ def _would_close_string(line: str, pos: int) -> bool:
     return '"' not in remaining
 
 
-def changeset_owner_properties_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
+def changeset_owner_properties_yml_str(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
     """Generates a refactored YAML string from a single YAML file
     - moves all the owner fields that are not in owner_properties under config.meta
     """
+    yml_str = content.current_str
+    schema_specs = config.schema_specs
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -268,15 +266,9 @@ def restructure_owner_properties(
     return node, refactored, refactor_logs
 
 
-def changeset_remove_tab_only_lines(yml_str: str) -> YMLRuleRefactorResult:
-    """Remove lines that contain only tabs from YAML files.
-
-    Args:
-        yml_str: The YAML string to process
-
-    Returns:
-        YMLRuleRefactorResult containing the refactored YAML and any changes made
-    """
+def changeset_remove_tab_only_lines(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    """Remove lines that contain only tabs from YAML files."""
+    yml_str = content.current_str
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -304,18 +296,13 @@ def changeset_remove_tab_only_lines(yml_str: str) -> YMLRuleRefactorResult:
     )
 
 
-def changeset_remove_indentation_version(yml_str: str) -> YMLRuleRefactorResult:
+def changeset_remove_indentation_version(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
     """Standardizes the format of 'version: 2' in YAML files.
 
     This function looks for any variations of whitespace around 'version: 2' and
     standardizes them to the format 'version: 2'.
-
-    Args:
-        yml_str: The YAML string to process
-
-    Returns:
-        YMLRuleRefactorResult containing the refactored YAML and any changes made
     """
+    yml_str = content.current_str
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -345,8 +332,9 @@ def changeset_remove_indentation_version(yml_str: str) -> YMLRuleRefactorResult:
     )
 
 
-def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
+def changeset_remove_extra_tabs(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
     """Removes extra tabs in the YAML files"""
+    yml_str = content.current_str
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     current_yaml = yml_str
@@ -383,7 +371,7 @@ def changeset_remove_extra_tabs(yml_str: str) -> YMLRuleRefactorResult:
     )
 
 
-def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
+def changeset_refactor_yml_str(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
     """Generates a refactored YAML string from a single YAML file
     - moves all the config fields under config
     - moves all the meta fields under config.meta and merges with existing config.meta
@@ -391,6 +379,8 @@ def changeset_refactor_yml_str(yml_str: str, schema_specs: SchemaSpecs) -> YMLRu
     - provide some information if some fields don't exist but are similar to allowed fields
     - removes custom top-level keys
     """
+    yml_str = content.current_str
+    schema_specs = config.schema_specs
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -806,8 +796,10 @@ def restructure_yaml_keys_for_node(
 
 
 def changeset_replace_non_alpha_underscores_in_name_values(
-    yml_str: str, schema_specs: SchemaSpecs
+    content: YMLContent, config: YMLRefactorConfig
 ) -> YMLRuleRefactorResult:
+    yml_str = content.current_str
+    schema_specs = config.schema_specs
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
 
@@ -946,19 +938,14 @@ def replace_node_name_non_alpha_with_underscores(node: dict[str, str], node_type
     return node_copy, node_deprecation_refactors
 
 
-def changeset_remove_duplicate_models(yml_str: str) -> YMLRuleRefactorResult:
+def changeset_remove_duplicate_models(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
     """Removes duplicate model definitions in YAML files, keeping the last occurrence.
 
     When the same model name appears multiple times in the models list, this function
     removes all but the last occurrence, aligning with dbt's behavior of keeping the
     last definition when duplicates exist.
-
-    Args:
-        yml_str: The YAML string to process
-
-    Returns:
-        YMLRuleRefactorResult containing the refactored YAML and any changes made
     """
+    yml_str = content.current_str
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = DbtYAML().load(yml_str) or {}
@@ -1014,6 +1001,39 @@ def changeset_remove_duplicate_models(yml_str: str) -> YMLRuleRefactorResult:
 
     return YMLRuleRefactorResult(
         rule_name="remove_duplicate_models",
+        refactored=refactored,
+        refactored_yaml=refactored_yaml,
+        original_yaml=yml_str,
+        deprecation_refactors=deprecation_refactors,
+    )
+
+
+def changeset_remove_duplicate_keys(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    """Removes duplicate keys in the YAML files, keeping the first occurrence only.
+
+    The drawback of keeping the first occurrence is that we need to use PyYAML and then lose all the comments that were in the file
+    """
+    yml_str = content.current_str
+    refactored = False
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    for p in yamllint.linter.run(yml_str, yaml_config):
+        if p.rule == "key-duplicates":
+            refactored = True
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Found duplicate keys: line {p.line} - {p.desc}", deprecation="DuplicateYAMLKeysDeprecation"
+                )
+            )
+
+    if refactored:
+        # we use dump from ruamel to keep indentation style but this loses quite a bit of formatting though
+        refactored_yaml = DbtYAML().dump_to_string(yaml.safe_load(yml_str))
+    else:
+        refactored_yaml = yml_str
+
+    return YMLRuleRefactorResult(
+        rule_name="remove_duplicate_keys",
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,

@@ -1,13 +1,11 @@
 import re
 from copy import deepcopy
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLRuleRefactorResult
-from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
 
 CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
 
@@ -75,7 +73,7 @@ def extract_config_macro(sql_content: str) -> Optional[str]:
     return None
 
 
-def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:
+def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
     """Remove unmatched {% endmacro %} and {% endif %} tags from SQL content.
 
     Handles:
@@ -84,12 +82,8 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:
     - Nested blocks
     - Jinja comments ({# ... #})
     - Malformed comments ({#% ... %}, {# ... %#}, {#% ... %#})
-
-    Args:
-        sql_content: The SQL content to process
-
-    Returns: SQLRuleRefactorResult
     """
+    sql_content = content.current_str
     # Regex patterns for Jinja tag and comment matching
     JINJA_TAG_PATTERN = re.compile(r"{%-?\+?\s*((?s:.*?))\s*\+?-?%}", re.DOTALL)
     # Match proper comments {# ... #}
@@ -238,16 +232,11 @@ def remove_unmatched_endings(sql_content: str) -> SQLRuleRefactorResult:
     )
 
 
-def refactor_custom_configs_to_meta_sql(
-    sql_content: str, schema_specs: SchemaSpecs, node_type: str
-) -> SQLRuleRefactorResult:
-    """Move custom configs to meta in SQL files.
-
-    Args:
-        sql_content: The SQL content to process
-        schema_specs: The schema specifications to use
-        node_type: The type of node to process
-    """
+def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
+    """Move custom configs to meta in SQL files."""
+    sql_content = content.current_str
+    schema_specs = config.schema_specs
+    node_type = config.node_type
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     refactor_warnings: list[str] = []
@@ -449,16 +438,10 @@ def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[
         return ", ".join(items)
 
 
-def move_custom_config_access_to_meta_sql(
-    sql_content: str, schema_specs: SchemaSpecs, node_type: str
-) -> SQLRuleRefactorResult:
-    """Move custom config access to meta in SQL files.
-
-    Args:
-        sql_content: The SQL content to process
-        schema_specs: The schema specifications to use
-        node_type: The type of node to process
-    """
+def move_custom_config_access_to_meta_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
+    """Move custom config access to meta in SQL files."""
+    sql_content = content.current_str
+    schema_specs = config.schema_specs
     refactored = False
     refactored_content = sql_content
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -526,7 +509,9 @@ def move_custom_config_access_to_meta_sql(
     )
 
 
-def rename_sql_file_names_with_spaces(sql_content: str, sql_file_path: Path):
+def rename_sql_file_names_with_spaces(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
+    sql_content = content.current_str
+    sql_file_path = content.current_file_path
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     new_file_path = sql_file_path
