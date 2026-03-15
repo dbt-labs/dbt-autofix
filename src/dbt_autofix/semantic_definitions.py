@@ -2,20 +2,22 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+from ruamel.yaml.comments import CommentedMap
+
 from dbt_autofix.jinja import statically_parse_ref
-from dbt_autofix.refactors.yml import DbtYAML
+from dbt_autofix.refactors.yml import get_list, load_yaml
 
 
 class SemanticDefinitions:
     def __init__(self, root_path: Path, dbt_paths: List[str]):
         # All semantic models from semantic_models: entries in schema.yml files, keyed by their model key
-        self.semantic_models: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = self.collect_semantic_models(
+        self.semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = self.collect_semantic_models(
             root_path, dbt_paths
         )
         # All model keys from models: entries in schema.yml files
         self.model_yml_keys: Set[Tuple[str, Optional[str]]] = self.collect_model_yml_keys(root_path, dbt_paths)
         # All top-level metrics from metrics: entries in schema.yml files
-        self.initial_metrics: Dict[str, Dict[str, Any]] = self.collect_metrics(root_path, dbt_paths)
+        self.initial_metrics: Dict[str, CommentedMap] = self.collect_metrics(root_path, dbt_paths)
 
         self.merged_semantic_models: Set[str] = set()
         self._semantic_model_to_dbt_model_name_map: Dict[str, str] = {}
@@ -27,14 +29,14 @@ class SemanticDefinitions:
         # Simple metrics created just to replace an old measure.  This maps
         # (measure_name, fill_nulls_with value, join_to_timespine value) to the new metric
         # to help power deduplication lookups.
-        self._artificial_metric_names_map: Dict[Tuple[str, Optional[str], Optional[bool]], Dict[str, Any]] = {}
+        self._artificial_metric_names_map: Dict[Tuple[str, Optional[str], Optional[bool]], CommentedMap] = {}
         self._set_of_artificial_metric_names: Set[str] = set()
 
-    def get_semantic_model(self, dbt_model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def get_semantic_model(self, dbt_model_name: str, version: Optional[str] = None) -> CommentedMap:
         model_key = (dbt_model_name, version)
-        return self.semantic_models.get(model_key)
+        return self.semantic_models.get(model_key) or CommentedMap()
 
-    def get_model_key_for_semantic_model(self, semantic_model: Dict[str, Any]) -> Optional[Tuple[str, Optional[str]]]:
+    def get_model_key_for_semantic_model(self, semantic_model: CommentedMap) -> Optional[Tuple[str, Optional[str]]]:
         ref = statically_parse_ref(semantic_model["model"])
         if not ref:
             return None
@@ -61,7 +63,7 @@ class SemanticDefinitions:
         measure_name: str,
         fill_nulls_with: Optional[str],
         join_to_timespine: Optional[bool],
-        metric: Dict[str, Any],
+        metric: CommentedMap,
     ):
         self._artificial_metric_names_map[(measure_name, fill_nulls_with, join_to_timespine)] = metric
         self._set_of_artificial_metric_names.add(metric["name"])
@@ -72,7 +74,7 @@ class SemanticDefinitions:
         measure_name: str,
         fill_nulls_with: Optional[str],
         join_to_timespine: Optional[bool],
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[CommentedMap]:
         return self._artificial_metric_names_map.get((measure_name, fill_nulls_with, join_to_timespine))
 
     def artificial_metric_name_exists(self, metric_name: str) -> bool:
@@ -83,15 +85,14 @@ class SemanticDefinitions:
 
     def collect_semantic_models(
         self, root_path: Path, dbt_paths: List[str]
-    ) -> Dict[Tuple[str, Optional[str]], Dict[str, Any]]:
-        semantic_models: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = {}
+    ) -> Dict[Tuple[str, Optional[str]], CommentedMap]:
+        semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = {}
         for dbt_path in dbt_paths:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
             for yml_file in yaml_files:
-                yml_str = yml_file.read_text()
-                yml_dict = DbtYAML().load(yml_str) or {}
+                yml_dict = load_yaml(yml_file)
                 if "semantic_models" in yml_dict:
                     for semantic_model in yml_dict["semantic_models"]:
                         ref = statically_parse_ref(semantic_model["model"])
@@ -106,8 +107,7 @@ class SemanticDefinitions:
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
             for yml_file in yaml_files:
-                yml_str = yml_file.read_text()
-                yml_dict = DbtYAML().load(yml_str) or {}
+                yml_dict = load_yaml(yml_file)
                 if "models" in yml_dict:
                     for model in yml_dict["models"]:
                         if not model.get("versions"):
@@ -117,16 +117,15 @@ class SemanticDefinitions:
                                 model_keys.add((model["name"], version.get("v")))
         return model_keys
 
-    def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, Dict[str, Any]]:
+    def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, CommentedMap]:
         """Returns dict of metric_name -> metric"""
-        metrics: Dict[str, Dict[str, Any]] = {}
+        metrics: Dict[str, CommentedMap] = {}
         for dbt_path in dbt_paths:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
             )
             for yml_file in sorted(yaml_files):
-                yml_str = yml_file.read_text()
-                yml_dict = DbtYAML().load(yml_str) or {}
+                yml_dict = load_yaml(yml_file)
                 if "metrics" in yml_dict:
                     for metric in yml_dict["metrics"]:
                         metrics[metric["name"]] = metric
@@ -143,7 +142,7 @@ class MeasureInput:
     alias: Optional[str] = None
 
     @staticmethod
-    def parse_from_yaml(yaml_obj: Optional[Union[str, Dict[str, Any]]]) -> Optional["MeasureInput"]:
+    def parse_from_yaml(yaml_obj: Optional[Union[str, CommentedMap]]) -> Optional["MeasureInput"]:
         if yaml_obj is None:
             return None
         if isinstance(yaml_obj, dict):
@@ -175,14 +174,14 @@ class MeasureInput:
 
 class ModelAccessHelpers:
     @staticmethod
-    def get_measures_from_model(semantic_model_node: Dict[str, Any]) -> List[Dict[str, Any]]:
-        return semantic_model_node.get("measures", [])
+    def get_measures_from_model(semantic_model_node: CommentedMap) -> List[CommentedMap]:
+        return get_list(semantic_model_node, "measures")
 
     @staticmethod
     def maybe_get_measure_from_model(
-        semantic_model_node: Dict[str, Any],
+        semantic_model_node: CommentedMap,
         measure_name: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[CommentedMap]:
         all_measures = ModelAccessHelpers.get_measures_from_model(semantic_model_node)
         return next(
             (m for m in all_measures if m["name"] == measure_name),

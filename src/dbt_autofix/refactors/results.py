@@ -2,11 +2,12 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from rich.console import Console
 
 from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes
+from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 console = Console()
 
@@ -20,6 +21,66 @@ class DbtDeprecationRefactor:
         ret_dict = {"deprecation": self.deprecation, "log": self.log}
 
         return ret_dict
+
+
+# ---------------------------------------------------------------------------
+# Content dataclasses (constructed by apply_changeset, passed to changeset functions)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class YMLContent:
+    original_str: str
+    original_parsed: Any  # CommentedMap from ruamel, parsed once at YMLRefactorResult creation
+    current_str: str
+
+
+@dataclass
+class SQLContent:
+    original_str: str
+    current_str: str
+    current_file_path: Path
+
+
+@dataclass
+class PythonContent:
+    original_str: str
+    current_str: str
+
+
+# ---------------------------------------------------------------------------
+# Config dataclasses (built once per file batch, passed to each changeset)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class YMLRefactorConfig:
+    schema_specs: Any  # SchemaSpecs
+    semantic_definitions: Optional[SemanticDefinitions] = None
+
+
+@dataclass
+class DbtProjectYMLRefactorConfig:
+    schema_specs: Any  # SchemaSpecs
+    root_path: Path
+    exclude_dbt_project_keys: bool = False
+
+
+@dataclass
+class SQLRefactorConfig:
+    schema_specs: Any  # SchemaSpecs
+    node_type: str
+
+
+@dataclass
+class PythonRefactorConfig:
+    schema_specs: Any  # SchemaSpecs
+    node_type: str
+
+
+# ---------------------------------------------------------------------------
+# Rule-level result dataclasses
+# ---------------------------------------------------------------------------
 
 
 @dataclass
@@ -44,13 +105,76 @@ class YMLRuleRefactorResult:
 
 
 @dataclass
+class SQLRuleRefactorResult:
+    rule_name: str
+    refactored: bool
+    refactored_content: str
+    original_content: str
+    deprecation_refactors: list[DbtDeprecationRefactor]
+    refactored_file_path: Optional[Path] = None
+    refactor_warnings: list[str] = field(default_factory=list)
+
+    @property
+    def refactor_logs(self):
+        return [refactor.log for refactor in self.deprecation_refactors]
+
+    def to_dict(self) -> dict:
+        ret_dict = {
+            "rule_name": self.rule_name,
+            "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
+        }
+        return ret_dict
+
+
+@dataclass
+class PythonRuleRefactorResult:
+    rule_name: str
+    refactored: bool
+    refactored_content: str
+    original_content: str
+    deprecation_refactors: list[DbtDeprecationRefactor]
+    refactor_warnings: list[str] = field(default_factory=list)
+
+    @property
+    def refactor_logs(self):
+        return [refactor.log for refactor in self.deprecation_refactors]
+
+    def to_dict(self) -> dict:
+        ret_dict = {
+            "rule_name": self.rule_name,
+            "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
+        }
+        return ret_dict
+
+
+# ---------------------------------------------------------------------------
+# File-level result dataclasses
+# ---------------------------------------------------------------------------
+
+
+@dataclass
 class YMLRefactorResult:
     dry_run: bool
     file_path: Path
-    refactored: bool
+    original_parsed: Any
     refactored_yaml: str
     original_yaml: str
     refactors: list[YMLRuleRefactorResult]
+
+    @property
+    def refactored(self) -> bool:
+        return any(r.refactored for r in self.refactors)
+
+    def apply_changeset(self, func: Callable, config: Any) -> None:
+        content = YMLContent(
+            original_str=self.original_yaml,
+            original_parsed=self.original_parsed,
+            current_str=self.refactored_yaml,
+        )
+        result = func(content, config)
+        if result.refactored:
+            self.refactors.append(result)
+            self.refactored_yaml = result.refactored_yaml
 
     def update_yaml_file(self) -> None:
         """Update the YAML file with the refactored content"""
@@ -88,37 +212,33 @@ class YMLRefactorResult:
 
 
 @dataclass
-class SQLRuleRefactorResult:
-    rule_name: str
-    refactored: bool
-    refactored_content: str
-    original_content: str
-    deprecation_refactors: list[DbtDeprecationRefactor]
-    refactored_file_path: Optional[Path] = None
-    refactor_warnings: list[str] = field(default_factory=list)
-
-    @property
-    def refactor_logs(self):
-        return [refactor.log for refactor in self.deprecation_refactors]
-
-    def to_dict(self) -> dict:
-        ret_dict = {
-            "rule_name": self.rule_name,
-            "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
-        }
-        return ret_dict
-
-
-@dataclass
 class SQLRefactorResult:
     dry_run: bool
     file_path: Path
-    refactored: bool
     refactored_file_path: Path
     refactored_content: str
     original_content: str
     refactors: list[SQLRuleRefactorResult]
     has_warnings: bool = False
+
+    @property
+    def refactored(self) -> bool:
+        return any(r.refactored for r in self.refactors) or (self.refactored_file_path != self.file_path)
+
+    def apply_changeset(self, func: Callable, config: Any) -> None:
+        content = SQLContent(
+            original_str=self.original_content,
+            current_str=self.refactored_content,
+            current_file_path=self.refactored_file_path,
+        )
+        result = func(content, config)
+        self.refactors.append(result)
+        if result.refactored:
+            self.refactored_content = result.refactored_content
+            if result.refactored_file_path:
+                self.refactored_file_path = result.refactored_file_path
+        if result.refactor_warnings:
+            self.has_warnings = True
 
     def update_sql_file(self) -> None:
         """Update the SQL file with the refactored content"""
@@ -171,36 +291,30 @@ class SQLRefactorResult:
                     console.print(f"    Warning: {warning}", style="red")
 
 
-@dataclass(frozen=True)
-class PythonRuleRefactorResult:
-    rule_name: str
-    refactored: bool
-    refactored_content: str
-    original_content: str
-    deprecation_refactors: list[DbtDeprecationRefactor]
-    refactor_warnings: list[str] = field(default_factory=list)
-
-    @property
-    def refactor_logs(self):
-        return [refactor.log for refactor in self.deprecation_refactors]
-
-    def to_dict(self) -> dict:
-        ret_dict = {
-            "rule_name": self.rule_name,
-            "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
-        }
-        return ret_dict
-
-
-@dataclass(frozen=True)
+@dataclass
 class PythonRefactorResult:
     dry_run: bool
     file_path: Path
-    refactored: bool
     refactored_content: str
     original_content: str
     refactors: list[PythonRuleRefactorResult]
     has_warnings: bool = False
+
+    @property
+    def refactored(self) -> bool:
+        return any(r.refactored for r in self.refactors)
+
+    def apply_changeset(self, func: Callable, config: Any) -> None:
+        content = PythonContent(
+            original_str=self.original_content,
+            current_str=self.refactored_content,
+        )
+        result = func(content, config)
+        self.refactors.append(result)
+        if result.refactored:
+            self.refactored_content = result.refactored_content
+        if result.refactor_warnings:
+            self.has_warnings = True
 
     def update_python_file(self) -> None:
         """Update the Python file with the refactored content"""

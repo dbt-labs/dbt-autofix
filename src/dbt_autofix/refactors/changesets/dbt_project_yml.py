@@ -4,8 +4,13 @@ from typing import Any, List, Optional
 
 import yamllint.config
 
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLRuleRefactorResult
-from dbt_autofix.refactors.yml import DbtYAML
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    DbtProjectYMLRefactorConfig,
+    YMLContent,
+    YMLRuleRefactorResult,
+)
+from dbt_autofix.refactors.yml import DbtYAML, get_dict, load_yaml
 from dbt_autofix.retrieve_schemas import DbtProjectSpecs, SchemaSpecs
 
 config = """
@@ -17,9 +22,11 @@ yaml_config = yamllint.config.YamlLintConfig(config)
 
 
 def changeset_dbt_project_remove_deprecated_config(
-    yml_str: str, exclude_dbt_project_keys: bool = False
+    content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
     """Remove deprecated keys"""
+    yml_str = content.current_str
+    exclude_dbt_project_keys = config.exclude_dbt_project_keys
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
@@ -40,7 +47,7 @@ def changeset_dbt_project_remove_deprecated_config(
         "source-paths": "ConfigSourcePathDeprecation",
     }
 
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     for deprecated_field, _ in dict_deprecated_fields_with_defaults.items():
         if deprecated_field in yml_dict:
@@ -142,7 +149,7 @@ def rec_check_yaml_path(
                 # Custom config not in meta (leaf value)
                 else:
                     log_msg = f"Moved custom config '{k}' to '+meta'"
-                    meta = yml_dict.get("+meta", {})
+                    meta = get_dict(yml_dict, "+meta")
                     meta.update({k: v})
                     yml_dict["+meta"] = meta
 
@@ -176,7 +183,7 @@ def rec_check_yaml_path(
                                 if subkey.startswith("+"):
                                     # +prefixed subkey in a dict config - move to +meta
                                     log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)"
-                                    meta = yml_dict.get("+meta", {})
+                                    meta = get_dict(yml_dict, "+meta")
                                     meta[subkey] = subvalue
                                     yml_dict["+meta"] = meta
                                     del v[subkey]
@@ -189,7 +196,7 @@ def rec_check_yaml_path(
                                 elif subkey not in allowed_props:
                                     # Subkey not in allowed properties - move to +meta
                                     log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})"
-                                    meta = yml_dict.get("+meta", {})
+                                    meta = get_dict(yml_dict, "+meta")
                                     meta[subkey] = subvalue
                                     yml_dict["+meta"] = meta
                                     del v[subkey]
@@ -203,7 +210,7 @@ def rec_check_yaml_path(
                 # Unrecognized config (not in schema), move to +meta
                 else:
                     log_msg = f"Moved unrecognized config '{k}' to '+meta'"
-                    meta = yml_dict.get("+meta", {})
+                    meta = get_dict(yml_dict, "+meta")
                     meta.update({key_without_plus: v})
                     yml_dict["+meta"] = meta
                     del yml_dict[k]
@@ -231,15 +238,18 @@ def _path_exists_as_file(path: Path) -> bool:
 
 
 def changeset_dbt_project_prefix_plus_for_config(
-    yml_str: str, path: Path, schema_specs: SchemaSpecs
+    content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
     """Update keys for the config in dbt_project.yml under to prefix it with a `+`"""
+    yml_str = content.current_str
+    path = config.root_path
+    schema_specs = config.schema_specs
     all_refactor_logs: List[str] = []
 
-    yml_dict = DbtYAML().load(yml_str) or {}
+    yml_dict = load_yaml(yml_str)
 
     for node_type, node_fields in schema_specs.dbtproject_specs_per_node_type.items():
-        for k, v in (yml_dict.get(node_type) or {}).copy().items():
+        for k, v in get_dict(yml_dict, node_type).copy().items():
             # check if this is the project name
             if k == yml_dict["name"]:
                 # Only recurse if v is a dict (should be project configs)
@@ -289,8 +299,11 @@ def changeset_dbt_project_prefix_plus_for_config(
     )
 
 
-def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorResult:
-    yml_dict = DbtYAML().load(yml_str) or {}
+def changeset_dbt_project_flip_behavior_flags(
+    content: YMLContent, config: DbtProjectYMLRefactorConfig
+) -> YMLRuleRefactorResult:
+    yml_str = content.current_str
+    yml_dict = load_yaml(yml_str)
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     refactored = False
 
@@ -320,12 +333,15 @@ def changeset_dbt_project_flip_behavior_flags(yml_str: str) -> YMLRuleRefactorRe
     )
 
 
-def changeset_dbt_project_flip_test_arguments_behavior_flag(yml_str: str) -> YMLRuleRefactorResult:
-    yml_dict = DbtYAML().load(yml_str) or {}
+def changeset_dbt_project_flip_test_arguments_behavior_flag(
+    content: YMLContent, config: DbtProjectYMLRefactorConfig
+) -> YMLRuleRefactorResult:
+    yml_str = content.current_str
+    yml_dict = load_yaml(yml_str)
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     refactored = False
 
-    existing_flags = yml_dict.get("flags", {})
+    existing_flags = get_dict(yml_dict, "flags")
     if (
         existing_flags.get("require_generic_test_arguments_property") is False
         or "require_generic_test_arguments_property" not in existing_flags
@@ -349,7 +365,7 @@ def changeset_dbt_project_flip_test_arguments_behavior_flag(yml_str: str) -> YML
     )
 
 
-def changeset_fix_space_after_plus(yml_str: str, schema_specs: SchemaSpecs) -> YMLRuleRefactorResult:
+def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRefactorConfig) -> YMLRuleRefactorResult:
     """Fix keys that have a space after the '+' prefix (e.g., '+ tags' -> '+tags').
 
     This fixes the dbt1060 error: "Ignored unexpected key '+ tags'".
@@ -357,14 +373,9 @@ def changeset_fix_space_after_plus(yml_str: str, schema_specs: SchemaSpecs) -> Y
     an invalid key. This function:
     - Fixes valid keys by removing the space (e.g., '+ tags:' -> '+tags:')
     - Removes invalid keys entirely (keys not in the schema), including their values
-
-    Args:
-        yml_str: The YAML string to process
-        schema_specs: The schema specifications to validate corrected keys against
-
-    Returns:
-        YMLRuleRefactorResult containing the refactored YAML and any changes made
     """
+    yml_str = content.current_str
+    schema_specs = config.schema_specs
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 

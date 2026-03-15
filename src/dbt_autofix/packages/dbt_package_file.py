@@ -12,7 +12,7 @@ from dbt_fusion_package_tools.upgrade_status import (
 from dbt_fusion_package_tools.version_utils import Matchers
 from rich.console import Console
 
-from dbt_autofix.refactors.yml import read_file
+from dbt_autofix.refactors.yml import load_yaml
 
 console = Console()
 
@@ -78,7 +78,7 @@ def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
         return {}
 
     try:
-        parsed_package_file = read_file(packages_yml_path)
+        parsed_package_file = load_yaml(packages_yml_path)
     except:
         console.log(f"Error when parsing package file {packages_yml_path}")
         return {}
@@ -97,7 +97,7 @@ def load_yaml_from_dependencies_yml(dependencies_yml_path: Path) -> dict[Any, An
         return {}
 
     try:
-        parsed_package_file = read_file(dependencies_yml_path)
+        parsed_package_file = load_yaml(dependencies_yml_path)
     except:
         console.log(f"Error when parsing package file {dependencies_yml_path}")
         return {}

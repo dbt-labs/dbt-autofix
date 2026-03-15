@@ -1,5 +1,5 @@
 {{ config(
-    materialized='table',
+    materialized='table', 
     meta={'sla_hours': 24}
 ) }}
 
