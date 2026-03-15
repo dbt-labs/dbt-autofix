@@ -10,9 +10,12 @@ from dbt_autofix.refactors.results import (
     Location,
     YMLContent,
     YMLRuleRefactorResult,
+    find_key_at_path,
+    location_of_key,
 )
 from dbt_autofix.refactors.yml import DbtYAML, get_dict, load_yaml
 from dbt_autofix.retrieve_schemas import DbtProjectSpecs
+
 
 config = """
 rules:
@@ -31,12 +34,14 @@ def changeset_dbt_project_remove_deprecated_config(
 
 class _RemoveDeprecatedConfigImpl:
     def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.content = content
         self.yml_str = content.current_str
         self.config = config
         self.exclude_dbt_project_keys = config.exclude_dbt_project_keys
         self.yml_dict = load_yaml(self.yml_str)
         self._refactors: list[DbtDeprecationRefactor] = []
         self._refactored = False
+        self._pending_location_resolution: list = []
 
     def execute(self) -> YMLRuleRefactorResult:
         self._process()
@@ -46,6 +51,7 @@ class _RemoveDeprecatedConfigImpl:
             refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
             original_yaml=self.yml_str,
             deprecation_refactors=self._refactors,
+            pending_location_resolution=self._pending_location_resolution,
         )
 
     def _process(self) -> None:
@@ -75,6 +81,7 @@ class _RemoveDeprecatedConfigImpl:
                         DbtDeprecationRefactor(
                             log=f"Removed the deprecated field '{deprecated_field}'",
                             deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                            original_location=location_of_key(self.content.original_parsed, deprecated_field),
                         )
                     )
                     del self.yml_dict[deprecated_field]
@@ -85,6 +92,7 @@ class _RemoveDeprecatedConfigImpl:
                         DbtDeprecationRefactor(
                             log=f"Removed the deprecated field '{deprecated_field}' that wasn't set to the default value",
                             deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                            original_location=location_of_key(self.content.original_parsed, deprecated_field),
                         )
                     )
                     del self.yml_dict[deprecated_field]
@@ -94,22 +102,26 @@ class _RemoveDeprecatedConfigImpl:
             if deprecated_field in self.yml_dict:
                 self._refactored = True
                 if new_field not in self.yml_dict:
-                    self._refactors.append(
-                        DbtDeprecationRefactor(
-                            log=f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'",
-                            deprecation=dict_fields_to_deprecation_class[deprecated_field],
-                        )
+                    refactor = DbtDeprecationRefactor(
+                        log=f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'",
+                        deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                        original_location=location_of_key(self.content.original_parsed, deprecated_field),
                     )
                     self.yml_dict[new_field] = self.yml_dict[deprecated_field]
                 else:
-                    self._refactors.append(
-                        DbtDeprecationRefactor(
-                            log=f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'",
-                            deprecation=dict_fields_to_deprecation_class[deprecated_field],
-                        )
+                    refactor = DbtDeprecationRefactor(
+                        log=f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'",
+                        deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                        original_location=location_of_key(self.content.original_parsed, deprecated_field),
                     )
                     self.yml_dict[new_field] = self.yml_dict[new_field] + self.yml_dict[deprecated_field]
                 del self.yml_dict[deprecated_field]
+                self._refactors.append(refactor)
+
+                def resolve(parsed, refactor=refactor, field=new_field):
+                    refactor.edited_location = location_of_key(parsed, field)
+
+                self._pending_location_resolution.append(resolve)
 
 
 def _path_exists_as_file(path: Path) -> bool:
@@ -125,6 +137,7 @@ def changeset_dbt_project_prefix_plus_for_config(
 
 class _PrefixPlusForConfigImpl:
     def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.content = content
         self.yml_str = content.current_str
         self.config = config
         self.schema_specs = config.schema_specs
@@ -132,6 +145,7 @@ class _PrefixPlusForConfigImpl:
         self.yml_dict = load_yaml(self.yml_str)
         self._refactors: list[DbtDeprecationRefactor] = []
         self._refactored = False
+        self._pending_location_resolution: list = []
 
     def execute(self) -> YMLRuleRefactorResult:
         self._process()
@@ -141,6 +155,7 @@ class _PrefixPlusForConfigImpl:
             refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
             original_yaml=self.yml_str,
             deprecation_refactors=self._refactors,
+            pending_location_resolution=self._pending_location_resolution,
         )
 
     def _process(self) -> None:
@@ -151,7 +166,7 @@ class _PrefixPlusForConfigImpl:
                     # Only recurse if v is a dict (should be project configs)
                     if isinstance(v, dict):
                         self.yml_dict[node_type][k] = self._rec_check_yaml_path(
-                            v, self.root_path / node_type, node_fields, node_type
+                            v, self.root_path / node_type, node_fields, node_type, current_yaml_path=[node_type, k]
                         )
                     # else: non-dict value, keep as-is (unusual but possible)
 
@@ -162,13 +177,18 @@ class _PrefixPlusForConfigImpl:
                     # Config key is valid - if it doesn't have +, add it
                     if not k.startswith("+"):
                         new_k = f"+{k}"
-                        self._refactors.append(
-                            DbtDeprecationRefactor(
-                                log=f"Added '+' in front of top level config '{k}'",
-                                deprecation="MissingPlusPrefixDeprecation",
-                            )
+                        refactor = DbtDeprecationRefactor(
+                            log=f"Added '+' in front of top level config '{k}'",
+                            deprecation="MissingPlusPrefixDeprecation",
+                            original_location=find_key_at_path(self.content.original_parsed, [node_type, k]),
                         )
+                        self._refactors.append(refactor)
                         self._refactored = True
+
+                        def resolve(parsed, refactor=refactor, new_k=new_k, node_type=node_type):
+                            refactor.edited_location = find_key_at_path(parsed, [node_type, new_k])
+
+                        self._pending_location_resolution.append(resolve)
                         self.yml_dict[node_type][new_k] = v
                         del self.yml_dict[node_type][k]
                     # else: already has +, keep as-is, value is the config value (don't recurse)
@@ -184,6 +204,7 @@ class _PrefixPlusForConfigImpl:
                             packages_path / k / node_type,
                             node_fields,
                             node_type,
+                            current_yaml_path=[node_type, k],
                         )
                     # else: non-dict value, keep as-is (unusual but possible)
 
@@ -193,9 +214,13 @@ class _PrefixPlusForConfigImpl:
         path: Path,
         node_fields: DbtProjectSpecs,
         node_type: Optional[str] = None,
+        current_yaml_path: Optional[list] = None,
     ) -> Any:
         # TODO: what about individual models in the config there?
         # indivdual models would show up here but without the `.sql` (or `.py`)
+
+        if current_yaml_path is None:
+            current_yaml_path = []
 
         # Type guard: if yml_dict is not a dict, return it as-is
         # This handles cases where config values are lists, ints, strings, bools, etc.
@@ -213,29 +238,45 @@ class _PrefixPlusForConfigImpl:
                         new_k = f"+{k}"
                         yml_dict[new_k] = v
                         del yml_dict[k]
-                        self._refactors.append(
-                            DbtDeprecationRefactor(
-                                log=f"Added '+' in front of the nested config '{k}'",
-                                deprecation="MissingPlusPrefixDeprecation",
-                            )
+                        refactor = DbtDeprecationRefactor(
+                            log=f"Added '+' in front of the nested config '{k}'",
+                            deprecation="MissingPlusPrefixDeprecation",
+                            original_location=find_key_at_path(
+                                self.content.original_parsed, [*current_yaml_path, k]
+                            ),
                         )
+                        self._refactors.append(refactor)
                         self._refactored = True
+
+                        def resolve(parsed, refactor=refactor, cp=current_yaml_path, new_k=new_k):
+                            refactor.edited_location = find_key_at_path(parsed, [*cp, new_k])
+
+                        self._pending_location_resolution.append(resolve)
                     elif isinstance(v, dict):
                         # Logical grouping (subdirectory-like structure): recurse
-                        yml_dict[k] = self._rec_check_yaml_path(v, path / k, node_fields, node_type)
+                        yml_dict[k] = self._rec_check_yaml_path(
+                            v, path / k, node_fields, node_type, current_yaml_path=[*current_yaml_path, k]
+                        )
                     else:
                         # Custom leaf config: move to +meta
                         meta = get_dict(yml_dict, "+meta")
                         meta.update({k: v})
                         yml_dict["+meta"] = meta
                         del yml_dict[k]
-                        self._refactors.append(
-                            DbtDeprecationRefactor(
-                                log=f"Moved custom config '{k}' to '+meta'",
-                                deprecation="MissingPlusPrefixDeprecation",
-                            )
+                        refactor = DbtDeprecationRefactor(
+                            log=f"Moved custom config '{k}' to '+meta'",
+                            deprecation="MissingPlusPrefixDeprecation",
+                            original_location=find_key_at_path(
+                                self.content.original_parsed, [*current_yaml_path, k]
+                            ),
                         )
+                        self._refactors.append(refactor)
                         self._refactored = True
+
+                        def resolve(parsed, refactor=refactor, cp=current_yaml_path):
+                            refactor.edited_location = find_key_at_path(parsed, [*cp, "+meta"])
+
+                        self._pending_location_resolution.append(resolve)
 
                 # Case 2: Key already has "+" prefix - validate it
                 else:
@@ -254,26 +295,44 @@ class _PrefixPlusForConfigImpl:
                                         meta[subkey] = subvalue
                                         yml_dict["+meta"] = meta
                                         del v[subkey]
-                                        self._refactors.append(
-                                            DbtDeprecationRefactor(
-                                                log=f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)",
-                                                deprecation="MissingPlusPrefixDeprecation",
-                                            )
+                                        refactor = DbtDeprecationRefactor(
+                                            log=f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)",
+                                            deprecation="MissingPlusPrefixDeprecation",
+                                            original_location=find_key_at_path(
+                                                self.content.original_parsed, [*current_yaml_path, k, subkey]
+                                            ),
                                         )
+                                        self._refactors.append(refactor)
                                         self._refactored = True
+
+                                        def resolve(parsed, refactor=refactor, cp=current_yaml_path, sk=subkey):
+                                            refactor.edited_location = find_key_at_path(
+                                                parsed, [*cp, "+meta", sk]
+                                            )
+
+                                        self._pending_location_resolution.append(resolve)
                                     elif subkey not in allowed_props:
                                         # Subkey not in allowed properties - move to +meta
                                         meta = get_dict(yml_dict, "+meta")
                                         meta[subkey] = subvalue
                                         yml_dict["+meta"] = meta
                                         del v[subkey]
-                                        self._refactors.append(
-                                            DbtDeprecationRefactor(
-                                                log=f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})",
-                                                deprecation="MissingPlusPrefixDeprecation",
-                                            )
+                                        refactor = DbtDeprecationRefactor(
+                                            log=f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})",
+                                            deprecation="MissingPlusPrefixDeprecation",
+                                            original_location=find_key_at_path(
+                                                self.content.original_parsed, [*current_yaml_path, k, subkey]
+                                            ),
                                         )
+                                        self._refactors.append(refactor)
                                         self._refactored = True
+
+                                        def resolve(parsed, refactor=refactor, cp=current_yaml_path, sk=subkey):
+                                            refactor.edited_location = find_key_at_path(
+                                                parsed, [*cp, "+meta", sk]
+                                            )
+
+                                        self._pending_location_resolution.append(resolve)
 
                     else:
                         # Unrecognized +prefixed config: strip + and move to +meta
@@ -281,20 +340,29 @@ class _PrefixPlusForConfigImpl:
                         meta.update({key_without_plus: v})
                         yml_dict["+meta"] = meta
                         del yml_dict[k]
-                        self._refactors.append(
-                            DbtDeprecationRefactor(
-                                log=f"Moved unrecognized config '{k}' to '+meta'",
-                                deprecation="MissingPlusPrefixDeprecation",
-                            )
+                        refactor = DbtDeprecationRefactor(
+                            log=f"Moved unrecognized config '{k}' to '+meta'",
+                            deprecation="MissingPlusPrefixDeprecation",
+                            original_location=find_key_at_path(
+                                self.content.original_parsed, [*current_yaml_path, k]
+                            ),
                         )
+                        self._refactors.append(refactor)
                         self._refactored = True
+
+                        def resolve(parsed, refactor=refactor, cp=current_yaml_path, kwp=key_without_plus):
+                            refactor.edited_location = find_key_at_path(parsed, [*cp, "+meta", kwp])
+
+                        self._pending_location_resolution.append(resolve)
 
             # Only recurse into dict values if the path exists (real directory/logical grouping)
             # Do NOT recurse into values of valid config keys (like +persist_docs, +labels)
             elif isinstance(yml_dict[k], dict):
                 is_valid_config = k.startswith("+") and k[1:] in node_fields.allowed_config_fields_dbt_project
                 if not is_valid_config:
-                    yml_dict[k] = self._rec_check_yaml_path(yml_dict[k], path / k, node_fields, node_type)
+                    yml_dict[k] = self._rec_check_yaml_path(
+                        yml_dict[k], path / k, node_fields, node_type, current_yaml_path=[*current_yaml_path, k]
+                    )
         return yml_dict
 
 
@@ -306,11 +374,13 @@ def changeset_dbt_project_flip_behavior_flags(
 
 class _FlipBehaviorFlagsImpl:
     def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.content = content
         self.yml_str = content.current_str
         self.config = config
         self.yml_dict = load_yaml(self.yml_str)
         self._refactors: list[DbtDeprecationRefactor] = []
         self._refactored = False
+        self._pending_location_resolution: list = []
 
     def execute(self) -> YMLRuleRefactorResult:
         self._process()
@@ -320,6 +390,7 @@ class _FlipBehaviorFlagsImpl:
             refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
             original_yaml=self.yml_str,
             deprecation_refactors=self._refactors,
+            pending_location_resolution=self._pending_location_resolution,
         )
 
     def _process(self) -> None:
@@ -327,18 +398,24 @@ class _FlipBehaviorFlagsImpl:
             "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands"
         }
 
+        original_flags = self.content.original_parsed.get("flags", {})
         for key in self.yml_dict:
             if key == "flags":
                 for behavior_change_flag in behavior_change_flag_to_explainations:
                     if self.yml_dict["flags"].get(behavior_change_flag) is False:
                         self.yml_dict["flags"][behavior_change_flag] = True
                         self._refactored = True
-                        self._refactors.append(
-                            DbtDeprecationRefactor(
-                                log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
-                                deprecation="SourceFreshnessProjectHooksNotRun",
-                            )
+                        refactor = DbtDeprecationRefactor(
+                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
+                            deprecation="SourceFreshnessProjectHooksNotRun",
+                            original_location=location_of_key(original_flags, behavior_change_flag),
                         )
+                        self._refactors.append(refactor)
+
+                        def resolve(parsed, refactor=refactor, flag=behavior_change_flag):
+                            refactor.edited_location = location_of_key(get_dict(parsed, "flags"), flag)
+
+                        self._pending_location_resolution.append(resolve)
 
 
 def changeset_dbt_project_flip_test_arguments_behavior_flag(
@@ -349,11 +426,13 @@ def changeset_dbt_project_flip_test_arguments_behavior_flag(
 
 class _FlipTestArgumentsBehaviorFlagImpl:
     def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.content = content
         self.yml_str = content.current_str
         self.config = config
         self.yml_dict = load_yaml(self.yml_str)
         self._refactors: list[DbtDeprecationRefactor] = []
         self._refactored = False
+        self._pending_location_resolution: list = []
 
     def execute(self) -> YMLRuleRefactorResult:
         self._process()
@@ -363,23 +442,29 @@ class _FlipTestArgumentsBehaviorFlagImpl:
             refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
             original_yaml=self.yml_str,
             deprecation_refactors=self._refactors,
+            pending_location_resolution=self._pending_location_resolution,
         )
 
     def _process(self) -> None:
+        _flag = "require_generic_test_arguments_property"
         existing_flags = get_dict(self.yml_dict, "flags")
-        if (
-            existing_flags.get("require_generic_test_arguments_property") is False
-            or "require_generic_test_arguments_property" not in existing_flags
-        ):
+        flag_existed = _flag in existing_flags
+        if existing_flags.get(_flag) is False or not flag_existed:
             self.yml_dict["flags"] = existing_flags
-            self.yml_dict["flags"]["require_generic_test_arguments_property"] = True
+            self.yml_dict["flags"][_flag] = True
             self._refactored = True
-            self._refactors.append(
-                DbtDeprecationRefactor(
-                    log="Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
-                    deprecation="MissingGenericTestArgumentsPropertyDeprecation",
-                )
+            original_flags = self.content.original_parsed.get("flags", {})
+            refactor = DbtDeprecationRefactor(
+                log=f"Set flag '{_flag}' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
+                deprecation="MissingGenericTestArgumentsPropertyDeprecation",
+                original_location=location_of_key(original_flags, _flag) if flag_existed else None,
             )
+            self._refactors.append(refactor)
+
+            def resolve(parsed, refactor=refactor):
+                refactor.edited_location = location_of_key(get_dict(parsed, "flags"), _flag)
+
+            self._pending_location_resolution.append(resolve)
 
 
 def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRefactorConfig) -> YMLRuleRefactorResult:
