@@ -5,11 +5,31 @@
     "refactors": [
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Model 'model with spaces' - Updated 'name' from 'model with spaces' to 'model_with_spaces'."
+        "log": "Model 'model with spaces' - Updated 'name' from 'model with spaces' to 'model_with_spaces'.",
+        "original_location": {
+          "line": 2,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 2,
+          "start": 4,
+          "end": 9
+        }
       },
       {
         "deprecation": "ExposureNameDeprecation",
-        "log": "Exposure 'exposure with spaces' - Updated 'name' from 'exposure with spaces' to 'exposure_with_spaces'."
+        "log": "Exposure 'exposure with spaces' - Updated 'name' from 'exposure with spaces' to 'exposure_with_spaces'.",
+        "original_location": {
+          "line": 5,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 5,
+          "start": 4,
+          "end": 9
+        }
       }
     ]
   },
@@ -19,7 +39,17 @@
     "refactors": [
       {
         "deprecation": "SourceFreshnessProjectHooksNotRun",
-        "log": "Set flag 'source_freshness_run_project_hooks' to 'True' - This will run project hooks (on-run-start/on-run-end) as part of source freshness commands."
+        "log": "Set flag 'source_freshness_run_project_hooks' to 'True' - This will run project hooks (on-run-start/on-run-end) as part of source freshness commands.",
+        "original_location": {
+          "line": 22,
+          "start": 2,
+          "end": 37
+        },
+        "edited_location": {
+          "line": 22,
+          "start": 2,
+          "end": 37
+        }
       }
     ]
   },

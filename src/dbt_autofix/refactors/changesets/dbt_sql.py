@@ -5,9 +5,25 @@ from typing import Any, Dict, List, Optional, Tuple
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    Location,
+    SQLContent,
+    SQLRefactorConfig,
+    SQLRuleRefactorResult,
+)
 
 CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
+
+
+def _find_sql_key_location(content: str, key: str) -> Optional[Location]:
+    m = re.search(rf"\b{re.escape(key)}\b", content)
+    if not m:
+        return None
+    prefix = content[: m.start()]
+    line = prefix.count("\n") + 1
+    line_start = prefix.rfind("\n") + 1
+    return Location(line=line, start=m.start() - line_start, end=m.end() - line_start)
 
 
 def extract_config_macro(sql_content: str) -> Optional[str]:
@@ -188,10 +204,14 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
                     line_num = 1
                 else:
                     line_num = prefix.count("\n", first_newline) + 1
+                line_start = prefix.rfind("\n") + 1
+                start_col = start_pos - line_start
+                end_col = end_pos - line_start
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endmacro %}} near line {line_num}",
                         deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
+                        original_location=Location(line=line_num, start=start_col, end=end_col),
                     )
                 )
             else:
@@ -209,10 +229,14 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
                     line_num = 1
                 else:
                     line_num = prefix.count("\n", first_newline) + 1
+                line_start = prefix.rfind("\n") + 1
+                start_col = start_pos - line_start
+                end_col = end_pos - line_start
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed unmatched {{% endif %}} near line {line_num}",
                         deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
+                        original_location=Location(line=line_num, start=start_col, end=end_col),
                     )
                 )
             else:
@@ -235,6 +259,7 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
 def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
     """Move custom configs to meta in SQL files."""
     sql_content = content.current_str
+    original_content = content.original_str
     schema_specs = config.schema_specs
     node_type = config.node_type
     refactored = False
@@ -327,28 +352,8 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
     if refactored_sql_configs != original_sql_configs:
         refactored = True
 
-        # Generate deprecation refactors
-        for renamed_config in renamed_configs:
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Config '{renamed_config}' is a common misspelling of '{COMMON_CONFIG_MISSPELLINGS[renamed_config]}', it has been renamed.",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
-                )
-            )
-
-        if moved_to_meta:
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to 'meta'",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
-                )
-            )
-
-        # Serialize the refactored config back to string
+        # Compute refactored content first so we can find edited locations
         new_config_str = _serialize_config_macro_call(refactored_sql_configs, config_source_map)
-
-        # Replace the config macro in the SQL content
-        # Use extract_config_macro to find the exact location (handles nested Jinja)
         old_config = extract_config_macro(sql_content)
         if old_config:
             new_config = f"{{{{ config({new_config_str}\n) }}}}"
@@ -359,6 +364,33 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
                 return f"{{{{ config({new_config_str}\n) }}}}"
 
             refactored_content = CONFIG_MACRO_PATTERN.sub(replace_config, sql_content, count=1)
+
+        # Generate deprecation refactors
+        _orig_for_loc = original_content if original_content is not None else sql_content
+        for renamed_config in renamed_configs:
+            new_name = COMMON_CONFIG_MISSPELLINGS[renamed_config]
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Config '{renamed_config}' is a common misspelling of '{new_name}', it has been renamed.",
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                    original_location=_find_sql_key_location(_orig_for_loc, renamed_config),
+                    edited_location=_find_sql_key_location(refactored_content, new_name),
+                )
+            )
+
+        if moved_to_meta:
+            m_orig = re.search(r"\{\{\s*config\s*\(", _orig_for_loc)
+            orig_loc = Location(line=_orig_for_loc[: m_orig.start()].count("\n") + 1) if m_orig else None
+            m_edit = re.search(r"\{\{\s*config\s*\(", refactored_content)
+            edit_loc = Location(line=refactored_content[: m_edit.start()].count("\n") + 1) if m_edit else None
+            deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Moved custom config{'s' if len(moved_to_meta) > 1 else ''} {moved_to_meta} to 'meta'",
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                    original_location=orig_loc,
+                    edited_location=edit_loc,
+                )
+            )
 
     return SQLRuleRefactorResult(
         rule_name="move_custom_configs_to_meta_sql",
@@ -490,12 +522,18 @@ def move_custom_config_access_to_meta_sql(content: SQLContent, config: SQLRefact
 
     # Apply replacements in reverse order to avoid messing up indices
     for start, end, replacement, original in reversed(replacements):
+        prefix = refactored_content[:start]
+        line_num = prefix.count("\n") + 1
+        line_start = prefix.rfind("\n") + 1
+        col = start - line_start
         refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f'Refactored "{original}" to "{replacement}"',
                 # Core does not explicitly raise a deprecation for usage of config.get() in SQL files
                 deprecation=None,
+                original_location=Location(line=line_num, start=col, end=end - line_start),
+                edited_location=Location(line=line_num, start=col),
             )
         )
 
