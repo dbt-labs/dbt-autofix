@@ -3,7 +3,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from ruamel.yaml.comments import CommentedMap
 
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    YMLContent,
+    YMLRefactorConfig,
+    YMLRuleRefactorResult,
+    location_of_key,
+    location_of_node,
+)
 from dbt_autofix.refactors.yml import dict_to_yaml_str, get_dict, get_list, load_yaml
 from dbt_autofix.semantic_definitions import MeasureInput, ModelAccessHelpers, SemanticDefinitions
 
@@ -38,6 +45,7 @@ def run_change_function_against_each_model(
 ) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
+    pending_location_resolution = []
     yml_dict = load_yaml(yml_str)
 
     for i, node in enumerate(get_list(yml_dict, "models")):
@@ -46,15 +54,37 @@ def run_change_function_against_each_model(
         if node_refactored:
             refactored = True
             yml_dict["models"][i] = processed_node
-            for log in node_refactor_logs:
-                deprecation_refactors.append(DbtDeprecationRefactor(log=log, deprecation=None))
+            for log, metric_name in node_refactor_logs:
+                # Use initial_metrics (loaded from original files) for accurate original locations
+                orig_metric = semantic_definitions.initial_metrics.get(metric_name) if metric_name else None
+                original_location = location_of_node(orig_metric) if orig_metric is not None else None
+                r = DbtDeprecationRefactor(
+                    log=log, deprecation=None, original_location=original_location
+                )
+                deprecation_refactors.append(r)
 
+                def resolve(parsed, refactor=r, model_index=i, metric_name=metric_name):
+                    model = get_list(parsed, "models")[model_index]
+                    if metric_name:
+                        metric = next(
+                            (m for m in get_list(model, "metrics") if m.get("name") == metric_name),
+                            None,
+                        )
+                        if metric is not None:
+                            refactor.edited_location = location_of_node(metric)
+                            return
+                    refactor.edited_location = location_of_node(model)
+
+                pending_location_resolution.append(resolve)
+
+    refactored_yaml = dict_to_yaml_str(yml_dict) if refactored else yml_str
     return YMLRuleRefactorResult(
         rule_name=rule_name,
         refactored=refactored,
-        refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
+        refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
+        pending_location_resolution=pending_location_resolution,
     )
 
 
@@ -69,9 +99,9 @@ def append_metric_to_model(
 
 def combine_simple_metrics_with_their_input_measure(
     model_node: CommentedMap, semantic_definitions: SemanticDefinitions
-) -> Tuple[CommentedMap, bool, List[str]]:
+) -> Tuple[CommentedMap, bool, List[Tuple[str, Optional[str]]]]:
     refactored = False
-    refactor_logs: List[str] = []
+    refactor_logs: List[Tuple[str, Optional[str]]] = []
 
     semantic_model = semantic_definitions.get_semantic_model(model_node["name"])
 
@@ -142,7 +172,10 @@ def combine_simple_metrics_with_their_input_measure(
         semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=measure_name)
         refactored = True
         refactor_logs.append(
-            f"Folded input measure '{measure_name}' into simple metric '{metric_name}' and moved '{metric_name}' to model '{model_node['name']}'."
+            (
+                f"Folded input measure '{measure_name}' into simple metric '{metric_name}' and moved '{metric_name}' to model '{model_node['name']}'.",
+                metric_name,
+            )
         )
 
     return model_node, refactored, refactor_logs
@@ -153,10 +186,10 @@ def _maybe_merge_cumulative_metric_with_model(
     model_node: CommentedMap,
     semantic_model: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[bool, List[str], bool]:
+) -> Tuple[bool, List[Tuple[str, Optional[str]]], bool]:
     refactored = False
     moved_to_model = False
-    refactor_logs: List[str] = []
+    refactor_logs: List[Tuple[str, Optional[str]]] = []
     metric_name = metric["name"]
     if metric_name in semantic_definitions.merged_metrics:
         # we've already merged this metric, so no need to do anything further!
@@ -185,8 +218,11 @@ def _maybe_merge_cumulative_metric_with_model(
 
     if is_new_metric:
         refactor_logs.append(
-            f"Added hidden simple metric '{artificial_simple_metric['name']}' to "
-            f"model '{model_node['name']}' as input for cumulative metric '{metric_name}'.",
+            (
+                f"Added hidden simple metric '{artificial_simple_metric['name']}' to "
+                f"model '{model_node['name']}' as input for cumulative metric '{metric_name}'.",
+                artificial_simple_metric["name"],
+            )
         )
     semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
 
@@ -205,7 +241,10 @@ def _maybe_merge_cumulative_metric_with_model(
     append_metric_to_model(model_node, metric)
     refactored = True
     refactor_logs.append(
-        f"Added cumulative metric '{metric_name}' to model '{model_node['name']}'.",
+        (
+            f"Added cumulative metric '{metric_name}' to model '{model_node['name']}'.",
+            metric_name,
+        )
     )
 
     moved_to_model = refactored
@@ -217,9 +256,9 @@ def _maybe_merge_conversion_metric_with_model(
     model_node: CommentedMap,
     semantic_model: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[bool, List[str], bool]:
+) -> Tuple[bool, List[Tuple[str, Optional[str]]], bool]:
     refactored = False
-    refactor_logs: List[str] = []
+    refactor_logs: List[Tuple[str, Optional[str]]] = []
     base_metric_in_model = False
     conversion_metric_in_model = False
     moved_to_model = False
@@ -246,8 +285,11 @@ def _maybe_merge_conversion_metric_with_model(
         )
         if is_new_base_metric:
             refactor_logs.append(
-                f"Added hidden simple metric '{artificial_base_metric['name']}' to "
-                f"model '{model_node['name']}' as base_metric input for conversion metric '{metric_name}'.",
+                (
+                    f"Added hidden simple metric '{artificial_base_metric['name']}' to "
+                    f"model '{model_node['name']}' as base_metric input for conversion metric '{metric_name}'.",
+                    artificial_base_metric["name"],
+                )
             )
         metric["base_metric"] = base_measure_input.to_metric_input_yaml_obj(
             metric_name=artificial_base_metric["name"],
@@ -274,8 +316,11 @@ def _maybe_merge_conversion_metric_with_model(
         )
         if is_new_conversion_metric:
             refactor_logs.append(
-                f"Added hidden simple metric '{artificial_conversion_metric['name']}' to "
-                f"model '{model_node['name']}' as conversion_metric input for conversion metric '{metric_name}'.",
+                (
+                    f"Added hidden simple metric '{artificial_conversion_metric['name']}' to "
+                    f"model '{model_node['name']}' as conversion_metric input for conversion metric '{metric_name}'.",
+                    artificial_conversion_metric["name"],
+                )
             )
         metric["conversion_metric"] = conversion_measure_input.to_metric_input_yaml_obj(
             metric_name=artificial_conversion_metric["name"],
@@ -289,7 +334,7 @@ def _maybe_merge_conversion_metric_with_model(
     if base_metric_in_model and conversion_metric_in_model:
         append_metric_to_model(model_node, metric)
         semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
-        refactor_logs.append(f"Added conversion metric '{metric_name}' to model '{model_node['name']}'.")
+        refactor_logs.append((f"Added conversion metric '{metric_name}' to model '{model_node['name']}'.", metric_name))
         refactored = True  # this is probably redundant, but just to be safe
         metric.update(conversion_type_params)  # safe because measures should alreday be popped.
         type_params.pop("conversion_type_params", None)
@@ -338,9 +383,9 @@ def try_to_merge_complex_metric_with_model_recursive(
     model_node: CommentedMap,
     semantic_model: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[bool, List[str], bool]:
+) -> Tuple[bool, List[Tuple[str, Optional[str]]], bool]:
     refactored = False
-    refactor_logs: List[str] = []
+    refactor_logs: List[Tuple[str, Optional[str]]] = []
 
     metric_name = metric["name"]
 
@@ -411,7 +456,9 @@ def try_to_merge_complex_metric_with_model_recursive(
             model_node["metrics"].append(metric)
             semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
             refactored = True
-            refactor_logs.append(f"Added derived metric '{metric_name}' with to model '{model_node['name']}'.")
+            refactor_logs.append(
+                (f"Added derived metric '{metric_name}' with to model '{model_node['name']}'.", metric_name)
+            )
 
         return refactored, refactor_logs, moved_to_model
 
@@ -453,7 +500,7 @@ def try_to_merge_complex_metric_with_model_recursive(
             model_node["metrics"].append(metric)
             semantic_definitions.mark_metric_as_merged(metric_name=metric_name, measure_name=None)
             refactored = True
-            refactor_logs.append(f"Added ratio metric '{metric_name}' to model '{model_node['name']}'.")
+            refactor_logs.append((f"Added ratio metric '{metric_name}' to model '{model_node['name']}'.", metric_name))
             moved_to_model = True
 
         return refactored, refactor_logs, moved_to_model
@@ -464,9 +511,9 @@ def try_to_merge_complex_metric_with_model_recursive(
 def merge_complex_metrics_with_model(
     model_node: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[CommentedMap, bool, List[str]]:
+) -> Tuple[CommentedMap, bool, List[Tuple[str, Optional[str]]]]:
     refactored = False
-    refactor_logs: List[str] = []
+    refactor_logs: List[Tuple[str, Optional[str]]] = []
     semantic_model = semantic_definitions.get_semantic_model(model_node["name"])
     if not semantic_model:
         # Nothing to work with here, so we should just skip this model.
@@ -611,10 +658,10 @@ def get_or_create_metric_for_measure(
 def add_metric_for_measures_in_model(
     model_node: CommentedMap,
     semantic_definitions: SemanticDefinitions,
-) -> Tuple[CommentedMap, bool, List[str]]:
+) -> Tuple[CommentedMap, bool, List[Tuple[str, Optional[str]]]]:
     """Add metrics for the measures in a semantic model."""
     refactored = False
-    refactor_logs: List[str] = []
+    refactor_logs: List[Tuple[str, Optional[str]]] = []
 
     semantic_model = semantic_definitions.get_semantic_model(model_node["name"])
 
@@ -656,7 +703,9 @@ def add_metric_for_measures_in_model(
 
         if is_new_metric:
             refactored = True
-            refactor_logs.append(f"Added simple metric '{metric.get('name')}' to model '{model_node['name']}'.")
+            refactor_logs.append(
+                (f"Added simple metric '{metric.get('name')}' to model '{model_node['name']}'.", metric.get("name"))
+            )
 
     return model_node, refactored, refactor_logs
 
@@ -679,10 +728,15 @@ def changeset_merge_semantic_models_with_models(
     assert semantic_definitions is not None
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
+    pending_location_resolution = []
     yml_dict = load_yaml(yml_str)
+    models = get_list(yml_dict, "models")
+    original_models_count = len(models)
+    new_model_count = 0
 
     # Merge semantic models with existing models in yml
-    for i, node in enumerate(get_list(yml_dict, "models")):
+    for i, node in enumerate(models):
+        original_location = location_of_node(node)
         processed_node, node_refactored, node_refactor_logs = merge_semantic_models_with_model(
             node, semantic_definitions
         )
@@ -691,7 +745,13 @@ def changeset_merge_semantic_models_with_models(
             refactored = True
             yml_dict["models"][i] = processed_node
             for log in node_refactor_logs:
-                deprecation_refactors.append(DbtDeprecationRefactor(log=log, deprecation=None))
+                r = DbtDeprecationRefactor(log=log, deprecation=None, original_location=original_location)
+                deprecation_refactors.append(r)
+
+                def resolve(parsed, refactor=r, model_index=i):
+                    refactor.edited_location = location_of_node(get_list(parsed, "models")[model_index])
+
+                pending_location_resolution.append(resolve)
 
     # Create new model entries for semantic models that don't have a corresponding model entry in any .yml file
     # and merge semantic models with them
@@ -710,15 +770,26 @@ def changeset_merge_semantic_models_with_models(
             if new_model_node_refactored:
                 refactored = True
                 yml_dict["models"].append(processed_new_model_node)
+                edited_model_index = original_models_count + new_model_count
+                new_model_count += 1
+                original_location = location_of_node(semantic_model)
                 for log in new_model_node_refactor_logs:
-                    deprecation_refactors.append(DbtDeprecationRefactor(log=log, deprecation=None))
+                    r = DbtDeprecationRefactor(log=log, deprecation=None, original_location=original_location)
+                    deprecation_refactors.append(r)
 
+                    def resolve(parsed, refactor=r, model_index=edited_model_index):
+                        refactor.edited_location = location_of_node(get_list(parsed, "models")[model_index])
+
+                    pending_location_resolution.append(resolve)
+
+    refactored_yaml = dict_to_yaml_str(yml_dict) if refactored else yml_str
     return YMLRuleRefactorResult(
         rule_name="restructure_owner_properties",
         refactored=refactored,
-        refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
+        refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
+        pending_location_resolution=pending_location_resolution,
     )
 
 
@@ -901,6 +972,8 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = load_yaml(yml_str)
 
+    orig_semantic_models = {sm["name"]: sm for sm in get_list(content.original_parsed, "semantic_models")}
+
     top_level_semantic_models = get_list(yml_dict, "semantic_models")
     new_semantic_models = []
 
@@ -909,7 +982,9 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Deleted top-level semantic model '{semantic_model['name']}'.", deprecation=None
+                    log=f"Deleted top-level semantic model '{semantic_model['name']}'.",
+                    deprecation=None,
+                    original_location=location_of_node(orig_semantic_models[semantic_model["name"]]) if semantic_model["name"] in orig_semantic_models else None,
                 )
             )
         else:
@@ -941,7 +1016,9 @@ def changeset_migrate_metric_tags_field_to_config(
     metrics = get_list(yml_dict, "metrics")
     transformed_metrics = []
 
-    for metric in metrics:
+    original_metrics = {m["name"]: m for m in get_list(content.original_parsed, "metrics")}
+    pending_location_resolution = []
+    for metric_i, metric in enumerate(metrics):
         if deprecated_tags := metric.pop("tags", None):
             if not isinstance(deprecated_tags, list):
                 break
@@ -953,11 +1030,23 @@ def changeset_migrate_metric_tags_field_to_config(
             metric_config["tags"] = deprecated_tags
             metric["config"] = metric_config
             refactored = True
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Migrated metric '{metric['name']}' tags field to config.", deprecation=None
-                )
+            orig_metric_node = original_metrics.get(metric["name"])
+            refactor = DbtDeprecationRefactor(
+                log=f"Migrated metric '{metric['name']}' tags field to config.",
+                deprecation=None,
+                original_location=location_of_key(orig_metric_node, "tags") if orig_metric_node else None,
             )
+            deprecation_refactors.append(refactor)
+            metric_name = metric["name"]
+
+            def resolve(parsed, refactor=refactor, name=metric_name):
+                for model in get_list(parsed, "models"):
+                    for metric in get_list(model, "metrics"):
+                        if metric.get("name") == name:
+                            refactor.edited_location = location_of_key(get_dict(metric, "config"), "tags")
+                            return
+
+            pending_location_resolution.append(resolve)
             # we use the initial_metrics as a way to work on many metrics later without having to
             # find them again in the restructured yaml, so we need to update the represenation right
             # now just to be safe.
@@ -965,12 +1054,14 @@ def changeset_migrate_metric_tags_field_to_config(
         transformed_metrics.append(metric)
     if refactored:
         yml_dict["metrics"] = transformed_metrics
+    refactored_yaml = dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str
     return YMLRuleRefactorResult(
         rule_name="migrate_metric_tags_field_to_config",
         refactored=refactored,
-        refactored_yaml=dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str,
+        refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
+        pending_location_resolution=pending_location_resolution,
     )
 
 
@@ -984,15 +1075,24 @@ def changeset_migrate_or_delete_top_level_metrics(
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     yml_dict = load_yaml(yml_str)
 
-    top_level_metrics = sorted(get_list(yml_dict, "metrics"), key=lambda x: x.get("name"))
-    transformed_metrics = []
+    metric_locations = {m["name"]: location_of_node(m) for m in get_list(content.original_parsed, "metrics")}
 
+    raw_metrics = yml_dict.get("metrics") or []
+    top_level_metrics = sorted(raw_metrics, key=lambda x: x.get("name"))
+    transformed_metrics = []
+    transformed_index = 0
+
+    pending_location_resolution = []
     for metric in top_level_metrics:
         # Do not include in transformed_metrics, effectively removing the metric from top-level specification
         if metric["name"] in semantic_definitions.merged_metrics:
             refactored = True
             deprecation_refactors.append(
-                DbtDeprecationRefactor(log=f"Deleted top-level metric '{metric['name']}'.", deprecation=None)
+                DbtDeprecationRefactor(
+                    log=f"Deleted top-level metric '{metric['name']}'.",
+                    deprecation=None,
+                    original_location=metric_locations.get(metric["name"]),
+                )
             )
         else:
             # Transform metric to be compatible with new syntax, but leave metric at top-level
@@ -1044,22 +1144,30 @@ def changeset_migrate_or_delete_top_level_metrics(
 
             transformed_metrics.append(metric)
             refactored = True
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Updated top-level metric '{metric['name']}' to be compatible with new syntax, but left at top-level.",
-                    deprecation=None,
-                )
+            refactor = DbtDeprecationRefactor(
+                log=f"Updated top-level metric '{metric['name']}' to be compatible with new syntax, but left at top-level.",
+                deprecation=None,
+                original_location=metric_locations.get(id(metric)),
             )
+            deprecation_refactors.append(refactor)
+
+            def resolve(parsed, refactor=refactor, metric_index=transformed_index):
+                refactor.edited_location = location_of_node(get_list(parsed, "metrics")[metric_index])
+
+            pending_location_resolution.append(resolve)
+            transformed_index += 1
 
     if not transformed_metrics:
         yml_dict.pop("metrics", None)
     else:
         yml_dict["metrics"] = transformed_metrics
 
+    refactored_yaml = dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str
     return YMLRuleRefactorResult(
         rule_name="migrate_or_delete_top_level_metrics",
         refactored=refactored,
-        refactored_yaml=dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str,
+        refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
+        pending_location_resolution=pending_location_resolution,
     )

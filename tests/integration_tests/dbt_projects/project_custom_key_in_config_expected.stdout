@@ -23,15 +23,45 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'customer_metrics' - Config 'owner_team' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 19,
+          "line": 7,
+          "start": 8
+        },
+        "log": "Model 'customer_metrics' - Config 'owner_team' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 17,
+          "line": 6,
+          "start": 6
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'customer_metrics' - Config 'data_classification' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 28,
+          "line": 8,
+          "start": 8
+        },
+        "log": "Model 'customer_metrics' - Config 'data_classification' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 26,
+          "line": 7,
+          "start": 6
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'order_summary' - Config 'owner_team' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 19,
+          "line": 12,
+          "start": 8
+        },
+        "log": "Model 'order_summary' - Config 'owner_team' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 17,
+          "line": 10,
+          "start": 6
+        }
       }
     ]
   },
