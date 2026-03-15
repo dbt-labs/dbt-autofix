@@ -5,11 +5,31 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Analyse 'analysis_name' - Field 'custom_field' is not an allowed config - Moved under config.meta."
+        "log": "Analyse 'analysis_name' - Field 'custom_field' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "line": 4,
+          "start": 4,
+          "end": 17
+        },
+        "edited_location": {
+          "line": 7,
+          "start": 8,
+          "end": 21
+        }
       },
       {
         "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Analyse 'analysis_name' - Field 'docs' moved under config."
+        "log": "Analyse 'analysis_name' - Field 'docs' moved under config.",
+        "original_location": {
+          "line": 5,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 8,
+          "start": 6,
+          "end": 11
+        }
       }
     ]
   },
@@ -19,7 +39,17 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Group 'finance' - Field 'custom_field' is not an allowed config - Moved under config.meta."
+        "log": "Group 'finance' - Field 'custom_field' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "line": 6,
+          "start": 4,
+          "end": 17
+        },
+        "edited_location": {
+          "line": 9,
+          "start": 8,
+          "end": 21
+        }
       }
     ]
   },
@@ -29,15 +59,45 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'my_first_dbt_model' - Config 'custom_config' is not an allowed config - Moved under config.meta."
+        "log": "Model 'my_first_dbt_model' - Config 'custom_config' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "line": 5,
+          "start": 6,
+          "end": 20
+        },
+        "edited_location": {
+          "line": 9,
+          "start": 8,
+          "end": 22
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'my_first_dbt_model' - Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed."
+        "log": "Model 'my_first_dbt_model' - Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed.",
+        "original_location": {
+          "line": 6,
+          "start": 6,
+          "end": 15
+        },
+        "edited_location": {
+          "line": 10,
+          "start": 6,
+          "end": 15
+        }
       },
       {
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'my_first_dbt_model' - Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed."
+        "log": "Model 'my_first_dbt_model' - Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed.",
+        "original_location": {
+          "line": 7,
+          "start": 6,
+          "end": 16
+        },
+        "edited_location": {
+          "line": 11,
+          "start": 6,
+          "end": 16
+        }
       }
     ]
   },
@@ -47,71 +107,241 @@
     "refactors": [
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Model 'my_model_with_tests' - Field 'descrption' is a common misspelling of 'description', it has been renamed."
+        "log": "Model 'my_model_with_tests' - Field 'descrption' is a common misspelling of 'description', it has been renamed.",
+        "original_location": {
+          "line": 3,
+          "start": 4,
+          "end": 15
+        },
+        "edited_location": {
+          "line": 53,
+          "start": 4,
+          "end": 16
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Column 'id' - Field 'descrption' is a common misspelling of 'description', it has been renamed."
+        "log": "Column 'id' - Field 'descrption' is a common misspelling of 'description', it has been renamed.",
+        "original_location": {
+          "line": 17,
+          "start": 8,
+          "end": 19
+        },
+        "edited_location": {
+          "line": 52,
+          "start": 8,
+          "end": 20
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Test 'accepted_values' - Field 'desciption' is a common misspelling of 'description', it has been renamed."
+        "log": "Test 'accepted_values' - Field 'desciption' is a common misspelling of 'description', it has been renamed.",
+        "original_location": {
+          "line": 23,
+          "start": 14,
+          "end": 25
+        },
+        "edited_location": {
+          "line": 23,
+          "start": 14,
+          "end": 26
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'accepted_values' - Custom test argument 'values' moved under 'arguments'."
+        "log": "Test 'accepted_values' - Custom test argument 'values' moved under 'arguments'.",
+        "original_location": {
+          "line": 22,
+          "start": 14,
+          "end": 21
+        },
+        "edited_location": {
+          "line": 25,
+          "start": 16,
+          "end": 23
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'relationships' - Custom test argument 'to' moved under 'arguments'."
+        "log": "Test 'relationships' - Custom test argument 'to' moved under 'arguments'.",
+        "original_location": {
+          "line": 25,
+          "start": 14,
+          "end": 17
+        },
+        "edited_location": {
+          "line": 28,
+          "start": 16,
+          "end": 19
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Test 'custom_test' - Field 'severity' moved under config."
+        "log": "Test 'custom_test' - Field 'severity' moved under config.",
+        "original_location": {
+          "line": 34,
+          "start": 12,
+          "end": 21
+        },
+        "edited_location": {
+          "line": 37,
+          "start": 14,
+          "end": 23
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'custom_test' - Custom test argument 'custom_arg' moved under 'arguments'."
+        "log": "Test 'custom_test' - Custom test argument 'custom_arg' moved under 'arguments'.",
+        "original_location": {
+          "line": 32,
+          "start": 12,
+          "end": 23
+        },
+        "edited_location": {
+          "line": 39,
+          "start": 14,
+          "end": 25
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'accepted_values' - Custom test argument 'values' moved under 'arguments'."
+        "log": "Test 'accepted_values' - Custom test argument 'values' moved under 'arguments'.",
+        "original_location": {
+          "line": 37,
+          "start": 12,
+          "end": 19
+        },
+        "edited_location": {
+          "line": 43,
+          "start": 14,
+          "end": 21
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'custom_test_with_arguments_dict' - Custom test argument 'invalid_custom_arg' moved under 'arguments'."
+        "log": "Test 'custom_test_with_arguments_dict' - Custom test argument 'invalid_custom_arg' moved under 'arguments'.",
+        "original_location": {
+          "line": 45,
+          "start": 14,
+          "end": 33
+        },
+        "edited_location": {
+          "line": 51,
+          "start": 16,
+          "end": 35
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Test 'custom_test' - Field 'severity' moved under config."
+        "log": "Test 'custom_test' - Field 'severity' moved under config.",
+        "original_location": {
+          "line": 9,
+          "start": 10,
+          "end": 19
+        },
+        "edited_location": {
+          "line": 8,
+          "start": 12,
+          "end": 21
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'custom_test' - Custom test argument 'custom_arg' moved under 'arguments'."
+        "log": "Test 'custom_test' - Custom test argument 'custom_arg' moved under 'arguments'.",
+        "original_location": {
+          "line": 8,
+          "start": 10,
+          "end": 21
+        },
+        "edited_location": {
+          "line": 10,
+          "start": 12,
+          "end": 23
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'partition_by' moved under 'arguments'."
+        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'partition_by' moved under 'arguments'.",
+        "original_location": {
+          "line": 11,
+          "start": 10,
+          "end": 23
+        },
+        "edited_location": {
+          "line": 13,
+          "start": 12,
+          "end": 25
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'lower_bound_column' moved under 'arguments'."
+        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'lower_bound_column' moved under 'arguments'.",
+        "original_location": {
+          "line": 12,
+          "start": 10,
+          "end": 29
+        },
+        "edited_location": {
+          "line": 14,
+          "start": 12,
+          "end": 31
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'upper_bound_column' moved under 'arguments'."
+        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'upper_bound_column' moved under 'arguments'.",
+        "original_location": {
+          "line": 13,
+          "start": 10,
+          "end": 29
+        },
+        "edited_location": {
+          "line": 15,
+          "start": 12,
+          "end": 31
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'gaps' moved under 'arguments'."
+        "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'gaps' moved under 'arguments'.",
+        "original_location": {
+          "line": 14,
+          "start": 10,
+          "end": 15
+        },
+        "edited_location": {
+          "line": 16,
+          "start": 12,
+          "end": 17
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_utils.unique_combination_of_columns' - Custom test argument 'combination_of_columns' moved under 'arguments'."
+        "log": "Test 'dbt_utils.unique_combination_of_columns' - Custom test argument 'combination_of_columns' moved under 'arguments'.",
+        "original_location": {
+          "line": 52,
+          "start": 14,
+          "end": 37
+        },
+        "edited_location": {
+          "line": 60,
+          "start": 16,
+          "end": 39
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_utils.unique_combination_of_columns' - Custom test argument 'combination_of_columns' moved under 'arguments'."
+        "log": "Test 'dbt_utils.unique_combination_of_columns' - Custom test argument 'combination_of_columns' moved under 'arguments'.",
+        "original_location": {
+          "line": 59,
+          "start": 14,
+          "end": 37
+        },
+        "edited_location": {
+          "line": 68,
+          "start": 16,
+          "end": 39
+        }
       }
     ]
   },
@@ -128,55 +358,185 @@
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Source 'my-source' - Field 'desciption' is a common misspelling of 'description', it has been renamed."
+        "log": "Source 'my-source' - Field 'desciption' is a common misspelling of 'description', it has been renamed.",
+        "original_location": {
+          "line": 5,
+          "start": 4,
+          "end": 15
+        },
+        "edited_location": {
+          "line": 66,
+          "start": 4,
+          "end": 16
+        }
       },
       {
         "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Source 'my-source' - Field 'tags' moved under config."
+        "log": "Source 'my-source' - Field 'tags' moved under config.",
+        "original_location": {
+          "line": 18,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 10,
+          "start": 6,
+          "end": 11
+        }
       },
       {
         "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Source 'my-source' - Field 'freshness' moved under config."
+        "log": "Source 'my-source' - Field 'freshness' moved under config.",
+        "original_location": {
+          "line": 24,
+          "start": 4,
+          "end": 14
+        },
+        "edited_location": {
+          "line": 13,
+          "start": 6,
+          "end": 16
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Source 'my-source' - Field 'custom_property' is not an allowed config - Moved under config.meta."
+        "log": "Source 'my-source' - Field 'custom_property' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "line": 34,
+          "start": 4,
+          "end": 20
+        },
+        "edited_location": {
+          "line": 19,
+          "start": 8,
+          "end": 24
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Source 'my-source' - Moved all the meta fields under config.meta and merged with existing config.meta."
+        "log": "Source 'my-source' - Moved all the meta fields under config.meta and merged with existing config.meta.",
+        "original_location": {
+          "line": 16,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 18,
+          "start": 6,
+          "end": 11
+        }
       },
       {
         "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Table 'table1' - Field 'loaded_at_field' moved under config."
+        "log": "Table 'table1' - Field 'loaded_at_field' moved under config.",
+        "original_location": {
+          "line": 42,
+          "start": 8,
+          "end": 24
+        },
+        "edited_location": {
+          "line": 54,
+          "start": 10,
+          "end": 26
+        }
       },
       {
         "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Table 'table1' - Field 'tags' moved under config."
+        "log": "Table 'table1' - Field 'tags' moved under config.",
+        "original_location": {
+          "line": 47,
+          "start": 8,
+          "end": 13
+        },
+        "edited_location": {
+          "line": 55,
+          "start": 10,
+          "end": 15
+        }
       },
       {
         "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Table 'table1' - Field 'freshness' moved under config."
+        "log": "Table 'table1' - Field 'freshness' moved under config.",
+        "original_location": {
+          "line": 49,
+          "start": 8,
+          "end": 18
+        },
+        "edited_location": {
+          "line": 57,
+          "start": 10,
+          "end": 20
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Table 'table1' - Moved all the meta fields under config.meta and merged with existing config.meta."
+        "log": "Table 'table1' - Moved all the meta fields under config.meta and merged with existing config.meta.",
+        "original_location": {
+          "line": 39,
+          "start": 8,
+          "end": 13
+        },
+        "edited_location": {
+          "line": 64,
+          "start": 10,
+          "end": 15
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_expectations.expect_table_columns_to_contain_set' - Custom test argument 'column_list' moved under 'arguments'."
+        "log": "Test 'dbt_expectations.expect_table_columns_to_contain_set' - Custom test argument 'column_list' moved under 'arguments'.",
+        "original_location": {
+          "line": 45,
+          "start": 14,
+          "end": 26
+        },
+        "edited_location": {
+          "line": 33,
+          "start": 16,
+          "end": 28
+        }
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Test 'dbt_expectations.expect_table_columns_to_contain_set' - Custom test argument 'transform' moved under 'arguments'."
+        "log": "Test 'dbt_expectations.expect_table_columns_to_contain_set' - Custom test argument 'transform' moved under 'arguments'.",
+        "original_location": {
+          "line": 46,
+          "start": 14,
+          "end": 24
+        },
+        "edited_location": {
+          "line": 34,
+          "start": 16,
+          "end": 26
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Column 'col1' - Moved all the meta fields under config.meta and merged with existing config.meta."
+        "log": "Column 'col1' - Moved all the meta fields under config.meta and merged with existing config.meta.",
+        "original_location": {
+          "line": 66,
+          "start": 12,
+          "end": 17
+        },
+        "edited_location": {
+          "line": 51,
+          "start": 14,
+          "end": 19
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Test 'unique' - Field 'where' moved under config."
+        "log": "Test 'unique' - Field 'where' moved under config.",
+        "original_location": {
+          "line": 70,
+          "start": 18,
+          "end": 24
+        },
+        "edited_location": {
+          "line": 48,
+          "start": 20,
+          "end": 26
+        }
       }
     ]
   },
@@ -196,19 +556,59 @@
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Model 'my_first_dbt_model' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config."
+        "log": "Model 'my_first_dbt_model' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
+        "original_location": {
+          "line": 5,
+          "start": 4,
+          "end": 14
+        },
+        "edited_location": {
+          "line": 20,
+          "start": 8,
+          "end": 18
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Column 'id' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config."
+        "log": "Column 'id' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
+        "original_location": {
+          "line": 12,
+          "start": 8,
+          "end": 18
+        },
+        "edited_location": {
+          "line": 15,
+          "start": 12,
+          "end": 22
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Column 'id' - Moved all the meta fields under config.meta and merged with existing config.meta."
+        "log": "Column 'id' - Moved all the meta fields under config.meta and merged with existing config.meta.",
+        "original_location": {
+          "line": 10,
+          "start": 8,
+          "end": 13
+        },
+        "edited_location": {
+          "line": 14,
+          "start": 10,
+          "end": 15
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Test 'not_null' - Field 'where' moved under config."
+        "log": "Test 'not_null' - Field 'where' moved under config.",
+        "original_location": {
+          "line": 27,
+          "start": 14,
+          "end": 20
+        },
+        "edited_location": {
+          "line": 29,
+          "start": 16,
+          "end": 22
+        }
       }
     ]
   },
@@ -218,7 +618,12 @@
     "refactors": [
       {
         "deprecation": "CustomTopLevelKeyDeprecation",
-        "log": "Removed custom top-level key: 'custom_key'"
+        "log": "Removed custom top-level key: 'custom_key'",
+        "original_location": {
+          "line": 3,
+          "start": 0,
+          "end": 11
+        }
       }
     ]
   },
@@ -241,11 +646,11 @@
         "log": "Found extra tabs: line 5 - column 21",
         "original_location": {
           "line": 5,
-          "start": 21
+          "start": 20
         },
         "edited_location": {
           "line": 5,
-          "start": 21
+          "start": 20
         }
       }
     ]
@@ -256,11 +661,31 @@
     "refactors": [
       {
         "deprecation": "PropertyMovedToConfigDeprecation",
-        "log": "Exposure 'my_exposure' - Field 'tags' moved under config."
+        "log": "Exposure 'my_exposure' - Field 'tags' moved under config.",
+        "original_location": {
+          "line": 5,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 6,
+          "start": 6,
+          "end": 11
+        }
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
-        "log": "Exposure 'my_exposure' - Moved all the meta fields under config.meta and merged with existing config.meta."
+        "log": "Exposure 'my_exposure' - Moved all the meta fields under config.meta and merged with existing config.meta.",
+        "original_location": {
+          "line": 7,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 8,
+          "start": 6,
+          "end": 11
+        }
       }
     ]
   },
@@ -280,79 +705,259 @@
       },
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
+        "edited_location": {
+          "line": 64,
+          "start": 2,
+          "end": 42
+        }
       },
       {
         "deprecation": "ConfigTargetPathDeprecation",
-        "log": "Removed the deprecated field 'target-path'"
+        "log": "Removed the deprecated field 'target-path'",
+        "original_location": {
+          "line": 19,
+          "start": 0,
+          "end": 12
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'materialized'"
+        "log": "Added '+' in front of the nested config 'materialized'",
+        "original_location": {
+          "line": 35,
+          "start": 6,
+          "end": 19
+        },
+        "edited_location": {
+          "line": 37,
+          "start": 6,
+          "end": 20
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Moved custom config 'custom_config' to '+meta'"
+        "log": "Moved custom config 'custom_config' to '+meta'",
+        "original_location": {
+          "line": 36,
+          "start": 6,
+          "end": 20
+        },
+        "edited_location": {
+          "line": 38,
+          "start": 6,
+          "end": 12
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'dataset'"
+        "log": "Added '+' in front of the nested config 'dataset'",
+        "original_location": {
+          "line": 37,
+          "start": 6,
+          "end": 14
+        },
+        "edited_location": {
+          "line": 40,
+          "start": 6,
+          "end": 15
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'project'"
+        "log": "Added '+' in front of the nested config 'project'",
+        "original_location": {
+          "line": 38,
+          "start": 6,
+          "end": 14
+        },
+        "edited_location": {
+          "line": 41,
+          "start": 6,
+          "end": 15
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'data_space'"
+        "log": "Added '+' in front of the nested config 'data_space'",
+        "original_location": {
+          "line": 39,
+          "start": 6,
+          "end": 17
+        },
+        "edited_location": {
+          "line": 42,
+          "start": 6,
+          "end": 18
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'materialized'"
+        "log": "Added '+' in front of the nested config 'materialized'",
+        "original_location": {
+          "line": 41,
+          "start": 8,
+          "end": 21
+        },
+        "edited_location": {
+          "line": 34,
+          "start": 8,
+          "end": 22
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Moved custom config 'custom_config' to '+meta'"
+        "log": "Moved custom config 'custom_config' to '+meta'",
+        "original_location": {
+          "line": 42,
+          "start": 8,
+          "end": 22
+        },
+        "edited_location": {
+          "line": 35,
+          "start": 8,
+          "end": 14
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'post-hook'"
+        "log": "Added '+' in front of the nested config 'post-hook'",
+        "original_location": {
+          "line": 46,
+          "start": 6,
+          "end": 16
+        },
+        "edited_location": {
+          "line": 44,
+          "start": 6,
+          "end": 17
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'pre-hook'"
+        "log": "Added '+' in front of the nested config 'pre-hook'",
+        "original_location": {
+          "line": 51,
+          "start": 6,
+          "end": 15
+        },
+        "edited_location": {
+          "line": 49,
+          "start": 6,
+          "end": 16
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'materialized'"
+        "log": "Added '+' in front of the nested config 'materialized'",
+        "original_location": {
+          "line": 52,
+          "start": 6,
+          "end": 19
+        },
+        "edited_location": {
+          "line": 50,
+          "start": 6,
+          "end": 20
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'tags'"
+        "log": "Added '+' in front of the nested config 'tags'",
+        "original_location": {
+          "line": 53,
+          "start": 6,
+          "end": 11
+        },
+        "edited_location": {
+          "line": 51,
+          "start": 6,
+          "end": 12
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'dataset'"
+        "log": "Added '+' in front of the nested config 'dataset'",
+        "original_location": {
+          "line": 57,
+          "start": 4,
+          "end": 12
+        },
+        "edited_location": {
+          "line": 55,
+          "start": 4,
+          "end": 13
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'project'"
+        "log": "Added '+' in front of the nested config 'project'",
+        "original_location": {
+          "line": 58,
+          "start": 4,
+          "end": 12
+        },
+        "edited_location": {
+          "line": 56,
+          "start": 4,
+          "end": 13
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'data_space'"
+        "log": "Added '+' in front of the nested config 'data_space'",
+        "original_location": {
+          "line": 59,
+          "start": 4,
+          "end": 15
+        },
+        "edited_location": {
+          "line": 57,
+          "start": 4,
+          "end": 16
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of top level config 'enabled'"
+        "log": "Added '+' in front of top level config 'enabled'",
+        "original_location": {
+          "line": 62,
+          "start": 2,
+          "end": 10
+        },
+        "edited_location": {
+          "line": 59,
+          "start": 2,
+          "end": 11
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of top level config 'enabled'"
+        "log": "Added '+' in front of top level config 'enabled'",
+        "original_location": {
+          "line": 65,
+          "start": 2,
+          "end": 10
+        },
+        "edited_location": {
+          "line": 61,
+          "start": 2,
+          "end": 11
+        }
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of top level config 'tags'"
+        "log": "Added '+' in front of top level config 'tags'",
+        "original_location": {
+          "line": 66,
+          "start": 2,
+          "end": 7
+        },
+        "edited_location": {
+          "line": 62,
+          "start": 2,
+          "end": 8
+        }
       }
     ]
   },

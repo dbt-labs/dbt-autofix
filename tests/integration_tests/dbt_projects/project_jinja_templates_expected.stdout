@@ -5,15 +5,45 @@
     "refactors": [
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Model 'model with spaces {{ env_var('DBT_ENV') | lower }}' - Updated 'name' from 'model with spaces {{ env_var('DBT_ENV') | lower }}' to 'model_with_spaces_{{ env_var('DBT_ENV') | lower }}'."
+        "log": "Model 'model with spaces {{ env_var('DBT_ENV') | lower }}' - Updated 'name' from 'model with spaces {{ env_var('DBT_ENV') | lower }}' to 'model_with_spaces_{{ env_var('DBT_ENV') | lower }}'.",
+        "original_location": {
+          "line": 4,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 4,
+          "start": 4,
+          "end": 9
+        }
       },
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Seed 'seed name {{ env_var('DBT_DATABASE') | lower }}' - Updated 'name' from 'seed name {{ env_var('DBT_DATABASE') | lower }}' to 'seed_name_{{ env_var('DBT_DATABASE') | lower }}'."
+        "log": "Seed 'seed name {{ env_var('DBT_DATABASE') | lower }}' - Updated 'name' from 'seed name {{ env_var('DBT_DATABASE') | lower }}' to 'seed_name_{{ env_var('DBT_DATABASE') | lower }}'.",
+        "original_location": {
+          "line": 11,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 10,
+          "start": 4,
+          "end": 9
+        }
       },
       {
         "deprecation": "ExposureNameDeprecation",
-        "log": "Exposure 'exposure with special-chars)(*!# {{ env_var('ENV') }}' - Updated 'name' from 'exposure with special-chars)(*!# {{ env_var('ENV') }}' to 'exposure_with_specialchars_{{ env_var('ENV') }}'."
+        "log": "Exposure 'exposure with special-chars)(*!# {{ env_var('ENV') }}' - Updated 'name' from 'exposure with special-chars)(*!# {{ env_var('ENV') }}' to 'exposure_with_specialchars_{{ env_var('ENV') }}'.",
+        "original_location": {
+          "line": 18,
+          "start": 4,
+          "end": 9
+        },
+        "edited_location": {
+          "line": 16,
+          "start": 4,
+          "end": 9
+        }
       }
     ]
   },
