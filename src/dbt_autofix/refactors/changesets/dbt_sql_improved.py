@@ -1,7 +1,7 @@
 import re
 from typing import List, Set, Tuple
 
-from dbt_autofix.deprecations import DeprecationType
+from dbt_autofix.deprecations import ChangeType
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     Location,
@@ -129,7 +129,7 @@ def move_custom_config_access_to_meta_sql_improved(
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f'Refactored "{original}" to "{replacement}"',
-                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                change_type=ChangeType.CONFIG_GET_REFACTORED,
                 original_location=location,
                 edited_location=Location(line=edit_line, start=edit_col, end=edit_col + len(replacement)),
             )

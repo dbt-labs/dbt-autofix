@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "MissingGenericTestArgumentsPropertyDeprecationFix",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 42,
@@ -22,6 +23,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 29,
@@ -36,6 +38,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 87,
@@ -50,6 +53,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 133,

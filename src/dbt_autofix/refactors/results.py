@@ -8,6 +8,7 @@ from typing import Callable, Optional
 from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
 
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes
 from dbt_autofix.refactors.yml import load_yaml
 from dbt_autofix.retrieve_schemas import SchemaSpecs
@@ -34,12 +35,15 @@ class Location:
 @dataclass
 class DbtDeprecationRefactor:
     log: str
-    deprecation: Optional[str] = None
+    change_type: ChangeType
+    deprecation: Optional[DeprecationType] = None
     original_location: Optional[Location] = None
     edited_location: Optional[Location] = None
 
     def to_dict(self) -> dict:
         ret_dict: dict = {"deprecation": self.deprecation, "log": self.log}
+        if self.change_type is not None:
+            ret_dict["change_type"] = self.change_type
         if self.original_location is not None:
             ret_dict["original_location"] = self.original_location.to_dict()
         if self.edited_location is not None:

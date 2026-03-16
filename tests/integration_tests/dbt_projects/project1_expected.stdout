@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
         "edited_location": {
           "line": 13
@@ -17,6 +18,7 @@
         }
       },
       {
+        "change_type": "MissingGenericTestArgumentsPropertyDeprecationFix",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 42,
@@ -26,6 +28,7 @@
         "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
       },
       {
+        "change_type": "DeprecatedProjectFieldRemoved",
         "deprecation": "ConfigTargetPathDeprecation",
         "log": "Removed the deprecated field 'target-path'",
         "original_location": {
@@ -35,6 +38,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 20,
@@ -49,6 +53,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 22,
@@ -63,6 +68,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 15,
@@ -77,6 +83,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 15,
@@ -91,6 +98,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 18,
@@ -105,6 +113,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 22,
@@ -119,6 +128,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 24,
@@ -133,6 +143,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 17,
@@ -147,6 +158,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 16,
@@ -161,6 +173,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 20,
@@ -175,6 +188,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 12,
@@ -189,6 +203,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 13,
@@ -203,6 +218,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 13,
@@ -217,6 +233,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 16,
@@ -231,6 +248,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 11,
@@ -245,6 +263,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 11,
@@ -259,6 +278,7 @@
         }
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 8,
@@ -279,6 +299,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomKeyMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 21,
@@ -293,6 +314,7 @@
         }
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 11,
@@ -313,6 +335,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomKeyMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 21,
@@ -333,6 +356,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 22,
@@ -347,6 +371,7 @@
         }
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 15,
@@ -361,6 +386,7 @@
         }
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 16,
@@ -381,6 +407,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 72,
@@ -395,6 +422,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 110,
@@ -409,6 +437,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 135,
@@ -423,6 +452,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 174,
@@ -437,7 +467,8 @@
         }
       },
       {
-        "deprecation": "CustomKeyInConfigDeprecation",
+        "change_type": "ConfigGetRefactored",
+        "deprecation": null,
         "edited_location": {
           "end": 40,
           "line": 21,
@@ -451,7 +482,8 @@
         }
       },
       {
-        "deprecation": "CustomKeyInConfigDeprecation",
+        "change_type": "ConfigGetRefactored",
+        "deprecation": null,
         "edited_location": {
           "end": 40,
           "line": 19,
@@ -465,7 +497,8 @@
         }
       },
       {
-        "deprecation": "CustomKeyInConfigDeprecation",
+        "change_type": "ConfigGetRefactored",
+        "deprecation": null,
         "edited_location": {
           "end": 35,
           "line": 11,
@@ -479,7 +512,8 @@
         }
       },
       {
-        "deprecation": "CustomKeyInConfigDeprecation",
+        "change_type": "ConfigGetRefactored",
+        "deprecation": null,
         "edited_location": {
           "end": 52,
           "line": 9,
@@ -493,7 +527,8 @@
         }
       },
       {
-        "deprecation": "CustomKeyInConfigDeprecation",
+        "change_type": "ConfigGetRefactored",
+        "deprecation": null,
         "edited_location": {
           "end": 35,
           "line": 7,
@@ -517,6 +552,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 17,
@@ -538,6 +574,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 12,
@@ -552,6 +589,7 @@
         }
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 13,
@@ -566,6 +604,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 17,
@@ -587,6 +626,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 12,
@@ -601,6 +641,7 @@
         }
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 13,
@@ -622,6 +663,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 16,
@@ -636,6 +678,7 @@
         }
       },
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 20,
@@ -650,6 +693,7 @@
         }
       },
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 26,
@@ -664,6 +708,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 23,
@@ -678,6 +723,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 19,
@@ -692,6 +738,7 @@
         }
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 23,
@@ -706,6 +753,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 25,
@@ -720,6 +768,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 21,
@@ -734,6 +783,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 35,
@@ -748,6 +798,7 @@
         }
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 21,
@@ -762,6 +813,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 23,
@@ -776,6 +828,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 25,
@@ -790,6 +843,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 31,
@@ -804,6 +858,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 31,
@@ -818,6 +873,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 17,
@@ -832,6 +888,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 39,
@@ -846,6 +903,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 39,
@@ -866,6 +924,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "TabOnlyLineFixup",
         "deprecation": null,
         "log": "Removed line containing only tabs on line 72",
         "original_location": {
@@ -873,6 +932,7 @@
         }
       },
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 16,
@@ -887,6 +947,7 @@
         }
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 11,
@@ -901,6 +962,7 @@
         }
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 16,
@@ -915,6 +977,7 @@
         }
       },
       {
+        "change_type": "CustomKeyMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 24,
@@ -929,6 +992,7 @@
         }
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 11,
@@ -943,6 +1007,7 @@
         }
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 26,
@@ -957,6 +1022,7 @@
         }
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 15,
@@ -971,6 +1037,7 @@
         }
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 20,
@@ -985,6 +1052,7 @@
         }
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 15,
@@ -999,6 +1067,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 28,
@@ -1013,6 +1082,7 @@
         }
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 26,
@@ -1027,6 +1097,7 @@
         }
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 19,
@@ -1041,6 +1112,7 @@
         }
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 26,
@@ -1061,6 +1133,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ExtraIndentationFixup",
         "deprecation": null,
         "edited_location": {
           "line": 1
@@ -1071,6 +1144,7 @@
         }
       },
       {
+        "change_type": "CustomKeyClosestMatchMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 18,
@@ -1085,6 +1159,7 @@
         }
       },
       {
+        "change_type": "CustomKeyClosestMatchMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 22,
@@ -1099,6 +1174,7 @@
         }
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 15,
@@ -1113,6 +1189,7 @@
         }
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 22,
@@ -1133,6 +1210,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomTopLevelKeyRemoved",
         "deprecation": "CustomTopLevelKeyDeprecation",
         "log": "Removed custom top-level key: 'custom_key'",
         "original_location": {
@@ -1148,6 +1226,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "DuplicateKeyRemoved",
         "deprecation": "DuplicateYAMLKeysDeprecation",
         "log": "Found duplicate keys: line 4 - duplication of key \"description\" in mapping"
       }
@@ -1158,6 +1237,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ExtraTabsFixup",
         "deprecation": null,
         "edited_location": {
           "line": 5,
@@ -1176,6 +1256,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 11,
@@ -1190,6 +1271,7 @@
         }
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 11,
@@ -1210,6 +1292,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
@@ -1231,6 +1314,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,

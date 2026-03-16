@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 73,
@@ -21,7 +22,8 @@
         }
       },
       {
-        "deprecation": "CustomKeyInConfigDeprecation",
+        "change_type": "ConfigGetRefactored",
+        "deprecation": null,
         "edited_location": {
           "end": 63,
           "line": 17,
@@ -42,6 +44,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 19,
@@ -56,6 +59,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 28,
@@ -70,6 +74,7 @@
         }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 19,
@@ -90,6 +95,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 20,

@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 2
@@ -17,6 +18,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 50
@@ -27,6 +29,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 55
@@ -37,6 +40,7 @@
         }
       },
       {
+        "change_type": "MetricsAddedForMeasures",
         "deprecation": null,
         "edited_location": {
           "line": 60
@@ -44,6 +48,7 @@
         "log": "Added simple metric 'customers' to model 'customers'."
       },
       {
+        "change_type": "MetricsAddedForMeasures",
         "deprecation": null,
         "edited_location": {
           "line": 65
@@ -51,6 +56,7 @@
         "log": "Added simple metric 'lifetime_spend' to model 'customers'."
       },
       {
+        "change_type": "MetricsAddedForMeasures",
         "deprecation": null,
         "edited_location": {
           "line": 69
@@ -58,6 +64,7 @@
         "log": "Added simple metric 'lifetime_spend_p99_discrete' to model 'customers'."
       },
       {
+        "change_type": "MetricsAddedForMeasures",
         "deprecation": null,
         "edited_location": {
           "line": 76
@@ -65,6 +72,7 @@
         "log": "Added simple metric 'lifetime_spend_p95_approximate' to model 'customers'."
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 83
@@ -75,6 +83,7 @@
         }
       },
       {
+        "change_type": "TopLevelSemanticModelDeleted",
         "deprecation": null,
         "log": "Deleted top-level semantic model 'customers'.",
         "original_location": {
@@ -82,6 +91,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'average_order_value'.",
         "original_location": {
@@ -89,6 +99,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'count_lifetime_orders'.",
         "original_location": {
@@ -96,6 +107,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'lifetime_spend_pretax'.",
         "original_location": {
@@ -109,6 +121,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "TopLevelSemanticModelDeleted",
         "deprecation": null,
         "log": "Deleted top-level semantic model 'locations'.",
         "original_location": {
@@ -122,6 +135,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 2
@@ -132,6 +146,7 @@
         }
       },
       {
+        "change_type": "MetricsAddedForMeasures",
         "deprecation": null,
         "edited_location": {
           "line": 34
@@ -139,6 +154,7 @@
         "log": "Added simple metric 'average_tax_rate' to model 'locations'."
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 40
@@ -152,6 +168,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "MetricTagsMigration",
         "deprecation": null,
         "edited_location": {
           "end": 15,
@@ -166,6 +183,7 @@
         }
       },
       {
+        "change_type": "MetricTagsMigration",
         "deprecation": null,
         "edited_location": {
           "end": 15,
@@ -180,6 +198,7 @@
         }
       },
       {
+        "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 2
@@ -190,6 +209,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 40
@@ -200,6 +220,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 48
@@ -210,6 +231,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 57
@@ -220,6 +242,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 63
@@ -230,6 +253,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 69
@@ -240,6 +264,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 75
@@ -250,6 +275,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 81
@@ -260,6 +286,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 87
@@ -270,6 +297,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 101
@@ -280,6 +308,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 112
@@ -287,6 +316,7 @@
         "log": "Added hidden simple metric 'revenue_1' to model 'order_items' as input for cumulative metric 'cumulative_revenue'."
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 121
@@ -297,6 +327,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 126
@@ -307,6 +338,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 135
@@ -314,6 +346,7 @@
         "log": "Added hidden simple metric 'revenue_fill_nulls_with_0_join_to_timespine' to model 'order_items' as input for cumulative metric 'cumulative_revenue_with_input_settings'."
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 146
@@ -324,6 +357,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 156
@@ -331,6 +365,7 @@
         "log": "Added hidden simple metric 'revenue_fill_nulls_with_test_join_to_timespine' to model 'order_items' as base_metric input for conversion metric 'conversion_metric'."
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 167
@@ -338,6 +373,7 @@
         "log": "Added hidden simple metric 'food_revenue_fill_nulls_with_negative_12' to model 'order_items' as conversion_metric input for conversion metric 'conversion_metric'."
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 175
@@ -348,6 +384,7 @@
         }
       },
       {
+        "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 190
@@ -355,6 +392,7 @@
         "log": "Added hidden simple metric 'revenue_join_to_timespine' to model 'order_items' as base_metric input for conversion metric 'conversion_metric_across_two_models'."
       },
       {
+        "change_type": "TopLevelSemanticModelDeleted",
         "deprecation": null,
         "log": "Deleted top-level semantic model 'order_item'.",
         "original_location": {
@@ -362,6 +400,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'aaa_order_multi_layer_derived_metric'.",
         "original_location": {
@@ -369,6 +408,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'conversion_metric'.",
         "original_location": {
@@ -376,6 +416,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricUpdated",
         "deprecation": null,
         "edited_location": {
           "line": 202
@@ -383,6 +424,7 @@
         "log": "Updated top-level metric 'conversion_metric_across_two_models' to be compatible with new syntax, but left at top-level."
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'cumulative_revenue'.",
         "original_location": {
@@ -390,6 +432,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'cumulative_revenue_with_input_settings'.",
         "original_location": {
@@ -397,6 +440,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'drink_revenue'.",
         "original_location": {
@@ -404,6 +448,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'drink_revenue_pct'.",
         "original_location": {
@@ -411,6 +456,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'drink_revenue_pct_wtih_complex_args'.",
         "original_location": {
@@ -418,6 +464,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'food_revenue'.",
         "original_location": {
@@ -425,6 +472,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'food_revenue_pct'.",
         "original_location": {
@@ -432,6 +480,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'median_revenue'.",
         "original_location": {
@@ -439,6 +488,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricUpdated",
         "deprecation": null,
         "edited_location": {
           "line": 218
@@ -446,6 +496,7 @@
         "log": "Updated top-level metric 'multi_model_derived_metric' to be compatible with new syntax, but left at top-level."
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'order_cost'.",
         "original_location": {
@@ -453,6 +504,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricUpdated",
         "deprecation": null,
         "edited_location": {
           "line": 227
@@ -460,6 +512,7 @@
         "log": "Updated top-level metric 'order_gross_profit' to be compatible with new syntax, but left at top-level."
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'revenue'.",
         "original_location": {
@@ -467,6 +520,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'revenue_growth_mom'.",
         "original_location": {
@@ -474,6 +528,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'revenue_with_stacked_filters'.",
         "original_location": {
@@ -487,6 +542,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 2
@@ -497,6 +553,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 58
@@ -507,6 +564,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 63
@@ -517,6 +575,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 68
@@ -527,6 +586,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 76
@@ -537,6 +597,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 84
@@ -547,6 +608,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 90
@@ -557,6 +619,7 @@
         }
       },
       {
+        "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 98
@@ -567,6 +630,7 @@
         }
       },
       {
+        "change_type": "MetricsAddedForMeasures",
         "deprecation": null,
         "edited_location": {
           "line": 107
@@ -574,6 +638,7 @@
         "log": "Added simple metric 'tax_paid' to model 'orders'."
       },
       {
+        "change_type": "TopLevelSemanticModelDeleted",
         "deprecation": null,
         "log": "Deleted top-level semantic model 'orders'.",
         "original_location": {
@@ -581,6 +646,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'drink_orders'.",
         "original_location": {
@@ -588,6 +654,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'food_orders'.",
         "original_location": {
@@ -595,6 +662,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'large_orders'.",
         "original_location": {
@@ -602,6 +670,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'new_customer_orders'.",
         "original_location": {
@@ -609,6 +678,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'order_total'.",
         "original_location": {
@@ -616,6 +686,7 @@
         }
       },
       {
+        "change_type": "TopLevelMetricDeleted",
         "deprecation": null,
         "log": "Deleted top-level metric 'orders'.",
         "original_location": {
@@ -629,6 +700,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 2
@@ -639,6 +711,7 @@
         }
       },
       {
+        "change_type": "TopLevelSemanticModelDeleted",
         "deprecation": null,
         "log": "Deleted top-level semantic model 'products'.",
         "original_location": {
@@ -652,6 +725,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
           "line": 2
@@ -662,6 +736,7 @@
         }
       },
       {
+        "change_type": "TopLevelSemanticModelDeleted",
         "deprecation": null,
         "log": "Deleted top-level semantic model 'supplies'.",
         "original_location": {
