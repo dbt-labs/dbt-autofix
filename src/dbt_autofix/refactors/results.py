@@ -2,12 +2,13 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes
+from dbt_autofix.retrieve_schemas import SchemaSpecs
 from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 console = Console()
@@ -56,26 +57,26 @@ class PythonContent:
 
 @dataclass
 class YMLRefactorConfig:
-    schema_specs: Any  # SchemaSpecs
+    schema_specs: SchemaSpecs
     semantic_definitions: Optional[SemanticDefinitions] = None
 
 
 @dataclass
 class DbtProjectYMLRefactorConfig:
-    schema_specs: Any  # SchemaSpecs
+    schema_specs: SchemaSpecs
     root_path: Path
     exclude_dbt_project_keys: bool = False
 
 
 @dataclass
 class SQLRefactorConfig:
-    schema_specs: Any  # SchemaSpecs
+    schema_specs: SchemaSpecs
     node_type: str
 
 
 @dataclass
 class PythonRefactorConfig:
-    schema_specs: Any  # SchemaSpecs
+    schema_specs: SchemaSpecs
     node_type: str
 
 
@@ -157,7 +158,7 @@ class PythonRuleRefactorResult:
 class YMLRefactorResult:
     dry_run: bool
     file_path: Path
-    original_parsed: Any
+    original_parsed: CommentedMap
     refactored_yaml: str
     original_yaml: str
     refactors: list[YMLRuleRefactorResult]
@@ -166,7 +167,7 @@ class YMLRefactorResult:
     def refactored(self) -> bool:
         return any(r.refactored for r in self.refactors)
 
-    def apply_changeset(self, func: Callable, config: Any) -> None:
+    def apply_changeset(self, func: Callable, config: YMLRefactorConfig | DbtProjectYMLRefactorConfig) -> None:
         content = YMLContent(
             original_str=self.original_yaml,
             original_parsed=self.original_parsed,
@@ -226,7 +227,7 @@ class SQLRefactorResult:
     def refactored(self) -> bool:
         return any(r.refactored for r in self.refactors) or (self.refactored_file_path != self.file_path)
 
-    def apply_changeset(self, func: Callable, config: Any) -> None:
+    def apply_changeset(self, func: Callable, config: SQLRefactorConfig) -> None:
         content = SQLContent(
             original_str=self.original_content,
             current_str=self.refactored_content,
@@ -305,7 +306,7 @@ class PythonRefactorResult:
     def refactored(self) -> bool:
         return any(r.refactored for r in self.refactors)
 
-    def apply_changeset(self, func: Callable, config: Any) -> None:
+    def apply_changeset(self, func: Callable, config: PythonRefactorConfig) -> None:
         content = PythonContent(
             original_str=self.original_content,
             current_str=self.refactored_content,

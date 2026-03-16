@@ -7,14 +7,15 @@ import pytest
 
 from dbt_autofix.refactors.changesets.dbt_project_yml import changeset_fix_space_after_plus
 from dbt_autofix.refactors.results import DbtProjectYMLRefactorConfig, YMLContent
+from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
 def _yml(yml_str: str) -> YMLContent:
     return YMLContent(original_str=yml_str, original_parsed={}, current_str=yml_str)
 
 
-def _dbt_cfg(schema_specs=None) -> DbtProjectYMLRefactorConfig:
-    return DbtProjectYMLRefactorConfig(schema_specs=schema_specs, root_path=Path("."))
+def _dbt_cfg(schema_specs: SchemaSpecs | None = None) -> DbtProjectYMLRefactorConfig:
+    return DbtProjectYMLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs(), root_path=Path("."))
 
 
 @dataclass
@@ -24,7 +25,7 @@ class MockDbtProjectSpecs:
     allowed_config_fields_dbt_project_with_plus: set[str]
 
 
-class MockSchemaSpecs:
+class MockSchemaSpecs(SchemaSpecs):
     """Mock SchemaSpecs for testing"""
 
     def __init__(self):
@@ -57,6 +58,15 @@ class MockSchemaSpecs:
             "tests": MockDbtProjectSpecs(allowed_config_fields_dbt_project_with_plus=valid_keys),
             "snapshots": MockDbtProjectSpecs(allowed_config_fields_dbt_project_with_plus=valid_keys),
         }
+        self.yaml_specs_per_node_type = {}
+        self.valid_top_level_yaml_fields = []
+        self.owner_properties = []
+        self.nodes_with_owner = []
+        self._dict_config_cache = None
+        self._schema_version = None
+        self.client = None
+        self.transport = None
+        self.disable_ssl_verification = False
 
 
 @pytest.fixture

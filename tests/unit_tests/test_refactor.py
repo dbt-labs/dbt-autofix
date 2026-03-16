@@ -2,6 +2,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from ruamel.yaml.comments import CommentedMap
 from yaml import safe_load
 
 from dbt_autofix.refactor import (
@@ -38,16 +39,32 @@ from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
 def _yml(yml_str: str) -> YMLContent:
-    return YMLContent(original_str=yml_str, original_parsed={}, current_str=yml_str)
+    return YMLContent(original_str=yml_str, original_parsed=CommentedMap(), current_str=yml_str)
 
 
-def _yml_cfg(schema_specs=None) -> YMLRefactorConfig:
-    return YMLRefactorConfig(schema_specs=schema_specs)
+class MockSchemaSpecs(SchemaSpecs):
+    def __init__(self):
+        self.yaml_specs_per_node_type = {}
+        self.dbtproject_specs_per_node_type = {}
+        self.valid_top_level_yaml_fields = []
+        self.owner_properties = []
+        self.nodes_with_owner = []
+        self._dict_config_cache = None
+        self._schema_version = None
+        self.client = None
+        self.transport = None
+        self.disable_ssl_verification = False
 
 
-def _dbt_cfg(schema_specs=None, exclude_dbt_project_keys: bool = False) -> DbtProjectYMLRefactorConfig:
+def _yml_cfg(schema_specs: SchemaSpecs | None = None) -> YMLRefactorConfig:
+    return YMLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs())
+
+
+def _dbt_cfg(
+    schema_specs: SchemaSpecs | None = None, exclude_dbt_project_keys: bool = False
+) -> DbtProjectYMLRefactorConfig:
     return DbtProjectYMLRefactorConfig(
-        schema_specs=schema_specs,
+        schema_specs=schema_specs or MockSchemaSpecs(),
         root_path=Path("."),
         exclude_dbt_project_keys=exclude_dbt_project_keys,
     )
@@ -57,8 +74,8 @@ def _sql(sql_str: str) -> SQLContent:
     return SQLContent(original_str=sql_str, current_str=sql_str, current_file_path=Path("model.sql"))
 
 
-def _sql_cfg(schema_specs=None, node_type: str = "models") -> SQLRefactorConfig:
-    return SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+def _sql_cfg(schema_specs: SchemaSpecs | None = None, node_type: str = "models") -> SQLRefactorConfig:
+    return SQLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs(), node_type=node_type)
 
 
 @pytest.fixture

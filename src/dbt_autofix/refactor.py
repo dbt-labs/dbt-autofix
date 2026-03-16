@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from rich.console import Console
+from ruamel.yaml.comments import CommentedMap
 from yaml import safe_load
 
 from dbt_autofix.hub_packages import should_skip_package
@@ -150,7 +151,7 @@ def process_yaml_files_except_dbt_project(
                     try:
                         original_parsed = load_yaml(yml_str)
                     except Exception:
-                        original_parsed = {}
+                        original_parsed = CommentedMap()
                     yml_refactor_result = YMLRefactorResult(
                         dry_run=dry_run,
                         file_path=yml_file,
@@ -201,7 +202,7 @@ def process_dbt_project_yml(
         return YMLRefactorResult(
             dry_run=dry_run,
             file_path=root_path / "dbt_project.yml",
-            original_parsed={},
+            original_parsed=CommentedMap(),
             refactored_yaml="",
             original_yaml="",
             refactors=[],
@@ -211,7 +212,7 @@ def process_dbt_project_yml(
     try:
         original_parsed = load_yaml(yml_str)
     except Exception:
-        original_parsed = {}
+        original_parsed = CommentedMap()
     yml_refactor_result = YMLRefactorResult(
         dry_run=dry_run,
         file_path=root_path / "dbt_project.yml",
