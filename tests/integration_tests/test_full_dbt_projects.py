@@ -87,7 +87,7 @@ def normalize_log_dicts(log_dicts: list, project_path: Path | None = None, sort_
         if sort_refactors and "refactors" in d:
             d["refactors"] = sorted(d["refactors"], key=lambda x: x["log"])
         normalized.append(d)
-    return normalized
+    return sorted(normalized, key=lambda x: x.get("file_path", ""))
 
 
 def compare_json_logs(
@@ -102,7 +102,7 @@ def compare_json_logs(
 
     if os.getenv("GOLDIE_UPDATE"):
         with open(path, "w") as f:
-            json.dump(normalized_log_dicts, f, indent=2)
+            json.dump(normalized_log_dicts, f, indent=2, sort_keys=True)
             f.write("\n")
         if expected_project_dir.exists():
             shutil.rmtree(expected_project_dir)

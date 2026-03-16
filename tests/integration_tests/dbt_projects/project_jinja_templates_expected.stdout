@@ -1,7 +1,10 @@
 [
   {
-    "mode": "applied",
+    "mode": "complete"
+  },
+  {
     "file_path": "project_jinja_templates/models/schema.yml",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",
@@ -16,8 +19,5 @@
         "log": "Exposure 'exposure with special-chars)(*!# {{ env_var('ENV') }}' - Updated 'name' from 'exposure with special-chars)(*!# {{ env_var('ENV') }}' to 'exposure_with_specialchars_{{ env_var('ENV') }}'."
       }
     ]
-  },
-  {
-    "mode": "complete"
   }
 ]

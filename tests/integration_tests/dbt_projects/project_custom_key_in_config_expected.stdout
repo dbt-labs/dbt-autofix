@@ -1,7 +1,25 @@
 [
   {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_custom_key_in_config/models/customer_metrics.py",
     "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "log": "Moved custom configs ['refresh_frequency'] to 'meta'"
+      },
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "log": "Updated config.get('data_classification') to config.meta_get('data_classification')"
+      }
+    ],
+    "warnings": []
+  },
+  {
     "file_path": "project_custom_key_in_config/models/models.yaml",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -18,8 +36,8 @@
     ]
   },
   {
-    "mode": "applied",
     "file_path": "project_custom_key_in_config/models/order_summary.sql",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -27,23 +45,5 @@
       }
     ],
     "warnings": []
-  },
-  {
-    "mode": "applied",
-    "file_path": "project_custom_key_in_config/models/customer_metrics.py",
-    "refactors": [
-      {
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom configs ['refresh_frequency'] to 'meta'"
-      },
-      {
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Updated config.get('data_classification') to config.meta_get('data_classification')"
-      }
-    ],
-    "warnings": []
-  },
-  {
-    "mode": "complete"
   }
 ]

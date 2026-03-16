@@ -135,11 +135,10 @@ def process_yaml_files_except_dbt_project(
         cfg: YMLRefactorConfig,
     ) -> None:
         for model_path in model_paths:
-            yaml_files = sorted(
-                set((root_path / Path(model_path)).resolve().glob("**/*.yml")).union(
-                    set((root_path / Path(model_path)).resolve().glob("**/*.yaml"))
-                )
+            yaml_files = set((root_path / Path(model_path)).resolve().glob("**/*.yml")).union(
+                set((root_path / Path(model_path)).resolve().glob("**/*.yaml"))
             )
+
             for yml_file in yaml_files:
                 if skip_file(yml_file, select):
                     continue
@@ -299,7 +298,7 @@ def process_sql_files(
 
         config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
 
-        sql_files = sorted(full_path.glob("**/*.sql"))
+        sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
             if skip_file(full_path, select):
                 continue

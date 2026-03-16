@@ -1,7 +1,10 @@
 [
   {
-    "mode": "applied",
+    "mode": "complete"
+  },
+  {
     "file_path": "project_nested_quotes_in_config/models/schema.yml",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": null,
@@ -34,8 +37,8 @@
     ]
   },
   {
-    "mode": "applied",
     "file_path": "project_nested_quotes_in_config/tests/data_quality_test.sql",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -43,8 +46,5 @@
       }
     ],
     "warnings": []
-  },
-  {
-    "mode": "complete"
   }
 ]

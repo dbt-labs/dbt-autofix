@@ -1,7 +1,31 @@
 [
   {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_behavior_changes/dbt_project.yml",
     "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "SourceFreshnessProjectHooksNotRun",
+        "log": "Set flag 'source_freshness_run_project_hooks' to 'True' - This will run project hooks (on-run-start/on-run-end) as part of source freshness commands."
+      }
+    ]
+  },
+  {
+    "file_path": "project_behavior_changes/models/example/model with spaces.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Renamed 'model with spaces.sql' to 'model_with_spaces.sql'"
+      }
+    ],
+    "warnings": []
+  },
+  {
     "file_path": "project_behavior_changes/models/example/schema.yml",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": "ResourceNamesWithSpacesDeprecation",
@@ -12,29 +36,5 @@
         "log": "Exposure 'exposure with spaces' - Updated 'name' from 'exposure with spaces' to 'exposure_with_spaces'."
       }
     ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "project_behavior_changes/dbt_project.yml",
-    "refactors": [
-      {
-        "deprecation": "SourceFreshnessProjectHooksNotRun",
-        "log": "Set flag 'source_freshness_run_project_hooks' to 'True' - This will run project hooks (on-run-start/on-run-end) as part of source freshness commands."
-      }
-    ]
-  },
-  {
-    "mode": "applied",
-    "file_path": "project_behavior_changes/models/example/model with spaces.sql",
-    "refactors": [
-      {
-        "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Renamed 'model with spaces.sql' to 'model_with_spaces.sql'"
-      }
-    ],
-    "warnings": []
-  },
-  {
-    "mode": "complete"
   }
 ]

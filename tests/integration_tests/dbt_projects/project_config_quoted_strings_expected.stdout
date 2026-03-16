@@ -1,7 +1,10 @@
 [
   {
-    "mode": "applied",
+    "mode": "complete"
+  },
+  {
     "file_path": "project_config_quoted_strings/dbt_project.yml",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
@@ -10,8 +13,8 @@
     ]
   },
   {
-    "mode": "applied",
     "file_path": "project_config_quoted_strings/models/my_autofix_model.sql",
+    "mode": "applied",
     "refactors": [
       {
         "deprecation": "CustomKeyInConfigDeprecation",
@@ -19,8 +22,5 @@
       }
     ],
     "warnings": []
-  },
-  {
-    "mode": "complete"
   }
 ]
