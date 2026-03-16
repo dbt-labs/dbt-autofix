@@ -9,7 +9,6 @@ from collections import defaultdict
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -76,7 +75,7 @@ def compare_dirs(dir1, dir2):
         compare_dirs(os.path.join(dir1, subdir), os.path.join(dir2, subdir))
 
 
-def normalize_log_dicts(log_dicts: list, project_path: Optional[Path] = None, sort_refactors: bool = False) -> list:
+def normalize_log_dicts(log_dicts: list, project_path: Path | None = None, sort_refactors: bool = False) -> list:
     normalized = []
     for log_dict in log_dicts:
         d = dict(log_dict)
@@ -94,8 +93,8 @@ def normalize_log_dicts(log_dicts: list, project_path: Optional[Path] = None, so
 def compare_json_logs(
     logs_io: StringIO,
     path: Path,
-    actual_project_path: Optional[Path] = None,
-    expected_project_dir: Optional[Path] = None,
+    actual_project_path: Path,
+    expected_project_dir: Path,
 ):
     logs = logs_io.getvalue()
     log_dicts = [json.loads(log) for log in logs.strip().split("\n")]
@@ -105,10 +104,9 @@ def compare_json_logs(
         with open(path, "w") as f:
             json.dump(normalized_log_dicts, f, indent=2)
             f.write("\n")
-        if actual_project_path is not None and expected_project_dir is not None:
-            if expected_project_dir.exists():
-                shutil.rmtree(expected_project_dir)
-            shutil.copytree(actual_project_path, expected_project_dir)
+        if expected_project_dir.exists():
+            shutil.rmtree(expected_project_dir)
+        shutil.copytree(actual_project_path, expected_project_dir)
 
     expected_log_dicts = json.loads(path.read_text())
     expected_log_dicts_normalized = normalize_log_dicts(expected_log_dicts, sort_refactors=True)
