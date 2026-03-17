@@ -13,6 +13,17 @@
     ]
   },
   {
+    "file_path": "project_behavior_changes/models/example/model with spaces.py",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Renamed 'model with spaces.py' to 'model_with_spaces.py'"
+      }
+    ],
+    "warnings": []
+  },
+  {
     "file_path": "project_behavior_changes/models/example/model with spaces.sql",
     "mode": "applied",
     "refactors": [
