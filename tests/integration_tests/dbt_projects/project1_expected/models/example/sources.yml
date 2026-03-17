@@ -1,14 +1,12 @@
 
-
 sources:
   - name: my-source
-        
     database: my-db
     schema: my-schema
     loader: my-loader
-    
     config:
       enabled: true
+
       tags:
         - my-tag
 
@@ -16,10 +14,10 @@ sources:
         warn_after:
           count: 2
           period: minute
+
       meta:
         custom_property: true
         my_meta: my-meta-value
-
     quoting:
       database: false
       schema: true
@@ -28,14 +26,12 @@ sources:
     tables:
       - name: table1
         description: table1-description
-
         identifier: table1id
         tests:
           - dbt_expectations.expect_table_columns_to_contain_set:
               arguments:
                 column_list: ["col_a", "col_b"]
                 transform: upper
-
         external:
           location: s3://my-bucket/my-path
           format: parquet
@@ -46,7 +42,6 @@ sources:
         columns:
           - name: col1
             description: col1-description
-
             tests:
               - unique:
                   config:
@@ -55,7 +50,6 @@ sources:
             config:
               meta:
                 my_meta: my-meta-value-col1
-        
         config:
           loaded_at_field: my_loaded_at_field
           tags:
@@ -65,12 +59,15 @@ sources:
               count: 2
               period: hour
             filter: my filter
+
+
           meta:
             my_meta: my-meta-value-table1
     description: |-
       This is a model about something
-      
+
       This model contains:
         * This
         * That
         * The other thing
+        

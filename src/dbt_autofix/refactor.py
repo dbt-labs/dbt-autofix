@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
-import yamllint.linter
 from rich.console import Console
+from ruamel.yaml.comments import CommentedMap
 from yaml import safe_load
 
 from dbt_autofix.hub_packages import should_skip_package
@@ -20,6 +20,7 @@ from dbt_autofix.refactors.changesets.dbt_python import (
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
+    changeset_remove_duplicate_keys,
     changeset_remove_duplicate_models,
     changeset_remove_extra_tabs,
     changeset_remove_indentation_version,
@@ -45,14 +46,15 @@ from dbt_autofix.refactors.changesets.dbt_sql_improved import (
     move_custom_config_access_to_meta_sql_improved,
 )
 from dbt_autofix.refactors.results import (
-    DbtDeprecationRefactor,
+    DbtProjectYMLRefactorConfig,
+    PythonRefactorConfig,
     PythonRefactorResult,
-    PythonRuleRefactorResult,
+    SQLRefactorConfig,
     SQLRefactorResult,
+    YMLRefactorConfig,
     YMLRefactorResult,
-    YMLRuleRefactorResult,
 )
-from dbt_autofix.refactors.yml import DbtYAML, yaml_config
+from dbt_autofix.refactors.yml import load_yaml
 from dbt_autofix.retrieve_schemas import (
     SchemaSpecs,
 )
@@ -89,56 +91,54 @@ def process_yaml_files_except_dbt_project(
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
-    behavior_change_rules: List[Tuple[Callable, Any]] = [
-        (changeset_replace_non_alpha_underscores_in_name_values, schema_specs),
+    config = YMLRefactorConfig(schema_specs=schema_specs)
+
+    behavior_change_rules: List[Callable] = [
+        changeset_replace_non_alpha_underscores_in_name_values,
     ]
-    safe_change_rules: List[Tuple[Callable, Any]] = [
-        (changeset_replace_fancy_quotes, None),
-        (changeset_remove_tab_only_lines, None),
-        (changeset_remove_indentation_version, None),
-        (changeset_remove_extra_tabs, None),
-        (changeset_remove_duplicate_keys, None),
-        (changeset_remove_duplicate_models, None),
-        (changeset_refactor_yml_str, schema_specs),
-        (changeset_owner_properties_yml_str, schema_specs),
+    safe_change_rules: List[Callable] = [
+        changeset_replace_fancy_quotes,
+        changeset_remove_tab_only_lines,
+        changeset_remove_indentation_version,
+        changeset_remove_extra_tabs,
+        changeset_remove_duplicate_keys,
+        changeset_remove_duplicate_models,
+        changeset_refactor_yml_str,
+        changeset_owner_properties_yml_str,
     ]
-    all_rules: List[Tuple[Callable, Any]] = [*safe_change_rules, *behavior_change_rules]
+    all_rules: List[Callable] = [*safe_change_rules, *behavior_change_rules]
     changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
-    ordered_changesets: List[List[Tuple[Callable, Any]]] = [
-        changesets,
-    ]
+    ordered_changesets: List[List[Callable]] = [changesets]
 
     # Override ordered changesets if semantic definitions are provided
     if semantic_definitions:
+        sl_config = YMLRefactorConfig(schema_specs=schema_specs, semantic_definitions=semantic_definitions)
         # Certain changesets can only be applied after all the other changesets have been applied to all the files
         ordered_changesets = [
             [
-                (changeset_migrate_metric_tags_field_to_config, semantic_definitions),
-                (changeset_merge_semantic_models_with_models, semantic_definitions),
+                changeset_migrate_metric_tags_field_to_config,
+                changeset_merge_semantic_models_with_models,
             ],
+            [changeset_merge_simple_metrics_with_models],
+            [changeset_add_metrics_for_measures],
+            [changeset_merge_complex_metrics_with_models],
             [
-                (changeset_merge_simple_metrics_with_models, semantic_definitions),
-            ],
-            [
-                (changeset_add_metrics_for_measures, semantic_definitions),
-            ],
-            [
-                (changeset_merge_complex_metrics_with_models, semantic_definitions),
-            ],
-            [
-                (changeset_delete_top_level_semantic_models, semantic_definitions),
-                (changeset_migrate_or_delete_top_level_metrics, semantic_definitions),
+                changeset_delete_top_level_semantic_models,
+                changeset_migrate_or_delete_top_level_metrics,
             ],
         ]
 
     def _apply_changesets(
-        file_name_to_yaml_results: Dict[str, YMLRefactorResult], changesets: List[Tuple[Callable, Any]]
+        file_name_to_yaml_results: Dict[str, YMLRefactorResult],
+        changesets: List[Callable],
+        cfg: YMLRefactorConfig,
     ) -> None:
         for model_path in model_paths:
             yaml_files = set((root_path / Path(model_path)).resolve().glob("**/*.yml")).union(
                 set((root_path / Path(model_path)).resolve().glob("**/*.yaml"))
             )
+
             for yml_file in yaml_files:
                 if skip_file(yml_file, select):
                     continue
@@ -147,28 +147,24 @@ def process_yaml_files_except_dbt_project(
                     yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
                 else:
                     yml_str = yml_file.read_text()
+                    try:
+                        original_parsed = load_yaml(yml_str)
+                    except Exception:
+                        original_parsed = CommentedMap()
                     yml_refactor_result = YMLRefactorResult(
                         dry_run=dry_run,
                         file_path=yml_file,
-                        refactored=False,
+                        original_parsed=original_parsed,
                         refactored_yaml=yml_str,
                         original_yaml=yml_str,
                         refactors=[],
                     )
                 # Apply each changeset in sequence
                 try:
-                    for changeset_func, changeset_args in changesets:
-                        if changeset_args is None:
-                            changeset_result = changeset_func(yml_refactor_result.refactored_yaml)
-                        else:
-                            changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args)
+                    for changeset_func in changesets:
+                        yml_refactor_result.apply_changeset(changeset_func, cfg)
 
-                        if changeset_result.refactored:
-                            yml_refactor_result.refactors.append(changeset_result)
-                            yml_refactor_result.refactored = True
-                            yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
-
-                        file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
+                    file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
 
                 except Exception as e:
                     if all:
@@ -182,7 +178,11 @@ def process_yaml_files_except_dbt_project(
                         exit(1)
 
     for changesets in ordered_changesets:
-        _apply_changesets(file_name_to_yaml_results, changesets)
+        _apply_changesets(
+            file_name_to_yaml_results,
+            changesets,
+            sl_config if semantic_definitions else config,
+        )
 
     return list(file_name_to_yaml_results.values())
 
@@ -201,47 +201,47 @@ def process_dbt_project_yml(
         return YMLRefactorResult(
             dry_run=dry_run,
             file_path=root_path / "dbt_project.yml",
-            refactored=False,
+            original_parsed=CommentedMap(),
             refactored_yaml="",
             original_yaml="",
             refactors=[],
         )
 
     yml_str = (root_path / "dbt_project.yml").read_text()
+    try:
+        original_parsed = load_yaml(yml_str)
+    except Exception:
+        original_parsed = CommentedMap()
     yml_refactor_result = YMLRefactorResult(
         dry_run=dry_run,
         file_path=root_path / "dbt_project.yml",
-        refactored=False,
+        original_parsed=original_parsed,
         refactored_yaml=yml_str,
         original_yaml=yml_str,
         refactors=[],
     )
 
-    behavior_change_rules = [(changeset_dbt_project_flip_behavior_flags, None)]
-    safe_change_rules = [
-        (changeset_replace_fancy_quotes, None),
-        (changeset_remove_duplicate_keys, None),
-        (changeset_dbt_project_flip_test_arguments_behavior_flag, None),
-        (changeset_dbt_project_remove_deprecated_config, exclude_dbt_project_keys),
-        (changeset_fix_space_after_plus, schema_specs),
-        (changeset_dbt_project_prefix_plus_for_config, root_path, schema_specs),
+    config = DbtProjectYMLRefactorConfig(
+        schema_specs=schema_specs,
+        root_path=root_path,
+        exclude_dbt_project_keys=exclude_dbt_project_keys,
+    )
+
+    behavior_change_rules: List[Callable] = [changeset_dbt_project_flip_behavior_flags]
+    safe_change_rules: List[Callable] = [
+        changeset_replace_fancy_quotes,
+        changeset_remove_duplicate_keys,
+        changeset_dbt_project_flip_test_arguments_behavior_flag,
+        changeset_dbt_project_remove_deprecated_config,
+        changeset_fix_space_after_plus,
+        changeset_dbt_project_prefix_plus_for_config,
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
-    changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
+    changesets: List[Callable] = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
-    for changeset_func, *changeset_args in changesets:
-        if changeset_args[0] is None:
-            changeset_result = changeset_func(yml_refactor_result.refactored_yaml)  # ty: ignore[missing-argument]
-        elif len(changeset_args) == 1:
-            changeset_result = changeset_func(yml_refactor_result.refactored_yaml, changeset_args[0])  # ty: ignore[missing-argument, invalid-argument-type, too-many-positional-arguments]
-        else:
-            changeset_result = changeset_func(yml_refactor_result.refactored_yaml, *changeset_args)  # ty: ignore[invalid-argument-type]
-
-        if changeset_result.refactored:
-            yml_refactor_result.refactors.append(changeset_result)
-            yml_refactor_result.refactored = True
-            yml_refactor_result.refactored_yaml = changeset_result.refactored_yaml
+    for changeset_func in changesets:
+        yml_refactor_result.apply_changeset(changeset_func, config)
 
     return yml_refactor_result
 
@@ -278,15 +278,17 @@ def process_sql_files(
     """
     results: List[SQLRefactorResult] = []
 
-    behavior_change_rules = [(rename_sql_file_names_with_spaces, True, False)]
-    safe_change_rules = [
-        (remove_unmatched_endings, False, False),
-        (refactor_custom_configs_to_meta_sql, False, True),
-        (move_custom_config_access_to_meta_sql_improved, False, True),
+    behavior_change_rules: List[Callable] = [rename_sql_file_names_with_spaces]
+    safe_change_rules: List[Callable] = [
+        remove_unmatched_endings,
+        refactor_custom_configs_to_meta_sql,
+        move_custom_config_access_to_meta_sql_improved,
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
-    process_sql_file_rules = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
+    process_sql_file_rules: List[Callable] = (
+        all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
+    )
 
     for sql_path, node_type in sql_paths_to_node_type.items():
         full_path = (path / sql_path).resolve()
@@ -294,46 +296,28 @@ def process_sql_files(
             error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
             continue
 
+        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+
         sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
             if skip_file(full_path, select):
                 continue
 
             try:
-                file_refactors: List[SQLRefactorResult] = []
-
                 original_content = sql_file.read_text()
-                new_content = original_content
-
-                new_file_path = sql_file
-                for sql_file_rule, requires_file_path, requires_schema_specs in process_sql_file_rules:
-                    if requires_file_path and requires_schema_specs:
-                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path, schema_specs, node_type)  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
-                    elif requires_file_path:
-                        sql_file_refactor_result = sql_file_rule(new_content, new_file_path)  # ty: ignore[too-many-positional-arguments, missing-argument, invalid-argument-type]
-                    elif requires_schema_specs:
-                        sql_file_refactor_result = sql_file_rule(new_content, schema_specs, node_type)  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
-                    else:
-                        sql_file_refactor_result = sql_file_rule(new_content)  # ty: ignore[missing-argument]
-
-                    new_content = sql_file_refactor_result.refactored_content
-                    new_file_path = sql_file_refactor_result.refactored_file_path or sql_file
-                    file_refactors.append(sql_file_refactor_result)  # ty: ignore[invalid-argument-type]
-
-                refactored = (new_content != original_content) or (new_file_path != sql_file)
-                has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])  # ty: ignore[unresolved-attribute]
-                results.append(
-                    SQLRefactorResult(
-                        dry_run=dry_run,
-                        file_path=sql_file,
-                        refactored=refactored,
-                        refactored_content=new_content,
-                        original_content=original_content,
-                        refactors=file_refactors,  # ty: ignore[invalid-argument-type]
-                        refactored_file_path=new_file_path,
-                        has_warnings=has_warnings,
-                    )
+                result = SQLRefactorResult(
+                    dry_run=dry_run,
+                    file_path=sql_file,
+                    refactored_file_path=sql_file,
+                    refactored_content=original_content,
+                    original_content=original_content,
+                    refactors=[],
                 )
+
+                for sql_file_rule in process_sql_file_rules:
+                    result.apply_changeset(sql_file_rule, config)
+
+                results.append(result)
             except Exception as e:
                 if all:
                     error_console.print(
@@ -373,15 +357,10 @@ def process_python_files(
     """
     results: List[PythonRefactorResult] = []
 
-    # Python model rules - both are safe changes (don't require behavior_change flag)
-    # Tuple format: (function, requires_file_path, requires_schema_specs)
-    # requires_file_path is always False for Python (kept for consistency with SQL rule tuples)
-    safe_change_rules = [
-        (refactor_custom_configs_to_meta_python, False, True),
-        (move_custom_config_access_to_meta_python, False, True),
+    process_python_file_rules: List[Callable] = [
+        refactor_custom_configs_to_meta_python,
+        move_custom_config_access_to_meta_python,
     ]
-
-    process_python_file_rules = safe_change_rules
 
     # Only process model paths (Python models are in model-paths)
     for python_path, node_type in python_paths_to_node_type.items():
@@ -393,6 +372,8 @@ def process_python_files(
         if not full_path.exists():
             continue
 
+        config = PythonRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+
         python_files = full_path.glob("**/*.py")
         for python_file in python_files:
             # Note: skip_file checks the directory path, not individual files.
@@ -401,30 +382,19 @@ def process_python_files(
                 continue
 
             try:
-                file_refactors: List[PythonRuleRefactorResult] = []
-
                 original_content = python_file.read_text()
-                new_content = original_content
-
-                for python_file_rule, _requires_file_path, _requires_schema_specs in process_python_file_rules:
-                    python_file_refactor_result = python_file_rule(new_content, schema_specs, node_type)
-
-                    new_content = python_file_refactor_result.refactored_content
-                    file_refactors.append(python_file_refactor_result)
-
-                refactored = new_content != original_content
-                has_warnings = any([refactor.refactor_warnings for refactor in file_refactors])
-                results.append(
-                    PythonRefactorResult(
-                        dry_run=dry_run,
-                        file_path=python_file,
-                        refactored=refactored,
-                        refactored_content=new_content,
-                        original_content=original_content,
-                        refactors=file_refactors,
-                        has_warnings=has_warnings,
-                    )
+                result = PythonRefactorResult(
+                    dry_run=dry_run,
+                    file_path=python_file,
+                    refactored_content=original_content,
+                    original_content=original_content,
+                    refactors=[],
                 )
+
+                for python_file_rule in process_python_file_rules:
+                    result.apply_changeset(python_file_rule, config)
+
+                results.append(result)
             except Exception as e:
                 if all:
                     error_console.print(
@@ -436,40 +406,6 @@ def process_python_files(
                     )
 
     return results
-
-
-def changeset_remove_duplicate_keys(yml_str: str) -> YMLRuleRefactorResult:
-    """Removes duplicate keys in the YAML files, keeping the first occurence only.
-
-    The drawback of keeping the first occurence is that we need to use PyYAML and then lose all the comments that were in the file
-    """
-    refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-
-    for p in yamllint.linter.run(yml_str, yaml_config):
-        if p.rule == "key-duplicates":
-            refactored = True
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Found duplicate keys: line {p.line} - {p.desc}", deprecation="DuplicateYAMLKeysDeprecation"
-                )
-            )
-
-    if refactored:
-        import yaml
-
-        # we use dump from ruamel to keep indentation style but this loses quite a bit of formatting though
-        refactored_yaml = DbtYAML().dump_to_string(yaml.safe_load(yml_str))
-    else:
-        refactored_yaml = yml_str
-
-    return YMLRuleRefactorResult(
-        rule_name="remove_duplicate_keys",
-        refactored=refactored,
-        refactored_yaml=refactored_yaml,
-        original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-    )
 
 
 def get_dbt_files_paths(

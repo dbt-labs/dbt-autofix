@@ -10,8 +10,12 @@ import re
 from typing import List, Optional, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, PythonRuleRefactorResult
-from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    PythonContent,
+    PythonRefactorConfig,
+    PythonRuleRefactorResult,
+)
 
 # Pattern to find dbt.config(...) calls - captures the full call including parentheses
 DBT_CONFIG_CALL_PATTERN = re.compile(
@@ -130,7 +134,7 @@ def _parse_python_kwargs(call_content: str) -> dict[str, str]:
 
 
 def refactor_custom_configs_to_meta_python(
-    python_content: str, schema_specs: SchemaSpecs, node_type: str
+    content: PythonContent, config: PythonRefactorConfig
 ) -> PythonRuleRefactorResult:
     """Move custom configs to meta in Python dbt.config() calls.
 
@@ -138,15 +142,10 @@ def refactor_custom_configs_to_meta_python(
         dbt.config(materialized="table", sla="24h")
     To:
         dbt.config(materialized="table", meta={"sla": "24h"})
-
-    Args:
-        python_content: The Python file content to process
-        schema_specs: The schema specifications to use for determining allowed configs
-        node_type: The type of dbt node (e.g., "models")
-
-    Returns:
-        PythonRuleRefactorResult with the refactored content
     """
+    python_content = content.current_str
+    schema_specs = config.schema_specs
+    node_type = config.node_type
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     # Find all dbt.config() calls
@@ -252,7 +251,7 @@ def refactor_custom_configs_to_meta_python(
 
 
 def move_custom_config_access_to_meta_python(
-    python_content: str, schema_specs: SchemaSpecs, node_type: str
+    content: PythonContent, config: PythonRefactorConfig
 ) -> PythonRuleRefactorResult:
     """Update dbt.config.get() calls to use meta_get for custom configs.
 
@@ -265,15 +264,10 @@ def move_custom_config_access_to_meta_python(
         dbt.config.get("random_config", "default")
     To:
         dbt.config.meta_get("random_config", "default")
-
-    Args:
-        python_content: The Python file content to process
-        schema_specs: The schema specifications to use for determining allowed configs
-        node_type: The type of dbt node (e.g., "models")
-
-    Returns:
-        PythonRuleRefactorResult with the refactored content
     """
+    python_content = content.current_str
+    schema_specs = config.schema_specs
+    node_type = config.node_type
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
     allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields

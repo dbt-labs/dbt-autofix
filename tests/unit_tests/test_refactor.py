@@ -2,13 +2,13 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from ruamel.yaml.comments import CommentedMap
 from yaml import safe_load
 
 from dbt_autofix.refactor import (
     PythonRefactorResult,
     SQLRefactorResult,
     YMLRefactorResult,
-    YMLRuleRefactorResult,
     changeset_all_files,
     changeset_dbt_project_remove_deprecated_config,
     changeset_owner_properties_yml_str,
@@ -26,8 +26,56 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_replace_fancy_quotes,
 )
 from dbt_autofix.refactors.changesets.dbt_sql import CONFIG_MACRO_PATTERN, refactor_custom_configs_to_meta_sql
+from dbt_autofix.refactors.results import (
+    DbtProjectYMLRefactorConfig,
+    SQLContent,
+    SQLRefactorConfig,
+    YMLContent,
+    YMLRefactorConfig,
+    YMLRuleRefactorResult,
+)
 from dbt_autofix.refactors.yml import dict_to_yaml_str
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+
+
+def _yml(yml_str: str) -> YMLContent:
+    return YMLContent(original_str=yml_str, original_parsed=CommentedMap(), current_str=yml_str)
+
+
+class MockSchemaSpecs(SchemaSpecs):
+    def __init__(self):
+        self.yaml_specs_per_node_type = {}
+        self.dbtproject_specs_per_node_type = {}
+        self.valid_top_level_yaml_fields = []
+        self.owner_properties = []
+        self.nodes_with_owner = []
+        self._dict_config_cache = None
+        self._schema_version = None
+        self.client = None
+        self.transport = None
+        self.disable_ssl_verification = False
+
+
+def _yml_cfg(schema_specs: SchemaSpecs | None = None) -> YMLRefactorConfig:
+    return YMLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs())
+
+
+def _dbt_cfg(
+    schema_specs: SchemaSpecs | None = None, exclude_dbt_project_keys: bool = False
+) -> DbtProjectYMLRefactorConfig:
+    return DbtProjectYMLRefactorConfig(
+        schema_specs=schema_specs or MockSchemaSpecs(),
+        root_path=Path("."),
+        exclude_dbt_project_keys=exclude_dbt_project_keys,
+    )
+
+
+def _sql(sql_str: str) -> SQLContent:
+    return SQLContent(original_str=sql_str, current_str=sql_str, current_file_path=Path("model.sql"))
+
+
+def _sql_cfg(schema_specs: SchemaSpecs | None = None, node_type: str = "models") -> SQLRefactorConfig:
+    return SQLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs(), node_type=node_type)
 
 
 @pytest.fixture
@@ -233,7 +281,7 @@ class TestUnmatchedEndingsRemoval:
         {% endmacro %}
         where x = 1
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% endmacro %}" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endmacro %}" in result.deprecation_refactors[0].log
@@ -245,7 +293,7 @@ class TestUnmatchedEndingsRemoval:
         {% endif %}
         where x = 1
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% endif %}" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endif %}" in result.deprecation_refactors[0].log
@@ -257,7 +305,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         {% endmacro %}
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% macro my_macro() %}" in result.refactored_content
         assert "{% endmacro %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -269,7 +317,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         {% endif %}
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "if condition" in result.refactored_content
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -281,7 +329,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         {% endif %}
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "if(condition)" in result.refactored_content
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -293,7 +341,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         {% endif %}
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "if(macro_test)" in result.refactored_content
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -305,7 +353,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         {% endif %}
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "if(condition)" in result.refactored_content
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -317,7 +365,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         {% endif %}
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "if(condition)" in result.refactored_content
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -329,7 +377,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         {% endif %}
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "if(condition)" in result.refactored_content
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -345,7 +393,7 @@ class TestUnmatchedEndingsRemoval:
         {% endif %}  -- This one is unmatched
         {% endmacro %}  -- This one is unmatched
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% macro outer_macro() %}" in result.refactored_content
         assert "{% if condition %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 2
@@ -354,7 +402,7 @@ class TestUnmatchedEndingsRemoval:
 
     def test_empty_and_no_tags(self):
         # Empty content
-        result = remove_unmatched_endings("")
+        result = remove_unmatched_endings(_sql(""), _sql_cfg())
         assert result.refactored_content == ""
         assert len(result.deprecation_refactors) == 0
 
@@ -364,7 +412,7 @@ class TestUnmatchedEndingsRemoval:
         from my_table
         where x = 1
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert result.refactored_content.strip() == sql_content.strip()
         assert len(result.deprecation_refactors) == 0
 
@@ -377,7 +425,7 @@ class TestUnmatchedEndingsRemoval:
          %}
         where x = 1
         """
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "endmacro" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endmacro %}" in result.deprecation_refactors[0].log
@@ -397,7 +445,7 @@ class TestUnmatchedEndingsRemoval:
         ]
 
         for content in test_cases:
-            result = remove_unmatched_endings(content)
+            result = remove_unmatched_endings(_sql(content), _sql_cfg())
             assert "endmacro" not in result.refactored_content or (
                 "{% if condition %}" in content and "{% endmacro %}" not in result.refactored_content
             )
@@ -408,22 +456,30 @@ class TestUnmatchedEndingsRemoval:
     def test_line_numbers(self):
         # Single line
         sql_content = "{% macro test() %}select 1{% endmacro %}{% endif %}"
-        logs = [refactor.log for refactor in remove_unmatched_endings(sql_content).deprecation_refactors]
+        logs = [
+            refactor.log for refactor in remove_unmatched_endings(_sql(sql_content), _sql_cfg()).deprecation_refactors
+        ]
         assert logs[0] == "Removed unmatched {% endif %} near line 1"
 
         # No leading newline
         sql_content = "{% macro test() %}\nselect 1\n{% endmacro %}\n{% endif %}"
-        logs = [refactor.log for refactor in remove_unmatched_endings(sql_content).deprecation_refactors]
+        logs = [
+            refactor.log for refactor in remove_unmatched_endings(_sql(sql_content), _sql_cfg()).deprecation_refactors
+        ]
         assert logs[0] == "Removed unmatched {% endif %} near line 4"
 
         # With leading newline
         sql_content = "\n{% macro test() %}\nselect 1\n{% endmacro %}\n{% endif %}"
-        logs = [refactor.log for refactor in remove_unmatched_endings(sql_content).deprecation_refactors]
+        logs = [
+            refactor.log for refactor in remove_unmatched_endings(_sql(sql_content), _sql_cfg()).deprecation_refactors
+        ]
         assert logs[0] == "Removed unmatched {% endif %} near line 5"
 
         # Mixed newlines
         sql_content = "{% macro test() %}\r\nselect 1\n{% endmacro %}\r\n{% endif %}"
-        logs = [refactor.log for refactor in remove_unmatched_endings(sql_content).deprecation_refactors]
+        logs = [
+            refactor.log for refactor in remove_unmatched_endings(_sql(sql_content), _sql_cfg()).deprecation_refactors
+        ]
         assert logs[0] == "Removed unmatched {% endif %} near line 4"
 
     def test_in_comments(self):
@@ -431,7 +487,7 @@ class TestUnmatchedEndingsRemoval:
         sql_content = """-- This is a comment
         -- {% endif %}
         select * from table"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% endif %}" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endif %}" in result.deprecation_refactors[0].log
@@ -440,7 +496,7 @@ class TestUnmatchedEndingsRemoval:
         sql_content = """-- This is a comment
         select * from table
         -- {% endmacro %}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% endmacro %}" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endmacro %}" in result.deprecation_refactors[0].log
@@ -452,7 +508,7 @@ class TestUnmatchedEndingsRemoval:
         sql_content = """{# if not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(model.database, model.schema) %}
   {% endif #}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
 
@@ -460,7 +516,7 @@ class TestUnmatchedEndingsRemoval:
         sql_content = """{#% if not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(model.database, model.schema) %}
   {% endif %#}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
 
@@ -469,7 +525,7 @@ class TestUnmatchedEndingsRemoval:
         sql_content = """{#% if not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(model.database, model.schema) %}
   {% endif %}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
 
@@ -478,7 +534,7 @@ class TestUnmatchedEndingsRemoval:
   {% if True %}
     select 1
   {% endif %}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         # Should not modify because the endif is inside an unclosed {# block
         assert "{% endif %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
@@ -492,7 +548,7 @@ class TestUnmatchedEndingsRemoval:
 {%- if new_condition -%}
 select 1
 {%- endif -%}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
 
@@ -508,7 +564,7 @@ select 1
     {%- endif -%}
 {%-endif-%}
 {%- endmacro -%}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert result.refactored_content == sql_content
         assert len(result.deprecation_refactors) == 0
 
@@ -518,7 +574,7 @@ select 1
         select {{ item }} from table
         {% endfor %}
         {% endif %}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% endif %}" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endif %}" in result.deprecation_refactors[0].log
@@ -527,7 +583,7 @@ select 1
         sql_content = """{% set x = 5 %}
         select {{ x }} as value
         {% endmacro %}"""
-        result = remove_unmatched_endings(sql_content)
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
         assert "{% endmacro %}" not in result.refactored_content
         assert len(result.deprecation_refactors) == 1
         assert "Removed unmatched {% endmacro %}" in result.deprecation_refactors[0].log
@@ -538,7 +594,7 @@ select 1
         select 2
         {% endif %}
         select 3"""
-        refactor_result = remove_unmatched_endings(sql_content)
+        refactor_result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
 
         assert "{% endif %}" not in refactor_result.refactored_content
         assert len(refactor_result.deprecation_refactors) == 2
@@ -558,7 +614,7 @@ class TestYamlRefactoring:
         yml_file.write_text(schema_yml_with_config_fields)
 
         # Test the refactoring
-        result = changeset_refactor_yml_str(schema_yml_with_config_fields, schema_specs)
+        result = changeset_refactor_yml_str(_yml(schema_yml_with_config_fields), _yml_cfg(schema_specs))
         assert result.refactored
         # Now expect 4 logs: 3 fields moved + meta merge
         assert len(result.refactor_logs) == 4
@@ -623,7 +679,7 @@ class TestYamlRefactoring:
         yml_file.write_text(schema_yml_with_fields_top_and_under_config)
 
         # Test the refactoring
-        result = changeset_refactor_yml_str(schema_yml_with_fields_top_and_under_config, schema_specs)
+        result = changeset_refactor_yml_str(_yml(schema_yml_with_fields_top_and_under_config), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
         # Now expect 4 logs: 1 already under config, 2 moved, 1 meta merge
@@ -653,7 +709,7 @@ class TestYamlRefactoring:
         yml_file.write_text(schema_yml_with_close_matches)
 
         # Test the refactoring
-        result = changeset_refactor_yml_str(schema_yml_with_close_matches, schema_specs)
+        result = changeset_refactor_yml_str(_yml(schema_yml_with_close_matches), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
         # Now expect 2 logs: 2 close matches
@@ -686,7 +742,7 @@ class TestYamlRefactoring:
         yml_file.write_text(schema_yml_with_nested_sources)
 
         # Test the refactoring
-        result = changeset_refactor_yml_str(schema_yml_with_nested_sources, schema_specs)
+        result = changeset_refactor_yml_str(_yml(schema_yml_with_nested_sources), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -790,7 +846,7 @@ models:
         ]
 
         for input_yaml, expected_yaml, should_refactor in test_cases:
-            result = changeset_remove_indentation_version(input_yaml)
+            result = changeset_remove_indentation_version(_yml(input_yaml), _yml_cfg())
             assert result.refactored == should_refactor
             if should_refactor:
                 assert len(result.refactor_logs) == 1
@@ -803,7 +859,7 @@ models:
   - name: test_model
     description: "A test model"
 """
-        result = changeset_remove_indentation_version(input_yaml)
+        result = changeset_remove_indentation_version(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
@@ -815,7 +871,7 @@ models:
 models:
   - name: test_model
 """
-        result = changeset_remove_indentation_version(input_yaml)
+        result = changeset_remove_indentation_version(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "Removed the extra indentation around 'version: 2'" in result.refactor_logs[0]
@@ -850,7 +906,7 @@ sources:
             tests:
               - not_null
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         # assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -907,7 +963,7 @@ sources:
               meta:
                 is_timestamp: true  # This should be preserved in config.meta
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1104,7 +1160,7 @@ asset-paths: ["assets"]
 
 profile: garage-jaffle
 """
-        result = changeset_dbt_project_remove_deprecated_config(input_str)
+        result = changeset_dbt_project_remove_deprecated_config(_yml(input_str), _dbt_cfg())
         assert result.refactored_yaml.strip() == expected_str.strip()
 
 
@@ -1120,7 +1176,7 @@ class TestOwnerPropertiesRefactoring:
         yml_file.write_text(schema_yml_with_owner_properties)
 
         # Test the refactoring
-        result = changeset_owner_properties_yml_str(schema_yml_with_owner_properties, schema_specs)
+        result = changeset_owner_properties_yml_str(_yml(schema_yml_with_owner_properties), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
         assert len(result.refactor_logs) == 4
@@ -1169,7 +1225,7 @@ groups:
         yml_file.write_text(yml_str)
 
         # Test the refactoring
-        result = changeset_owner_properties_yml_str(yml_str, schema_specs)
+        result = changeset_owner_properties_yml_str(_yml(yml_str), _yml_cfg(schema_specs))
         assert not result.refactored
         assert len(result.refactor_logs) == 0
 
@@ -1191,7 +1247,7 @@ groups:
         yml_file.write_text(yml_str)
 
         # Test the refactoring
-        result = changeset_owner_properties_yml_str(yml_str, schema_specs)
+        result = changeset_owner_properties_yml_str(_yml(yml_str), _yml_cfg(schema_specs))
         assert not result.refactored
         assert len(result.refactor_logs) == 0
 
@@ -1212,7 +1268,7 @@ groups:
         yml_file.write_text(yml_str)
 
         # Test the refactoring
-        result = changeset_owner_properties_yml_str(yml_str, schema_specs)
+        result = changeset_owner_properties_yml_str(_yml(yml_str), _yml_cfg(schema_specs))
         assert not result.refactored
         assert len(result.refactor_logs) == 0
 
@@ -1233,7 +1289,7 @@ models:
         yml_file.write_text(yml_str)
 
         # Test the refactoring
-        result = changeset_owner_properties_yml_str(yml_str, schema_specs)
+        result = changeset_owner_properties_yml_str(_yml(yml_str), _yml_cfg(schema_specs))
         assert not result.refactored
         assert len(result.refactor_logs) == 0
 
@@ -1309,7 +1365,7 @@ models:
               values: ['placed', 'shipped', 'completed', 'returned']
               where: "date_column > __3_days_ago__"  # placeholder string for static config
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1355,7 +1411,7 @@ models:
           group_by: [idx]
           where: 1=1
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1406,7 +1462,7 @@ sources:
           - name: status
             description: Note that the status can change over time
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1449,7 +1505,7 @@ models:
           - unique
           - not_null
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         # Should not be refactored since string tests don't need config
         assert not result.refactored
         assert len(result.refactor_logs) == 0
@@ -1470,7 +1526,7 @@ models:
           - accepted_values:
               values: ['active', 'inactive']
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1514,7 +1570,7 @@ models:
           - not_null:
               where: "id is not null"
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1566,7 +1622,7 @@ sources:
                   values: ['pending', 'active', 'completed']
                   where: "status is not null"
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1624,7 +1680,7 @@ models:
                 severity: warn
               where: "id is not null"
 """
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1662,7 +1718,7 @@ models:
                 severity: warn
 """
         # This should not raise "OrderedDict mutated during iteration" error
-        result = changeset_refactor_yml_str(input_yaml, schema_specs)
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         assert isinstance(result, YMLRuleRefactorResult)
 
@@ -1698,7 +1754,7 @@ models:
       - name: id
         description: "Primary key"
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
@@ -1713,7 +1769,7 @@ models:
     columns:
       - name: id
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "Found extra tabs: line 5 - column 1" in result.refactor_logs[0]
@@ -1730,7 +1786,7 @@ models:
       - name: id
 \t        description: "Primary key"
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 2  # Two tab characters found
         lines = result.refactored_yaml.split("\n")
@@ -1745,7 +1801,7 @@ models:
     columns:
       - name: id
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "Found extra tabs: line 5 - column 1" in result.refactor_logs[0]
@@ -1761,7 +1817,7 @@ models:
     columns:
       - name: id
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 2  # Two tab characters found
         assert "Found extra tabs: line 5 - column 1" in result.refactor_logs[0]
@@ -1778,7 +1834,7 @@ models:
     columns:
       - name: id
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "Found extra tabs: line 5 - column 1" in result.refactor_logs[0]
@@ -1795,7 +1851,7 @@ models:
 \t    - tag2
       - tag3
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "Found extra tabs: line 7 - column 1" in result.refactor_logs[0]
@@ -1812,7 +1868,7 @@ models:
       meta:
 \t      owner: team
 """
-        result = changeset_remove_extra_tabs(input_yaml)
+        result = changeset_remove_extra_tabs(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 2  # Two tab characters found
         lines = result.refactored_yaml.split("\n")
@@ -1833,7 +1889,7 @@ models:
       - name: id
         description: "Primary key"
 """
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
@@ -1842,7 +1898,7 @@ models:
     def test_replace_left_double_quote(self):
         """Test replacing U+201C (") with standard quote"""
         input_yaml = 'model-paths: [\u201cmodels"]'
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "line 1" in result.refactor_logs[0]
@@ -1852,7 +1908,7 @@ models:
     def test_replace_right_double_quote(self):
         """Test replacing U+201D (") with standard quote"""
         input_yaml = 'model-paths: ["models\u201d]'
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "line 1" in result.refactor_logs[0]
@@ -1862,7 +1918,7 @@ models:
     def test_replace_both_fancy_quotes(self):
         """Test replacing both U+201C and U+201D in same line"""
         input_yaml = "model-paths: [\u201cmodels\u201d]"
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "line 1" in result.refactor_logs[0]
@@ -1879,7 +1935,7 @@ models:
 models:
   - name: "test_model"
     description: "A test\""""
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         # Both lines have fancy quotes used as delimiters, so both should be replaced
         assert len(result.refactor_logs) == 2
@@ -1895,7 +1951,7 @@ models:
     columns:
       - name: \u201cid\u201d
 """
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         # Verify structure is preserved
         lines = result.refactored_yaml.split("\n")
@@ -1913,7 +1969,7 @@ models:
       - name: id
         description: "Another \u201ctest\u201d with fancy quotes"
 """
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert not result.refactored  # No changes since fancy quotes are only in descriptions
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
@@ -1936,7 +1992,7 @@ models:
       - name: "id"
         description: "Keep these \u201cquotes\u201d"
 """
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 2  # Two lines with fancy quotes in name fields
         assert result.refactored_yaml == expected_yaml
@@ -1949,7 +2005,7 @@ models:
         like: description: "...equals "High Priority"..."
         """
         input_yaml = 'description: \u201cThe value equals "High Priority" when set.\u201d'
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         # The output must be valid YAML - inner quotes need to be escaped
         parsed = safe_load(result.refactored_yaml)
@@ -1969,7 +2025,7 @@ models:
         and assert on the final values, not just the raw string.
         """
         input_yaml = '{key1: \u201chas "inner" quotes\u201d, key2: \u201chas "more" quotes\u201d}'
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         parsed = safe_load(result.refactored_yaml)
         assert parsed["key1"] == 'has "inner" quotes'
@@ -1982,7 +2038,7 @@ models:
         not a delimiter. No refactoring needed.
         """
         input_yaml = 'desc: "has \u201c inside"'
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert result.refactored_yaml == input_yaml
 
@@ -1992,7 +2048,7 @@ models:
         Same reasoning as the open-quote case: the fancy quote is content, not a delimiter.
         """
         input_yaml = 'desc: "has \u201d inside"'
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert result.refactored_yaml == input_yaml
 
@@ -2009,7 +2065,7 @@ models:
         We document the current behavior here rather than attempting to fix it.
         """
         input_yaml = "desc: \u201chas \u201cinner\u201d value"
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         # The inner \u201c is replaced with an unescaped " — this produces invalid YAML,
         # but the input is degenerate and doesn't occur in practice.
@@ -2025,7 +2081,7 @@ models:
         either.
         """
         input_yaml = "desc: \u201cunterminated value"
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert result.refactored_yaml == 'desc: "unterminated value'
 
@@ -2036,7 +2092,7 @@ models:
         simply contains a literal " character. The replacement is correct.
         """
         input_yaml = "desc: unterminated\u201d value"
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert result.refactored_yaml == 'desc: unterminated" value'
         parsed = safe_load(result.refactored_yaml)
@@ -2053,7 +2109,7 @@ models:
         the two regular " characters as matched delimiters.
         """
         input_yaml = "desc: \u201dvalue\u201d"
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert result.refactored_yaml == 'desc: "value"'
         parsed = safe_load(result.refactored_yaml)
@@ -2068,7 +2124,7 @@ models:
         was already malformed, so we just document the behavior.
         """
         input_yaml = "desc: \u201dvalue"
-        result = changeset_replace_fancy_quotes(input_yaml)
+        result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert result.refactored_yaml == 'desc: "value'
 
@@ -2087,7 +2143,7 @@ models:
       - name: id
         description: "Primary key"
 """
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
@@ -2104,7 +2160,7 @@ models:
     columns:
       - name: id
 """
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "Found duplicate keys: line" in result.refactor_logs[0]
@@ -2130,7 +2186,7 @@ models:
         description: "Column description"
         description: "Another description"
 """
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 3  # 3 duplicate keys found
 
@@ -2161,7 +2217,7 @@ models:
           - unique
           - unique
 """
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) >= 1
 
@@ -2189,7 +2245,7 @@ models:
     columns:
       - name: id
 """
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
 
@@ -2211,7 +2267,7 @@ sources:
         description: "Table description"
         description: "Another table description"
 """
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) >= 1
 
@@ -2239,7 +2295,7 @@ models:
               severity: error
               severity: warn
 """
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) >= 1
 
@@ -2257,7 +2313,7 @@ models:
     def test_empty_yaml(self):
         """Test that empty YAML is handled correctly"""
         input_yaml = ""
-        result = changeset_remove_duplicate_keys(input_yaml)
+        result = changeset_remove_duplicate_keys(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
@@ -2276,7 +2332,7 @@ models:
   - name: test_model_2
     description: "Another test model"
 """
-        result = changeset_remove_duplicate_models(input_yaml)
+        result = changeset_remove_duplicate_models(_yml(input_yaml), _yml_cfg())
         assert not result.refactored
         assert len(result.refactor_logs) == 0
         assert result.refactored_yaml == input_yaml
@@ -2300,7 +2356,7 @@ models:
     description: Deprecated SKU sleeping daily. Refer to mart_mkp__pre_sleeping_stock for latest model.
     deprecation_date: 2025-04-01
 """
-        result = changeset_remove_duplicate_models(input_yaml)
+        result = changeset_remove_duplicate_models(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
         assert "int__mkp_sleeping_stock_daily" in result.refactor_logs[0]
@@ -2330,7 +2386,7 @@ models:
   - name: duplicate_model
     description: "Third occurrence"
 """
-        result = changeset_remove_duplicate_models(input_yaml)
+        result = changeset_remove_duplicate_models(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         # Should have one warning for the first duplicate found
         assert len(result.refactor_logs) == 1
@@ -2358,7 +2414,7 @@ models:
   - name: model_b
     description: "Second B"
 """
-        result = changeset_remove_duplicate_models(input_yaml)
+        result = changeset_remove_duplicate_models(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 2  # One for model_a, one for model_b
 
@@ -2382,7 +2438,7 @@ models:
   - name: test_model
     description: "Duplicate"
 """
-        result = changeset_remove_duplicate_models(input_yaml)
+        result = changeset_remove_duplicate_models(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
 
@@ -2419,7 +2475,7 @@ models:
       materialized: view
       tags: ['tag2']
 """
-        result = changeset_remove_duplicate_models(input_yaml)
+        result = changeset_remove_duplicate_models(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert len(result.refactor_logs) == 1
 
@@ -2449,7 +2505,7 @@ exposures:
   - name: exposure with spaces
   - name: exposure_with)(*!#$&)# special chars
 """
-        result = changeset_replace_non_alpha_underscores_in_name_values(input_yaml, schema_specs)
+        result = changeset_replace_non_alpha_underscores_in_name_values(_yml(input_yaml), _yml_cfg(schema_specs))
         assert result.refactored
         refactored_dict = safe_load(result.refactored_yaml)
 
@@ -2477,7 +2533,7 @@ exposures:
   - name: exposure with {{ env_var('Y') | lower }}
   - name: exposure-special)(*chars {{ env_var('Z') }}
 """
-        result = changeset_replace_non_alpha_underscores_in_name_values(input_yaml, schema_specs)
+        result = changeset_replace_non_alpha_underscores_in_name_values(_yml(input_yaml), _yml_cfg(schema_specs))
         refactored_dict = safe_load(result.refactored_yaml)
 
         # Seeds: no spaces outside Jinja, so no refactoring needed
@@ -2582,7 +2638,7 @@ select 1 as id
 
 select 1 as id
 """
-        result = refactor_custom_configs_to_meta_sql(sql_content, schema_specs, "models")
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
 
         assert result.refactored
         assert result.refactored_content == expected_content
@@ -2609,7 +2665,7 @@ select 1 as id
 
 select 1 as id
 """
-        result = refactor_custom_configs_to_meta_sql(sql_content, schema_specs, "models")
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
 
         assert result.refactored
         assert result.refactored_content == expected_content
@@ -2630,7 +2686,7 @@ select 1 as id
 
 select 1 as id
 """
-        result = refactor_custom_configs_to_meta_sql(sql_content, schema_specs, "models")
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
 
         # Should not refactor if no custom configs (all are valid)
         assert not result.refactored
@@ -2667,7 +2723,7 @@ select 1 as id
 
 select 1 as id
 """
-        result = refactor_custom_configs_to_meta_sql(sql_content, schema_specs, "models")
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
 
         assert result.refactored
         assert result.refactored_content == expected_content
@@ -2695,7 +2751,7 @@ select 1 as id
 
 select 1 as id
 """
-        result = refactor_custom_configs_to_meta_sql(sql_content, schema_specs, "models")
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
 
         assert result.refactored
         assert result.refactored_content == expected_content
