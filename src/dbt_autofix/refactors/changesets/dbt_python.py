@@ -133,6 +133,33 @@ def _parse_python_kwargs(call_content: str) -> dict[str, str]:
         return {}
 
 
+def rename_python_file_names_with_spaces(
+    content: PythonContent, config: PythonRefactorConfig
+) -> PythonRuleRefactorResult:
+    python_content = content.current_str
+    python_file_path = content.current_file_path
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    new_file_path = python_file_path
+    if python_file_path and " " in python_file_path.name:
+        new_file_path = python_file_path.with_name(python_file_path.name.replace(" ", "_"))
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=f"Renamed '{python_file_path.name}' to '{new_file_path.name}'",
+                deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
+            )
+        )
+
+    return PythonRuleRefactorResult(
+        rule_name="rename_python_files_with_spaces",
+        refactored=python_file_path != new_file_path,
+        refactored_content=python_content,
+        original_content=python_content,
+        deprecation_refactors=deprecation_refactors,
+        refactored_file_path=new_file_path,
+    )
+
+
 def refactor_custom_configs_to_meta_python(
     content: PythonContent, config: PythonRefactorConfig
 ) -> PythonRuleRefactorResult:
