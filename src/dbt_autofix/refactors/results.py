@@ -326,9 +326,11 @@ class PythonRefactorResult:
 
     def update_python_file(self) -> None:
         """Update the Python file with the refactored content"""
-        if self.file_path != self.refactored_file_path:
+        new_file_path = self.refactored_file_path or self.file_path
+        if self.file_path != new_file_path:
             os.rename(self.file_path, self.refactored_file_path)
-        Path(self.refactored_file_path).write_text(self.refactored_content)
+
+        Path(new_file_path).write_text(self.refactored_content)
 
     def print_to_console(self, json_output: bool = True):
         if not self.refactored and not self.has_warnings:
