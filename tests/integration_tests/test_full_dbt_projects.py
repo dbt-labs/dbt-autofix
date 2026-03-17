@@ -122,10 +122,8 @@ def compare_json_logs(
 
     for log_dict in expected_log_dicts_normalized:
         if log_dict not in normalized_log_dicts_for_cmp:
-            print("Expected log dict not in actual log dicts:")
+            print("Expected log dict not found in actual output:")
             pprint.pprint(log_dict)
-            print("Actual log dicts:")
-            pprint.pprint(normalized_log_dicts_for_cmp)
         assert log_dict in normalized_log_dicts_for_cmp
 
 
