@@ -57,9 +57,8 @@ def compare_dirs(dir1, dir2):
             file1 = os.path.join(dir1, file)
             file2 = os.path.join(dir2, file)
             with open(file1) as f1, open(file2) as f2:
-                # we remove lines with only spaces and strip trailing whitespace to avoid false positives
-                actual = [line.rstrip() for line in f1.readlines() if line.strip()]
-                expected = [line.rstrip() for line in f2.readlines() if line.strip()]
+                actual = f1.readlines()
+                expected = f2.readlines()
                 if actual == expected:
                     continue
                 real_diffs = True
