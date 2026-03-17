@@ -73,12 +73,14 @@ class DbtProjectYMLRefactorConfig:
 class SQLRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
+    project_root: Path
 
 
 @dataclass
 class PythonRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
+    project_root: Path
 
 
 # ---------------------------------------------------------------------------

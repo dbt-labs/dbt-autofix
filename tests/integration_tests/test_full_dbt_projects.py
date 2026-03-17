@@ -120,6 +120,11 @@ def compare_json_logs(
             pprint.pprint(expected_log_dicts_normalized)
         assert log_dict in expected_log_dicts_normalized
 
+    for log_dict in expected_log_dicts_normalized:
+        assert log_dict in normalized_log_dicts_for_cmp, (
+            f"Expected log dict not found in actual output:\n{pprint.pformat(log_dict)}"
+        )
+
 
 @pytest.mark.parametrize("project_folder", get_project_folders())
 def test_project_refactor(project_folder, request):

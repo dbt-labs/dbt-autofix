@@ -29,7 +29,9 @@ def _py(py_str: str, path: Path = Path("test_model.py")) -> PythonContent:
 
 
 def _py_cfg(schema_specs=None, node_type: str = "models") -> PythonRefactorConfig:
-    return PythonRefactorConfig(schema_specs=schema_specs or FakeSchemaSpecs(), node_type=node_type)
+    return PythonRefactorConfig(
+        schema_specs=schema_specs or FakeSchemaSpecs(), node_type=node_type, project_root=Path(".")
+    )
 
 
 class TestRefactorCustomConfigsToMetaPython:
