@@ -1,5 +1,6 @@
 models:
   - name: model_with_spaces
+  - name: python_model_with_spaces
 
 exposures:
   - name: exposure_with_spaces
