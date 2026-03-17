@@ -48,6 +48,7 @@ class SQLContent:
 class PythonContent:
     original_str: str
     current_str: str
+    current_file_path: Path
 
 
 # ---------------------------------------------------------------------------
@@ -135,6 +136,7 @@ class PythonRuleRefactorResult:
     refactored_content: str
     original_content: str
     deprecation_refactors: list[DbtDeprecationRefactor]
+    refactored_file_path: Optional[Path] = None
     refactor_warnings: list[str] = field(default_factory=list)
 
     @property
@@ -297,6 +299,7 @@ class SQLRefactorResult:
 class PythonRefactorResult:
     dry_run: bool
     file_path: Path
+    refactored_file_path: Path
     refactored_content: str
     original_content: str
     refactors: list[PythonRuleRefactorResult]
@@ -304,23 +307,28 @@ class PythonRefactorResult:
 
     @property
     def refactored(self) -> bool:
-        return any(r.refactored for r in self.refactors)
+        return any(r.refactored for r in self.refactors) or (self.refactored_file_path != self.file_path)
 
     def apply_changeset(self, func: Callable, config: PythonRefactorConfig) -> None:
         content = PythonContent(
             original_str=self.original_content,
             current_str=self.refactored_content,
+            current_file_path=self.refactored_file_path,
         )
         result = func(content, config)
         self.refactors.append(result)
         if result.refactored:
             self.refactored_content = result.refactored_content
+            if result.refactored_file_path:
+                self.refactored_file_path = result.refactored_file_path
         if result.refactor_warnings:
             self.has_warnings = True
 
     def update_python_file(self) -> None:
         """Update the Python file with the refactored content"""
-        Path(self.file_path).write_text(self.refactored_content)
+        if self.file_path != self.refactored_file_path:
+            os.rename(self.file_path, self.refactored_file_path)
+        Path(self.refactored_file_path).write_text(self.refactored_content)
 
     def print_to_console(self, json_output: bool = True):
         if not self.refactored and not self.has_warnings:

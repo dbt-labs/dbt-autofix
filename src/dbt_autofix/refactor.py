@@ -386,6 +386,7 @@ def process_python_files(
                 result = PythonRefactorResult(
                     dry_run=dry_run,
                     file_path=python_file,
+                    refactored_file_path=python_file,
                     refactored_content=original_content,
                     original_content=original_content,
                     refactors=[],

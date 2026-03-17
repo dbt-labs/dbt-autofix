@@ -23,8 +23,8 @@ class FakeSchemaSpecs(SchemaSpecs):
         }
 
 
-def _py(py_str: str) -> PythonContent:
-    return PythonContent(original_str=py_str, current_str=py_str)
+def _py(py_str: str, path: Path = Path("test_model.py")) -> PythonContent:
+    return PythonContent(original_str=py_str, current_str=py_str, current_file_path=path)
 
 
 def _py_cfg(schema_specs=None, node_type: str = "models") -> PythonRefactorConfig:
