@@ -16,6 +16,7 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
 from dbt_autofix.refactors.changesets.dbt_python import (
     move_custom_config_access_to_meta_python,
     refactor_custom_configs_to_meta_python,
+    rename_python_file_names_with_spaces,
 )
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_owner_properties_yml_str,
@@ -357,10 +358,15 @@ def process_python_files(
     """
     results: List[PythonRefactorResult] = []
 
-    process_python_file_rules: List[Callable] = [
+    behavior_change_rules: List[Callable] = [rename_python_file_names_with_spaces]
+    safe_change_rules: List[Callable] = [
         refactor_custom_configs_to_meta_python,
         move_custom_config_access_to_meta_python,
     ]
+    all_rules = [*behavior_change_rules, *safe_change_rules]
+    process_python_file_rules: List[Callable] = (
+        all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
+    )
 
     # Only process model paths (Python models are in model-paths)
     for python_path, node_type in python_paths_to_node_type.items():
