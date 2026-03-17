@@ -75,7 +75,9 @@ def _sql(sql_str: str) -> SQLContent:
 
 
 def _sql_cfg(schema_specs: SchemaSpecs | None = None, node_type: str = "models") -> SQLRefactorConfig:
-    return SQLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs(), node_type=node_type, project_root=Path("."))
+    return SQLRefactorConfig(
+        schema_specs=schema_specs or MockSchemaSpecs(), node_type=node_type, project_root=Path(".")
+    )
 
 
 @pytest.fixture
