@@ -519,7 +519,7 @@ def rename_sql_file_names_with_spaces(content: SQLContent, config: SQLRefactorCo
         new_file_path = sql_file_path.with_name(sql_file_path.name.replace(" ", "_"))
         deprecation_refactors.append(
             DbtDeprecationRefactor(
-                log=f"Renamed '{sql_file_path.name}' to '{new_file_path.name}'",
+                log=f"Renamed '{sql_file_path.resolve().relative_to(config.project_root.resolve())}' to '{new_file_path.resolve().relative_to(config.project_root.resolve())}'",
                 deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
             )
         )

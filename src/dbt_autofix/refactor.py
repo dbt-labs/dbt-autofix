@@ -297,7 +297,7 @@ def process_sql_files(
             error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
             continue
 
-        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type, project_root=path)
 
         sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
@@ -378,7 +378,7 @@ def process_python_files(
         if not full_path.exists():
             continue
 
-        config = PythonRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = PythonRefactorConfig(schema_specs=schema_specs, node_type=node_type, project_root=path)
 
         python_files = full_path.glob("**/*.py")
         for python_file in python_files:

@@ -23,7 +23,7 @@ def _sql(sql_str: str) -> SQLContent:
 
 
 def _sql_cfg(schema_specs=None, node_type: str = "models") -> SQLRefactorConfig:
-    return SQLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs(), node_type=node_type)
+    return SQLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs(), node_type=node_type, project_root=Path("."))
 
 
 def test_basic_config_get_refactor():
