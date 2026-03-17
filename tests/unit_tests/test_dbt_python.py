@@ -761,9 +761,7 @@ class TestRenamePythonFileNamesWithSpaces:
     def test_file_with_spaces_renamed(self):
         """A Python file with spaces in its name should be renamed with underscores."""
         content = 'def model(dbt, session):\n    return session.sql("SELECT 1")\n'
-        result = rename_python_file_names_with_spaces(
-            _py(content, Path("my model.py")), _py_cfg()
-        )
+        result = rename_python_file_names_with_spaces(_py(content, Path("my model.py")), _py_cfg())
 
         assert result.refactored
         assert result.refactored_file_path == Path("my_model.py")
@@ -771,9 +769,7 @@ class TestRenamePythonFileNamesWithSpaces:
     def test_file_without_spaces_no_change(self):
         """A Python file without spaces should not be renamed."""
         content = 'def model(dbt, session):\n    return session.sql("SELECT 1")\n'
-        result = rename_python_file_names_with_spaces(
-            _py(content, Path("my_model.py")), _py_cfg()
-        )
+        result = rename_python_file_names_with_spaces(_py(content, Path("my_model.py")), _py_cfg())
 
         assert not result.refactored
         assert result.refactored_file_path == Path("my_model.py")
@@ -781,9 +777,7 @@ class TestRenamePythonFileNamesWithSpaces:
     def test_deprecation_logged(self):
         """ResourceNamesWithSpacesDeprecation should be logged when file is renamed."""
         content = 'def model(dbt, session):\n    return session.sql("SELECT 1")\n'
-        result = rename_python_file_names_with_spaces(
-            _py(content, Path("model with spaces.py")), _py_cfg()
-        )
+        result = rename_python_file_names_with_spaces(_py(content, Path("model with spaces.py")), _py_cfg())
 
         assert result.refactored
         assert len(result.deprecation_refactors) == 1
@@ -794,18 +788,14 @@ class TestRenamePythonFileNamesWithSpaces:
     def test_content_unchanged_during_rename(self):
         """File content should not be modified when only the filename changes."""
         content = 'def model(dbt, session):\n    return session.sql("SELECT 1")\n'
-        result = rename_python_file_names_with_spaces(
-            _py(content, Path("my model.py")), _py_cfg()
-        )
+        result = rename_python_file_names_with_spaces(_py(content, Path("my model.py")), _py_cfg())
 
         assert result.refactored_content == content
 
     def test_multiple_spaces_replaced(self):
         """All spaces in the filename should be replaced with underscores."""
         content = 'def model(dbt, session):\n    return session.sql("SELECT 1")\n'
-        result = rename_python_file_names_with_spaces(
-            _py(content, Path("my complex model name.py")), _py_cfg()
-        )
+        result = rename_python_file_names_with_spaces(_py(content, Path("my complex model name.py")), _py_cfg())
 
         assert result.refactored
         assert result.refactored_file_path == Path("my_complex_model_name.py")
