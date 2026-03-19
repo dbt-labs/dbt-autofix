@@ -1,6 +1,7 @@
 version: 2
 
 models:
+
   - name: model with spaces {{ env_var('DBT_ENV') | lower }}
     description: "Model with spaces in name and Jinja template"
     columns:
@@ -15,6 +16,7 @@ seeds:
     description: "Seed with var() function"
 
 exposures:
+  # exposure name
   - name: exposure with special-chars)(*!# {{ env_var('ENV') }}
     type: dashboard
     description: "Exposure with special chars and Jinja"
