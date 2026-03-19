@@ -3,7 +3,9 @@ models:
     config:
       materialized: table
       custom_config: custom_value
+      # hook config
       pre-hook: select 1
+
       post-hook: select 2
       dataset: my_dataset
       project: my_project

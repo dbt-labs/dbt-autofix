@@ -19,6 +19,7 @@ snapshot-paths: ["snapshots"]
 target-path: "target"
 
 flags:
+  # source freshness hooks config
   source_freshness_run_project_hooks: true
 
 clean-targets:         # directories to be removed by `dbt clean`

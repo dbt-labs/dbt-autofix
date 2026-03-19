@@ -172,13 +172,13 @@
         "deprecation": null,
         "edited_location": {
           "end": 15,
-          "line": 45,
+          "line": 46,
           "start": 10
         },
         "log": "Migrated metric 'revenue' tags field to config.",
         "original_location": {
           "end": 9,
-          "line": 72,
+          "line": 73,
           "start": 4
         }
       },
@@ -187,13 +187,13 @@
         "deprecation": null,
         "edited_location": {
           "end": 15,
-          "line": 54,
+          "line": 56,
           "start": 10
         },
         "log": "Migrated metric 'revenue_with_stacked_filters' tags field to config.",
         "original_location": {
           "end": 9,
-          "line": 80,
+          "line": 82,
           "start": 4
         }
       },
@@ -223,95 +223,95 @@
         "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 48
+          "line": 49
         },
         "log": "Folded input measure 'revenue_measure_with_filter' into simple metric 'revenue_with_stacked_filters' and moved 'revenue_with_stacked_filters' to model 'order_items'.",
         "original_location": {
-          "line": 75
+          "line": 76
         }
       },
       {
         "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 57
+          "line": 59
         },
         "log": "Folded input measure 'median_revenue' into simple metric 'median_revenue' and moved 'median_revenue' to model 'order_items'.",
         "original_location": {
-          "line": 93
+          "line": 95
         }
       },
       {
         "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 63
+          "line": 65
         },
         "log": "Folded input measure 'food_revenue' into simple metric 'food_revenue' and moved 'food_revenue' to model 'order_items'.",
         "original_location": {
-          "line": 99
+          "line": 101
         }
       },
       {
         "change_type": "SimpleMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 69
+          "line": 71
         },
         "log": "Folded input measure 'drink_revenue' into simple metric 'drink_revenue' and moved 'drink_revenue' to model 'order_items'.",
         "original_location": {
-          "line": 105
+          "line": 107
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 75
+          "line": 77
         },
         "log": "Added ratio metric 'food_revenue_pct' to model 'order_items'.",
         "original_location": {
-          "line": 113
+          "line": 115
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 81
+          "line": 83
         },
         "log": "Added ratio metric 'drink_revenue_pct' to model 'order_items'.",
         "original_location": {
-          "line": 120
+          "line": 122
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 87
+          "line": 89
         },
         "log": "Added ratio metric 'drink_revenue_pct_wtih_complex_args' to model 'order_items'.",
         "original_location": {
-          "line": 127
+          "line": 129
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 101
+          "line": 103
         },
         "log": "Added derived metric 'revenue_growth_mom' with to model 'order_items'.",
         "original_location": {
-          "line": 142
+          "line": 144
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 112
+          "line": 114
         },
         "log": "Added hidden simple metric 'revenue_1' to model 'order_items' as input for cumulative metric 'cumulative_revenue'."
       },
@@ -319,29 +319,29 @@
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 121
+          "line": 123
         },
         "log": "Added cumulative metric 'cumulative_revenue' to model 'order_items'.",
         "original_location": {
-          "line": 184
+          "line": 186
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 126
+          "line": 128
         },
         "log": "Added derived metric 'aaa_order_multi_layer_derived_metric' with to model 'order_items'.",
         "original_location": {
-          "line": 174
+          "line": 176
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 135
+          "line": 137
         },
         "log": "Added hidden simple metric 'revenue_fill_nulls_with_0_join_to_timespine' to model 'order_items' as input for cumulative metric 'cumulative_revenue_with_input_settings'."
       },
@@ -349,18 +349,18 @@
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 146
+          "line": 148
         },
         "log": "Added cumulative metric 'cumulative_revenue_with_input_settings' to model 'order_items'.",
         "original_location": {
-          "line": 190
+          "line": 192
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 156
+          "line": 158
         },
         "log": "Added hidden simple metric 'revenue_fill_nulls_with_test_join_to_timespine' to model 'order_items' as base_metric input for conversion metric 'conversion_metric'."
       },
@@ -368,7 +368,7 @@
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 167
+          "line": 169
         },
         "log": "Added hidden simple metric 'food_revenue_fill_nulls_with_negative_12' to model 'order_items' as conversion_metric input for conversion metric 'conversion_metric'."
       },
@@ -376,18 +376,18 @@
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 175
+          "line": 177
         },
         "log": "Added conversion metric 'conversion_metric' to model 'order_items'.",
         "original_location": {
-          "line": 204
+          "line": 206
         }
       },
       {
         "change_type": "ComplexMetricsMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 190
+          "line": 192
         },
         "log": "Added hidden simple metric 'revenue_join_to_timespine' to model 'order_items' as base_metric input for conversion metric 'conversion_metric_across_two_models'."
       },
@@ -404,7 +404,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'aaa_order_multi_layer_derived_metric'.",
         "original_location": {
-          "line": 174
+          "line": 176
         }
       },
       {
@@ -412,14 +412,14 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'conversion_metric'.",
         "original_location": {
-          "line": 204
+          "line": 206
         }
       },
       {
         "change_type": "TopLevelMetricUpdated",
         "deprecation": null,
         "edited_location": {
-          "line": 202
+          "line": 204
         },
         "log": "Updated top-level metric 'conversion_metric_across_two_models' to be compatible with new syntax, but left at top-level."
       },
@@ -428,7 +428,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'cumulative_revenue'.",
         "original_location": {
-          "line": 184
+          "line": 186
         }
       },
       {
@@ -436,7 +436,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'cumulative_revenue_with_input_settings'.",
         "original_location": {
-          "line": 190
+          "line": 192
         }
       },
       {
@@ -444,7 +444,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'drink_revenue'.",
         "original_location": {
-          "line": 105
+          "line": 107
         }
       },
       {
@@ -452,7 +452,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'drink_revenue_pct'.",
         "original_location": {
-          "line": 120
+          "line": 122
         }
       },
       {
@@ -460,7 +460,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'drink_revenue_pct_wtih_complex_args'.",
         "original_location": {
-          "line": 127
+          "line": 129
         }
       },
       {
@@ -468,7 +468,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'food_revenue'.",
         "original_location": {
-          "line": 99
+          "line": 101
         }
       },
       {
@@ -476,7 +476,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'food_revenue_pct'.",
         "original_location": {
-          "line": 113
+          "line": 115
         }
       },
       {
@@ -484,14 +484,14 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'median_revenue'.",
         "original_location": {
-          "line": 93
+          "line": 95
         }
       },
       {
         "change_type": "TopLevelMetricUpdated",
         "deprecation": null,
         "edited_location": {
-          "line": 218
+          "line": 220
         },
         "log": "Updated top-level metric 'multi_model_derived_metric' to be compatible with new syntax, but left at top-level."
       },
@@ -500,14 +500,14 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'order_cost'.",
         "original_location": {
-          "line": 87
+          "line": 89
         }
       },
       {
         "change_type": "TopLevelMetricUpdated",
         "deprecation": null,
         "edited_location": {
-          "line": 227
+          "line": 229
         },
         "log": "Updated top-level metric 'order_gross_profit' to be compatible with new syntax, but left at top-level."
       },
@@ -524,7 +524,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'revenue_growth_mom'.",
         "original_location": {
-          "line": 142
+          "line": 144
         }
       },
       {
@@ -532,7 +532,7 @@
         "deprecation": null,
         "log": "Deleted top-level metric 'revenue_with_stacked_filters'.",
         "original_location": {
-          "line": 75
+          "line": 76
         }
       }
     ]
@@ -560,7 +560,7 @@
         },
         "log": "Folded input measure 'order_cost' into simple metric 'order_cost' and moved 'order_cost' to model 'orders'.",
         "original_location": {
-          "line": 87
+          "line": 89
         }
       },
       {

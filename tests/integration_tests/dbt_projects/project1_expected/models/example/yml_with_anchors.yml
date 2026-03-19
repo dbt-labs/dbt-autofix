@@ -2,6 +2,7 @@ version: 2
 
 models:
   - name: my_first_dbt_model
+    # my_config comment
     description: &description "A starter dbt model"
     columns:
       - &copy_me
