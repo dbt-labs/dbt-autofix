@@ -13,7 +13,8 @@ sources:
     database: my-db
     schema: my-schema
     loader: my-loader
-    meta: 
+    # meta field
+    meta:
       my_meta: my-meta-value
     tags: 
       - my-tag
@@ -36,7 +37,8 @@ sources:
     tables:
       - name: table1
         description: table1-description
-        meta: 
+
+        meta:
           my_meta: my-meta-value-table1
         identifier: table1id
         loaded_at_field: my_loaded_at_field
@@ -69,4 +71,5 @@ sources:
               - unique:
                   where: 1=1
               - not_null
+              # col1 tests complete
 	

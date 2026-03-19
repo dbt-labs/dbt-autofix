@@ -1,5 +1,6 @@
 models:
   - name: my_model_with_tests
+    # model description
     descrption: "description"
     tests:
       - unique:
@@ -8,6 +9,7 @@ models:
             owner: docs-team
       - custom_test:
           custom_arg: some_value
+          # severity setting
           severity: warn
       - dbt_utils.mutually_exclusive_ranges:
           partition_by: account_id
@@ -16,6 +18,7 @@ models:
           gaps: not_allowed
     columns:
       - name: id
+
         descrption: The ID.
         data_tests:
           - not_null:
@@ -24,9 +27,11 @@ models:
                 priority: critical
           - unique
           - accepted_values:
+              # accepted values list
               values: [1, 2, 3]
               desciption: accepted_values test for id
           - relationships:
+
               to:
                 - model: my_other_model
                   field: id
@@ -36,6 +41,7 @@ models:
             test_name: custom_test
             custom_arg: some_value
             description: my custom test
+
             severity: warn
           - name: alt_test_syntax_builtin_test
             test_name: accepted_values

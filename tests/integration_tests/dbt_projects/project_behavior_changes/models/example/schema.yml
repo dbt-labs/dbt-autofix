@@ -1,6 +1,8 @@
 models:
+  # model name
   - name: model with spaces
   - name: python model with spaces
 
 exposures:
+
   - name: exposure with spaces

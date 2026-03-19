@@ -2,6 +2,7 @@
 
 models:
   - name: my_first_dbt_model
+    # my_config comment
     my_config: mine
     description: &description "A starter dbt model"
     columns:
@@ -9,6 +10,7 @@ models:
         name: id
         meta: 
           my_meta: minemine
+
         my_config: mine
         description: The ID.
         data_tests:
