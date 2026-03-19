@@ -57,10 +57,10 @@ def changeset_dbt_project_remove_deprecated_config(
     }
 
     dict_fields_to_deprecation_class = {
-        "log-path": "ConfigLogPathDeprecation",
-        "target-path": "ConfigTargetPathDeprecation",
-        "data-paths": "ConfigDataPathDeprecation",
-        "source-paths": "ConfigSourcePathDeprecation",
+        "log-path": DeprecationType.CONFIG_LOG_PATH_DEPRECATION,
+        "target-path": DeprecationType.CONFIG_TARGET_PATH_DEPRECATION,
+        "data-paths": DeprecationType.CONFIG_DATA_PATH_DEPRECATION,
+        "source-paths": DeprecationType.CONFIG_SOURCE_PATH_DEPRECATION,
     }
 
     yml_dict = load_yaml(yml_str)
@@ -423,7 +423,7 @@ def changeset_dbt_project_flip_behavior_flags(
     for flag in flags_flipped:
         refactor = DbtDeprecationRefactor(
             log=f"Set flag '{flag}' to 'True' - This will {behavior_change_flag_to_explainations[flag]}.",
-            deprecation="SourceFreshnessProjectHooksNotRun",
+            deprecation=DeprecationType.SOURCE_FRESHNESS_PROJECT_HOOKS_NOT_RUN,
             change_type=ChangeType.SOURCE_FRESHNESS_PROJECT_HOOKS_NOT_RUN,
             original_location=location_of_key(original_flags, flag),
         )

@@ -30,40 +30,10 @@
           "line": 3,
           "start": 11
         },
-        "log": "Moved custom config 'my_custom_config_1' to 'meta'",
+        "log": "Moved custom configs 'my_custom_config_1', 'my_custom_config_2', 'my_custom_config_3' to 'meta'",
         "original_location": {
           "end": 26,
           "line": 4,
-          "start": 8
-        }
-      },
-      {
-        "change_type": "CustomConfigMovedToMetaDeprecation",
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "edited_location": {
-          "end": 87,
-          "line": 3,
-          "start": 69
-        },
-        "log": "Moved custom config 'my_custom_config_2' to 'meta'",
-        "original_location": {
-          "end": 26,
-          "line": 5,
-          "start": 8
-        }
-      },
-      {
-        "change_type": "CustomConfigMovedToMetaDeprecation",
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "edited_location": {
-          "end": 133,
-          "line": 3,
-          "start": 115
-        },
-        "log": "Moved custom config 'my_custom_config_3' to 'meta'",
-        "original_location": {
-          "end": 26,
-          "line": 6,
           "start": 8
         }
       }

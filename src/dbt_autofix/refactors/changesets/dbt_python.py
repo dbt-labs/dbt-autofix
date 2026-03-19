@@ -365,6 +365,7 @@ def move_custom_config_access_to_meta_python(
             DbtDeprecationRefactor(
                 log=f"Updated config.get('{key_name}') to config.meta_get('{key_name}')",
                 change_type=ChangeType.CONFIG_GET_REFACTORED,
+                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                 original_location=Location(line=line_num, start=col, end=end - line_start),
                 edited_location=Location(line=line_num, start=col, end=col + len(replacement)),
             )

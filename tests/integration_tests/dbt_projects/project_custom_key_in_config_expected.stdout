@@ -23,7 +23,7 @@
       },
       {
         "change_type": "ConfigGetRefactored",
-        "deprecation": null,
+        "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 63,
           "line": 17,
@@ -102,7 +102,7 @@
           "line": 3,
           "start": 11
         },
-        "log": "Moved custom config 'sla_hours' to 'meta'",
+        "log": "Moved custom configs 'sla_hours' to 'meta'",
         "original_location": {
           "end": 17,
           "line": 4,

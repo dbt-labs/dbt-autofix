@@ -149,7 +149,7 @@ def location_of_key(node: CommentedMap, key: str) -> Optional[Location]:
     try:
         line, col = node.lc.key(key)
         return Location(line=line + 1, start=col, end=col + len(key) + 1)
-    except (AttributeError, KeyError, IndexError):
+    except (AttributeError, KeyError, IndexError, TypeError):
         return None
 
 

@@ -1223,11 +1223,11 @@ def replace_node_name_non_alpha_with_underscores(
         if node_type == "exposures":
             new_name = _replace_spaces_outside_jinja(name)
             new_name = _remove_non_alpha_outside_jinja(new_name)
-            deprecation = "ExposureNameDeprecation"
+            deprecation = DeprecationType.EXPOSURE_NAME_DEPRECATION
             change_type = ChangeType.EXPOSURE_NAME_DEPRECATION
         else:
             new_name = _replace_spaces_outside_jinja(name)
-            deprecation = "ResourceNamesWithSpacesDeprecation"
+            deprecation = DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION
             change_type = ChangeType.RESOURCE_NAME_WITH_SPACES_DEPRECATION
 
         if new_name and new_name != name:
@@ -1335,7 +1335,7 @@ def changeset_remove_duplicate_keys(content: YMLContent, config: YMLRefactorConf
                 DbtDeprecationRefactor(
                     log=f"Found duplicate keys: line {p.line} - {p.desc}",
                     change_type=ChangeType.DUPLICATE_KEY_REMOVED,
-                    deprecation="DuplicateYAMLKeysDeprecation",
+                    deprecation=DeprecationType.DUPLICATE_YAML_KEYS_DEPRECATION,
                 )
             )
 

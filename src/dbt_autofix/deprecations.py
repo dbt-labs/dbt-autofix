@@ -18,6 +18,7 @@ class DeprecationType(str, Enum):
     MISSING_PLUS_PREFIX_DEPRECATION = "MissingPlusPrefixDeprecation"
     CUSTOM_TOP_LEVEL_KEY_DEPRECATION = "CustomTopLevelKeyDeprecation"
     CUSTOM_KEY_IN_CONFIG_DEPRECATION = "CustomKeyInConfigDeprecation"
+    SOURCE_FRESHNESS_PROJECT_HOOKS_NOT_RUN = "SourceFreshnessProjectHooksNotRun"
 
 
 class ChangeType(str, Enum):

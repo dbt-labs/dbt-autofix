@@ -414,55 +414,10 @@
           "line": 3,
           "start": 59
         },
-        "log": "Moved custom config 'custom_config' to 'meta'",
+        "log": "Moved custom configs 'custom_config', 'custom_config_int', 'custom_config_list', 'custom_config_dict' to 'meta'",
         "original_location": {
           "end": 17,
           "line": 3,
-          "start": 4
-        }
-      },
-      {
-        "change_type": "CustomConfigMovedToMetaDeprecation",
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "edited_location": {
-          "end": 110,
-          "line": 3,
-          "start": 93
-        },
-        "log": "Moved custom config 'custom_config_int' to 'meta'",
-        "original_location": {
-          "end": 21,
-          "line": 4,
-          "start": 4
-        }
-      },
-      {
-        "change_type": "CustomConfigMovedToMetaDeprecation",
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "edited_location": {
-          "end": 135,
-          "line": 3,
-          "start": 117
-        },
-        "log": "Moved custom config 'custom_config_list' to 'meta'",
-        "original_location": {
-          "end": 22,
-          "line": 5,
-          "start": 4
-        }
-      },
-      {
-        "change_type": "CustomConfigMovedToMetaDeprecation",
-        "deprecation": "CustomKeyInConfigDeprecation",
-        "edited_location": {
-          "end": 174,
-          "line": 3,
-          "start": 156
-        },
-        "log": "Moved custom config 'custom_config_dict' to 'meta'",
-        "original_location": {
-          "end": 22,
-          "line": 6,
           "start": 4
         }
       },
@@ -559,7 +514,7 @@
           "line": 5,
           "start": 11
         },
-        "log": "Moved custom config 'myconf' to 'meta'",
+        "log": "Moved custom configs 'myconf' to 'meta'",
         "original_location": {
           "end": 10,
           "line": 5,
@@ -611,7 +566,7 @@
           "line": 6,
           "start": 11
         },
-        "log": "Moved custom config 'myconf' to 'meta'",
+        "log": "Moved custom configs 'myconf' to 'meta'",
         "original_location": {
           "end": 11,
           "line": 6,
@@ -1299,7 +1254,7 @@
           "line": 4,
           "start": 11
         },
-        "log": "Moved custom config 'custom_config' to 'meta'",
+        "log": "Moved custom configs 'custom_config' to 'meta'",
         "original_location": {
           "end": 77,
           "line": 2,
@@ -1321,7 +1276,7 @@
           "line": 4,
           "start": 11
         },
-        "log": "Moved custom config 'custom_config' to 'meta'",
+        "log": "Moved custom configs 'custom_config' to 'meta'",
         "original_location": {
           "end": 41,
           "line": 2,

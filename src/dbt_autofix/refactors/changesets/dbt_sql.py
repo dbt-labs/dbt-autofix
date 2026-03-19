@@ -381,14 +381,15 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
                 )
             )
 
-        for moved_config in moved_to_meta:
+        if moved_to_meta:
+            keys_str = ", ".join(f"'{k}'" for k in moved_to_meta)
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Moved custom config '{moved_config}' to 'meta'",
+                    log=f"Moved custom configs {keys_str} to 'meta'",
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                     change_type=ChangeType.CUSTOM_CONFIG_MOVED_TO_META_DEPRECATION,
-                    original_location=_find_sql_key_location(_orig_for_loc, moved_config),
-                    edited_location=_find_sql_key_location(refactored_content, moved_config),
+                    original_location=_find_sql_key_location(_orig_for_loc, moved_to_meta[0]),
+                    edited_location=_find_sql_key_location(refactored_content, moved_to_meta[0]),
                 )
             )
 

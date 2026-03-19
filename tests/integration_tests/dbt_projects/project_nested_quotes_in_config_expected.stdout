@@ -113,7 +113,7 @@
           "line": 5,
           "start": 11
         },
-        "log": "Moved custom config 'type_of_dq_test' to 'meta'",
+        "log": "Moved custom configs 'type_of_dq_test' to 'meta'",
         "original_location": {
           "end": 19,
           "line": 2,
