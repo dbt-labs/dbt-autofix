@@ -34,7 +34,7 @@ models:
     # Config indicated by + and applies to all files under models/example/
     example:
       materialized: view
-      # custom_config setting
+      # example.custom_config setting
       custom_config: custom_value
 
       dataset: my_dataset

@@ -15,6 +15,7 @@ models:
           meta:
             my_config: mine
             my_meta: minemine
+
     config:
       meta:
         invalid_field: "invalid"

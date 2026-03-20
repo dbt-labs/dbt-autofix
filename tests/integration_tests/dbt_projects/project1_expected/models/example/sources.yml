@@ -18,6 +18,7 @@ sources:
 
       meta:
         custom_property: true
+
         my_meta: my-meta-value
     quoting:
       database: false

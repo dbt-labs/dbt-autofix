@@ -22,7 +22,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 42,
-          "line": 64,
+          "line": 70,
           "start": 2
         },
         "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
@@ -42,7 +42,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 20,
-          "line": 37,
+          "line": 33,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'materialized'",
@@ -57,7 +57,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 22,
-          "line": 39,
+          "line": 43,
           "start": 8
         },
         "log": "Moved custom config 'custom_config' to '+meta'",
@@ -72,7 +72,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 15,
-          "line": 40,
+          "line": 34,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'dataset'",
@@ -87,7 +87,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 15,
-          "line": 41,
+          "line": 35,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'project'",
@@ -102,7 +102,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 18,
-          "line": 42,
+          "line": 36,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'data_space'",
@@ -117,7 +117,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 22,
-          "line": 34,
+          "line": 38,
           "start": 8
         },
         "log": "Added '+' in front of the nested config 'materialized'",
@@ -132,7 +132,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 24,
-          "line": 36,
+          "line": 40,
           "start": 10
         },
         "log": "Moved custom config 'custom_config' to '+meta'",
@@ -147,7 +147,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 17,
-          "line": 44,
+          "line": 47,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'post-hook'",
@@ -162,7 +162,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 16,
-          "line": 49,
+          "line": 52,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'pre-hook'",
@@ -177,7 +177,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 20,
-          "line": 50,
+          "line": 53,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'materialized'",
@@ -192,7 +192,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 12,
-          "line": 51,
+          "line": 54,
           "start": 6
         },
         "log": "Added '+' in front of the nested config 'tags'",
@@ -207,7 +207,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 13,
-          "line": 55,
+          "line": 58,
           "start": 4
         },
         "log": "Added '+' in front of the nested config 'dataset'",
@@ -222,7 +222,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 13,
-          "line": 56,
+          "line": 59,
           "start": 4
         },
         "log": "Added '+' in front of the nested config 'project'",
@@ -237,7 +237,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 16,
-          "line": 57,
+          "line": 60,
           "start": 4
         },
         "log": "Added '+' in front of the nested config 'data_space'",
@@ -252,7 +252,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 11,
-          "line": 59,
+          "line": 63,
           "start": 2
         },
         "log": "Added '+' in front of top level config 'enabled'",
@@ -267,7 +267,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 11,
-          "line": 61,
+          "line": 67,
           "start": 2
         },
         "log": "Added '+' in front of top level config 'enabled'",
@@ -282,7 +282,7 @@
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 8,
-          "line": 62,
+          "line": 68,
           "start": 2
         },
         "log": "Added '+' in front of top level config 'tags'",
@@ -375,7 +375,7 @@
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 15,
-          "line": 10,
+          "line": 11,
           "start": 6
         },
         "log": "Model 'my_first_dbt_model' - Config 'pre-hook' is a common misspelling of 'pre_hook', it has been renamed.",
@@ -390,7 +390,7 @@
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 16,
-          "line": 11,
+          "line": 13,
           "start": 6
         },
         "log": "Model 'my_first_dbt_model' - Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed.",
@@ -622,7 +622,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 16,
-          "line": 58,
+          "line": 60,
           "start": 4
         },
         "log": "Model 'my_model_with_tests' - Field 'descrption' is a common misspelling of 'description', it has been renamed.",
@@ -637,7 +637,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 20,
-          "line": 57,
+          "line": 59,
           "start": 8
         },
         "log": "Column 'id' - Field 'descrption' is a common misspelling of 'description', it has been renamed.",
@@ -652,7 +652,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 26,
-          "line": 26,
+          "line": 27,
           "start": 14
         },
         "log": "Test 'accepted_values' - Field 'desciption' is a common misspelling of 'description', it has been renamed.",
@@ -667,7 +667,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 23,
-          "line": 28,
+          "line": 29,
           "start": 16
         },
         "log": "Test 'accepted_values' - Custom test argument 'values' moved under 'arguments'.",
@@ -682,7 +682,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 19,
-          "line": 32,
+          "line": 33,
           "start": 16
         },
         "log": "Test 'relationships' - Custom test argument 'to' moved under 'arguments'.",
@@ -697,7 +697,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 23,
-          "line": 42,
+          "line": 43,
           "start": 14
         },
         "log": "Test 'custom_test' - Field 'severity' moved under config.",
@@ -712,7 +712,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 25,
-          "line": 44,
+          "line": 45,
           "start": 14
         },
         "log": "Test 'custom_test' - Custom test argument 'custom_arg' moved under 'arguments'.",
@@ -727,7 +727,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 21,
-          "line": 48,
+          "line": 49,
           "start": 14
         },
         "log": "Test 'accepted_values' - Custom test argument 'values' moved under 'arguments'.",
@@ -742,7 +742,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 35,
-          "line": 56,
+          "line": 57,
           "start": 16
         },
         "log": "Test 'custom_test_with_arguments_dict' - Custom test argument 'invalid_custom_arg' moved under 'arguments'.",
@@ -787,7 +787,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 25,
-          "line": 14,
+          "line": 15,
           "start": 12
         },
         "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'partition_by' moved under 'arguments'.",
@@ -802,7 +802,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 31,
-          "line": 15,
+          "line": 16,
           "start": 12
         },
         "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'lower_bound_column' moved under 'arguments'.",
@@ -817,7 +817,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 31,
-          "line": 16,
+          "line": 17,
           "start": 12
         },
         "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'upper_bound_column' moved under 'arguments'.",
@@ -832,7 +832,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 17,
-          "line": 17,
+          "line": 18,
           "start": 12
         },
         "log": "Test 'dbt_utils.mutually_exclusive_ranges' - Custom test argument 'gaps' moved under 'arguments'.",
@@ -847,7 +847,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 39,
-          "line": 65,
+          "line": 67,
           "start": 16
         },
         "log": "Test 'dbt_utils.unique_combination_of_columns' - Custom test argument 'combination_of_columns' moved under 'arguments'.",
@@ -862,7 +862,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 39,
-          "line": 73,
+          "line": 75,
           "start": 16
         },
         "log": "Test 'dbt_utils.unique_combination_of_columns' - Custom test argument 'combination_of_columns' moved under 'arguments'.",
@@ -891,7 +891,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 16,
-          "line": 69,
+          "line": 70,
           "start": 4
         },
         "log": "Source 'my-source' - Field 'desciption' is a common misspelling of 'description', it has been renamed.",
@@ -966,7 +966,7 @@
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 26,
-          "line": 57,
+          "line": 58,
           "start": 10
         },
         "log": "Table 'table1' - Field 'loaded_at_field' moved under config.",
@@ -981,7 +981,7 @@
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 15,
-          "line": 58,
+          "line": 59,
           "start": 10
         },
         "log": "Table 'table1' - Field 'tags' moved under config.",
@@ -996,7 +996,7 @@
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 20,
-          "line": 60,
+          "line": 61,
           "start": 10
         },
         "log": "Table 'table1' - Field 'freshness' moved under config.",
@@ -1011,7 +1011,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 15,
-          "line": 67,
+          "line": 68,
           "start": 10
         },
         "log": "Table 'table1' - Moved all the meta fields under config.meta and merged with existing config.meta.",
@@ -1026,7 +1026,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 28,
-          "line": 35,
+          "line": 36,
           "start": 16
         },
         "log": "Test 'dbt_expectations.expect_table_columns_to_contain_set' - Custom test argument 'column_list' moved under 'arguments'.",
@@ -1041,7 +1041,7 @@
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 26,
-          "line": 36,
+          "line": 37,
           "start": 16
         },
         "log": "Test 'dbt_expectations.expect_table_columns_to_contain_set' - Custom test argument 'transform' moved under 'arguments'.",
@@ -1056,7 +1056,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 19,
-          "line": 54,
+          "line": 55,
           "start": 14
         },
         "log": "Column 'col1' - Moved all the meta fields under config.meta and merged with existing config.meta.",
@@ -1071,7 +1071,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 26,
-          "line": 50,
+          "line": 51,
           "start": 20
         },
         "log": "Test 'unique' - Field 'where' moved under config.",
@@ -1103,7 +1103,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 18,
-          "line": 21,
+          "line": 22,
           "start": 8
         },
         "log": "Model 'my_first_dbt_model' - Field 'my_config' is not allowed, but 'config' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
@@ -1148,7 +1148,7 @@
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 22,
-          "line": 30,
+          "line": 31,
           "start": 16
         },
         "log": "Test 'not_null' - Field 'where' moved under config.",

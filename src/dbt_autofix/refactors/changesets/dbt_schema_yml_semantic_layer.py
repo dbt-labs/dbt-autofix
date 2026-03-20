@@ -4,8 +4,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.deprecations import ChangeType
+from dbt_autofix.refactors.node import assign_node, pop_node
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
+    RefactorEntry,
     YMLContent,
     YMLRefactorConfig,
     YMLRuleRefactorResult,
@@ -48,8 +50,7 @@ def run_change_function_against_each_model(
     change_type: ChangeType,
 ) -> YMLRuleRefactorResult:
     refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-    pending_location_resolution = []
+    refactor_entries: List[RefactorEntry] = []
     yml_dict = load_yaml(yml_str)
 
     for i, node in enumerate(get_list(yml_dict, "models")):
@@ -65,7 +66,6 @@ def run_change_function_against_each_model(
                 r = DbtDeprecationRefactor(
                     log=log, deprecation=None, change_type=change_type, original_location=original_location
                 )
-                deprecation_refactors.append(r)
 
                 def resolve(parsed, refactor=r, model_index=i, metric_name=metric_name):
                     model = get_list(parsed, "models")[model_index]
@@ -79,7 +79,7 @@ def run_change_function_against_each_model(
                             return
                     refactor.edited_location = location_of_node(model)
 
-                pending_location_resolution.append(resolve)
+                refactor_entries.append(RefactorEntry(refactor=r, resolve=resolve))
 
     refactored_yaml = dict_to_yaml_str(yml_dict) if refactored else yml_str
     return YMLRuleRefactorResult(
@@ -87,8 +87,7 @@ def run_change_function_against_each_model(
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-        pending_location_resolution=pending_location_resolution,
+        refactor_entries=refactor_entries,
     )
 
 
@@ -96,8 +95,10 @@ def append_metric_to_model(
     model_node: CommentedMap,
     metric: CommentedMap,
 ) -> None:
+    from ruamel.yaml.comments import CommentedSeq
+
     if "metrics" not in model_node:
-        model_node["metrics"] = []
+        model_node["metrics"] = CommentedSeq()
     model_node["metrics"].append(metric)
 
 
@@ -732,8 +733,7 @@ def changeset_merge_semantic_models_with_models(
     semantic_definitions = config.semantic_definitions
     assert semantic_definitions is not None
     refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-    pending_location_resolution = []
+    refactor_entries: List[RefactorEntry] = []
     yml_dict = load_yaml(yml_str)
     models = get_list(yml_dict, "models")
     original_models_count = len(models)
@@ -756,12 +756,11 @@ def changeset_merge_semantic_models_with_models(
                     change_type=ChangeType.SEMANTIC_MODEL_MERGED_WITH_MODEL,
                     original_location=original_location,
                 )
-                deprecation_refactors.append(r)
 
                 def resolve(parsed, refactor=r, model_index=i):
                     refactor.edited_location = location_of_node(get_list(parsed, "models")[model_index])
 
-                pending_location_resolution.append(resolve)
+                refactor_entries.append(RefactorEntry(refactor=r, resolve=resolve))
 
     # Create new model entries for semantic models that don't have a corresponding model entry in any .yml file
     # and merge semantic models with them
@@ -790,12 +789,11 @@ def changeset_merge_semantic_models_with_models(
                         change_type=ChangeType.SEMANTIC_MODEL_MERGED_WITH_MODEL,
                         original_location=original_location,
                     )
-                    deprecation_refactors.append(r)
 
                     def resolve(parsed, refactor=r, model_index=edited_model_index):
                         refactor.edited_location = location_of_node(get_list(parsed, "models")[model_index])
 
-                    pending_location_resolution.append(resolve)
+                    refactor_entries.append(RefactorEntry(refactor=r, resolve=resolve))
 
     refactored_yaml = dict_to_yaml_str(yml_dict) if refactored else yml_str
     return YMLRuleRefactorResult(
@@ -803,8 +801,7 @@ def changeset_merge_semantic_models_with_models(
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-        pending_location_resolution=pending_location_resolution,
+        refactor_entries=refactor_entries,
     )
 
 
@@ -984,7 +981,7 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
     semantic_definitions = config.semantic_definitions
     assert semantic_definitions is not None
     refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactor_entries: List[RefactorEntry] = []
     yml_dict = load_yaml(yml_str)
 
     orig_semantic_models = {sm["name"]: sm for sm in get_list(content.original_parsed, "semantic_models")}
@@ -995,14 +992,16 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
     for semantic_model in top_level_semantic_models:
         if semantic_model["name"] in semantic_definitions.merged_semantic_models:
             refactored = True
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Deleted top-level semantic model '{semantic_model['name']}'.",
-                    deprecation=None,
-                    change_type=ChangeType.TOP_LEVEL_SEMANTIC_MODEL_DELETED,
-                    original_location=location_of_node(orig_semantic_models[semantic_model["name"]])
-                    if semantic_model["name"] in orig_semantic_models
-                    else None,
+            refactor_entries.append(
+                RefactorEntry(
+                    refactor=DbtDeprecationRefactor(
+                        log=f"Deleted top-level semantic model '{semantic_model['name']}'.",
+                        deprecation=None,
+                        change_type=ChangeType.TOP_LEVEL_SEMANTIC_MODEL_DELETED,
+                        original_location=location_of_node(orig_semantic_models[semantic_model["name"]])
+                        if semantic_model["name"] in orig_semantic_models
+                        else None,
+                    )
                 )
             )
         else:
@@ -1018,7 +1017,7 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
         refactored=refactored,
         refactored_yaml=dict_to_yaml_str(yml_dict, write_empty=True) if refactored else yml_str,
         original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
+        refactor_entries=refactor_entries,
     )
 
 
@@ -1029,33 +1028,36 @@ def changeset_migrate_metric_tags_field_to_config(
     semantic_definitions = config.semantic_definitions
     assert semantic_definitions is not None
     refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactor_entries: List[RefactorEntry] = []
     yml_dict = load_yaml(yml_str)
     metrics = get_list(yml_dict, "metrics")
     transformed_metrics = []
 
     original_metrics = {m["name"]: m for m in get_list(content.original_parsed, "metrics")}
-    pending_location_resolution = []
     for metric_i, metric in enumerate(metrics):
-        if deprecated_tags := metric.pop("tags", None):
+        if "tags" in metric:
+            deprecated_tags = metric["tags"]
             if not isinstance(deprecated_tags, list):
-                break
+                transformed_metrics.append(metric)
+                continue
+            if "config" not in metric:
+                metric["config"] = CommentedMap()
+            orig_metric_node = original_metrics.get(metric["name"])
+            n = pop_node(metric, "tags", original_parent=orig_metric_node)
             metric_config = get_dict(metric, "config")
             metric_tags = get_list(metric_config, "tags")
             if isinstance(metric_tags, str):
                 metric_tags = [metric_tags]
             deprecated_tags.extend(metric_tags)
-            metric_config["tags"] = deprecated_tags
+            assign_node(metric_config, "tags", n)
             metric["config"] = metric_config
             refactored = True
-            orig_metric_node = original_metrics.get(metric["name"])
             refactor = DbtDeprecationRefactor(
                 log=f"Migrated metric '{metric['name']}' tags field to config.",
                 deprecation=None,
                 change_type=ChangeType.METRIC_TAGS_MIGRATION,
-                original_location=location_of_key(orig_metric_node, "tags") if orig_metric_node else None,
+                original_location=n.original_location,
             )
-            deprecation_refactors.append(refactor)
             metric_name = metric["name"]
 
             def resolve(parsed, refactor=refactor, name=metric_name):
@@ -1065,7 +1067,7 @@ def changeset_migrate_metric_tags_field_to_config(
                             refactor.edited_location = location_of_key(get_dict(metric, "config"), "tags")
                             return
 
-            pending_location_resolution.append(resolve)
+            refactor_entries.append(RefactorEntry(refactor=refactor, resolve=resolve))
             # we use the initial_metrics as a way to work on many metrics later without having to
             # find them again in the restructured yaml, so we need to update the represenation right
             # now just to be safe.
@@ -1079,8 +1081,7 @@ def changeset_migrate_metric_tags_field_to_config(
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-        pending_location_resolution=pending_location_resolution,
+        refactor_entries=refactor_entries,
     )
 
 
@@ -1091,7 +1092,7 @@ def changeset_migrate_or_delete_top_level_metrics(
     semantic_definitions = config.semantic_definitions
     assert semantic_definitions is not None
     refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactor_entries: List[RefactorEntry] = []
     yml_dict = load_yaml(yml_str)
 
     metric_locations = {m["name"]: location_of_node(m) for m in get_list(content.original_parsed, "metrics")}
@@ -1101,17 +1102,18 @@ def changeset_migrate_or_delete_top_level_metrics(
     transformed_metrics = []
     transformed_index = 0
 
-    pending_location_resolution = []
     for metric in top_level_metrics:
         # Do not include in transformed_metrics, effectively removing the metric from top-level specification
         if metric["name"] in semantic_definitions.merged_metrics:
             refactored = True
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Deleted top-level metric '{metric['name']}'.",
-                    deprecation=None,
-                    change_type=ChangeType.TOP_LEVEL_METRIC_DELETED,
-                    original_location=metric_locations.get(metric["name"]),
+            refactor_entries.append(
+                RefactorEntry(
+                    refactor=DbtDeprecationRefactor(
+                        log=f"Deleted top-level metric '{metric['name']}'.",
+                        deprecation=None,
+                        change_type=ChangeType.TOP_LEVEL_METRIC_DELETED,
+                        original_location=metric_locations.get(metric["name"]),
+                    )
                 )
             )
         else:
@@ -1170,12 +1172,11 @@ def changeset_migrate_or_delete_top_level_metrics(
                 change_type=ChangeType.TOP_LEVEL_METRIC_UPDATED,
                 original_location=metric_locations.get(id(metric)),
             )
-            deprecation_refactors.append(refactor)
 
             def resolve(parsed, refactor=refactor, metric_index=transformed_index):
                 refactor.edited_location = location_of_node(get_list(parsed, "metrics")[metric_index])
 
-            pending_location_resolution.append(resolve)
+            refactor_entries.append(RefactorEntry(refactor=refactor, resolve=resolve))
             transformed_index += 1
 
     if not transformed_metrics:
@@ -1189,6 +1190,5 @@ def changeset_migrate_or_delete_top_level_metrics(
         refactored=refactored,
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-        pending_location_resolution=pending_location_resolution,
+        refactor_entries=refactor_entries,
     )

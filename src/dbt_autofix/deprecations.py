@@ -69,3 +69,4 @@ class ChangeType(str, Enum):
     CUSTOM_TOP_LEVEL_KEY_REMOVED = "CustomTopLevelKeyRemoved"
     TEST_ARGUMENT_MOVED_TO_ARGUMENTS = "TestArgumentMovedToArguments"
     NODE_PROPERTY_MOVED_TO_CONFIG_DEPRECATION = "NodePropertyMovedToConfigDeprecation"
+    RENAME_PYTHON_FILE_NAMES_WITH_SPACES = "RenamePythonFileNamesWithSpaces"

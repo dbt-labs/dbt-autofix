@@ -148,6 +148,7 @@ def rename_python_file_names_with_spaces(
             DbtDeprecationRefactor(
                 log=f"Renamed '{python_file_path.name}' to '{new_file_path.name}'",
                 deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
+                change_type=ChangeType.RENAME_PYTHON_FILE_NAMES_WITH_SPACES,
             )
         )
 

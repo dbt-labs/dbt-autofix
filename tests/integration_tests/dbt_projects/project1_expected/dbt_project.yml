@@ -30,16 +30,19 @@ models:
   dbt_autofix_tests:
     # Config indicated by + and applies to all files under models/example/
     example:
+      +materialized: view
+      +dataset: my_dataset
+      +project: my_project
+      +data_space: my_data_space
       my_first_dbt_model:
         +materialized: table
         +meta:
           custom_config: custom_value
-      +materialized: view
       +meta:
+      # example.custom_config setting
         custom_config: custom_value
-      +dataset: my_dataset
-      +project: my_project
-      +data_space: my_data_space
+
+    # Really long post-hook (>1000 chars) to ensure config dict values aren't recursed into
     analytics:
       +post-hook:
         - "{% if target.name == 'prod' %}GRANT SELECT ON {{ this }} TO ROLE analytics_reader; GRANT SELECT ON {{ this }} TO ROLE data_science_team; GRANT SELECT ON {{ this }} TO ROLE executive_dashboard; GRANT SELECT ON {{ this }} TO ROLE finance_team{% endif %}"
@@ -55,9 +58,12 @@ seeds:
     +dataset: my_dataset
     +project: my_project
     +data_space: my_data_space
+
 exposures:
   +enabled: true
+
 unit-tests:
+
   +enabled: true
   +tags: ["test_tag"]
 flags:

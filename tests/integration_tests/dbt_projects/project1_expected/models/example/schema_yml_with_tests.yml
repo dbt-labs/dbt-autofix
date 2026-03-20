@@ -9,6 +9,7 @@ models:
             severity: warn
           arguments:
             custom_arg: some_value
+          # severity setting
       - dbt_utils.mutually_exclusive_ranges:
           arguments:
             partition_by: account_id
@@ -54,6 +55,7 @@ models:
               arguments:
                 custom_arg: some_value
                 invalid_custom_arg: some_value
+
         description: The ID.
     description: "description"
   - name: my_versioned_model_with_tests
