@@ -7,32 +7,97 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 2"
+        "edited_location": {
+          "line": 2
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 2",
+        "original_location": {
+          "line": 2
+        }
       },
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 6"
+        "edited_location": {
+          "line": 6
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 6",
+        "original_location": {
+          "line": 6
+        }
       },
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 16"
+        "edited_location": {
+          "line": 16
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 16",
+        "original_location": {
+          "line": 16
+        }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'fancy_delimiters_regular_inside' - Config 'custom_config_1' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 10,
+          "start": 8
+        },
+        "log": "Model 'fancy_delimiters_regular_inside' - Config 'custom_config_1' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 9,
+          "start": 6
+        }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'regular_delimiters_fancy_inside' - Config 'custom_config_2' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 16,
+          "start": 8
+        },
+        "log": "Model 'regular_delimiters_fancy_inside' - Config 'custom_config_2' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 14,
+          "start": 6
+        }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'unquoted_with_fancy_inside' - Config 'custom_config_3' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 22,
+          "start": 8
+        },
+        "log": "Model 'unquoted_with_fancy_inside' - Config 'custom_config_3' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 19,
+          "start": 6
+        }
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'regular_delimiters_escaped_inside' - Config 'custom_config_4' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 28,
+          "start": 8
+        },
+        "log": "Model 'regular_delimiters_escaped_inside' - Config 'custom_config_4' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 24,
+          "start": 6
+        }
       }
     ]
   },
@@ -41,8 +106,19 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['type_of_dq_test'] to 'meta'"
+        "edited_location": {
+          "end": 26,
+          "line": 5,
+          "start": 11
+        },
+        "log": "Moved custom configs 'type_of_dq_test' to 'meta'",
+        "original_location": {
+          "end": 19,
+          "line": 2,
+          "start": 4
+        }
       }
     ],
     "warnings": []

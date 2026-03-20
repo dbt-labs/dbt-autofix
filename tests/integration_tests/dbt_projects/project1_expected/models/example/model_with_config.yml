@@ -7,5 +7,7 @@ models:
       data_space: my_data_space
       meta:
         custom_config: custom_value
+      # hook config
       pre_hook: select 1
+
       post_hook: select 2

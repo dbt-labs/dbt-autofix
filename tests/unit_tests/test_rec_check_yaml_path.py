@@ -25,9 +25,19 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.refactors.changesets.dbt_project_yml import rec_check_yaml_path
+from dbt_autofix.refactors.yml import dict_to_yaml_str, load_yaml
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+
+
+def _run_rec(input_dict, path, node_fields, schema=None, node_type=None):
+    """Helper: round-trip input_dict through YAML to get CommentedMap, then call rec_check_yaml_path."""
+    cm = load_yaml(dict_to_yaml_str(input_dict))
+    parent = CommentedMap({"__root__": cm})
+    node, logs = rec_check_yaml_path(parent, "__root__", path, node_fields, None, schema, node_type)
+    return node.value, logs
 
 
 @pytest.fixture(scope="module")
@@ -67,7 +77,7 @@ def test_correct_hook_syntax_unchanged(models_node_fields, temp_path):
 
     expected_output = {"+post-hook": ["select 1", "select 2"], "+pre-hook": "select 0"}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0  # No changes = no logs
@@ -82,7 +92,7 @@ def test_correct_configs_unchanged(models_node_fields, temp_path):
 
     expected_output = {"+materialized": "table", "+tags": ["tag1", "tag2"], "+enabled": True}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -107,7 +117,7 @@ def test_unsupported_hook_moved_to_meta(models_node_fields, temp_path):
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2
@@ -134,7 +144,7 @@ def test_mixed_valid_and_invalid_configs(models_node_fields, temp_path):
         },
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 1  # Only one move needed
@@ -155,7 +165,7 @@ def test_valid_config_missing_plus(models_node_fields, temp_path):
 
     expected_output = {"+materialized": "table", "+tags": ["tag1"]}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2
@@ -172,7 +182,7 @@ def test_hook_missing_plus(models_node_fields, temp_path):
 
     expected_output = {"+post-hook": "select 1"}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 1
@@ -193,7 +203,7 @@ def test_unknown_config_with_plus_moved_to_meta(models_node_fields, temp_path):
 
     expected_output = {"+materialized": "table", "+meta": {"custom_config": "my_value"}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 1
@@ -210,7 +220,7 @@ def test_unknown_config_without_plus_moved_to_meta(models_node_fields, temp_path
 
     expected_output = {"+materialized": "table", "+meta": {"custom_field": "value"}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2  # One for adding +, one for moving to meta
@@ -225,7 +235,7 @@ def test_multiple_unknowns_merged_into_meta(models_node_fields, temp_path):
 
     expected_output = {"+materialized": "table", "+meta": {"unknown1": "val1", "unknown2": "val2", "unknown3": "val3"}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 3
@@ -264,7 +274,7 @@ def test_real_world_example_user_config(models_node_fields, temp_path):
         },
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2
@@ -298,7 +308,7 @@ def test_all_scenarios_combined(models_node_fields, temp_path):
         },
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 4
@@ -318,7 +328,7 @@ def test_empty_dict(models_node_fields, temp_path):
     input_dict = {}
     expected_output = {}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -337,7 +347,7 @@ def test_preserves_complex_values(models_node_fields, temp_path):
 
     expected_output = input_dict.copy()  # Should be unchanged
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -364,7 +374,7 @@ def test_jinja_in_hook_values_preserved(models_node_fields, temp_path):
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 1
@@ -387,7 +397,7 @@ def test_nested_config_under_logical_grouping(models_node_fields, temp_path):
 
     expected_output = {"example": {"+materialized": "view"}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 1
@@ -403,7 +413,7 @@ def test_multiple_nested_configs_under_logical_grouping(models_node_fields, temp
 
     expected_output = {"example": {"+materialized": "view", "+schema": "analytics", "+enabled": True}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 3
@@ -418,7 +428,7 @@ def test_deeply_nested_logical_groupings(models_node_fields, temp_path):
 
     expected_output = {"external_views": {"example": {"+materialized": "view", "+schema": "analytics"}}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2
@@ -440,7 +450,7 @@ def test_users_exact_scenario_from_question(models_node_fields, temp_path):
 
     expected_output = {"external_views": {"example": {"+materialized": "view"}, "+schema": "external_analytics"}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2
@@ -455,7 +465,7 @@ def test_nested_custom_configs_in_logical_grouping(models_node_fields, temp_path
 
     expected_output = {"example": {"+materialized": "view", "+meta": {"custom_unknown": "value"}}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2  # One for materialized +, one for moving custom to meta
@@ -476,7 +486,7 @@ def test_mixed_logical_groupings_and_configs(models_node_fields, temp_path):
 
     expected_output = {"+materialized": "table", "example": {"+materialized": "view", "+enabled": False}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 3
@@ -496,7 +506,7 @@ def test_logical_grouping_with_already_prefixed_configs(models_node_fields, temp
 
     expected_output = {"example": {"+materialized": "view", "+schema": "analytics"}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 1  # Only schema needs fixing
@@ -511,7 +521,7 @@ def test_empty_logical_grouping(models_node_fields, temp_path):
 
     expected_output = {"example": {}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -523,24 +533,26 @@ def test_empty_logical_grouping(models_node_fields, temp_path):
 
 
 def test_none_value_returned_as_is(models_node_fields, temp_path):
-    """INPUT:  None (non-dict value passed to function)
+    """INPUT:  None (non-CommentedMap value)
     OUTPUT: None, empty logs
     WHY:    Type guard should handle None gracefully
     """
-    result, logs = rec_check_yaml_path(None, temp_path, models_node_fields)
+    parent = CommentedMap({"__root__": None})
+    node, logs = rec_check_yaml_path(parent, "__root__", temp_path, models_node_fields)
 
-    assert result is None
+    assert node.value is None
     assert len(logs) == 0
 
 
 def test_integer_value_returned_as_is(models_node_fields, temp_path):
     """INPUT:  Integer value (e.g., 5)
     OUTPUT: Same integer, empty logs
-    WHY:    Type guard should preserve non-dict scalar values
+    WHY:    Type guard should preserve non-CommentedMap scalar values
     """
-    result, logs = rec_check_yaml_path(5, temp_path, models_node_fields)
+    parent = CommentedMap({"__root__": 5})
+    node, logs = rec_check_yaml_path(parent, "__root__", temp_path, models_node_fields)
 
-    assert result == 5
+    assert node.value == 5
     assert len(logs) == 0
 
 
@@ -549,9 +561,10 @@ def test_string_value_returned_as_is(models_node_fields, temp_path):
     OUTPUT: Same string, empty logs
     WHY:    Type guard should preserve string values
     """
-    result, logs = rec_check_yaml_path("table", temp_path, models_node_fields)
+    parent = CommentedMap({"__root__": "table"})
+    node, logs = rec_check_yaml_path(parent, "__root__", temp_path, models_node_fields)
 
-    assert result == "table"
+    assert node.value == "table"
     assert len(logs) == 0
 
 
@@ -560,11 +573,13 @@ def test_boolean_value_returned_as_is(models_node_fields, temp_path):
     OUTPUT: Same boolean, empty logs
     WHY:    Type guard should preserve boolean values
     """
-    result_true, logs_true = rec_check_yaml_path(True, temp_path, models_node_fields)
-    result_false, logs_false = rec_check_yaml_path(False, temp_path, models_node_fields)
+    parent_true = CommentedMap({"__root__": True})
+    parent_false = CommentedMap({"__root__": False})
+    node_true, logs_true = rec_check_yaml_path(parent_true, "__root__", temp_path, models_node_fields)
+    node_false, logs_false = rec_check_yaml_path(parent_false, "__root__", temp_path, models_node_fields)
 
-    assert result_true is True
-    assert result_false is False
+    assert node_true.value is True
+    assert node_false.value is False
     assert len(logs_true) == 0
     assert len(logs_false) == 0
 
@@ -575,9 +590,10 @@ def test_list_value_returned_as_is(models_node_fields, temp_path):
     WHY:    Type guard should preserve list values
     """
     input_list = ["a", "b", "c"]
-    result, logs = rec_check_yaml_path(input_list, temp_path, models_node_fields)
+    parent = CommentedMap({"__root__": input_list})
+    node, logs = rec_check_yaml_path(parent, "__root__", temp_path, models_node_fields)
 
-    assert result == input_list
+    assert node.value == input_list
     assert len(logs) == 0
 
 
@@ -609,7 +625,7 @@ def test_partition_by_with_nested_dict_preserved(models_node_fields, temp_path):
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -624,7 +640,7 @@ def test_cluster_by_list_preserved(models_node_fields, temp_path):
 
     expected_output = {"+cluster_by": ["timezone_nm", "zip5_cd", "timezone_offset_adj_amt"]}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -639,7 +655,7 @@ def test_persist_docs_dict_preserved(models_node_fields, temp_path):
 
     expected_output = {"+persist_docs": {"relation": True, "columns": True}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -654,7 +670,7 @@ def test_tags_list_with_special_values(models_node_fields, temp_path):
 
     expected_output = {"+tags": ["exclude_hourly_build", "tag2", "special-tag"]}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -692,7 +708,7 @@ def test_user_exact_scenario_from_traceback(models_node_fields, temp_path):
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 3  # Three configs got + prefix
@@ -731,7 +747,7 @@ def test_mixed_config_types_in_logical_grouping(models_node_fields, temp_path):
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 5  # 4 configs got + prefix, 1 moved to meta
@@ -760,7 +776,7 @@ def test_deeply_nested_with_complex_config_values(models_node_fields, temp_path)
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2
@@ -775,7 +791,7 @@ def test_config_with_empty_dict_value(models_node_fields, temp_path):
 
     expected_output = {"+persist_docs": {}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -790,7 +806,7 @@ def test_config_with_empty_list_value(models_node_fields, temp_path):
 
     expected_output = {"+tags": []}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -805,7 +821,7 @@ def test_config_with_nested_empty_structures(models_node_fields, temp_path):
 
     expected_output = {"+partition_by": {"field": "date", "range": {}}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0
@@ -837,7 +853,7 @@ def test_all_scalar_types_in_one_config(models_node_fields, temp_path):
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 4  # All 4 configs got + prefix
@@ -856,7 +872,7 @@ def test_persist_docs_dict_value_not_recursed(models_node_fields, temp_path):
 
     expected_output = {"+persist_docs": {"relation": True, "columns": True}}
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0  # No changes, value preserved as-is
@@ -878,7 +894,7 @@ def test_labels_dict_value_not_recursed(models_node_fields, temp_path):
         "+labels": {"application": "data_analytics", "environment": "{{ target.name }}", "billing": "analytics"}
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 0  # No changes, value preserved as-is
@@ -911,7 +927,7 @@ def test_mixed_valid_configs_with_dict_values(models_node_fields, temp_path):
         "+labels": {"application": "analytics", "environment": "prod"},
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+    result, logs = _run_rec(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 4  # All 4 configs got + prefix

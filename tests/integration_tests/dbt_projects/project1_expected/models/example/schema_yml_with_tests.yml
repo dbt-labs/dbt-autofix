@@ -1,5 +1,6 @@
 models:
   - name: my_model_with_tests
+    # model description
     tests:
       - unique:
           column_name: id
@@ -8,6 +9,7 @@ models:
             severity: warn
           arguments:
             custom_arg: some_value
+          # severity setting
       - dbt_utils.mutually_exclusive_ranges:
           arguments:
             partition_by: account_id
@@ -16,14 +18,17 @@ models:
             gaps: not_allowed
     columns:
       - name: id
+
         data_tests:
           - not_null
           - unique
           - accepted_values:
+              # accepted values list
               description: accepted_values test for id
               arguments:
                 values: [1, 2, 3]
           - relationships:
+
               arguments:
                 to:
                   - model: my_other_model
@@ -33,6 +38,7 @@ models:
           - name: my_custom_test
             test_name: custom_test
             description: my custom test
+
             config:
               severity: warn
             arguments:
@@ -49,6 +55,7 @@ models:
               arguments:
                 custom_arg: some_value
                 invalid_custom_arg: some_value
+
         description: The ID.
     description: "description"
   - name: my_versioned_model_with_tests

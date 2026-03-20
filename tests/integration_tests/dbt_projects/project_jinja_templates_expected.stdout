@@ -7,16 +7,49 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Model 'model with spaces {{ env_var('DBT_ENV') | lower }}' - Updated 'name' from 'model with spaces {{ env_var('DBT_ENV') | lower }}' to 'model_with_spaces_{{ env_var('DBT_ENV') | lower }}'."
+        "edited_location": {
+          "end": 9,
+          "line": 5,
+          "start": 4
+        },
+        "log": "Model 'model with spaces {{ env_var('DBT_ENV') | lower }}' - Updated 'name' from 'model with spaces {{ env_var('DBT_ENV') | lower }}' to 'model_with_spaces_{{ env_var('DBT_ENV') | lower }}'.",
+        "original_location": {
+          "end": 9,
+          "line": 5,
+          "start": 4
+        }
       },
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Seed 'seed name {{ env_var('DBT_DATABASE') | lower }}' - Updated 'name' from 'seed name {{ env_var('DBT_DATABASE') | lower }}' to 'seed_name_{{ env_var('DBT_DATABASE') | lower }}'."
+        "edited_location": {
+          "end": 9,
+          "line": 11,
+          "start": 4
+        },
+        "log": "Seed 'seed name {{ env_var('DBT_DATABASE') | lower }}' - Updated 'name' from 'seed name {{ env_var('DBT_DATABASE') | lower }}' to 'seed_name_{{ env_var('DBT_DATABASE') | lower }}'.",
+        "original_location": {
+          "end": 9,
+          "line": 12,
+          "start": 4
+        }
       },
       {
+        "change_type": "ExposureNameDeprecation",
         "deprecation": "ExposureNameDeprecation",
-        "log": "Exposure 'exposure with special-chars)(*!# {{ env_var('ENV') }}' - Updated 'name' from 'exposure with special-chars)(*!# {{ env_var('ENV') }}' to 'exposure_with_specialchars_{{ env_var('ENV') }}'."
+        "edited_location": {
+          "end": 9,
+          "line": 18,
+          "start": 4
+        },
+        "log": "Exposure 'exposure with special-chars)(*!# {{ env_var('ENV') }}' - Updated 'name' from 'exposure with special-chars)(*!# {{ env_var('ENV') }}' to 'exposure_with_specialchars_{{ env_var('ENV') }}'.",
+        "original_location": {
+          "end": 9,
+          "line": 20,
+          "start": 4
+        }
       }
     ]
   }

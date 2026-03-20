@@ -1,8 +1,14 @@
 import re
 from typing import List, Set, Tuple
 
-from dbt_autofix.deprecations import DeprecationType
-from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
+from dbt_autofix.deprecations import ChangeType
+from dbt_autofix.refactors.results import (
+    DbtDeprecationRefactor,
+    Location,
+    SQLContent,
+    SQLRefactorConfig,
+    SQLRuleRefactorResult,
+)
 
 # Statically compiled regex patterns for performance
 # Pattern to detect config variable shadowing
@@ -69,10 +75,16 @@ def move_custom_config_access_to_meta_sql_improved(
     for specs in schema_specs.yaml_specs_per_node_type.values():
         allowed_config_fields.update(specs.allowed_config_fields)
 
+    # Pre-compute original positions ordered by occurrence to handle duplicates correctly
+    orig_relevant = [
+        m for m in CONFIG_ACCESS_PATTERN.finditer(content.original_str) if m.group("key") not in allowed_config_fields
+    ]
+
     # Collect all replacements first
     matches = list(CONFIG_ACCESS_PATTERN.finditer(refactored_content))
-    replacements: List[Tuple[int, int, str, str]] = []
+    replacements: List[Tuple[int, int, str, str, Location]] = []
 
+    orig_idx = 0
     for match in matches:
         method = match.group(2)  # 'get' or 'require'
         pre_whitespace = match.group("pre_ws")  # Whitespace before key
@@ -94,22 +106,32 @@ def move_custom_config_access_to_meta_sql_improved(
         # Build replacement with preserved whitespace and formatting
         replacement = f"config.{new_method}({pre_whitespace}{quote_style}{config_key}{quote_style}{rest_of_call})"
 
-        replacements.append((start, end, replacement, original))
+        # Pre-compute location from the original source file using paired index to handle duplicates
+        orig_m = orig_relevant[orig_idx]
+        orig_idx += 1
+        orig_prefix = content.original_str[: orig_m.start()]
+        line_num = orig_prefix.count("\n") + 1
+        orig_ls = orig_prefix.rfind("\n") + 1
+        col = orig_m.start() - orig_ls
+        end_col = orig_m.end() - orig_ls
+
+        replacements.append((start, end, replacement, original, Location(line=line_num, start=col, end=end_col)))
         refactored = True
 
     # Apply replacements in reverse order to maintain correct positions
-    for start, end, replacement, original in reversed(replacements):
+    for start, end, replacement, original, location in reversed(replacements):
+        prefix = refactored_content[:start]
+        edit_line = prefix.count("\n") + 1
+        edit_ls = prefix.rfind("\n") + 1
+        edit_col = start - edit_ls
         refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
-
-        # Determine which method was used
-        method_used = "get" if ".get(" in original else "require"
 
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f'Refactored "{original}" to "{replacement}"',
-                # Use the existing deprecation type (assuming it exists)
-                # If not, this would need to be added to the DeprecationType enum
-                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                change_type=ChangeType.CONFIG_GET_REFACTORED,
+                original_location=location,
+                edited_location=Location(line=edit_line, start=edit_col, end=edit_col + len(replacement)),
             )
         )
 
