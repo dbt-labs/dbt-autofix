@@ -61,6 +61,11 @@ seeds:
 exposures:
   enabled: true
 
+tests:
+  dbt_autofix_tests:
+    meta:
+      owner: data-quality-team
+
 unit-tests:
   enabled: true
   tags: ["test_tag"]

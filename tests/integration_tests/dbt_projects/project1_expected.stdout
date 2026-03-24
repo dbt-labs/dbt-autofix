@@ -85,6 +85,10 @@
       {
         "deprecation": "MissingPlusPrefixDeprecation",
         "log": "Added '+' in front of top level config 'tags'"
+      },
+      {
+        "deprecation": "MissingPlusPrefixDeprecation",
+        "log": "Added '+' in front of the nested config 'meta'"
       }
     ]
   },
