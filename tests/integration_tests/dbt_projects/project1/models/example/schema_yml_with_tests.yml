@@ -16,7 +16,10 @@ models:
       - name: id
         descrption: The ID.
         data_tests:
-          - not_null
+          - not_null:
+              meta:
+                owner: data-quality-team
+                priority: critical
           - unique
           - accepted_values:
               values: [1, 2, 3]

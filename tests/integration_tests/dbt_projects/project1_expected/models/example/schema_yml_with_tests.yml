@@ -17,7 +17,11 @@ models:
     columns:
       - name: id
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                meta:
+                  owner: data-quality-team
+                  priority: critical
           - unique
           - accepted_values:
               description: accepted_values test for id

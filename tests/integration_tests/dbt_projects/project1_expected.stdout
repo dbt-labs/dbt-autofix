@@ -226,6 +226,10 @@
         "log": "Test 'accepted_values' - Field 'desciption' is a common misspelling of 'description', it has been renamed."
       },
       {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Test 'not_null' - Field 'meta' moved under config."
+      },
+      {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "log": "Test 'accepted_values' - Custom test argument 'values' moved under 'arguments'."
       },
