@@ -3,6 +3,9 @@ models:
     tests:
       - unique:
           column_name: id
+          config:
+            meta:
+              owner: docs-team
       - custom_test:
           config:
             severity: warn

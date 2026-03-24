@@ -4,6 +4,8 @@ models:
     tests:
       - unique:
           column_name: id
+          meta:
+            owner: docs-team
       - custom_test:
           custom_arg: some_value
           severity: warn

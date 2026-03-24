@@ -1774,6 +1774,32 @@ models:
 
         assert any("Field 'meta' moved under config" in log for log in result.refactor_logs)
 
+    def test_test_config_meta_moved_to_config_model_level(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
+        """Test that meta on a model-level generic test is moved under config, not arguments."""
+        input_yaml = """
+version: 2
+
+models:
+  - name: my_model
+    tests:
+      - unique:
+          column_name: id
+          meta:
+            owner: docs-team
+"""
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
+        assert result.refactored
+
+        model = safe_load(result.refactored_yaml)["models"][0]
+        unique_test = model["tests"][0]
+
+        assert "unique" in unique_test
+        assert "config" in unique_test["unique"], "meta should be moved under config"
+        assert unique_test["unique"]["config"]["meta"] == {"owner": "docs-team"}
+        assert "arguments" not in unique_test["unique"], "meta must not be moved to arguments"
+
+        assert any("Field 'meta' moved under config" in log for log in result.refactor_logs)
+
 
 class TestRemoveExtraTabs:
     """Tests for changeset_remove_extra_tabs function"""

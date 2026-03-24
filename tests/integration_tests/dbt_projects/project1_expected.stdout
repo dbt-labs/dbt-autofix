@@ -227,6 +227,10 @@
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Test 'unique' - Field 'meta' moved under config."
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
         "log": "Test 'not_null' - Field 'meta' moved under config."
       },
       {
