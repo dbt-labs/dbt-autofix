@@ -522,7 +522,6 @@ def restructure_yaml_keys_for_test(
 ) -> Tuple[CommentedMap, bool, List[DbtDeprecationRefactor]]:
     """Restructure YAML keys for tests according to dbt conventions.
     Tests are separated from other nodes because
-    - they don't support meta
     - they can be either a string or a dict
     - when they are a dict, the top level ist just the test name
 
@@ -564,7 +563,7 @@ def refactor_test_config_fields(
 ) -> List[DbtDeprecationRefactor]:
     deprecation_refactors: List[DbtDeprecationRefactor] = []
 
-    test_configs = schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields_without_meta
+    test_configs = schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields
     test_properties = schema_specs.yaml_specs_per_node_type["tests"].allowed_properties
 
     copy_test_definition = deepcopy(test_definition)
