@@ -3,6 +3,7 @@ models:
     tests:
       - unique:
           column_name: id
+          # meta is a valid test config key and must be moved to config.meta, never to arguments
           config:
             meta:
               owner: docs-team
@@ -20,6 +21,7 @@ models:
     columns:
       - name: id
         data_tests:
+          # meta is a valid test config key and must be moved to config.meta, never to arguments
           - not_null:
               config:
                 meta:

@@ -61,6 +61,7 @@ seeds:
 exposures:
   enabled: true
 
+# meta is a valid test config key - ensure it gets +prefix added, not moved to +meta on another key
 tests:
   dbt_autofix_tests:
     meta:
