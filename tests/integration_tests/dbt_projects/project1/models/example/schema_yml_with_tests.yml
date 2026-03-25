@@ -4,6 +4,8 @@ models:
     tests:
       - unique:
           column_name: id
+          meta: # meta is a valid test config key - must never be moved to arguments
+            owner: docs-team
       - custom_test:
           custom_arg: some_value
           severity: warn
@@ -16,7 +18,10 @@ models:
       - name: id
         descrption: The ID.
         data_tests:
-          - not_null
+          - not_null:
+              meta: # meta is a valid test config key - must never be moved to arguments
+                owner: data-quality-team
+                priority: critical
           - unique
           - accepted_values:
               values: [1, 2, 3]

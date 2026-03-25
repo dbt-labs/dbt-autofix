@@ -76,6 +76,10 @@
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
+        "log": "Added '+' in front of the nested config 'meta'"
+      },
+      {
+        "deprecation": "MissingPlusPrefixDeprecation",
         "log": "Added '+' in front of top level config 'enabled'"
       },
       {
@@ -223,6 +227,10 @@
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Test 'not_null' - Field 'meta' moved under config."
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
         "log": "Test 'accepted_values' - Field 'desciption' is a common misspelling of 'description', it has been renamed."
       },
       {
@@ -248,6 +256,10 @@
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "log": "Test 'custom_test_with_arguments_dict' - Custom test argument 'invalid_custom_arg' moved under 'arguments'."
+      },
+      {
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "log": "Test 'unique' - Field 'meta' moved under config."
       },
       {
         "deprecation": "CustomKeyInObjectDeprecation",

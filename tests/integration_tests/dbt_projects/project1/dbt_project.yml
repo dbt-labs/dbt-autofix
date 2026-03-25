@@ -61,6 +61,11 @@ seeds:
 exposures:
   enabled: true
 
+tests:
+  dbt_autofix_tests:
+    meta: # meta is a valid test config key - must never be moved to another key
+      owner: data-quality-team
+
 unit-tests:
   enabled: true
   tags: ["test_tag"]

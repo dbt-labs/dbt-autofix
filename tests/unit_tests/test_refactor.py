@@ -1740,6 +1740,66 @@ models:
         assert any("Field 'severity' is already under config" in log for log in result.refactor_logs)
         assert any("Field 'where' moved under config" in log for log in result.refactor_logs)
 
+    def test_test_config_meta_moved_to_config(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
+        """Test that meta on a generic test is moved under config, not arguments.
+
+        meta is a valid test config key in dbt-core (it's in CONFIG_ARGS in
+        generic_test_builders.py). It should never be treated as a custom test
+        argument and moved into the arguments block.
+        """
+        input_yaml = """
+version: 2
+
+models:
+  - name: my_model
+    columns:
+      - name: id
+        tests:
+          - not_null:
+              meta:
+                owner: data-quality-team
+                priority: critical
+"""
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
+        assert result.refactored
+
+        model = safe_load(result.refactored_yaml)["models"][0]
+        column = model["columns"][0]
+        not_null_test = column["tests"][0]
+
+        assert "not_null" in not_null_test
+        assert "config" in not_null_test["not_null"], "meta should be moved under config"
+        assert not_null_test["not_null"]["config"]["meta"] == {"owner": "data-quality-team", "priority": "critical"}
+        assert "arguments" not in not_null_test["not_null"], "meta must not be moved to arguments"
+
+        assert any("Field 'meta' moved under config" in log for log in result.refactor_logs)
+
+    def test_test_config_meta_moved_to_config_model_level(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
+        """Test that meta on a model-level generic test is moved under config, not arguments."""
+        input_yaml = """
+version: 2
+
+models:
+  - name: my_model
+    tests:
+      - unique:
+          column_name: id
+          meta:
+            owner: docs-team
+"""
+        result = changeset_refactor_yml_str(_yml(input_yaml), _yml_cfg(schema_specs))
+        assert result.refactored
+
+        model = safe_load(result.refactored_yaml)["models"][0]
+        unique_test = model["tests"][0]
+
+        assert "unique" in unique_test
+        assert "config" in unique_test["unique"], "meta should be moved under config"
+        assert unique_test["unique"]["config"]["meta"] == {"owner": "docs-team"}
+        assert "arguments" not in unique_test["unique"], "meta must not be moved to arguments"
+
+        assert any("Field 'meta' moved under config" in log for log in result.refactor_logs)
+
 
 class TestRemoveExtraTabs:
     """Tests for changeset_remove_extra_tabs function"""
