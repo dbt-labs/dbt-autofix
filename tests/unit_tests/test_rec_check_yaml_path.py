@@ -545,7 +545,7 @@ def test_empty_logical_grouping(models_node_fields, temp_path):
 
 
 def test_none_value_returned_as_is(models_node_fields, temp_path):
-    """INPUT:  None (non-dict value passed to function)
+    """INPUT:  None (non-CommentedMap value)
     OUTPUT: None, empty logs
     WHY:    Type guard should handle None gracefully
     """
@@ -558,7 +558,7 @@ def test_none_value_returned_as_is(models_node_fields, temp_path):
 def test_integer_value_returned_as_is(models_node_fields, temp_path):
     """INPUT:  Integer value (e.g., 5)
     OUTPUT: Same integer, empty logs
-    WHY:    Type guard should preserve non-dict scalar values
+    WHY:    Type guard should preserve non-CommentedMap scalar values
     """
     result, logs = _call_rec_check(5, temp_path, models_node_fields)
 
