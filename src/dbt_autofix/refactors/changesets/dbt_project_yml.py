@@ -25,82 +25,90 @@ def changeset_dbt_project_remove_deprecated_config(
     content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
     """Remove deprecated keys"""
-    yml_str = content.current_str
-    exclude_dbt_project_keys = config.exclude_dbt_project_keys
-    refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    return _RemoveDeprecatedConfigImpl(content, config).execute()
 
-    dict_deprecated_fields_with_defaults = {
-        "log-path": "logs",
-        "target-path": "target",
-    }
 
-    dict_renamed_fields = {
-        "data-paths": "seed-paths",
-        "source-paths": "model-paths",
-    }
+class _RemoveDeprecatedConfigImpl:
+    def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.yml_str = content.current_str
+        self.config = config
+        self.exclude_dbt_project_keys = config.exclude_dbt_project_keys
+        self.yml_dict = load_yaml(self.yml_str)
+        self._refactors: list[DbtDeprecationRefactor] = []
+        self._refactored = False
 
-    dict_fields_to_deprecation_class = {
-        "log-path": "ConfigLogPathDeprecation",
-        "target-path": "ConfigTargetPathDeprecation",
-        "data-paths": "ConfigDataPathDeprecation",
-        "source-paths": "ConfigSourcePathDeprecation",
-    }
+    def execute(self) -> YMLRuleRefactorResult:
+        self._process()
+        return YMLRuleRefactorResult(
+            rule_name="remove_deprecated_config",
+            refactored=self._refactored,
+            refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
+            original_yaml=self.yml_str,
+            deprecation_refactors=self._refactors,
+        )
 
-    yml_dict = load_yaml(yml_str)
+    def _process(self) -> None:
+        dict_deprecated_fields_with_defaults = {
+            "log-path": "logs",
+            "target-path": "target",
+        }
 
-    for deprecated_field, _ in dict_deprecated_fields_with_defaults.items():
-        if deprecated_field in yml_dict:
-            if not exclude_dbt_project_keys:
-                # by default we remove it
-                refactored = True
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"Removed the deprecated field '{deprecated_field}'",
-                        deprecation=dict_fields_to_deprecation_class[deprecated_field],
+        dict_renamed_fields = {
+            "data-paths": "seed-paths",
+            "source-paths": "model-paths",
+        }
+
+        dict_fields_to_deprecation_class = {
+            "log-path": "ConfigLogPathDeprecation",
+            "target-path": "ConfigTargetPathDeprecation",
+            "data-paths": "ConfigDataPathDeprecation",
+            "source-paths": "ConfigSourcePathDeprecation",
+        }
+
+        for deprecated_field, _ in dict_deprecated_fields_with_defaults.items():
+            if deprecated_field in self.yml_dict:
+                if not self.exclude_dbt_project_keys:
+                    # by default we remove it
+                    self._refactored = True
+                    self._refactors.append(
+                        DbtDeprecationRefactor(
+                            log=f"Removed the deprecated field '{deprecated_field}'",
+                            deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                        )
                     )
-                )
-                del yml_dict[deprecated_field]
-            # with the special field, we only remove it if it's different from the default
-            elif yml_dict[deprecated_field] != dict_deprecated_fields_with_defaults[deprecated_field]:
-                refactored = True
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"Removed the deprecated field '{deprecated_field}' that wasn't set to the default value",
-                        deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                    del self.yml_dict[deprecated_field]
+                # with the special field, we only remove it if it's different from the default
+                elif self.yml_dict[deprecated_field] != dict_deprecated_fields_with_defaults[deprecated_field]:
+                    self._refactored = True
+                    self._refactors.append(
+                        DbtDeprecationRefactor(
+                            log=f"Removed the deprecated field '{deprecated_field}' that wasn't set to the default value",
+                            deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                        )
                     )
-                )
-                del yml_dict[deprecated_field]
+                    del self.yml_dict[deprecated_field]
 
-    # TODO: add tests for this
-    for deprecated_field, new_field in dict_renamed_fields.items():
-        if deprecated_field in yml_dict:
-            refactored = True
-            if new_field not in yml_dict:
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'",
-                        deprecation=dict_fields_to_deprecation_class[deprecated_field],
+        # TODO: add tests for this
+        for deprecated_field, new_field in dict_renamed_fields.items():
+            if deprecated_field in self.yml_dict:
+                self._refactored = True
+                if new_field not in self.yml_dict:
+                    self._refactors.append(
+                        DbtDeprecationRefactor(
+                            log=f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'",
+                            deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                        )
                     )
-                )
-                yml_dict[new_field] = yml_dict[deprecated_field]
-            else:
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'",
-                        deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                    self.yml_dict[new_field] = self.yml_dict[deprecated_field]
+                else:
+                    self._refactors.append(
+                        DbtDeprecationRefactor(
+                            log=f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'",
+                            deprecation=dict_fields_to_deprecation_class[deprecated_field],
+                        )
                     )
-                )
-                yml_dict[new_field] = yml_dict[new_field] + yml_dict[deprecated_field]
-            del yml_dict[deprecated_field]
-
-    return YMLRuleRefactorResult(
-        rule_name="remove_deprecated_config",
-        refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
-        original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-    )
+                    self.yml_dict[new_field] = self.yml_dict[new_field] + self.yml_dict[deprecated_field]
+                del self.yml_dict[deprecated_field]
 
 
 def rec_check_yaml_path(
@@ -241,132 +249,167 @@ def changeset_dbt_project_prefix_plus_for_config(
     content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
     """Update keys for the config in dbt_project.yml under to prefix it with a `+`"""
-    yml_str = content.current_str
-    path = config.root_path
-    schema_specs = config.schema_specs
-    all_refactor_logs: List[str] = []
+    return _PrefixPlusForConfigImpl(content, config).execute()
 
-    yml_dict = load_yaml(yml_str)
 
-    for node_type, node_fields in schema_specs.dbtproject_specs_per_node_type.items():
-        for k, v in get_dict(yml_dict, node_type).copy().items():
-            # check if this is the project name
-            if k == yml_dict["name"]:
-                # Only recurse if v is a dict (should be project configs)
-                if isinstance(v, dict):
-                    new_dict, refactor_logs = rec_check_yaml_path(
-                        v, path / node_type, node_fields, None, schema_specs, node_type
-                    )
-                    yml_dict[node_type][k] = new_dict
-                    all_refactor_logs.extend(refactor_logs)
-                # else: non-dict value, keep as-is (unusual but possible)
+class _PrefixPlusForConfigImpl:
+    def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.yml_str = content.current_str
+        self.config = config
+        self.schema_specs = config.schema_specs
+        self.root_path = config.root_path
+        self.yml_dict = load_yaml(self.yml_str)
+        self._refactors: list[DbtDeprecationRefactor] = []
+        self._refactored = False
 
-            # top level config (with or without + prefix)
-            elif k in node_fields.allowed_config_fields_dbt_project or (
-                k.startswith("+") and k[1:] in node_fields.allowed_config_fields_dbt_project
-            ):
-                # Config key is valid - if it doesn't have +, add it
-                if not k.startswith("+"):
-                    all_refactor_logs.append(f"Added '+' in front of top level config '{k}'")
-                    new_k = f"+{k}"
-                    yml_dict[node_type][new_k] = v
-                    del yml_dict[node_type][k]
-                # else: already has +, keep as-is, value is the config value (don't recurse)
+    def execute(self) -> YMLRuleRefactorResult:
+        self._process()
+        return YMLRuleRefactorResult(
+            rule_name="prefix_plus_for_config",
+            refactored=self._refactored,
+            refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
+            original_yaml=self.yml_str,
+            deprecation_refactors=self._refactors,
+        )
 
-            # otherwise, treat it as a package or logical grouping
-            # TODO: if this is not valid, we could delete it as well
-            else:
-                packages_path = path / Path(yml_dict.get("packages-paths", "dbt_packages"))
-                # Only recurse if v is a dict (should be package configs or logical grouping)
-                if isinstance(v, dict):
-                    new_dict, refactor_logs = rec_check_yaml_path(
-                        v, packages_path / k / node_type, node_fields, None, schema_specs, node_type
-                    )
-                    yml_dict[node_type][k] = new_dict
-                    all_refactor_logs.extend(refactor_logs)
-                # else: non-dict value, keep as-is (unusual but possible)
+    def _process(self) -> None:
+        all_refactor_logs: List[str] = []
 
-    refactored = len(all_refactor_logs) > 0
-    deprecation_refactors = [
-        DbtDeprecationRefactor(log=log, deprecation="MissingPlusPrefixDeprecation") for log in all_refactor_logs
-    ]
-    return YMLRuleRefactorResult(
-        rule_name="prefix_plus_for_config",
-        refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
-        original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-    )
+        for node_type, node_fields in self.schema_specs.dbtproject_specs_per_node_type.items():
+            for k, v in get_dict(self.yml_dict, node_type).copy().items():
+                # check if this is the project name
+                if k == self.yml_dict["name"]:
+                    # Only recurse if v is a dict (should be project configs)
+                    if isinstance(v, dict):
+                        new_dict, refactor_logs = rec_check_yaml_path(
+                            v, self.root_path / node_type, node_fields, None, self.schema_specs, node_type
+                        )
+                        self.yml_dict[node_type][k] = new_dict
+                        all_refactor_logs.extend(refactor_logs)
+                    # else: non-dict value, keep as-is (unusual but possible)
+
+                # top level config (with or without + prefix)
+                elif k in node_fields.allowed_config_fields_dbt_project or (
+                    k.startswith("+") and k[1:] in node_fields.allowed_config_fields_dbt_project
+                ):
+                    # Config key is valid - if it doesn't have +, add it
+                    if not k.startswith("+"):
+                        all_refactor_logs.append(f"Added '+' in front of top level config '{k}'")
+                        new_k = f"+{k}"
+                        self.yml_dict[node_type][new_k] = v
+                        del self.yml_dict[node_type][k]
+                    # else: already has +, keep as-is, value is the config value (don't recurse)
+
+                # otherwise, treat it as a package or logical grouping
+                # TODO: if this is not valid, we could delete it as well
+                else:
+                    packages_path = self.root_path / Path(self.yml_dict.get("packages-paths", "dbt_packages"))
+                    # Only recurse if v is a dict (should be package configs or logical grouping)
+                    if isinstance(v, dict):
+                        new_dict, refactor_logs = rec_check_yaml_path(
+                            v,
+                            packages_path / k / node_type,
+                            node_fields,
+                            None,
+                            self.schema_specs,
+                            node_type,
+                        )
+                        self.yml_dict[node_type][k] = new_dict
+                        all_refactor_logs.extend(refactor_logs)
+                    # else: non-dict value, keep as-is (unusual but possible)
+
+        self._refactored = len(all_refactor_logs) > 0
+        self._refactors = [
+            DbtDeprecationRefactor(log=log, deprecation="MissingPlusPrefixDeprecation") for log in all_refactor_logs
+        ]
 
 
 def changeset_dbt_project_flip_behavior_flags(
     content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
-    yml_str = content.current_str
-    yml_dict = load_yaml(yml_str)
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-    refactored = False
+    return _FlipBehaviorFlagsImpl(content, config).execute()
 
-    behavior_change_flag_to_explainations = {
-        "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands"
-    }
 
-    for key in yml_dict:
-        if key == "flags":
-            for behavior_change_flag in behavior_change_flag_to_explainations:
-                if yml_dict["flags"].get(behavior_change_flag) is False:
-                    yml_dict["flags"][behavior_change_flag] = True
-                    refactored = True
-                    deprecation_refactors.append(
-                        DbtDeprecationRefactor(
-                            log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
-                            deprecation="SourceFreshnessProjectHooksNotRun",
+class _FlipBehaviorFlagsImpl:
+    def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.yml_str = content.current_str
+        self.config = config
+        self.yml_dict = load_yaml(self.yml_str)
+        self._refactors: list[DbtDeprecationRefactor] = []
+        self._refactored = False
+
+    def execute(self) -> YMLRuleRefactorResult:
+        self._process()
+        return YMLRuleRefactorResult(
+            rule_name="flip_behavior_flags",
+            refactored=self._refactored,
+            refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
+            original_yaml=self.yml_str,
+            deprecation_refactors=self._refactors,
+        )
+
+    def _process(self) -> None:
+        behavior_change_flag_to_explainations = {
+            "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands"
+        }
+
+        for key in self.yml_dict:
+            if key == "flags":
+                for behavior_change_flag in behavior_change_flag_to_explainations:
+                    if self.yml_dict["flags"].get(behavior_change_flag) is False:
+                        self.yml_dict["flags"][behavior_change_flag] = True
+                        self._refactored = True
+                        self._refactors.append(
+                            DbtDeprecationRefactor(
+                                log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
+                                deprecation="SourceFreshnessProjectHooksNotRun",
+                            )
                         )
-                    )
-
-    return YMLRuleRefactorResult(
-        rule_name="flip_behavior_flags",
-        refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
-        original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-    )
 
 
 def changeset_dbt_project_flip_test_arguments_behavior_flag(
     content: YMLContent, config: DbtProjectYMLRefactorConfig
 ) -> YMLRuleRefactorResult:
-    yml_str = content.current_str
-    yml_dict = load_yaml(yml_str)
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-    refactored = False
+    return _FlipTestArgumentsBehaviorFlagImpl(content, config).execute()
 
-    existing_flags = get_dict(yml_dict, "flags")
-    if (
-        existing_flags.get("require_generic_test_arguments_property") is False
-        or "require_generic_test_arguments_property" not in existing_flags
-    ):
-        yml_dict["flags"] = existing_flags
-        yml_dict["flags"]["require_generic_test_arguments_property"] = True
-        refactored = True
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log="Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
-                deprecation="MissingGenericTestArgumentsPropertyDeprecation",
-            )
+
+class _FlipTestArgumentsBehaviorFlagImpl:
+    def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.yml_str = content.current_str
+        self.config = config
+        self.yml_dict = load_yaml(self.yml_str)
+        self._refactors: list[DbtDeprecationRefactor] = []
+        self._refactored = False
+
+    def execute(self) -> YMLRuleRefactorResult:
+        self._process()
+        return YMLRuleRefactorResult(
+            rule_name="changeset_dbt_project_flip_test_arguments_behavior_flag",
+            refactored=self._refactored,
+            refactored_yaml=DbtYAML().dump_to_string(self.yml_dict) if self._refactored else self.yml_str,
+            original_yaml=self.yml_str,
+            deprecation_refactors=self._refactors,
         )
 
-    return YMLRuleRefactorResult(
-        rule_name="changeset_dbt_project_flip_test_arguments_behavior_flag",
-        refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
-        original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-    )
+    def _process(self) -> None:
+        existing_flags = get_dict(self.yml_dict, "flags")
+        if (
+            existing_flags.get("require_generic_test_arguments_property") is False
+            or "require_generic_test_arguments_property" not in existing_flags
+        ):
+            self.yml_dict["flags"] = existing_flags
+            self.yml_dict["flags"]["require_generic_test_arguments_property"] = True
+            self._refactored = True
+            self._refactors.append(
+                DbtDeprecationRefactor(
+                    log="Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
+                    deprecation="MissingGenericTestArgumentsPropertyDeprecation",
+                )
+            )
 
 
 def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRefactorConfig) -> YMLRuleRefactorResult:
-    """Fix keys that have a space after the '+' prefix (e.g., '+ tags' -> '+tags').
+    r"""Fix keys that have a space after the '+' prefix (e.g., '+ tags' -> '+tags').
 
     This fixes the dbt1060 error: "Ignored unexpected key '+ tags'".
     When users accidentally add a space after the '+' in config keys, it creates
@@ -374,123 +417,122 @@ def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRef
     - Fixes valid keys by removing the space (e.g., '+ tags:' -> '+tags:')
     - Removes invalid keys entirely (keys not in the schema), including their values
     """
-    yml_str = content.current_str
-    schema_specs = config.schema_specs
-    refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    return _FixSpaceAfterPlusImpl(content, config).execute()
 
-    # Pattern to match keys with space after plus: "+ key:" at the start of the line (after indentation)
-    pattern = re.compile(r"^(\s*)\+\s+(\w+)(\s*:)", re.MULTILINE)
 
-    # First, let's identify all the matches
-    matches = list(pattern.finditer(yml_str))
+class _FixSpaceAfterPlusImpl:
+    def __init__(self, content: YMLContent, config: DbtProjectYMLRefactorConfig) -> None:
+        self.yml_str = content.current_str
+        self.config = config
+        self.schema_specs = config.schema_specs
+        self._refactors: list[DbtDeprecationRefactor] = []
+        self._refactored = False
 
-    if not matches:
+    def execute(self) -> YMLRuleRefactorResult:
+        refactored_yaml = self._process()
         return YMLRuleRefactorResult(
             rule_name="fix_space_after_plus",
-            refactored=False,
-            refactored_yaml=yml_str,
-            original_yaml=yml_str,
-            deprecation_refactors=[],
+            refactored=self._refactored,
+            refactored_yaml=refactored_yaml,
+            original_yaml=self.yml_str,
+            deprecation_refactors=self._refactors,
         )
 
-    # Collect all valid config keys from schema specs (with + prefix)
-    all_valid_config_keys = set()
-    for node_type, node_fields in schema_specs.dbtproject_specs_per_node_type.items():
-        all_valid_config_keys.update(node_fields.allowed_config_fields_dbt_project_with_plus)
+    def _process(self) -> str:
+        # Pattern to match keys with space after plus: "+ key:" at the start of the line (after indentation)
+        pattern = re.compile(r"^(\s*)\+\s+(\w+)(\s*:)", re.MULTILINE)
 
-    # Separate matches into valid (fix) and invalid (remove) keys
-    # Process in reverse order to maintain correct offsets when removing/replacing
-    matches_with_action = []
-    for match in matches:
-        key_name = match.group(2)
-        corrected_key = f"+{key_name}"
-        line_num = yml_str[: match.start()].count("\n") + 1
+        matches = list(pattern.finditer(self.yml_str))
 
-        if corrected_key in all_valid_config_keys:
-            # Valid key - fix by removing space
-            matches_with_action.append(("fix", match, corrected_key, key_name, line_num))
-        else:
-            # Invalid key - remove entire entry
-            matches_with_action.append(("remove", match, corrected_key, key_name, line_num))
+        if not matches:
+            return self.yml_str
 
-    # Sort by position in reverse to process from end to start (to maintain positions)
-    matches_with_action.sort(key=lambda x: x[1].start(), reverse=True)
+        # Collect all valid config keys from schema specs (with + prefix)
+        all_valid_config_keys = set()
+        for node_type, node_fields in self.schema_specs.dbtproject_specs_per_node_type.items():
+            all_valid_config_keys.update(node_fields.allowed_config_fields_dbt_project_with_plus)
 
-    # Build the refactored string
-    refactored_yaml = yml_str
+        # Separate matches into valid (fix) and invalid (remove) keys
+        # Process in reverse order to maintain correct offsets when removing/replacing
+        matches_with_action = []
+        for match in matches:
+            key_name = match.group(2)
+            corrected_key = f"+{key_name}"
+            line_num = self.yml_str[: match.start()].count("\n") + 1
 
-    for action, match, corrected_key, key_name, line_num in matches_with_action:
-        if action == "fix":
-            # Fix by removing space
-            indent = match.group(1)
-            colon_and_space = match.group(3)
-            original_full_match = match.group(0)
-            corrected_full = f"{indent}{corrected_key}{colon_and_space}"
+            if corrected_key in all_valid_config_keys:
+                matches_with_action.append(("fix", match, corrected_key, key_name, line_num))
+            else:
+                matches_with_action.append(("remove", match, corrected_key, key_name, line_num))
 
-            start_pos = match.start()
-            end_pos = match.end()
+        # Sort by position in reverse to process from end to start (to maintain positions)
+        matches_with_action.sort(key=lambda x: x[1].start(), reverse=True)
 
-            refactored_yaml = refactored_yaml[:start_pos] + corrected_full + refactored_yaml[end_pos:]
+        refactored_yaml = self.yml_str
 
-            refactored = True
-            deprecation_refactors.insert(
-                0,
-                DbtDeprecationRefactor(
-                    log=f"Removed space after '+' in key '+ {key_name}' on line {line_num}, changed to '{corrected_key}'"
-                ),
-            )
-        else:  # action == 'remove'
-            # Remove the entire key-value entry
-            # We need to find the entire block to remove, including nested content
-            start_line_pos = refactored_yaml.rfind("\n", 0, match.start()) + 1
-            indent = match.group(1)
+        for action, match, corrected_key, key_name, line_num in matches_with_action:
+            if action == "fix":
+                indent = match.group(1)
+                colon_and_space = match.group(3)
+                corrected_full = f"{indent}{corrected_key}{colon_and_space}"
 
-            # Find the end of this entry by looking for the next line with same or less indentation
-            # or the next key at same level
-            lines = refactored_yaml[start_line_pos:].split("\n")
-            lines_to_remove = 1  # Start with the key line itself
+                start_pos = match.start()
+                end_pos = match.end()
 
-            # Check subsequent lines
-            for i in range(1, len(lines)):
-                line = lines[i]
-                if line.strip() == "":
-                    # Empty line - include it
-                    lines_to_remove += 1
-                    continue
+                refactored_yaml = refactored_yaml[:start_pos] + corrected_full + refactored_yaml[end_pos:]
 
-                # Calculate indentation
-                line_indent = len(line) - len(line.lstrip())
-                key_indent = len(indent)
+                self._refactored = True
+                self._refactors.insert(
+                    0,
+                    DbtDeprecationRefactor(
+                        log=f"Removed space after '+' in key '+ {key_name}' on line {line_num}, changed to '{corrected_key}'"
+                    ),
+                )
+            else:  # action == 'remove'
+                # Remove the entire key-value entry
+                # We need to find the entire block to remove, including nested content
+                start_line_pos = refactored_yaml.rfind("\n", 0, match.start()) + 1
+                indent = match.group(1)
 
-                # If this line has more indentation, it's part of the value
-                if line_indent > key_indent:
-                    lines_to_remove += 1
-                else:
-                    # Same or less indentation - this is the next entry
-                    break
+                # Find the end of this entry by looking for the next line with same or less indentation
+                # or the next key at same level
+                lines = refactored_yaml[start_line_pos:].split("\n")
+                lines_to_remove = 1  # Start with the key line itself
 
-            # Calculate the end position
-            lines_text = "\n".join(lines[:lines_to_remove])
-            end_pos = start_line_pos + len(lines_text)
-            if end_pos < len(refactored_yaml) and refactored_yaml[end_pos] == "\n":
-                end_pos += 1  # Include the trailing newline
+                # Check subsequent lines
+                for i in range(1, len(lines)):
+                    line = lines[i]
+                    if line.strip() == "":
+                        # Empty line - include it
+                        lines_to_remove += 1
+                        continue
 
-            # Remove the block
-            refactored_yaml = refactored_yaml[:start_line_pos] + refactored_yaml[end_pos:]
+                    # Calculate indentation
+                    line_indent = len(line) - len(line.lstrip())
+                    key_indent = len(indent)
 
-            refactored = True
-            deprecation_refactors.insert(
-                0,
-                DbtDeprecationRefactor(
-                    log=f"Removed invalid key '+ {key_name}' on line {line_num} (not a valid config key)"
-                ),
-            )
+                    # If this line has more indentation, it's part of the value
+                    if line_indent > key_indent:
+                        lines_to_remove += 1
+                    else:
+                        # Same or less indentation - this is the next entry
+                        break
 
-    return YMLRuleRefactorResult(
-        rule_name="fix_space_after_plus",
-        refactored=refactored,
-        refactored_yaml=refactored_yaml,
-        original_yaml=yml_str,
-        deprecation_refactors=deprecation_refactors,
-    )
+                # Calculate the end position
+                lines_text = "\n".join(lines[:lines_to_remove])
+                end_pos = start_line_pos + len(lines_text)
+                if end_pos < len(refactored_yaml) and refactored_yaml[end_pos] == "\n":
+                    end_pos += 1  # Include the trailing newline
+
+                # Remove the block
+                refactored_yaml = refactored_yaml[:start_line_pos] + refactored_yaml[end_pos:]
+
+                self._refactored = True
+                self._refactors.insert(
+                    0,
+                    DbtDeprecationRefactor(
+                        log=f"Removed invalid key '+ {key_name}' on line {line_num} (not a valid config key)"
+                    ),
+                )
+
+        return refactored_yaml
