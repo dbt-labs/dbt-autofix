@@ -2,7 +2,7 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple
 
-from dbt_autofix.deprecations import DeprecationType
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
 from dbt_autofix.refactors.results import (
@@ -197,6 +197,7 @@ class _RemoveUnmatchedEndingsImpl:
                     self._deprecation_refactors.append(
                         DbtDeprecationRefactor(
                             log=f"Removed unmatched {{% endmacro %}} near line {line_num}",
+                            change_type=ChangeType.UNMATCHED_ENDMACRO_DEPRECATION,
                             deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
                             original_location=Location(line=line_num, start=start_col, end=end_col),
                         )
@@ -220,6 +221,7 @@ class _RemoveUnmatchedEndingsImpl:
                     self._deprecation_refactors.append(
                         DbtDeprecationRefactor(
                             log=f"Removed unmatched {{% endif %}} near line {line_num}",
+                            change_type=ChangeType.UNMATCHED_ENDIF_DEPRECATION,
                             deprecation=DeprecationType.UNEXPECTED_JINJA_BLOCK_DEPRECATION,
                             original_location=Location(line=line_num, start=start_col, end=end_col),
                         )
@@ -344,6 +346,7 @@ class _RefactorCustomConfigsToMetaSqlImpl:
                 self._deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Config '{renamed_config}' is a common misspelling of '{new_name}', it has been renamed.",
+                        change_type=ChangeType.CUSTOM_CONFIG_RENAMED_DEPRECATION,
                         deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                         original_location=_find_sql_key_location(orig_for_loc, renamed_config),
                         edited_location=_find_sql_key_location(refactored_content, new_name),
@@ -355,6 +358,7 @@ class _RefactorCustomConfigsToMetaSqlImpl:
                 self._deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Moved custom config '{moved_config}' to 'meta'",
+                        change_type=ChangeType.CUSTOM_CONFIG_MOVED_TO_META_DEPRECATION,
                         deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                         original_location=_find_sql_key_location(orig_for_loc, moved_config),
                         edited_location=_find_sql_key_location(refactored_content, moved_config),
@@ -490,6 +494,7 @@ class _MoveCustomConfigAccessToMetaSqlImpl:
                 DbtDeprecationRefactor(
                     log=f'Refactored "{original}" to "{replacement}"',
                     deprecation=None,
+                    change_type=ChangeType.CONFIG_GET_REFACTORED,
                     original_location=Location(line=line_num, start=col, end=end - line_start),
                     edited_location=Location(line=line_num, start=col),
                 )
@@ -524,6 +529,7 @@ class _RenameSqlFileNamesWithSpacesImpl:
             self._deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Renamed '{sql_file_path.name}' to '{new_file_path.name}'",
+                    change_type=ChangeType.SQL_FILE_RENAMED_FOR_SPACES,
                     deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
                 )
             )

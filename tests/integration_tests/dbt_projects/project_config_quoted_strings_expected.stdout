@@ -7,13 +7,15 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "MissingGenericTestArgumentsPropertyDeprecationFix",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 42,
           "line": 9,
           "start": 2
         },
-        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
+        "rule_name": "changeset_dbt_project_flip_test_arguments_behavior_flag"
       }
     ]
   },
@@ -22,6 +24,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 29,
@@ -33,9 +36,11 @@
           "end": 26,
           "line": 4,
           "start": 8
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 87,
@@ -47,9 +52,11 @@
           "end": 26,
           "line": 5,
           "start": 8
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 133,
@@ -61,7 +68,8 @@
           "end": 26,
           "line": 6,
           "start": 8
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []
