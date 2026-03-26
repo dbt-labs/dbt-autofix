@@ -308,6 +308,8 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
     if node_type == "snapshots":
         allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
 
+    rename_only_substitutions: list = []  # (old_key, new_key) pairs for regex-based rename
+
     for sql_config_key, sql_config_value in original_sql_configs.items():
         if sql_config_key in COMMON_CONFIG_MISSPELLINGS:
             # Config key is a common misspelling - rename it
@@ -319,6 +321,7 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
             if sql_config_key in config_source_map:
                 config_source_map[new_key] = config_source_map[sql_config_key]
                 del config_source_map[sql_config_key]
+            rename_only_substitutions.append((sql_config_key, new_key))
         elif sql_config_key not in allowed_config_fields:
             # Config key is not recognized - it's a custom config that should go in meta
             moved_to_meta.append(sql_config_key)
@@ -351,21 +354,40 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
     refactored_content = None
     refactored = False
 
+    # Detect dict-style config: {{ config({'key': value}) }} vs kwargs: {{ config(key=value) }}
+    is_dict_style_config = bool(re.search(r"\{\{\s*config\s*\(\s*\{", config_macro_str))
+
     if refactored_sql_configs != original_sql_configs:
         refactored = True
 
-        # Compute refactored content first so we can find edited locations
-        new_config_str = _serialize_config_macro_call(refactored_sql_configs, config_source_map)
-        old_config = extract_config_macro(sql_content)
-        if old_config:
-            new_config = f"{{{{ config({new_config_str}\n) }}}}"
-            refactored_content = sql_content.replace(old_config, new_config, 1)
+        # For rename-only cases (no moves to meta), use targeted regex substitution
+        # to preserve all surrounding whitespace and formatting.
+        # But if the original uses dict-style, we must convert to kwargs via _serialize_config_macro_call.
+        if rename_only_substitutions and not moved_to_meta and not is_dict_style_config:
+            refactored_content = sql_content
+            old_config = extract_config_macro(refactored_content) or ""
+            new_config_fragment = old_config
+            for old_key, new_key in rename_only_substitutions:
+                new_config_fragment = re.sub(
+                    rf"\b{re.escape(old_key)}\b",
+                    new_key,
+                    new_config_fragment,
+                    count=1,
+                )
+            refactored_content = refactored_content.replace(old_config, new_config_fragment, 1)
         else:
-            # Fallback to regex if extraction failed
-            def replace_config(match):
-                return f"{{{{ config({new_config_str}\n) }}}}"
+            # Compute refactored content first so we can find edited locations
+            new_config_str = _serialize_config_macro_call(refactored_sql_configs, config_source_map)
+            old_config = extract_config_macro(sql_content)
+            if old_config:
+                new_config = f"{{{{ config({new_config_str}\n) }}}}"
+                refactored_content = sql_content.replace(old_config, new_config, 1)
+            else:
+                # Fallback to regex if extraction failed
+                def replace_config(match):
+                    return f"{{{{ config({new_config_str}\n) }}}}"
 
-            refactored_content = CONFIG_MACRO_PATTERN.sub(replace_config, sql_content, count=1)
+                refactored_content = CONFIG_MACRO_PATTERN.sub(replace_config, sql_content, count=1)
 
         # Generate deprecation refactors
         _orig_for_loc = original_content if original_content is not None else sql_content

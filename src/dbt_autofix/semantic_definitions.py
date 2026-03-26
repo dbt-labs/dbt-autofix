@@ -11,13 +11,11 @@ from dbt_autofix.refactors.yml import get_list, load_yaml
 class SemanticDefinitions:
     def __init__(self, root_path: Path, dbt_paths: List[str]):
         # All semantic models from semantic_models: entries in schema.yml files, keyed by their model key
-        self.semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = self.collect_semantic_models(
-            root_path, dbt_paths
-        )
+        self.semantic_models, self.initial_measure_seq_comments = self.collect_semantic_models(root_path, dbt_paths)
         # All model keys from models: entries in schema.yml files
         self.model_yml_keys: Set[Tuple[str, Optional[str]]] = self.collect_model_yml_keys(root_path, dbt_paths)
         # All top-level metrics from metrics: entries in schema.yml files
-        self.initial_metrics: Dict[str, CommentedMap] = self.collect_metrics(root_path, dbt_paths)
+        self.initial_metrics, self.initial_metric_seq_comments = self.collect_metrics(root_path, dbt_paths)
 
         self.merged_semantic_models: Set[str] = set()
         self._semantic_model_to_dbt_model_name_map: Dict[str, str] = {}
@@ -85,8 +83,12 @@ class SemanticDefinitions:
 
     def collect_semantic_models(
         self, root_path: Path, dbt_paths: List[str]
-    ) -> Dict[Tuple[str, Optional[str]], CommentedMap]:
+    ) -> Tuple[Dict[Tuple[str, Optional[str]], CommentedMap], Dict[str, Optional[list]]]:
+        """Returns (semantic_model_key -> semantic_model, measure_name -> seq-item comment)."""
+        from dbt_autofix.refactors.node import extract_node
+
         semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = {}
+        measure_seq_comments: Dict[str, Optional[list]] = {}
         for dbt_path in dbt_paths:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
@@ -98,7 +100,10 @@ class SemanticDefinitions:
                         ref = statically_parse_ref(semantic_model["model"])
                         if ref:
                             semantic_models[(ref.name, ref.version)] = semantic_model
-        return semantic_models
+                        measures_seq = get_list(semantic_model, "measures")
+                        for i, measure in enumerate(measures_seq):
+                            measure_seq_comments[measure["name"]] = extract_node(measures_seq, i).comments
+        return semantic_models, measure_seq_comments
 
     def collect_model_yml_keys(self, root_path: Path, dbt_paths: List[str]) -> Set[Tuple[str, Optional[str]]]:
         model_keys: Set[Tuple[str, Optional[str]]] = set()
@@ -117,9 +122,14 @@ class SemanticDefinitions:
                                 model_keys.add((model["name"], version.get("v")))
         return model_keys
 
-    def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, CommentedMap]:
-        """Returns dict of metric_name -> metric"""
+    def collect_metrics(
+        self, root_path: Path, dbt_paths: List[str]
+    ) -> Tuple[Dict[str, CommentedMap], Dict[str, Optional[list]]]:
+        """Returns (metric_name -> metric, metric_name -> seq-item comment)."""
+        from dbt_autofix.refactors.node import extract_node
+
         metrics: Dict[str, CommentedMap] = {}
+        seq_comments: Dict[str, Optional[list]] = {}
         for dbt_path in dbt_paths:
             yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
                 set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
@@ -127,9 +137,12 @@ class SemanticDefinitions:
             for yml_file in sorted(yaml_files):
                 yml_dict = load_yaml(yml_file)
                 if "metrics" in yml_dict:
-                    for metric in yml_dict["metrics"]:
-                        metrics[metric["name"]] = metric
-        return metrics
+                    metrics_seq = yml_dict["metrics"]
+                    for i, metric in enumerate(metrics_seq):
+                        name = metric["name"]
+                        metrics[name] = metric
+                        seq_comments[name] = extract_node(metrics_seq, i).comments
+        return metrics, seq_comments
 
 
 @dataclass
