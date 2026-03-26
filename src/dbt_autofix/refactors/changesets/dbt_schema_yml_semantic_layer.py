@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ruamel.yaml.comments import CommentedMap
 
+from dbt_autofix.deprecations import ChangeType
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     YMLContent,
@@ -805,7 +806,12 @@ class _MergeSimpleMetricsImpl:
             for log, metric_name in node_refactor_logs:
                 orig_metric = self.semantic_definitions.initial_metrics.get(metric_name) if metric_name else None
                 original_location = location_of_node(orig_metric) if orig_metric is not None else None
-                r = DbtDeprecationRefactor(log=log, deprecation=None, original_location=original_location)
+                r = DbtDeprecationRefactor(
+                    log=log,
+                    deprecation=None,
+                    change_type=ChangeType.SIMPLE_METRICS_MERGED_WITH_MODEL,
+                    original_location=original_location,
+                )
                 self._refactors.append(r)
 
                 def resolve(parsed, refactor=r, model_index=index, metric_name=metric_name):
@@ -854,7 +860,12 @@ class _MergeComplexMetricsImpl:
             for log, metric_name in node_refactor_logs:
                 orig_metric = self.semantic_definitions.initial_metrics.get(metric_name) if metric_name else None
                 original_location = location_of_node(orig_metric) if orig_metric is not None else None
-                r = DbtDeprecationRefactor(log=log, deprecation=None, original_location=original_location)
+                r = DbtDeprecationRefactor(
+                    log=log,
+                    deprecation=None,
+                    change_type=ChangeType.COMPLEX_METRICS_MERGED_WITH_MODEL,
+                    original_location=original_location,
+                )
                 self._refactors.append(r)
 
                 def resolve(parsed, refactor=r, model_index=index, metric_name=metric_name):
@@ -903,7 +914,12 @@ class _AddMetricsForMeasuresImpl:
             for log, metric_name in node_refactor_logs:
                 orig_metric = self.semantic_definitions.initial_metrics.get(metric_name) if metric_name else None
                 original_location = location_of_node(orig_metric) if orig_metric is not None else None
-                r = DbtDeprecationRefactor(log=log, deprecation=None, original_location=original_location)
+                r = DbtDeprecationRefactor(
+                    log=log,
+                    deprecation=None,
+                    change_type=ChangeType.METRICS_ADDED_FOR_MEASURES,
+                    original_location=original_location,
+                )
                 self._refactors.append(r)
 
                 def resolve(parsed, refactor=r, model_index=index, metric_name=metric_name):
@@ -952,7 +968,12 @@ class _MergeSemanticModelsImpl:
             self._refactored = True
             yml_dict["models"][index] = processed_node
             for log in node_refactor_logs:
-                r = DbtDeprecationRefactor(log=log, deprecation=None, original_location=original_location)
+                r = DbtDeprecationRefactor(
+                    log=log,
+                    deprecation=None,
+                    change_type=ChangeType.SEMANTIC_MODEL_MERGED_WITH_MODEL,
+                    original_location=original_location,
+                )
                 self._refactors.append(r)
 
                 def resolve(parsed, refactor=r, model_index=index):
@@ -986,7 +1007,12 @@ class _MergeSemanticModelsImpl:
                     new_model_count += 1
                     original_location = location_of_node(semantic_model)
                     for log in new_model_node_refactor_logs:
-                        r = DbtDeprecationRefactor(log=log, deprecation=None, original_location=original_location)
+                        r = DbtDeprecationRefactor(
+                            log=log,
+                            deprecation=None,
+                            change_type=ChangeType.SEMANTIC_MODEL_MERGED_WITH_MODEL,
+                            original_location=original_location,
+                        )
                         self._refactors.append(r)
 
                         def resolve(parsed, refactor=r, model_index=edited_model_index):
@@ -1026,6 +1052,7 @@ class _DeleteTopLevelSemanticModelsImpl:
                     DbtDeprecationRefactor(
                         log=f"Deleted top-level semantic model '{semantic_model['name']}'.",
                         deprecation=None,
+                        change_type=ChangeType.TOP_LEVEL_SEMANTIC_MODEL_DELETED,
                         original_location=location_of_node(orig_semantic_models[semantic_model["name"]])
                         if semantic_model["name"] in orig_semantic_models
                         else None,
@@ -1079,6 +1106,7 @@ class _MigrateMetricTagsImpl:
                 refactor = DbtDeprecationRefactor(
                     log=f"Migrated metric '{metric['name']}' tags field to config.",
                     deprecation=None,
+                    change_type=ChangeType.METRIC_TAGS_MIGRATION,
                     original_location=location_of_key(orig_metric_node, "tags") if orig_metric_node else None,
                 )
                 self._refactors.append(refactor)
@@ -1132,6 +1160,7 @@ class _MigrateOrDeleteTopLevelMetricsImpl:
                     DbtDeprecationRefactor(
                         log=f"Deleted top-level metric '{metric['name']}'.",
                         deprecation=None,
+                        change_type=ChangeType.TOP_LEVEL_METRIC_DELETED,
                         original_location=metric_locations.get(metric["name"]),
                     )
                 )
@@ -1183,6 +1212,7 @@ class _MigrateOrDeleteTopLevelMetricsImpl:
                 refactor = DbtDeprecationRefactor(
                     log=f"Updated top-level metric '{metric['name']}' to be compatible with new syntax, but left at top-level.",
                     deprecation=None,
+                    change_type=ChangeType.TOP_LEVEL_METRIC_UPDATED,
                     original_location=metric_locations.get(metric["name"]),
                 )
                 self._refactors.append(refactor)

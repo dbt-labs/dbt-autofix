@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
         "edited_location": {
           "line": 2
@@ -14,9 +15,11 @@
         "log": "Replaced 2 fancy quotes with regular quotes on line 2",
         "original_location": {
           "line": 2
-        }
+        },
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
         "edited_location": {
           "line": 6
@@ -24,9 +27,11 @@
         "log": "Replaced 2 fancy quotes with regular quotes on line 6",
         "original_location": {
           "line": 6
-        }
+        },
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
         "edited_location": {
           "line": 16
@@ -34,9 +39,11 @@
         "log": "Replaced 2 fancy quotes with regular quotes on line 16",
         "original_location": {
           "line": 16
-        }
+        },
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
@@ -48,9 +55,11 @@
           "end": 22,
           "line": 9,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
@@ -62,9 +71,11 @@
           "end": 22,
           "line": 14,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
@@ -76,9 +87,11 @@
           "end": 22,
           "line": 19,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
@@ -90,7 +103,8 @@
           "end": 22,
           "line": 24,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -99,6 +113,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 26,
@@ -110,7 +125,8 @@
           "end": 19,
           "line": 2,
           "start": 4
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []

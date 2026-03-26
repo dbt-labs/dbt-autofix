@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
         "edited_location": {
           "line": 13
@@ -14,27 +15,33 @@
         "log": "Replaced 1 fancy quotes with regular quotes on line 13",
         "original_location": {
           "line": 13
-        }
+        },
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "MissingGenericTestArgumentsPropertyDeprecationFix",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 42,
           "line": 69,
           "start": 2
         },
-        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
+        "rule_name": "changeset_dbt_project_flip_test_arguments_behavior_flag"
       },
       {
+        "change_type": "DeprecatedProjectFieldRemoved",
         "deprecation": "ConfigTargetPathDeprecation",
         "log": "Removed the deprecated field 'target-path'",
         "original_location": {
           "end": 12,
           "line": 19,
           "start": 0
-        }
+        },
+        "rule_name": "remove_deprecated_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 20,
@@ -46,9 +53,11 @@
           "end": 19,
           "line": 35,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 22,
@@ -60,9 +69,11 @@
           "end": 20,
           "line": 36,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 15,
@@ -74,9 +85,11 @@
           "end": 14,
           "line": 37,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 15,
@@ -88,9 +101,11 @@
           "end": 14,
           "line": 38,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 18,
@@ -102,9 +117,11 @@
           "end": 17,
           "line": 39,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 22,
@@ -116,9 +133,11 @@
           "end": 21,
           "line": 41,
           "start": 8
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 24,
@@ -130,9 +149,11 @@
           "end": 22,
           "line": 42,
           "start": 8
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 17,
@@ -144,9 +165,11 @@
           "end": 16,
           "line": 46,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 16,
@@ -158,9 +181,11 @@
           "end": 15,
           "line": 51,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 20,
@@ -172,9 +197,11 @@
           "end": 19,
           "line": 52,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 12,
@@ -186,9 +213,11 @@
           "end": 11,
           "line": 53,
           "start": 6
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 13,
@@ -200,9 +229,11 @@
           "end": 12,
           "line": 57,
           "start": 4
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 13,
@@ -214,9 +245,11 @@
           "end": 12,
           "line": 58,
           "start": 4
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 16,
@@ -228,9 +261,11 @@
           "end": 15,
           "line": 59,
           "start": 4
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 10,
@@ -242,9 +277,11 @@
           "end": 9,
           "line": 66,
           "start": 4
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 11,
@@ -256,9 +293,11 @@
           "end": 10,
           "line": 62,
           "start": 2
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 11,
@@ -270,9 +309,11 @@
           "end": 10,
           "line": 70,
           "start": 2
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       },
       {
+        "change_type": "MissingPlusPrefixDeprecationFix",
         "deprecation": "MissingPlusPrefixDeprecation",
         "edited_location": {
           "end": 8,
@@ -284,7 +325,8 @@
           "end": 7,
           "line": 71,
           "start": 2
-        }
+        },
+        "rule_name": "prefix_plus_for_config"
       }
     ]
   },
@@ -293,6 +335,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomKeyMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 21,
@@ -304,9 +347,11 @@
           "end": 17,
           "line": 4,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 11,
@@ -318,7 +363,8 @@
           "end": 9,
           "line": 5,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -327,6 +373,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomKeyMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 21,
@@ -338,7 +385,8 @@
           "end": 17,
           "line": 6,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -347,6 +395,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 22,
@@ -358,9 +407,11 @@
           "end": 20,
           "line": 5,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 15,
@@ -372,9 +423,11 @@
           "end": 15,
           "line": 6,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 16,
@@ -386,7 +439,8 @@
           "end": 16,
           "line": 7,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -395,6 +449,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 72,
@@ -406,9 +461,11 @@
           "end": 17,
           "line": 3,
           "start": 4
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 110,
@@ -420,9 +477,11 @@
           "end": 21,
           "line": 4,
           "start": 4
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 135,
@@ -434,9 +493,11 @@
           "end": 22,
           "line": 5,
           "start": 4
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 174,
@@ -448,9 +509,11 @@
           "end": 22,
           "line": 6,
           "start": 4
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "ConfigGetRefactored",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 40,
@@ -462,9 +525,11 @@
           "end": 35,
           "line": 25,
           "start": 3
-        }
+        },
+        "rule_name": "move_custom_config_access_to_meta_sql_improved"
       },
       {
+        "change_type": "ConfigGetRefactored",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 40,
@@ -476,9 +541,11 @@
           "end": 35,
           "line": 23,
           "start": 3
-        }
+        },
+        "rule_name": "move_custom_config_access_to_meta_sql_improved"
       },
       {
+        "change_type": "ConfigGetRefactored",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 35,
@@ -490,9 +557,11 @@
           "end": 36,
           "line": 15,
           "start": 3
-        }
+        },
+        "rule_name": "move_custom_config_access_to_meta_sql_improved"
       },
       {
+        "change_type": "ConfigGetRefactored",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 52,
@@ -504,9 +573,11 @@
           "end": 47,
           "line": 13,
           "start": 3
-        }
+        },
+        "rule_name": "move_custom_config_access_to_meta_sql_improved"
       },
       {
+        "change_type": "ConfigGetRefactored",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 35,
@@ -518,7 +589,8 @@
           "end": 30,
           "line": 11,
           "start": 3
-        }
+        },
+        "rule_name": "move_custom_config_access_to_meta_sql_improved"
       }
     ],
     "warnings": [
@@ -531,6 +603,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 17,
@@ -542,7 +615,8 @@
           "end": 10,
           "line": 5,
           "start": 4
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []
@@ -552,6 +626,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 12,
@@ -563,9 +638,11 @@
           "end": 13,
           "line": 4,
           "start": 5
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 13,
@@ -577,9 +654,11 @@
           "end": 14,
           "line": 5,
           "start": 5
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 17,
@@ -591,7 +670,8 @@
           "end": 11,
           "line": 6,
           "start": 5
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []
@@ -601,6 +681,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 12,
@@ -612,9 +693,11 @@
           "end": 20,
           "line": 1,
           "start": 12
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       },
       {
+        "change_type": "CustomConfigRenamedDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 13,
@@ -626,7 +709,8 @@
           "end": 45,
           "line": 1,
           "start": 36
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []
@@ -636,6 +720,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 16,
@@ -647,9 +732,11 @@
           "end": 15,
           "line": 3,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 20,
@@ -661,9 +748,11 @@
           "end": 19,
           "line": 19,
           "start": 8
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 21,
@@ -675,9 +764,11 @@
           "end": 19,
           "line": 22,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 26,
@@ -689,9 +780,11 @@
           "end": 25,
           "line": 28,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 23,
@@ -703,9 +796,11 @@
           "end": 21,
           "line": 27,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 19,
@@ -717,9 +812,11 @@
           "end": 17,
           "line": 30,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 23,
@@ -731,9 +828,11 @@
           "end": 21,
           "line": 39,
           "start": 12
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 25,
@@ -745,9 +844,11 @@
           "end": 23,
           "line": 37,
           "start": 12
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 21,
@@ -759,9 +860,11 @@
           "end": 19,
           "line": 42,
           "start": 12
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 35,
@@ -773,9 +876,11 @@
           "end": 33,
           "line": 50,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 17,
@@ -787,9 +892,11 @@
           "end": 15,
           "line": 7,
           "start": 10
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 21,
@@ -801,9 +908,11 @@
           "end": 19,
           "line": 11,
           "start": 10
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 23,
@@ -815,9 +924,11 @@
           "end": 21,
           "line": 10,
           "start": 10
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 25,
@@ -829,9 +940,11 @@
           "end": 23,
           "line": 13,
           "start": 10
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 31,
@@ -843,9 +956,11 @@
           "end": 29,
           "line": 14,
           "start": 10
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 31,
@@ -857,9 +972,11 @@
           "end": 29,
           "line": 15,
           "start": 10
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 17,
@@ -871,9 +988,11 @@
           "end": 15,
           "line": 16,
           "start": 10
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 39,
@@ -885,9 +1004,11 @@
           "end": 37,
           "line": 57,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 39,
@@ -899,7 +1020,8 @@
           "end": 37,
           "line": 64,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -908,13 +1030,16 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "TabOnlyLineFixup",
         "deprecation": null,
         "log": "Removed line containing only tabs on line 72",
         "original_location": {
           "line": 72
-        }
+        },
+        "rule_name": "remove_tab_only_lines"
       },
       {
+        "change_type": "PropertyMisspellingDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 16,
@@ -926,9 +1051,11 @@
           "end": 15,
           "line": 5,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 11,
@@ -940,9 +1067,11 @@
           "end": 9,
           "line": 18,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 16,
@@ -954,9 +1083,11 @@
           "end": 14,
           "line": 24,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomKeyMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 24,
@@ -968,9 +1099,11 @@
           "end": 20,
           "line": 34,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 11,
@@ -982,9 +1115,11 @@
           "end": 9,
           "line": 16,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 26,
@@ -996,9 +1131,11 @@
           "end": 24,
           "line": 42,
           "start": 8
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 15,
@@ -1010,9 +1147,11 @@
           "end": 13,
           "line": 47,
           "start": 8
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 20,
@@ -1024,9 +1163,11 @@
           "end": 18,
           "line": 49,
           "start": 8
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 15,
@@ -1038,9 +1179,11 @@
           "end": 13,
           "line": 39,
           "start": 8
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 28,
@@ -1052,9 +1195,11 @@
           "end": 26,
           "line": 45,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "TestArgumentMovedToArguments",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "edited_location": {
           "end": 26,
@@ -1066,9 +1211,11 @@
           "end": 24,
           "line": 46,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 19,
@@ -1080,9 +1227,11 @@
           "end": 17,
           "line": 66,
           "start": 12
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 26,
@@ -1094,7 +1243,8 @@
           "end": 24,
           "line": 70,
           "start": 18
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -1103,6 +1253,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ExtraIndentationFixup",
         "deprecation": null,
         "edited_location": {
           "line": 1
@@ -1110,9 +1261,11 @@
         "log": "Removed the extra indentation around 'version: 2' on line 1",
         "original_location": {
           "line": 1
-        }
+        },
+        "rule_name": "removed_extra_indentation"
       },
       {
+        "change_type": "CustomKeyClosestMatchMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 18,
@@ -1124,9 +1277,11 @@
           "end": 14,
           "line": 5,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomKeyClosestMatchMovedToMetaDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 22,
@@ -1138,9 +1293,11 @@
           "end": 18,
           "line": 12,
           "start": 8
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 15,
@@ -1152,9 +1309,11 @@
           "end": 13,
           "line": 10,
           "start": 8
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "PropertyMovedToConfigDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 22,
@@ -1166,7 +1325,8 @@
           "end": 20,
           "line": 27,
           "start": 14
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -1175,13 +1335,15 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomTopLevelKeyRemoved",
         "deprecation": "CustomTopLevelKeyDeprecation",
         "log": "Removed custom top-level key: 'custom_key'",
         "original_location": {
           "end": 11,
           "line": 3,
           "start": 0
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -1190,8 +1352,10 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "DuplicateKeyRemoved",
         "deprecation": "DuplicateYAMLKeysDeprecation",
-        "log": "Found duplicate keys: line 4 - duplication of key \"description\" in mapping"
+        "log": "Found duplicate keys: line 4 - duplication of key \"description\" in mapping",
+        "rule_name": "remove_duplicate_keys"
       }
     ]
   },
@@ -1200,6 +1364,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ExtraTabsFixup",
         "deprecation": null,
         "edited_location": {
           "line": 5,
@@ -1209,7 +1374,8 @@
         "original_location": {
           "line": 5,
           "start": 20
-        }
+        },
+        "rule_name": "remove_extra_tabs"
       }
     ]
   },
@@ -1218,6 +1384,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "NodePropertyMovedToConfigDeprecation",
         "deprecation": "PropertyMovedToConfigDeprecation",
         "edited_location": {
           "end": 11,
@@ -1229,9 +1396,11 @@
           "end": 9,
           "line": 5,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "MetaFieldsMergedDeprecation",
         "deprecation": "CustomKeyInObjectDeprecation",
         "edited_location": {
           "end": 11,
@@ -1243,7 +1412,8 @@
           "end": 9,
           "line": 7,
           "start": 4
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -1252,6 +1422,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
@@ -1263,7 +1434,8 @@
           "end": 77,
           "line": 2,
           "start": 64
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []
@@ -1273,6 +1445,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
@@ -1284,7 +1457,8 @@
           "end": 41,
           "line": 2,
           "start": 28
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []

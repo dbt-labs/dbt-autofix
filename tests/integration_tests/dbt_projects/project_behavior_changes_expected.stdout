@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SourceFreshnessProjectHooksNotRun",
         "deprecation": "SourceFreshnessProjectHooksNotRun",
         "edited_location": {
           "end": 37,
@@ -18,7 +19,8 @@
           "end": 37,
           "line": 22,
           "start": 2
-        }
+        },
+        "rule_name": "flip_behavior_flags"
       }
     ]
   },
@@ -27,8 +29,10 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SqlFileRenamedForSpaces",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Renamed 'model with spaces.sql' to 'model_with_spaces.sql'"
+        "log": "Renamed 'model with spaces.sql' to 'model_with_spaces.sql'",
+        "rule_name": "rename_sql_files_with_spaces"
       }
     ],
     "warnings": []
@@ -38,8 +42,10 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "RenamePythonFileNamesWithSpaces",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Renamed 'python model with spaces.py' to 'python_model_with_spaces.py'"
+        "log": "Renamed 'python model with spaces.py' to 'python_model_with_spaces.py'",
+        "rule_name": "rename_python_files_with_spaces"
       }
     ],
     "warnings": []
@@ -49,6 +55,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
         "edited_location": {
           "end": 9,
@@ -60,9 +67,11 @@
           "end": 9,
           "line": 2,
           "start": 4
-        }
+        },
+        "rule_name": "remove_spaces_in_resource_names"
       },
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
         "edited_location": {
           "end": 9,
@@ -74,9 +83,11 @@
           "end": 9,
           "line": 3,
           "start": 4
-        }
+        },
+        "rule_name": "remove_spaces_in_resource_names"
       },
       {
+        "change_type": "ExposureNameDeprecation",
         "deprecation": "ExposureNameDeprecation",
         "edited_location": {
           "end": 9,
@@ -88,7 +99,8 @@
           "end": 9,
           "line": 6,
           "start": 4
-        }
+        },
+        "rule_name": "remove_spaces_in_resource_names"
       }
     ]
   }

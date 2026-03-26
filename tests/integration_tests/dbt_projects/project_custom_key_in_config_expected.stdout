@@ -7,6 +7,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 73,
@@ -18,9 +19,11 @@
           "end": 63,
           "line": 14,
           "start": 4
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_python"
       },
       {
+        "change_type": "ConfigGetRefactored",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 63,
@@ -32,7 +35,8 @@
           "end": 58,
           "line": 17,
           "start": 21
-        }
+        },
+        "rule_name": "move_custom_config_access_to_meta_python"
       }
     ],
     "warnings": []
@@ -42,6 +46,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 19,
@@ -53,9 +58,11 @@
           "end": 17,
           "line": 6,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 28,
@@ -67,9 +74,11 @@
           "end": 26,
           "line": 7,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 19,
@@ -81,7 +90,8 @@
           "end": 17,
           "line": 10,
           "start": 6
-        }
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -90,6 +100,7 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 20,
@@ -101,7 +112,8 @@
           "end": 17,
           "line": 4,
           "start": 8
-        }
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []

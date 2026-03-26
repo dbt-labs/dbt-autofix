@@ -8,6 +8,7 @@ from typing import Callable, Optional
 from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
 
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.fancy_quotes_utils import restore_fancy_quotes
 from dbt_autofix.refactors.yml import load_yaml
 from dbt_autofix.retrieve_schemas import SchemaSpecs
@@ -34,12 +35,15 @@ class Location:
 @dataclass
 class DbtDeprecationRefactor:
     log: str
-    deprecation: Optional[str] = None
+    change_type: ChangeType
+    deprecation: Optional[DeprecationType] = None
     original_location: Optional[Location] = None
     edited_location: Optional[Location] = None
 
     def to_dict(self) -> dict:
         ret_dict: dict = {"deprecation": self.deprecation, "log": self.log}
+        if self.change_type is not None:
+            ret_dict["change_type"] = self.change_type
         if self.original_location is not None:
             ret_dict["original_location"] = self.original_location.to_dict()
         if self.edited_location is not None:
@@ -179,9 +183,10 @@ class YMLRuleRefactorResult:
 
     def to_dict(self) -> dict:
         ret_dict = {
+            "rule_name": self.rule_name,
             "deprecation_refactors": [
                 deprecation_refactor.to_dict() for deprecation_refactor in self.deprecation_refactors
-            ]
+            ],
         }
         return ret_dict
 
@@ -280,7 +285,10 @@ class YMLRefactorResult:
             flattened_refactors = []
             for refactor in self.refactors:
                 if refactor.refactored:
-                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+                    refactor_dict = refactor.to_dict()
+                    for entry in refactor_dict["deprecation_refactors"]:
+                        entry["rule_name"] = refactor_dict["rule_name"]
+                        flattened_refactors.append(entry)
 
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
@@ -348,7 +356,10 @@ class SQLRefactorResult:
             flattened_refactors = []
             for refactor in self.refactors:
                 if refactor.refactored:
-                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+                    refactor_dict = refactor.to_dict()
+                    for entry in refactor_dict["deprecation_refactors"]:
+                        entry["rule_name"] = refactor_dict["rule_name"]
+                        flattened_refactors.append(entry)
 
             flattened_warnings = []
             for refactor in self.refactors:
@@ -429,7 +440,10 @@ class PythonRefactorResult:
             flattened_refactors = []
             for refactor in self.refactors:
                 if refactor.refactored:
-                    flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+                    refactor_dict = refactor.to_dict()
+                    for entry in refactor_dict["deprecation_refactors"]:
+                        entry["rule_name"] = refactor_dict["rule_name"]
+                        flattened_refactors.append(entry)
 
             flattened_warnings = []
             for refactor in self.refactors:

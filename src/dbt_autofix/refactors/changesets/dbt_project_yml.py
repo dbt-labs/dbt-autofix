@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 import yamllint.config
 
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     DbtProjectYMLRefactorConfig,
@@ -66,10 +67,10 @@ class _RemoveDeprecatedConfigImpl:
         }
 
         dict_fields_to_deprecation_class = {
-            "log-path": "ConfigLogPathDeprecation",
-            "target-path": "ConfigTargetPathDeprecation",
-            "data-paths": "ConfigDataPathDeprecation",
-            "source-paths": "ConfigSourcePathDeprecation",
+            "log-path": DeprecationType.CONFIG_LOG_PATH_DEPRECATION,
+            "target-path": DeprecationType.CONFIG_TARGET_PATH_DEPRECATION,
+            "data-paths": DeprecationType.CONFIG_DATA_PATH_DEPRECATION,
+            "source-paths": DeprecationType.CONFIG_SOURCE_PATH_DEPRECATION,
         }
 
         for deprecated_field, _ in dict_deprecated_fields_with_defaults.items():
@@ -80,6 +81,7 @@ class _RemoveDeprecatedConfigImpl:
                     self._refactors.append(
                         DbtDeprecationRefactor(
                             log=f"Removed the deprecated field '{deprecated_field}'",
+                            change_type=ChangeType.DEPRECATED_PROJECT_FIELD_REMOVED,
                             deprecation=dict_fields_to_deprecation_class[deprecated_field],
                             original_location=location_of_key(self.content.original_parsed, deprecated_field),
                         )
@@ -91,6 +93,7 @@ class _RemoveDeprecatedConfigImpl:
                     self._refactors.append(
                         DbtDeprecationRefactor(
                             log=f"Removed the deprecated field '{deprecated_field}' that wasn't set to the default value",
+                            change_type=ChangeType.DEPRECATED_PROJECT_FIELD_REMOVED_NON_DEFAULT,
                             deprecation=dict_fields_to_deprecation_class[deprecated_field],
                             original_location=location_of_key(self.content.original_parsed, deprecated_field),
                         )
@@ -104,6 +107,7 @@ class _RemoveDeprecatedConfigImpl:
                 if new_field not in self.yml_dict:
                     refactor = DbtDeprecationRefactor(
                         log=f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'",
+                        change_type=ChangeType.DEPRECATED_PROJECT_FIELD_RENAMED,
                         deprecation=dict_fields_to_deprecation_class[deprecated_field],
                         original_location=location_of_key(self.content.original_parsed, deprecated_field),
                     )
@@ -111,6 +115,7 @@ class _RemoveDeprecatedConfigImpl:
                 else:
                     refactor = DbtDeprecationRefactor(
                         log=f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'",
+                        change_type=ChangeType.DEPRECATED_PROJECT_FIELD_MERGED,
                         deprecation=dict_fields_to_deprecation_class[deprecated_field],
                         original_location=location_of_key(self.content.original_parsed, deprecated_field),
                     )
@@ -179,7 +184,8 @@ class _PrefixPlusForConfigImpl:
                         new_k = f"+{k}"
                         refactor = DbtDeprecationRefactor(
                             log=f"Added '+' in front of top level config '{k}'",
-                            deprecation="MissingPlusPrefixDeprecation",
+                            change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
+                            deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
                             original_location=find_key_at_path(self.content.original_parsed, [node_type, k]),
                         )
                         self._refactors.append(refactor)
@@ -240,7 +246,8 @@ class _PrefixPlusForConfigImpl:
                         del yml_dict[k]
                         refactor = DbtDeprecationRefactor(
                             log=f"Added '+' in front of the nested config '{k}'",
-                            deprecation="MissingPlusPrefixDeprecation",
+                            change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
+                            deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
                             original_location=find_key_at_path(
                                 self.content.original_parsed, [*current_yaml_path, k]
                             ),
@@ -265,7 +272,8 @@ class _PrefixPlusForConfigImpl:
                         del yml_dict[k]
                         refactor = DbtDeprecationRefactor(
                             log=f"Moved custom config '{k}' to '+meta'",
-                            deprecation="MissingPlusPrefixDeprecation",
+                            change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
+                            deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
                             original_location=find_key_at_path(
                                 self.content.original_parsed, [*current_yaml_path, k]
                             ),
@@ -297,7 +305,8 @@ class _PrefixPlusForConfigImpl:
                                         del v[subkey]
                                         refactor = DbtDeprecationRefactor(
                                             log=f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)",
-                                            deprecation="MissingPlusPrefixDeprecation",
+                                            change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
+                            deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
                                             original_location=find_key_at_path(
                                                 self.content.original_parsed, [*current_yaml_path, k, subkey]
                                             ),
@@ -319,7 +328,8 @@ class _PrefixPlusForConfigImpl:
                                         del v[subkey]
                                         refactor = DbtDeprecationRefactor(
                                             log=f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})",
-                                            deprecation="MissingPlusPrefixDeprecation",
+                                            change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
+                            deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
                                             original_location=find_key_at_path(
                                                 self.content.original_parsed, [*current_yaml_path, k, subkey]
                                             ),
@@ -342,7 +352,8 @@ class _PrefixPlusForConfigImpl:
                         del yml_dict[k]
                         refactor = DbtDeprecationRefactor(
                             log=f"Moved unrecognized config '{k}' to '+meta'",
-                            deprecation="MissingPlusPrefixDeprecation",
+                            change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
+                            deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
                             original_location=find_key_at_path(
                                 self.content.original_parsed, [*current_yaml_path, k]
                             ),
@@ -407,7 +418,8 @@ class _FlipBehaviorFlagsImpl:
                         self._refactored = True
                         refactor = DbtDeprecationRefactor(
                             log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
-                            deprecation="SourceFreshnessProjectHooksNotRun",
+                            change_type=ChangeType.SOURCE_FRESHNESS_PROJECT_HOOKS_NOT_RUN,
+                            deprecation=DeprecationType.SOURCE_FRESHNESS_PROJECT_HOOKS_NOT_RUN,
                             original_location=location_of_key(original_flags, behavior_change_flag),
                         )
                         self._refactors.append(refactor)
@@ -456,7 +468,8 @@ class _FlipTestArgumentsBehaviorFlagImpl:
             original_flags = self.content.original_parsed.get("flags", {})
             refactor = DbtDeprecationRefactor(
                 log=f"Set flag '{_flag}' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
-                deprecation="MissingGenericTestArgumentsPropertyDeprecation",
+                change_type=ChangeType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION_FIX,
+                deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION,
                 original_location=location_of_key(original_flags, _flag) if flag_existed else None,
             )
             self._refactors.append(refactor)
@@ -545,6 +558,7 @@ class _FixSpaceAfterPlusImpl:
                     0,
                     DbtDeprecationRefactor(
                         log=f"Removed space after '+' in key '+ {key_name}' on line {line_num}, changed to '{corrected_key}'",
+                        change_type=ChangeType.SPACE_AFTER_PLUS_FIXUP,
                         original_location=Location(line=line_num),
                         edited_location=Location(line=line_num),
                     ),
@@ -593,6 +607,7 @@ class _FixSpaceAfterPlusImpl:
                     0,
                     DbtDeprecationRefactor(
                         log=f"Removed invalid key '+ {key_name}' on line {line_num} (not a valid config key)",
+                        change_type=ChangeType.INVALID_KEY_AFTER_PLUS_REMOVED,
                         original_location=Location(line=line_num),
                     ),
                 )
