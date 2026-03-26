@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from ruamel.yaml.comments import CommentedMap
 
+from dbt_autofix.deprecations import ChangeType
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import dict_to_yaml_str, get_dict, get_list, load_yaml
 from dbt_autofix.semantic_definitions import MeasureInput, ModelAccessHelpers, SemanticDefinitions
@@ -15,6 +16,7 @@ def changeset_merge_simple_metrics_with_models(content: YMLContent, config: YMLR
         config.semantic_definitions,
         combine_simple_metrics_with_their_input_measure,
         "merge_simple_metrics_with_model_metrics",
+        ChangeType.SIMPLE_METRICS_MERGED_WITH_MODEL,
     )
 
 
@@ -27,6 +29,7 @@ def changeset_merge_complex_metrics_with_models(
         config.semantic_definitions,
         merge_complex_metrics_with_model,
         "merge_complex_metrics_with_model_metrics",
+        ChangeType.COMPLEX_METRICS_MERGED_WITH_MODEL,
     )
 
 
@@ -35,6 +38,7 @@ def run_change_function_against_each_model(
     semantic_definitions: SemanticDefinitions,
     merge_fn: Callable,
     rule_name: str,
+    change_type: ChangeType,
 ) -> YMLRuleRefactorResult:
     refactored = False
     deprecation_refactors: List[DbtDeprecationRefactor] = []
@@ -47,7 +51,7 @@ def run_change_function_against_each_model(
             refactored = True
             yml_dict["models"][i] = processed_node
             for log in node_refactor_logs:
-                deprecation_refactors.append(DbtDeprecationRefactor(log=log, deprecation=None))
+                deprecation_refactors.append(DbtDeprecationRefactor(log=log, change_type=change_type, deprecation=None))
 
     return YMLRuleRefactorResult(
         rule_name=rule_name,
@@ -668,6 +672,7 @@ def changeset_add_metrics_for_measures(content: YMLContent, config: YMLRefactorC
         config.semantic_definitions,
         add_metric_for_measures_in_model,
         "add_new_metrics_for_measures_to_model",
+        ChangeType.METRICS_ADDED_FOR_MEASURES,
     )
 
 
@@ -691,7 +696,11 @@ def changeset_merge_semantic_models_with_models(
             refactored = True
             yml_dict["models"][i] = processed_node
             for log in node_refactor_logs:
-                deprecation_refactors.append(DbtDeprecationRefactor(log=log, deprecation=None))
+                deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=log, change_type=ChangeType.SEMANTIC_MODEL_MERGED_WITH_MODEL, deprecation=None
+                    )
+                )
 
     # Create new model entries for semantic models that don't have a corresponding model entry in any .yml file
     # and merge semantic models with them
@@ -711,10 +720,14 @@ def changeset_merge_semantic_models_with_models(
                 refactored = True
                 yml_dict["models"].append(processed_new_model_node)
                 for log in new_model_node_refactor_logs:
-                    deprecation_refactors.append(DbtDeprecationRefactor(log=log, deprecation=None))
+                    deprecation_refactors.append(
+                        DbtDeprecationRefactor(
+                            log=log, change_type=ChangeType.SEMANTIC_MODEL_MERGED_WITH_MODEL, deprecation=None
+                        )
+                    )
 
     return YMLRuleRefactorResult(
-        rule_name="restructure_owner_properties",
+        rule_name="merge_semantic_models_with_models",
         refactored=refactored,
         refactored_yaml=dict_to_yaml_str(yml_dict) if refactored else yml_str,
         original_yaml=yml_str,
@@ -909,7 +922,9 @@ def changeset_delete_top_level_semantic_models(content: YMLContent, config: YMLR
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Deleted top-level semantic model '{semantic_model['name']}'.", deprecation=None
+                    log=f"Deleted top-level semantic model '{semantic_model['name']}'.",
+                    change_type=ChangeType.TOP_LEVEL_SEMANTIC_MODEL_DELETED,
+                    deprecation=None,
                 )
             )
         else:
@@ -955,7 +970,9 @@ def changeset_migrate_metric_tags_field_to_config(
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Migrated metric '{metric['name']}' tags field to config.", deprecation=None
+                    log=f"Migrated metric '{metric['name']}' tags field to config.",
+                    change_type=ChangeType.METRIC_TAGS_MIGRATION,
+                    deprecation=None,
                 )
             )
             # we use the initial_metrics as a way to work on many metrics later without having to
@@ -992,7 +1009,11 @@ def changeset_migrate_or_delete_top_level_metrics(
         if metric["name"] in semantic_definitions.merged_metrics:
             refactored = True
             deprecation_refactors.append(
-                DbtDeprecationRefactor(log=f"Deleted top-level metric '{metric['name']}'.", deprecation=None)
+                DbtDeprecationRefactor(
+                    log=f"Deleted top-level metric '{metric['name']}'.",
+                    change_type=ChangeType.TOP_LEVEL_METRIC_DELETED,
+                    deprecation=None,
+                )
             )
         else:
             # Transform metric to be compatible with new syntax, but leave metric at top-level
@@ -1047,6 +1068,7 @@ def changeset_migrate_or_delete_top_level_metrics(
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Updated top-level metric '{metric['name']}' to be compatible with new syntax, but left at top-level.",
+                    change_type=ChangeType.TOP_LEVEL_METRIC_UPDATED,
                     deprecation=None,
                 )
             )

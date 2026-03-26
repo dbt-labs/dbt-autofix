@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 
 import yamllint.config
 
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     DbtProjectYMLRefactorConfig,
@@ -41,10 +42,10 @@ def changeset_dbt_project_remove_deprecated_config(
     }
 
     dict_fields_to_deprecation_class = {
-        "log-path": "ConfigLogPathDeprecation",
-        "target-path": "ConfigTargetPathDeprecation",
-        "data-paths": "ConfigDataPathDeprecation",
-        "source-paths": "ConfigSourcePathDeprecation",
+        "log-path": DeprecationType.CONFIG_LOG_PATH_DEPRECATION,
+        "target-path": DeprecationType.CONFIG_TARGET_PATH_DEPRECATION,
+        "data-paths": DeprecationType.CONFIG_DATA_PATH_DEPRECATION,
+        "source-paths": DeprecationType.CONFIG_SOURCE_PATH_DEPRECATION,
     }
 
     yml_dict = load_yaml(yml_str)
@@ -57,6 +58,7 @@ def changeset_dbt_project_remove_deprecated_config(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed the deprecated field '{deprecated_field}'",
+                        change_type=ChangeType.DEPRECATED_PROJECT_FIELD_REMOVED,
                         deprecation=dict_fields_to_deprecation_class[deprecated_field],
                     )
                 )
@@ -67,6 +69,7 @@ def changeset_dbt_project_remove_deprecated_config(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Removed the deprecated field '{deprecated_field}' that wasn't set to the default value",
+                        change_type=ChangeType.DEPRECATED_PROJECT_FIELD_REMOVED_NON_DEFAULT,
                         deprecation=dict_fields_to_deprecation_class[deprecated_field],
                     )
                 )
@@ -80,6 +83,7 @@ def changeset_dbt_project_remove_deprecated_config(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Renamed the deprecated field '{deprecated_field}' to '{new_field}'",
+                        change_type=ChangeType.DEPRECATED_PROJECT_FIELD_RENAMED,
                         deprecation=dict_fields_to_deprecation_class[deprecated_field],
                     )
                 )
@@ -88,6 +92,7 @@ def changeset_dbt_project_remove_deprecated_config(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Added the config of the deprecated field '{deprecated_field}' to '{new_field}'",
+                        change_type=ChangeType.DEPRECATED_PROJECT_FIELD_MERGED,
                         deprecation=dict_fields_to_deprecation_class[deprecated_field],
                     )
                 )
@@ -288,7 +293,12 @@ def changeset_dbt_project_prefix_plus_for_config(
 
     refactored = len(all_refactor_logs) > 0
     deprecation_refactors = [
-        DbtDeprecationRefactor(log=log, deprecation="MissingPlusPrefixDeprecation") for log in all_refactor_logs
+        DbtDeprecationRefactor(
+            log=log,
+            change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
+            deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
+        )
+        for log in all_refactor_logs
     ]
     return YMLRuleRefactorResult(
         rule_name="prefix_plus_for_config",
@@ -320,7 +330,8 @@ def changeset_dbt_project_flip_behavior_flags(
                     deprecation_refactors.append(
                         DbtDeprecationRefactor(
                             log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
-                            deprecation="SourceFreshnessProjectHooksNotRun",
+                            change_type=ChangeType.SOURCE_FRESHNESS_PROJECT_HOOKS_NOT_RUN,
+                            deprecation=DeprecationType.SOURCE_FRESHNESS_PROJECT_HOOKS_NOT_RUN,
                         )
                     )
 
@@ -352,7 +363,8 @@ def changeset_dbt_project_flip_test_arguments_behavior_flag(
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log="Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
-                deprecation="MissingGenericTestArgumentsPropertyDeprecation",
+                change_type=ChangeType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION_FIX,
+                deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION,
             )
         )
 
@@ -437,7 +449,8 @@ def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRef
             deprecation_refactors.insert(
                 0,
                 DbtDeprecationRefactor(
-                    log=f"Removed space after '+' in key '+ {key_name}' on line {line_num}, changed to '{corrected_key}'"
+                    log=f"Removed space after '+' in key '+ {key_name}' on line {line_num}, changed to '{corrected_key}'",
+                    change_type=ChangeType.SPACE_AFTER_PLUS_FIXUP,
                 ),
             )
         else:  # action == 'remove'
@@ -483,7 +496,8 @@ def changeset_fix_space_after_plus(content: YMLContent, config: DbtProjectYMLRef
             deprecation_refactors.insert(
                 0,
                 DbtDeprecationRefactor(
-                    log=f"Removed invalid key '+ {key_name}' on line {line_num} (not a valid config key)"
+                    log=f"Removed invalid key '+ {key_name}' on line {line_num} (not a valid config key)",
+                    change_type=ChangeType.INVALID_KEY_AFTER_PLUS_REMOVED,
                 ),
             )
 
