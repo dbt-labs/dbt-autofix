@@ -7,7 +7,7 @@ import yaml
 import yamllint.linter
 from ruamel.yaml.comments import CommentedMap
 
-from dbt_autofix.deprecations import DeprecationType
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
@@ -58,7 +58,8 @@ def changeset_replace_fancy_quotes(content: YMLContent, config: YMLRefactorConfi
             if delimiter_count > 0:
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
-                        log=f"Replaced {delimiter_count} fancy quotes with regular quotes on line {line_num}"
+                        log=f"Replaced {delimiter_count} fancy quotes with regular quotes on line {line_num}",
+                        change_type=ChangeType.FANCY_QUOTES_FIXUP,
                     )
                 )
 
@@ -214,7 +215,9 @@ def changeset_owner_properties_yml_str(content: YMLContent, config: YMLRefactorC
                     for log in node_refactor_logs:
                         deprecation_refactors.append(
                             DbtDeprecationRefactor(
-                                log=log, deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION
+                                log=log,
+                                change_type=ChangeType.OWNER_FIELD_MOVED_TO_META_DEPRECATION,
+                                deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                             )
                         )
 
@@ -280,7 +283,10 @@ def changeset_remove_tab_only_lines(content: YMLContent, config: YMLRefactorConf
         if "\t" in line and line.strip() == "":
             refactored = True
             deprecation_refactors.append(
-                DbtDeprecationRefactor(log=f"Removed line containing only tabs on line {i + 1}")
+                DbtDeprecationRefactor(
+                    log=f"Removed line containing only tabs on line {i + 1}",
+                    change_type=ChangeType.TAB_ONLY_LINE_FIXUP,
+                )
             )
             new_lines.append("")
         else:
@@ -319,7 +325,10 @@ def changeset_remove_indentation_version(content: YMLContent, config: YMLRefacto
                 refactored = True
                 lines[i] = replacement
                 deprecation_refactors.append(
-                    DbtDeprecationRefactor(log=f"Removed the extra indentation around 'version: 2' on line {i + 1}")
+                    DbtDeprecationRefactor(
+                        log=f"Removed the extra indentation around 'version: 2' on line {i + 1}",
+                        change_type=ChangeType.EXTRA_INDENTATION_FIXUP,
+                    )
                 )
 
     refactored_yaml = "\n".join(lines) if refactored else yml_str
@@ -347,7 +356,10 @@ def changeset_remove_extra_tabs(content: YMLContent, config: YMLRefactorConfig) 
                 found_tab_error = True
                 refactored = True
                 deprecation_refactors.append(
-                    DbtDeprecationRefactor(log=f"Found extra tabs: line {p.line} - column {p.column}")
+                    DbtDeprecationRefactor(
+                        log=f"Found extra tabs: line {p.line} - column {p.column}",
+                        change_type=ChangeType.EXTRA_TABS_FIXUP,
+                    )
                 )
                 lines = current_yaml.split("\n")
                 if p.line <= len(lines):
@@ -393,6 +405,7 @@ def changeset_refactor_yml_str(content: YMLContent, config: YMLRefactorConfig) -
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Removed custom top-level key: '{key}'",
+                    change_type=ChangeType.CUSTOM_TOP_LEVEL_KEY_REMOVED,
                     deprecation=DeprecationType.CUSTOM_TOP_LEVEL_KEY_DEPRECATION,
                 )
             )
@@ -583,6 +596,7 @@ def refactor_test_config_fields(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Test '{test_name}' - Field '{field}' moved under config.",
+                        change_type=ChangeType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                         deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                     )
                 )
@@ -594,6 +608,7 @@ def refactor_test_config_fields(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"Test '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
+                        change_type=ChangeType.PROPERTY_OVERWRITTEN_IN_CONFIG_DEPRECATION,
                         deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                     )
                 )
@@ -611,6 +626,7 @@ def refactor_test_common_misspellings(test_definition: CommentedMap, test_name: 
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Test '{test_name}' - Field '{field}' is a common misspelling of '{COMMON_PROPERTY_MISSPELLINGS[field.lower()]}', it has been renamed.",
+                    change_type=ChangeType.PROPERTY_MISSPELLING_DEPRECATION,
                     deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                 )
             )
@@ -638,6 +654,7 @@ def refactor_test_args(test_definition: CommentedMap, test_name: str) -> List[Db
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'arguments'.",
+                change_type=ChangeType.TEST_ARGUMENT_MOVED_TO_ARGUMENTS,
                 deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION,
             )
         )
@@ -683,6 +700,7 @@ def restructure_yaml_keys_for_node(
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is a common misspelling of '{COMMON_CONFIG_MISSPELLINGS[field]}', it has been renamed.",
+                    change_type=ChangeType.CUSTOM_CONFIG_RENAMED_DEPRECATION,
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                 )
             )
@@ -692,6 +710,7 @@ def restructure_yaml_keys_for_node(
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is not an allowed config - Moved under config.meta.",
+                    change_type=ChangeType.CUSTOM_CONFIG_MOVED_TO_META_DEPRECATION,
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                 )
             )
@@ -714,6 +733,7 @@ def restructure_yaml_keys_for_node(
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is a common misspelling of '{correct_field}', it has been renamed.",
+                    change_type=ChangeType.PROPERTY_MISSPELLING_DEPRECATION,
                     deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                 )
             )
@@ -731,6 +751,7 @@ def restructure_yaml_keys_for_node(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config.",
+                        change_type=ChangeType.NODE_PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                         deprecation=DeprecationType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                     )
                 )
@@ -741,7 +762,8 @@ def restructure_yaml_keys_for_node(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is already under config, it has been removed from the top level.",
-                        deprecation="PropertyMovedToConfigDeprecation",
+                        change_type=ChangeType.PROPERTY_ALREADY_IN_CONFIG_DEPRECATION,
+                        deprecation=DeprecationType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                     )
                 )
             del node[field]
@@ -759,6 +781,7 @@ def restructure_yaml_keys_for_node(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not allowed, but '{closest_match[0]}' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
+                        change_type=ChangeType.CUSTOM_KEY_CLOSEST_MATCH_MOVED_TO_META_DEPRECATION,
                         deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                     )
                 )
@@ -766,6 +789,7 @@ def restructure_yaml_keys_for_node(
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not an allowed config - Moved under config.meta.",
+                        change_type=ChangeType.CUSTOM_KEY_MOVED_TO_META_DEPRECATION,
                         deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                     )
                 )
@@ -780,6 +804,7 @@ def restructure_yaml_keys_for_node(
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f"{pretty_node_type} '{node.get('name', '')}' - Moved all the meta fields under config.meta and merged with existing config.meta.",
+                change_type=ChangeType.META_FIELDS_MERGED_DEPRECATION,
                 deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
             )
         )
@@ -915,22 +940,26 @@ def replace_node_name_non_alpha_with_underscores(node: CommentedMap, node_type: 
     pretty_node_type = node_type[:-1].title()
 
     deprecation = None
+    change_type = None
     name = node.get("name", None)
     new_name = None
     if name:
         if node_type == "exposures":
             new_name = _replace_spaces_outside_jinja(name)
             new_name = _remove_non_alpha_outside_jinja(new_name)
-            deprecation = "ExposureNameDeprecation"
+            deprecation = DeprecationType.EXPOSURE_NAME_DEPRECATION
+            change_type = ChangeType.EXPOSURE_NAME_DEPRECATION
         else:
             new_name = _replace_spaces_outside_jinja(name)
-            deprecation = "ResourceNamesWithSpacesDeprecation"
+            deprecation = DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION
+            change_type = ChangeType.RESOURCE_NAME_WITH_SPACES_DEPRECATION
 
         if new_name and new_name != name:
             node_copy["name"] = new_name
             node_deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"{pretty_node_type} '{node['name']}' - Updated 'name' from '{name}' to '{new_name}'.",
+                    change_type=change_type,
                     deprecation=deprecation,
                 )
             )
@@ -985,6 +1014,7 @@ def changeset_remove_duplicate_models(content: YMLContent, config: YMLRefactorCo
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Model '{model_name}' - Found duplicate definition, removed first occurrence (keeping the second one).",
+                    change_type=ChangeType.DUPLICATE_MODEL_REMOVED,
                     deprecation=DeprecationType.DUPLICATE_YAML_KEYS_DEPRECATION,
                 )
             )
@@ -1022,7 +1052,9 @@ def changeset_remove_duplicate_keys(content: YMLContent, config: YMLRefactorConf
             refactored = True
             deprecation_refactors.append(
                 DbtDeprecationRefactor(
-                    log=f"Found duplicate keys: line {p.line} - {p.desc}", deprecation="DuplicateYAMLKeysDeprecation"
+                    log=f"Found duplicate keys: line {p.line} - {p.desc}",
+                    change_type=ChangeType.DUPLICATE_KEY_REMOVED,
+                    deprecation=DeprecationType.DUPLICATE_YAML_KEYS_DEPRECATION,
                 )
             )
 
