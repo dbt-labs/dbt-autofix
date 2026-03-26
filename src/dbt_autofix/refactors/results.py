@@ -167,28 +167,58 @@ def location_of_node(node: CommentedMap) -> Optional[Location]:
 
 
 @dataclass
+class RefactorEntry:
+    refactor: DbtDeprecationRefactor
+    resolve: Optional[Callable[["CommentedMap"], None]] = field(default=None, repr=False, compare=False)
+
+
+@dataclass
+class YMLDeprecationRefactor:
+    """Builder for RefactorEntry with deferred edited_location resolution via a key path.
+
+    Use this when the edited location can only be determined after all edits are applied.
+    Call `.to_entry()` to produce a `RefactorEntry` with an appropriate resolve closure.
+    """
+
+    refactor: DbtDeprecationRefactor
+    edited_key_path: Optional[list] = None
+
+    def to_entry(self) -> RefactorEntry:
+        if self.edited_key_path:
+            path = self.edited_key_path
+
+            def resolve(parsed: CommentedMap, r: DbtDeprecationRefactor = self.refactor, p: list = path) -> None:
+                r.edited_location = find_key_at_path(parsed, p)
+
+            return RefactorEntry(refactor=self.refactor, resolve=resolve)
+        return RefactorEntry(refactor=self.refactor)
+
+
+@dataclass
 class YMLRuleRefactorResult:
     rule_name: str
     refactored: bool
     refactored_yaml: str
     original_yaml: str
-    deprecation_refactors: list[DbtDeprecationRefactor]
-    pending_location_resolution: list[Callable[[CommentedMap], None]] = field(
-        default_factory=list, repr=False, compare=False
-    )
+    refactor_entries: list[RefactorEntry] = field(repr=False)
+
+    @property
+    def deprecation_refactors(self) -> list[DbtDeprecationRefactor]:
+        return [e.refactor for e in self.refactor_entries]
+
+    @property
+    def pending_location_resolution(self) -> list[Callable[["CommentedMap"], None]]:
+        return [e.resolve for e in self.refactor_entries if e.resolve is not None]
 
     @property
     def refactor_logs(self):
-        return [refactor.log for refactor in self.deprecation_refactors]
+        return [e.refactor.log for e in self.refactor_entries]
 
     def to_dict(self) -> dict:
-        ret_dict = {
+        return {
             "rule_name": self.rule_name,
-            "deprecation_refactors": [
-                deprecation_refactor.to_dict() for deprecation_refactor in self.deprecation_refactors
-            ],
+            "deprecation_refactors": [e.refactor.to_dict() for e in self.refactor_entries],
         }
-        return ret_dict
 
 
 @dataclass
