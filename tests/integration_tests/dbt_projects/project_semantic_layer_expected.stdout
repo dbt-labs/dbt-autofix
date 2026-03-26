@@ -783,7 +783,7 @@
         "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 2
+          "line": 3
         },
         "log": "Model 'products' - Merged with semantic model 'products'.\n\t* Set model 'description' to semantic model 'description'.\n\t* Added new column 'product_id' with 'primary' entity.\n\t* Added new column 'product_name' with 'categorical' dimension.\n\t* Added new column 'product_type' with 'categorical' dimension.\n\t* Added new column 'product_description' with 'categorical' dimension.\n\t* Added new column 'is_food_item' with 'categorical' dimension.\n\t* Added new column 'is_drink_item' with 'categorical' dimension.\n\t* Added new column 'product_price' with 'categorical' dimension.",
         "original_location": {
@@ -810,7 +810,7 @@
         "change_type": "SemanticModelMergedWithModel",
         "deprecation": null,
         "edited_location": {
-          "line": 2
+          "line": 3
         },
         "log": "Model 'supplies' - Merged with semantic model 'supplies'.\n\t* Set model 'description' to semantic model 'description'.\n\t* Added new column 'supply_uuid' with 'primary' entity.\n\t* Added new column 'supply_id' with 'categorical' dimension.\n\t* Added new column 'product_id' with 'categorical' dimension.\n\t* Added new column 'supply_name' with 'categorical' dimension.\n\t* Added new column 'supply_cost' with 'categorical' dimension.\n\t* Added new column 'is_perishable_supply' with 'categorical' dimension.",
         "original_location": {
