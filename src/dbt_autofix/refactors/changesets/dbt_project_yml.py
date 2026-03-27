@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import yamllint.config
 
@@ -11,7 +11,7 @@ from dbt_autofix.refactors.results import (
     YMLRuleRefactorResult,
 )
 from dbt_autofix.refactors.yml import DbtYAML, get_dict, load_yaml
-from dbt_autofix.retrieve_schemas import DbtProjectSpecs, SchemaSpecs
+from dbt_autofix.retrieve_schemas import DbtProjectSpecs
 
 config = """
 rules:
@@ -111,136 +111,6 @@ class _RemoveDeprecatedConfigImpl:
                 del self.yml_dict[deprecated_field]
 
 
-def rec_check_yaml_path(
-    yml_dict: Any,
-    path: Path,
-    node_fields: DbtProjectSpecs,
-    refactor_logs: Optional[List[str]] = None,
-    schema_specs: Optional[SchemaSpecs] = None,
-    node_type: Optional[str] = None,
-):
-    # we can't set refactor_logs as an empty list
-
-    # TODO: what about individual models in the config there?
-    # indivdual models would show up here but without the `.sql` (or `.py`)
-
-    # Don't early return if path doesn't exist - we still need to process
-    # logical groupings (YAML structure that doesn't correspond to directories)
-    # The per-key check below (line 115) handles the actual file/dir validation
-
-    # Type guard: if yml_dict is not a dict, return it as-is
-    # This handles cases where config values are lists, ints, strings, bools, etc.
-    # For example: partition_by={'field': 'x', 'range': {...}}, cluster_by=['col1', 'col2']
-    if not isinstance(yml_dict, dict):
-        return yml_dict, [] if refactor_logs is None else refactor_logs
-
-    yml_dict_copy = yml_dict.copy() if yml_dict else {}
-    for k, v in yml_dict_copy.items():
-        log_msg = None
-        if not (path / k).exists() and not _path_exists_as_file(path / k):
-            # Case 1: Key doesn't have "+" prefix
-            if not k.startswith("+"):
-                # Built-in config missing "+"
-                if k in node_fields.allowed_config_fields_dbt_project:
-                    new_k = f"+{k}"
-                    yml_dict[new_k] = v
-                    log_msg = f"Added '+' in front of the nested config '{k}'"
-                # Check if this is a dict value (logical grouping)
-                # Only recurse if it's NOT a valid config key
-                elif isinstance(v, dict):
-                    # This is a logical grouping (subdirectory-like structure in YAML)
-                    # Recurse into it to process nested configs
-                    new_dict, refactor_logs = rec_check_yaml_path(
-                        v, path / k, node_fields, refactor_logs, schema_specs, node_type
-                    )
-                    yml_dict[k] = new_dict
-                # Custom config not in meta (leaf value)
-                else:
-                    log_msg = f"Moved custom config '{k}' to '+meta'"
-                    meta = get_dict(yml_dict, "+meta")
-                    meta.update({k: v})
-                    yml_dict["+meta"] = meta
-
-                if log_msg:
-                    if refactor_logs is None:
-                        refactor_logs = [log_msg]
-                    else:
-                        refactor_logs.append(log_msg)
-
-                    del yml_dict[k]
-
-            # Case 2: Key already has "+" prefix - validate it
-            else:
-                key_without_plus = k[1:]  # Remove the + prefix
-
-                # Check if it's a valid config field
-                if key_without_plus in node_fields.allowed_config_fields_dbt_project:
-                    # Valid config, but we need to check if it's a dict with +prefixed subkeys
-                    if isinstance(v, dict) and schema_specs is not None:
-                        # Get dict config analysis
-                        dict_config_analysis = schema_specs.get_dict_config_analysis()
-
-                        # Check if this config has specific properties (not open-ended)
-                        if key_without_plus in dict_config_analysis["specific_properties"]:
-                            # This config has specific allowed properties
-                            allowed_props = dict_config_analysis["specific_properties"][key_without_plus]
-                            dict_copy = v.copy()
-
-                            for subkey, subvalue in dict_copy.items():
-                                # Check if subkey has + prefix when it shouldn't
-                                if subkey.startswith("+"):
-                                    # +prefixed subkey in a dict config - move to +meta
-                                    log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)"
-                                    meta = get_dict(yml_dict, "+meta")
-                                    meta[subkey] = subvalue
-                                    yml_dict["+meta"] = meta
-                                    del v[subkey]
-
-                                    if refactor_logs is None:
-                                        refactor_logs = [log_msg]
-                                    else:
-                                        refactor_logs.append(log_msg)
-                                # Check if subkey without + is not in allowed properties
-                                elif subkey not in allowed_props:
-                                    # Subkey not in allowed properties - move to +meta
-                                    log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})"
-                                    meta = get_dict(yml_dict, "+meta")
-                                    meta[subkey] = subvalue
-                                    yml_dict["+meta"] = meta
-                                    del v[subkey]
-
-                                    if refactor_logs is None:
-                                        refactor_logs = [log_msg]
-                                    else:
-                                        refactor_logs.append(log_msg)
-                    # Otherwise keep as-is (value is the config value)
-
-                # Unrecognized config (not in schema), move to +meta
-                else:
-                    log_msg = f"Moved unrecognized config '{k}' to '+meta'"
-                    meta = get_dict(yml_dict, "+meta")
-                    meta.update({key_without_plus: v})
-                    yml_dict["+meta"] = meta
-                    del yml_dict[k]
-
-                    if refactor_logs is None:
-                        refactor_logs = [log_msg]
-                    else:
-                        refactor_logs.append(log_msg)
-
-        # Only recurse into dict values if the path exists (real directory/logical grouping)
-        # Do NOT recurse into values of valid config keys (like +persist_docs, +labels)
-        elif isinstance(yml_dict[k], dict):
-            # Check if this is a valid config key - if so, its value is the config value, not nested configs
-            is_valid_config = k.startswith("+") and k[1:] in node_fields.allowed_config_fields_dbt_project
-            if not is_valid_config:
-                new_dict, refactor_logs = rec_check_yaml_path(
-                    yml_dict[k], path / k, node_fields, refactor_logs, schema_specs, node_type
-                )
-                yml_dict[k] = new_dict
-    return yml_dict, [] if refactor_logs is None else refactor_logs
-
-
 def _path_exists_as_file(path: Path) -> bool:
     return path.with_suffix(".py").exists() or path.with_suffix(".sql").exists() or path.with_suffix(".csv").exists()
 
@@ -273,19 +143,15 @@ class _PrefixPlusForConfigImpl:
         )
 
     def _process(self) -> None:
-        all_refactor_logs: List[str] = []
-
         for node_type, node_fields in self.schema_specs.dbtproject_specs_per_node_type.items():
             for k, v in get_dict(self.yml_dict, node_type).copy().items():
                 # check if this is the project name
                 if k == self.yml_dict["name"]:
                     # Only recurse if v is a dict (should be project configs)
                     if isinstance(v, dict):
-                        new_dict, refactor_logs = rec_check_yaml_path(
-                            v, self.root_path / node_type, node_fields, None, self.schema_specs, node_type
+                        self.yml_dict[node_type][k] = self._rec_check_yaml_path(
+                            v, self.root_path / node_type, node_fields, node_type
                         )
-                        self.yml_dict[node_type][k] = new_dict
-                        all_refactor_logs.extend(refactor_logs)
                     # else: non-dict value, keep as-is (unusual but possible)
 
                 # top level config (with or without + prefix)
@@ -294,8 +160,14 @@ class _PrefixPlusForConfigImpl:
                 ):
                     # Config key is valid - if it doesn't have +, add it
                     if not k.startswith("+"):
-                        all_refactor_logs.append(f"Added '+' in front of top level config '{k}'")
                         new_k = f"+{k}"
+                        self._refactors.append(
+                            DbtDeprecationRefactor(
+                                log=f"Added '+' in front of top level config '{k}'",
+                                deprecation="MissingPlusPrefixDeprecation",
+                            )
+                        )
+                        self._refactored = True
                         self.yml_dict[node_type][new_k] = v
                         del self.yml_dict[node_type][k]
                     # else: already has +, keep as-is, value is the config value (don't recurse)
@@ -306,22 +178,123 @@ class _PrefixPlusForConfigImpl:
                     packages_path = self.root_path / Path(self.yml_dict.get("packages-paths", "dbt_packages"))
                     # Only recurse if v is a dict (should be package configs or logical grouping)
                     if isinstance(v, dict):
-                        new_dict, refactor_logs = rec_check_yaml_path(
+                        self.yml_dict[node_type][k] = self._rec_check_yaml_path(
                             v,
                             packages_path / k / node_type,
                             node_fields,
-                            None,
-                            self.schema_specs,
                             node_type,
                         )
-                        self.yml_dict[node_type][k] = new_dict
-                        all_refactor_logs.extend(refactor_logs)
                     # else: non-dict value, keep as-is (unusual but possible)
 
-        self._refactored = len(all_refactor_logs) > 0
-        self._refactors = [
-            DbtDeprecationRefactor(log=log, deprecation="MissingPlusPrefixDeprecation") for log in all_refactor_logs
-        ]
+    def _rec_check_yaml_path(
+        self,
+        yml_dict: Any,
+        path: Path,
+        node_fields: DbtProjectSpecs,
+        node_type: Optional[str] = None,
+    ) -> Any:
+        # TODO: what about individual models in the config there?
+        # indivdual models would show up here but without the `.sql` (or `.py`)
+
+        # Type guard: if yml_dict is not a dict, return it as-is
+        # This handles cases where config values are lists, ints, strings, bools, etc.
+        # For example: partition_by={'field': 'x', 'range': {...}}, cluster_by=['col1', 'col2']
+        if not isinstance(yml_dict, dict):
+            return yml_dict
+
+        yml_dict_copy = yml_dict.copy() if yml_dict else {}
+        for k, v in yml_dict_copy.items():
+            if not (path / k).exists() and not _path_exists_as_file(path / k):
+                # Case 1: Key doesn't have "+" prefix
+                if not k.startswith("+"):
+                    if k in node_fields.allowed_config_fields_dbt_project:
+                        # Built-in config missing "+": rename in-place
+                        new_k = f"+{k}"
+                        yml_dict[new_k] = v
+                        del yml_dict[k]
+                        self._refactors.append(
+                            DbtDeprecationRefactor(
+                                log=f"Added '+' in front of the nested config '{k}'",
+                                deprecation="MissingPlusPrefixDeprecation",
+                            )
+                        )
+                        self._refactored = True
+                    elif isinstance(v, dict):
+                        # Logical grouping (subdirectory-like structure): recurse
+                        yml_dict[k] = self._rec_check_yaml_path(v, path / k, node_fields, node_type)
+                    else:
+                        # Custom leaf config: move to +meta
+                        meta = get_dict(yml_dict, "+meta")
+                        meta.update({k: v})
+                        yml_dict["+meta"] = meta
+                        del yml_dict[k]
+                        self._refactors.append(
+                            DbtDeprecationRefactor(
+                                log=f"Moved custom config '{k}' to '+meta'",
+                                deprecation="MissingPlusPrefixDeprecation",
+                            )
+                        )
+                        self._refactored = True
+
+                # Case 2: Key already has "+" prefix - validate it
+                else:
+                    key_without_plus = k[1:]
+
+                    if key_without_plus in node_fields.allowed_config_fields_dbt_project:
+                        # Valid config: check for invalid subkeys in dict-typed configs
+                        if isinstance(v, dict) and self.schema_specs is not None:
+                            dict_config_analysis = self.schema_specs.get_dict_config_analysis()
+                            if key_without_plus in dict_config_analysis["specific_properties"]:
+                                allowed_props = dict_config_analysis["specific_properties"][key_without_plus]
+                                for subkey, subvalue in v.copy().items():
+                                    if subkey.startswith("+"):
+                                        # +prefixed subkey in a dict config - move to +meta
+                                        meta = get_dict(yml_dict, "+meta")
+                                        meta[subkey] = subvalue
+                                        yml_dict["+meta"] = meta
+                                        del v[subkey]
+                                        self._refactors.append(
+                                            DbtDeprecationRefactor(
+                                                log=f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)",
+                                                deprecation="MissingPlusPrefixDeprecation",
+                                            )
+                                        )
+                                        self._refactored = True
+                                    elif subkey not in allowed_props:
+                                        # Subkey not in allowed properties - move to +meta
+                                        meta = get_dict(yml_dict, "+meta")
+                                        meta[subkey] = subvalue
+                                        yml_dict["+meta"] = meta
+                                        del v[subkey]
+                                        self._refactors.append(
+                                            DbtDeprecationRefactor(
+                                                log=f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})",
+                                                deprecation="MissingPlusPrefixDeprecation",
+                                            )
+                                        )
+                                        self._refactored = True
+
+                    else:
+                        # Unrecognized +prefixed config: strip + and move to +meta
+                        meta = get_dict(yml_dict, "+meta")
+                        meta.update({key_without_plus: v})
+                        yml_dict["+meta"] = meta
+                        del yml_dict[k]
+                        self._refactors.append(
+                            DbtDeprecationRefactor(
+                                log=f"Moved unrecognized config '{k}' to '+meta'",
+                                deprecation="MissingPlusPrefixDeprecation",
+                            )
+                        )
+                        self._refactored = True
+
+            # Only recurse into dict values if the path exists (real directory/logical grouping)
+            # Do NOT recurse into values of valid config keys (like +persist_docs, +labels)
+            elif isinstance(yml_dict[k], dict):
+                is_valid_config = k.startswith("+") and k[1:] in node_fields.allowed_config_fields_dbt_project
+                if not is_valid_config:
+                    yml_dict[k] = self._rec_check_yaml_path(yml_dict[k], path / k, node_fields, node_type)
+        return yml_dict
 
 
 def changeset_dbt_project_flip_behavior_flags(
