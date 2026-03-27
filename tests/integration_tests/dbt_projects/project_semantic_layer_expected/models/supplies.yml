@@ -1,4 +1,5 @@
 models:
+  #The name of the semantic model.
   - name: supplies
     semantic_model:
       enabled: true

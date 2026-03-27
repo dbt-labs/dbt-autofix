@@ -1,6 +1,14 @@
 
 sources:
   - name: my-source
+    description: |-
+      This is a model about something
+
+      This model contains:
+        * This
+        * That
+        * The other thing
+        
     database: my-db
     schema: my-schema
     loader: my-loader
@@ -17,6 +25,7 @@ sources:
 
       meta:
         custom_property: true
+
         my_meta: my-meta-value
     quoting:
       database: false
@@ -63,11 +72,3 @@ sources:
 
           meta:
             my_meta: my-meta-value-table1
-    description: |-
-      This is a model about something
-
-      This model contains:
-        * This
-        * That
-        * The other thing
-        

@@ -9,9 +9,10 @@ import ast
 import re
 from typing import List, Optional, Tuple
 
-from dbt_autofix.deprecations import DeprecationType
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
+    Location,
     PythonContent,
     PythonRefactorConfig,
     PythonRuleRefactorResult,
@@ -148,6 +149,7 @@ class _RenamePythonFileNamesWithSpacesImpl:
             self._deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Renamed '{python_file_path.name}' to '{new_file_path.name}'",
+                    change_type=ChangeType.RENAME_PYTHON_FILE_NAMES_WITH_SPACES,
                     deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
                 )
             )
@@ -255,13 +257,23 @@ class _RefactorCustomConfigsToMetaPythonImpl:
 
             full_match_start = match.start()
             full_match_end = close_paren_pos + 1
+            prefix = python_content[:full_match_start]
+            line_num = prefix.count("\n") + 1
+            line_start = prefix.rfind("\n") + 1
+            start_col = full_match_start - line_start
+            single_line = "\n" not in python_content[full_match_start:full_match_end]
             refactored_content = refactored_content[:full_match_start] + new_call + refactored_content[full_match_end:]
             refactored = True
 
             self._deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Moved custom configs {list(custom_configs.keys())} to 'meta'",
+                    change_type=ChangeType.CUSTOM_CONFIG_MOVED_TO_META_DEPRECATION,
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                    original_location=Location(
+                        line=line_num, start=start_col, end=full_match_end - line_start if single_line else None
+                    ),
+                    edited_location=Location(line=line_num, start=start_col, end=start_col + len(new_call)),
                 )
             )
 
@@ -338,6 +350,10 @@ class _MoveCustomConfigAccessToMetaPythonImpl:
 
         refactored_content = python_content
         for start, end, replacement, original in reversed(replacements):
+            prefix = python_content[:start]
+            line_num = prefix.count("\n") + 1
+            line_start = prefix.rfind("\n") + 1
+            col = start - line_start
             refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
 
             key_match = re.search(r'["\']([^"\']+)["\']', original)
@@ -346,7 +362,10 @@ class _MoveCustomConfigAccessToMetaPythonImpl:
             self._deprecation_refactors.append(
                 DbtDeprecationRefactor(
                     log=f"Updated config.get('{key_name}') to config.meta_get('{key_name}')",
+                    change_type=ChangeType.CONFIG_GET_REFACTORED,
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                    original_location=Location(line=line_num, start=col, end=end - line_start),
+                    edited_location=Location(line=line_num, start=col, end=col + len(replacement)),
                 )
             )
 

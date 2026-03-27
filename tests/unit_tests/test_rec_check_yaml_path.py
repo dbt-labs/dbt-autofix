@@ -25,19 +25,32 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.refactors.changesets.dbt_project_yml import _PrefixPlusForConfigImpl
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
+def _to_cm(d):
+    """Recursively convert plain dicts to CommentedMap for the new rec_check_yaml_path API."""
+    if isinstance(d, dict):
+        cm = CommentedMap()
+        for k, v in d.items():
+            cm[k] = _to_cm(v)
+        return cm
+    return d
+
+
 def _call_rec_check(yml_dict, path, node_fields, schema_specs=None, node_type=None):
     impl = object.__new__(_PrefixPlusForConfigImpl)
     impl.schema_specs = schema_specs
-    impl._refactors = []
+    impl._refactor_entries = []
     impl._refactored = False
-    result = impl.__call_rec_check(yml_dict, path, node_fields, node_type)
-    return result, [r.log for r in impl._refactors]
-
+    impl.content = type("_Content", (), {"original_parsed": CommentedMap()})()
+    cm = _to_cm(yml_dict) if isinstance(yml_dict, dict) else yml_dict
+    parent = CommentedMap({"_": cm})
+    node = impl._rec_check_yaml_path(parent, "_", path, node_fields, node_type)
+    return node.value, [r.refactor.log for r in impl._refactor_entries]
 
 @pytest.fixture(scope="module")
 def real_schema():
@@ -532,7 +545,7 @@ def test_empty_logical_grouping(models_node_fields, temp_path):
 
 
 def test_none_value_returned_as_is(models_node_fields, temp_path):
-    """INPUT:  None (non-dict value passed to function)
+    """INPUT:  None (non-CommentedMap value)
     OUTPUT: None, empty logs
     WHY:    Type guard should handle None gracefully
     """
@@ -545,7 +558,7 @@ def test_none_value_returned_as_is(models_node_fields, temp_path):
 def test_integer_value_returned_as_is(models_node_fields, temp_path):
     """INPUT:  Integer value (e.g., 5)
     OUTPUT: Same integer, empty logs
-    WHY:    Type guard should preserve non-dict scalar values
+    WHY:    Type guard should preserve non-CommentedMap scalar values
     """
     result, logs = _call_rec_check(5, temp_path, models_node_fields)
 

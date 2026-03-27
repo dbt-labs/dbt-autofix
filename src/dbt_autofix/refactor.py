@@ -185,6 +185,9 @@ def process_yaml_files_except_dbt_project(
             sl_config if semantic_definitions else config,
         )
 
+    for result in file_name_to_yaml_results.values():
+        result.resolve_pending_locations()
+
     return list(file_name_to_yaml_results.values())
 
 
@@ -197,7 +200,9 @@ def process_dbt_project_yml(
     all: bool = False,
 ) -> YMLRefactorResult:
     """Process dbt_project.yml."""
-    if not (root_path / "dbt_project.yml").exists():
+    project_yml_path = root_path / "dbt_project.yml"
+
+    if not project_yml_path.exists():
         error_console.print(f"Error: dbt_project.yml not found in {root_path}", style="red")
         return YMLRefactorResult(
             dry_run=dry_run,
@@ -243,6 +248,8 @@ def process_dbt_project_yml(
 
     for changeset_func in changesets:
         yml_refactor_result.apply_changeset(changeset_func, config)
+
+    yml_refactor_result.resolve_pending_locations()
 
     return yml_refactor_result
 
