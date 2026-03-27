@@ -20,7 +20,7 @@ from dbt_autofix.refactor import (
     remove_unmatched_endings,
     skip_file,
 )
-from dbt_autofix.refactors.changesets.dbt_project_yml import rec_check_yaml_path
+from dbt_autofix.refactors.changesets.dbt_project_yml import _PrefixPlusForConfigImpl
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_remove_duplicate_models,
     changeset_replace_fancy_quotes,
@@ -36,6 +36,15 @@ from dbt_autofix.refactors.results import (
 )
 from dbt_autofix.refactors.yml import dict_to_yaml_str
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+
+
+def _call_rec_check(yml_dict, path, node_fields, schema_specs=None, node_type=None):
+    impl = object.__new__(_PrefixPlusForConfigImpl)
+    impl.schema_specs = schema_specs
+    impl._refactors = []
+    impl._refactored = False
+    result = impl._rec_check_yaml_path(yml_dict, path, node_fields, node_type)
+    return result, [r.log for r in impl._refactors]
 
 
 def _yml(yml_str: str) -> YMLContent:
@@ -1032,7 +1041,7 @@ class TestDbtProjectYAMLPusPrefix:
         new_file.parent.mkdir(parents=True, exist_ok=True)
         new_file.write_text("select 1 as id")
 
-        new_yml, refactor_logs = rec_check_yaml_path(
+        new_yml, refactor_logs = _call_rec_check(
             test_data, temp_project_dir, schema_specs.dbtproject_specs_per_node_type["models"]
         )
         assert expected_data == new_yml
@@ -1048,7 +1057,7 @@ class TestDbtProjectYAMLPusPrefix:
         new_file.parent.mkdir(parents=True, exist_ok=True)
         new_file.write_text("select 1 as id")
 
-        new_yml, refactor_logs = rec_check_yaml_path(
+        new_yml, refactor_logs = _call_rec_check(
             test_data, temp_project_dir, schema_specs.dbtproject_specs_per_node_type["models"]
         )
         assert expected_data == new_yml
@@ -1064,7 +1073,7 @@ class TestDbtProjectYAMLPusPrefix:
         new_file.parent.mkdir(parents=True, exist_ok=True)
         new_file.write_text("select 1 as id")
 
-        new_yml, refactor_logs = rec_check_yaml_path(
+        new_yml, refactor_logs = _call_rec_check(
             test_data, temp_project_dir, schema_specs.dbtproject_specs_per_node_type["models"]
         )
         assert expected_data == new_yml
@@ -1088,7 +1097,7 @@ class TestDbtProjectYAMLPusPrefix:
         new_file.parent.mkdir(parents=True, exist_ok=True)
         new_file.write_text("select 1 as id")
 
-        new_yml, refactor_logs = rec_check_yaml_path(
+        new_yml, refactor_logs = _call_rec_check(
             test_data, temp_project_dir, schema_specs.dbtproject_specs_per_node_type["models"]
         )
         assert expected_data == new_yml
@@ -1104,7 +1113,7 @@ class TestDbtProjectYAMLPusPrefix:
         new_file.parent.mkdir(parents=True, exist_ok=True)
         new_file.write_text("select 1 as id")
 
-        new_yml, refactor_logs = rec_check_yaml_path(
+        new_yml, refactor_logs = _call_rec_check(
             test_data, temp_project_dir, schema_specs.dbtproject_specs_per_node_type["models"]
         )
         assert expected_data == new_yml
