@@ -1,9 +1,17 @@
-exposures:
-  - name: my_exposure
-    owner:
-      name: owner_name
+# exposures
+exposures: # exposures - inline
+    # exposures.[0].name
+  - name: my_exposure # exposures.[0].name - inline
+    # exposures.[0].owner
+    owner: # exposures.[0].owner - inline
+      name: owner_name # exposures.[0].owner.name - inline
+    # exposures.[0].tags
     config:
-      tags:
-        - my-tag
-      meta:
-        meta_key: meta_value
+                 # exposures.[0].owner.name
+      tags: # exposures.[0].tags - inline
+      # exposures.[0].tags.[0]
+        - my-tag # exposures.[0].tags.[0] - inline
+    # exposures.[0].meta
+      meta: # exposures.[0].meta - inline
+      # exposures.[0].meta.meta_key
+        meta_key: meta_value # exposures.[0].meta.meta_key - inline

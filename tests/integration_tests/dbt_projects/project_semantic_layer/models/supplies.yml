@@ -1,24 +1,39 @@
-semantic_models:
-  #The name of the semantic model.
-  - name: supplies
+# semantic_models
+semantic_models: # semantic_models - inline
+  - # semantic_models.[0].name
+    name: supplies # semantic_models.[0].name - inline
+    # semantic_models.[0].description
     description: |
       Supplies dimension table. The grain of the table is one row per supply and product combination.
-    #The name of the dbt model and schema
-    model: ref('supplies')
-    #Entities. These usually corespond to keys in the table.
-    entities:
-      - name: supply
-        type: primary
-        expr: supply_uuid
-    #Dimensions. Either categorical or time. These add additonal context to metrics. The typical querying pattern is Metric by Dimension.
-    dimensions:
-      - name: supply_id
-        type: categorical
-      - name: product_id
-        type: categorical
-      - name: supply_name
-        type: categorical
-      - name: supply_cost
-        type: categorical
-      - name: is_perishable_supply
-        type: categorical
+    # semantic_models.[0].model
+    model: ref('supplies') # semantic_models.[0].model - inline
+    # semantic_models.[0].entities
+    entities: # semantic_models.[0].entities - inline
+      - # semantic_models.[0].entities.[0].name
+        name: supply # semantic_models.[0].entities.[0].name - inline
+        # semantic_models.[0].entities.[0].type
+        type: primary # semantic_models.[0].entities.[0].type - inline
+        # semantic_models.[0].entities.[0].expr
+        expr: supply_uuid # semantic_models.[0].entities.[0].expr - inline
+    # semantic_models.[0].dimensions
+    dimensions: # semantic_models.[0].dimensions - inline
+      - # semantic_models.[0].dimensions.[0].name
+        name: supply_id # semantic_models.[0].dimensions.[0].name - inline
+        # semantic_models.[0].dimensions.[0].type
+        type: categorical # semantic_models.[0].dimensions.[0].type - inline
+      - # semantic_models.[0].dimensions.[1].name
+        name: product_id # semantic_models.[0].dimensions.[1].name - inline
+        # semantic_models.[0].dimensions.[1].type
+        type: categorical # semantic_models.[0].dimensions.[1].type - inline
+      - # semantic_models.[0].dimensions.[2].name
+        name: supply_name # semantic_models.[0].dimensions.[2].name - inline
+        # semantic_models.[0].dimensions.[2].type
+        type: categorical # semantic_models.[0].dimensions.[2].type - inline
+      - # semantic_models.[0].dimensions.[3].name
+        name: supply_cost # semantic_models.[0].dimensions.[3].name - inline
+        # semantic_models.[0].dimensions.[3].type
+        type: categorical # semantic_models.[0].dimensions.[3].type - inline
+      - # semantic_models.[0].dimensions.[4].name
+        name: is_perishable_supply # semantic_models.[0].dimensions.[4].name - inline
+        # semantic_models.[0].dimensions.[4].type
+        type: categorical # semantic_models.[0].dimensions.[4].type - inline

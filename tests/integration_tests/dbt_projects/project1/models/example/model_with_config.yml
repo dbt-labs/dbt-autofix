@@ -1,12 +1,21 @@
-models:
-  - name: my_first_dbt_model
-    config:
-      materialized: table
-      custom_config: custom_value
-      # hook config
-      pre-hook: select 1
+# models
+models: # models - inline
+  - # models.[0].name
+    name: my_first_dbt_model # models.[0].name - inline
+    # models.[0].config
+    config: # models.[0].config - inline
+      # models.[0].config.materialized
+      materialized: table # models.[0].config.materialized - inline
+      # models.[0].config.custom_config
+      custom_config: custom_value # models.[0].config.custom_config - inline
+      # models.[0].config.pre-hook
+      pre-hook: select 1 # models.[0].config.pre-hook - inline
 
-      post-hook: select 2
-      dataset: my_dataset
-      project: my_project
-      data_space: my_data_space
+      # models.[0].config.post-hook
+      post-hook: select 2 # models.[0].config.post-hook - inline
+      # models.[0].config.dataset
+      dataset: my_dataset # models.[0].config.dataset - inline
+      # models.[0].config.project
+      project: my_project # models.[0].config.project - inline
+      # models.[0].config.data_space
+      data_space: my_data_space # models.[0].config.data_space - inline

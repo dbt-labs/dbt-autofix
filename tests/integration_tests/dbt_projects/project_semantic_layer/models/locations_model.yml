@@ -1,2 +1,4 @@
-models:
-  - name: locations
+# models
+models: # models - inline
+  - # models.[0].name
+    name: locations # models.[0].name - inline

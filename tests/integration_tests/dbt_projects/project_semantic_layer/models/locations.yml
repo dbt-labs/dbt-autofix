@@ -1,35 +1,69 @@
-semantic_models:
-  - name: locations
+# semantic_models
+semantic_models: # semantic_models - inline
+  - # semantic_models.[0].name
+    name: locations # semantic_models.[0].name - inline
+    # semantic_models.[0].description
     description: |
       Location dimension table. The grain of the table is one row per location.
-    model: ref('locations')
-    defaults:
-      agg_time_dimension: opened_at
-    entities:
-      - name: location
-        type: primary
-        expr: location_id
-      - name: not_mergeable_entity
-        type: categorical
-        expr: location + " " + location_name
-    dimensions:
-      - name: location_name
-        type: categorical
-      - name: opened_at
-        expr: opened_at
-        type: time
-        type_params:
-          time_granularity: day
-      - name: my_complex_dimension
-        expr: CONCAT(location_name, ' ', opened_at)
-        type: categorical
-      - name: my_complex_dimension_with_granularity
-        expr: CONCAT(location_name, ' ', opened_at)
-        type: categorical
-        type_params:
-          time_granularity: day
-    measures:
-      - name: average_tax_rate
-        description: Average tax rate.
-        expr: tax_rate
-        agg: average
+    # semantic_models.[0].model
+    model: ref('locations') # semantic_models.[0].model - inline
+    # semantic_models.[0].defaults
+    defaults: # semantic_models.[0].defaults - inline
+      # semantic_models.[0].defaults.agg_time_dimension
+      agg_time_dimension: opened_at # semantic_models.[0].defaults.agg_time_dimension - inline
+    # semantic_models.[0].entities
+    entities: # semantic_models.[0].entities - inline
+      - # semantic_models.[0].entities.[0].name
+        name: location # semantic_models.[0].entities.[0].name - inline
+        # semantic_models.[0].entities.[0].type
+        type: primary # semantic_models.[0].entities.[0].type - inline
+        # semantic_models.[0].entities.[0].expr
+        expr: location_id # semantic_models.[0].entities.[0].expr - inline
+      - # semantic_models.[0].entities.[1].name
+        name: not_mergeable_entity # semantic_models.[0].entities.[1].name - inline
+        # semantic_models.[0].entities.[1].type
+        type: categorical # semantic_models.[0].entities.[1].type - inline
+        # semantic_models.[0].entities.[1].expr
+        expr: location + " " + location_name # semantic_models.[0].entities.[1].expr - inline
+    # semantic_models.[0].dimensions
+    dimensions: # semantic_models.[0].dimensions - inline
+      - # semantic_models.[0].dimensions.[0].name
+        name: location_name # semantic_models.[0].dimensions.[0].name - inline
+        # semantic_models.[0].dimensions.[0].type
+        type: categorical # semantic_models.[0].dimensions.[0].type - inline
+      - # semantic_models.[0].dimensions.[1].name
+        name: opened_at # semantic_models.[0].dimensions.[1].name - inline
+        # semantic_models.[0].dimensions.[1].expr
+        expr: opened_at # semantic_models.[0].dimensions.[1].expr - inline
+        # semantic_models.[0].dimensions.[1].type
+        type: time # semantic_models.[0].dimensions.[1].type - inline
+        # semantic_models.[0].dimensions.[1].type_params
+        type_params: # semantic_models.[0].dimensions.[1].type_params - inline
+          # semantic_models.[0].dimensions.[1].type_params.time_granularity
+          time_granularity: day # semantic_models.[0].dimensions.[1].type_params.time_granularity - inline
+      - # semantic_models.[0].dimensions.[2].name
+        name: my_complex_dimension # semantic_models.[0].dimensions.[2].name - inline
+        # semantic_models.[0].dimensions.[2].expr
+        expr: CONCAT(location_name, ' ', opened_at) # semantic_models.[0].dimensions.[2].expr - inline
+        # semantic_models.[0].dimensions.[2].type
+        type: categorical # semantic_models.[0].dimensions.[2].type - inline
+      - # semantic_models.[0].dimensions.[3].name
+        name: my_complex_dimension_with_granularity # semantic_models.[0].dimensions.[3].name - inline
+        # semantic_models.[0].dimensions.[3].expr
+        expr: CONCAT(location_name, ' ', opened_at) # semantic_models.[0].dimensions.[3].expr - inline
+        # semantic_models.[0].dimensions.[3].type
+        type: categorical # semantic_models.[0].dimensions.[3].type - inline
+        # semantic_models.[0].dimensions.[3].type_params
+        type_params: # semantic_models.[0].dimensions.[3].type_params - inline
+          # semantic_models.[0].dimensions.[3].type_params.time_granularity
+          time_granularity: day # semantic_models.[0].dimensions.[3].type_params.time_granularity - inline
+    # semantic_models.[0].measures
+    measures: # semantic_models.[0].measures - inline
+      - # semantic_models.[0].measures.[0].name
+        name: average_tax_rate # semantic_models.[0].measures.[0].name - inline
+        # semantic_models.[0].measures.[0].description
+        description: Average tax rate. # semantic_models.[0].measures.[0].description - inline
+        # semantic_models.[0].measures.[0].expr
+        expr: tax_rate # semantic_models.[0].measures.[0].expr - inline
+        # semantic_models.[0].measures.[0].agg
+        agg: average # semantic_models.[0].measures.[0].agg - inline

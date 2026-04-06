@@ -1,0 +1,36 @@
+# name
+name: project_missing_coverage # name - inline
+# version
+version: "1.0.0" # version - inline
+# profile
+profile: project_missing_coverage # profile - inline
+
+# source-paths
+source-paths: ["models"] # source-paths - inline
+# test-paths
+test-paths: ["tests"] # test-paths - inline
+# data-paths
+data-paths: ["data"] # data-paths - inline
+# seed-paths
+seed-paths: ["seeds"] # seed-paths - inline
+# analysis-paths
+analysis-paths: ["analyses"] # analysis-paths - inline
+# macro-paths
+macro-paths: ["macros"] # macro-paths - inline
+# snapshot-paths
+snapshot-paths: ["snapshots"] # snapshot-paths - inline
+# flags
+flags: # flags - inline
+  # flags.require_generic_test_arguments_property
+  require_generic_test_arguments_property: true # flags.require_generic_test_arguments_property - inline
+
+# models
+models: # models - inline
+  # models.project_missing_coverage
+  project_missing_coverage: # models.project_missing_coverage - inline
+    # models.project_missing_coverage.example
+    example: # models.project_missing_coverage.example - inline
+      # models.project_missing_coverage.example.+ tags
+      + tags: ["tag1"] # models.project_missing_coverage.example.+ tags - inline
+      # models.project_missing_coverage.example.+ invalid
+      + invalid: value # models.project_missing_coverage.example.+ invalid - inline

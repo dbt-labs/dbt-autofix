@@ -1,24 +1,42 @@
-# Fancy quotes (also called curly or smart quotes) are the Unicode characters
-# “ (U+201C) and ” (U+201D) for double quotes, and ‘ (U+2018) and ’ (U+2019) for single quotes.
-# They are often inserted by word processors and can appear in YAML files via copy-paste.
-models:
-  - name: fancy_delimiters_regular_inside
-    description: “This description uses fancy quotes as delimiters with regular "double quotes" inside the value.”
-    config:
-      materialized: view
-      custom_config_1: some_value
-  - name: regular_delimiters_fancy_inside
-    description: "This description uses regular delimiters with fancy “double quotes” inside the value."
-    config:
-      materialized: view
-      custom_config_2: some_value
-  - name: unquoted_with_fancy_inside
-    description: This description is unquoted with fancy “double quotes” inside the value.
-    config:
-      materialized: view
-      custom_config_3: some_value
-  - name: regular_delimiters_escaped_inside
-    description: "This description uses regular delimiters with escaped \"double quotes\" inside the value."
-    config:
-      materialized: view
-      custom_config_4: some_value
+# models
+models: # models - inline
+  - # models.[0].name
+    name: fancy_delimiters_regular_inside # models.[0].name - inline
+    # models.[0].description
+    description: “This description uses fancy quotes as delimiters with regular "double quotes" inside the value.” # models.[0].description - inline
+    # models.[0].config
+    config: # models.[0].config - inline
+      # models.[0].config.materialized
+      materialized: view # models.[0].config.materialized - inline
+      # models.[0].config.custom_config_1
+      custom_config_1: some_value # models.[0].config.custom_config_1 - inline
+  - # models.[1].name
+    name: regular_delimiters_fancy_inside # models.[1].name - inline
+    # models.[1].description
+    description: "This description uses regular delimiters with fancy “double quotes” inside the value." # models.[1].description - inline
+    # models.[1].config
+    config: # models.[1].config - inline
+      # models.[1].config.materialized
+      materialized: view # models.[1].config.materialized - inline
+      # models.[1].config.custom_config_2
+      custom_config_2: some_value # models.[1].config.custom_config_2 - inline
+  - # models.[2].name
+    name: unquoted_with_fancy_inside # models.[2].name - inline
+    # models.[2].description
+    description: This description is unquoted with fancy “double quotes” inside the value. # models.[2].description - inline
+    # models.[2].config
+    config: # models.[2].config - inline
+      # models.[2].config.materialized
+      materialized: view # models.[2].config.materialized - inline
+      # models.[2].config.custom_config_3
+      custom_config_3: some_value # models.[2].config.custom_config_3 - inline
+  - # models.[3].name
+    name: regular_delimiters_escaped_inside # models.[3].name - inline
+    # models.[3].description
+    description: "This description uses regular delimiters with escaped \"double quotes\" inside the value." # models.[3].description - inline
+    # models.[3].config
+    config: # models.[3].config - inline
+      # models.[3].config.materialized
+      materialized: view # models.[3].config.materialized - inline
+      # models.[3].config.custom_config_4
+      custom_config_4: some_value # models.[3].config.custom_config_4 - inline

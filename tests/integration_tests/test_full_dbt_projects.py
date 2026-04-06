@@ -24,6 +24,9 @@ project_dir_to_behavior_change_mode["project_jinja_templates"] = True
 project_dir_to_semantic_layer_mode = defaultdict(lambda: False)
 project_dir_to_semantic_layer_mode["project_semantic_layer"] = True
 
+project_dir_to_exclude_dbt_project_keys = defaultdict(lambda: False)
+project_dir_to_exclude_dbt_project_keys["project_exclude_dbt_project_keys"] = True
+
 
 def get_project_folders():
     dbt_projects_dir = os.path.join(os.path.dirname(__file__), dbt_projects_dir_name)
@@ -138,6 +141,7 @@ def test_project_refactor(project_folder, request):
             json_output=True,
             behavior_change=project_dir_to_behavior_change_mode[project_folder],
             semantic_layer=project_dir_to_semantic_layer_mode[project_folder],
+            exclude_dbt_project_keys=project_dir_to_exclude_dbt_project_keys[project_folder],
         )
 
     # Compare with expected output

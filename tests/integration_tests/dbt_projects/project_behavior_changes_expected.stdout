@@ -11,13 +11,13 @@
         "deprecation": "SourceFreshnessProjectHooksNotRun",
         "edited_location": {
           "end": 37,
-          "line": 22,
+          "line": 27,
           "start": 2
         },
         "log": "Set flag 'source_freshness_run_project_hooks' to 'True' - This will run project hooks (on-run-start/on-run-end) as part of source freshness commands.",
         "original_location": {
           "end": 37,
-          "line": 22,
+          "line": 27,
           "start": 2
         },
         "rule_name": "flip_behavior_flags"
@@ -59,13 +59,13 @@
         "deprecation": "ResourceNamesWithSpacesDeprecation",
         "edited_location": {
           "end": 9,
-          "line": 2,
+          "line": 4,
           "start": 4
         },
         "log": "Model 'model with spaces' - Updated 'name' from 'model with spaces' to 'model_with_spaces'.",
         "original_location": {
           "end": 9,
-          "line": 2,
+          "line": 4,
           "start": 4
         },
         "rule_name": "remove_spaces_in_resource_names"
@@ -75,13 +75,13 @@
         "deprecation": "ResourceNamesWithSpacesDeprecation",
         "edited_location": {
           "end": 9,
-          "line": 3,
+          "line": 6,
           "start": 4
         },
         "log": "Model 'python model with spaces' - Updated 'name' from 'python model with spaces' to 'python_model_with_spaces'.",
         "original_location": {
           "end": 9,
-          "line": 3,
+          "line": 6,
           "start": 4
         },
         "rule_name": "remove_spaces_in_resource_names"
@@ -91,13 +91,13 @@
         "deprecation": "ExposureNameDeprecation",
         "edited_location": {
           "end": 9,
-          "line": 6,
+          "line": 11,
           "start": 4
         },
         "log": "Exposure 'exposure with spaces' - Updated 'name' from 'exposure with spaces' to 'exposure_with_spaces'.",
         "original_location": {
           "end": 9,
-          "line": 6,
+          "line": 11,
           "start": 4
         },
         "rule_name": "remove_spaces_in_resource_names"

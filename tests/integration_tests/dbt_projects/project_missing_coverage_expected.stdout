@@ -1,0 +1,172 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_missing_coverage/dbt_project.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "change_type": "DeprecatedProjectFieldMerged",
+        "deprecation": "ConfigDataPathDeprecation",
+        "edited_location": {
+          "end": 11,
+          "line": 11,
+          "start": 0
+        },
+        "log": "Added the config of the deprecated field 'data-paths' to 'seed-paths'",
+        "original_location": {
+          "end": 11,
+          "line": 13,
+          "start": 0
+        },
+        "rule_name": "remove_deprecated_config"
+      },
+      {
+        "change_type": "DeprecatedProjectFieldRenamed",
+        "deprecation": "ConfigSourcePathDeprecation",
+        "edited_location": {
+          "end": 12,
+          "line": 34,
+          "start": 0
+        },
+        "log": "Renamed the deprecated field 'source-paths' to 'model-paths'",
+        "original_location": {
+          "end": 13,
+          "line": 9,
+          "start": 0
+        },
+        "rule_name": "remove_deprecated_config"
+      },
+      {
+        "change_type": "SpaceAfterPlusFixup",
+        "deprecation": null,
+        "edited_location": {
+          "line": 32
+        },
+        "log": "Removed space after '+' in key '+ tags' on line 32, changed to '+tags'",
+        "original_location": {
+          "line": 32
+        },
+        "rule_name": "fix_space_after_plus"
+      },
+      {
+        "change_type": "InvalidKeyAfterPlusRemoved",
+        "deprecation": null,
+        "log": "Removed invalid key '+ invalid' on line 34 (not a valid config key)",
+        "original_location": {
+          "line": 34
+        },
+        "rule_name": "fix_space_after_plus"
+      }
+    ]
+  },
+  {
+    "file_path": "project_missing_coverage/models/example/model_with_endif.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "change_type": "UnmatchedEndifDeprecation",
+        "deprecation": "UnexpectedJinjaBlockDeprecation",
+        "log": "Removed unmatched {% endif %} near line 5",
+        "original_location": {
+          "end": 11,
+          "line": 5,
+          "start": 0
+        },
+        "rule_name": "remove_unmatched_endings"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_missing_coverage/models/example/model_with_endmacro.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "change_type": "UnmatchedEndmacroDeprecation",
+        "deprecation": "UnexpectedJinjaBlockDeprecation",
+        "log": "Removed unmatched {% endmacro %} near line 5",
+        "original_location": {
+          "end": 14,
+          "line": 5,
+          "start": 0
+        },
+        "rule_name": "remove_unmatched_endings"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_missing_coverage/models/example/schema.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "change_type": "ExtraIndentationFixup",
+        "deprecation": null,
+        "edited_location": {
+          "line": 2
+        },
+        "log": "Removed the extra indentation around 'version: 2' on line 2",
+        "original_location": {
+          "line": 2
+        },
+        "rule_name": "removed_extra_indentation"
+      },
+      {
+        "change_type": "DuplicateModelRemoved",
+        "deprecation": "DuplicateYAMLKeysDeprecation",
+        "log": "Model 'duplicate_model' - Found duplicate definition, removed first occurrence (keeping the second one).",
+        "rule_name": "remove_duplicate_models"
+      },
+      {
+        "change_type": "PropertyAlreadyInConfigDeprecation",
+        "deprecation": "PropertyMovedToConfigDeprecation",
+        "edited_location": {
+          "end": 19,
+          "line": 23,
+          "start": 6
+        },
+        "log": "Model 'model_with_property_already_in_config' - Field 'materialized' is already under config, it has been removed from the top level.",
+        "original_location": {
+          "end": 17,
+          "line": 20,
+          "start": 4
+        },
+        "rule_name": "restructure_yaml_keys"
+      },
+      {
+        "change_type": "PropertyOverwrittenInConfigDeprecation",
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "edited_location": {
+          "end": 25,
+          "line": 42,
+          "start": 16
+        },
+        "log": "Test 'not_null' - Field 'severity' is already under config, it has been overwritten and removed from the top level.",
+        "original_location": {
+          "end": 23,
+          "line": 42,
+          "start": 14
+        },
+        "rule_name": "restructure_yaml_keys"
+      },
+      {
+        "change_type": "OwnerFieldMovedToMetaDeprecation",
+        "deprecation": "CustomKeyInObjectDeprecation",
+        "edited_location": {
+          "end": 13,
+          "line": 15,
+          "start": 8
+        },
+        "log": "Group 'analytics' - Owner field 'team' moved under config.meta.",
+        "original_location": {
+          "end": 11,
+          "line": 13,
+          "start": 6
+        },
+        "rule_name": "restructure_owner_properties"
+      }
+    ]
+  }
+]

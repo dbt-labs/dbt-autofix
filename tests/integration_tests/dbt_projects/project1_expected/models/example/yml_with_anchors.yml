@@ -14,9 +14,11 @@ models:
           meta:
             my_config: mine
             my_meta: minemine
+
     config:
       meta:
         invalid_field: "invalid"
+# my_config comment
         my_config: mine
   - name: my_second_dbt_model
     description: *description

@@ -1,6 +1,8 @@
-models:
-  #The name of the semantic model.
-  - name: products
+# semantic_models
+models:          # semantic_models - inline
+    # semantic_models.[0].name
+  - name: products # semantic_models.[0].name - inline
+    # semantic_models.[0].description
     semantic_model:
       enabled: true
     description: |

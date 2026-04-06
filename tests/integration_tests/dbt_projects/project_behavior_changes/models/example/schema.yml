@@ -1,8 +1,11 @@
-models:
-  # model name
-  - name: model with spaces
-  - name: python model with spaces
+# models
+models: # models - inline
+  - # models.[0].name
+    name: model with spaces # models.[0].name - inline
+  - # models.[1].name
+    name: python model with spaces # models.[1].name - inline
 
-exposures:
-
-  - name: exposure with spaces
+# exposures
+exposures: # exposures - inline
+  - # exposures.[0].name
+    name: exposure with spaces # exposures.[0].name - inline

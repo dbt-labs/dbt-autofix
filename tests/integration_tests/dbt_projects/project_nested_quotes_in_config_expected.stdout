@@ -10,18 +10,6 @@
         "change_type": "FancyQuotesFixup",
         "deprecation": null,
         "edited_location": {
-          "line": 2
-        },
-        "log": "Replaced 2 fancy quotes with regular quotes on line 2",
-        "original_location": {
-          "line": 2
-        },
-        "rule_name": "replace_fancy_quotes"
-      },
-      {
-        "change_type": "FancyQuotesFixup",
-        "deprecation": null,
-        "edited_location": {
           "line": 6
         },
         "log": "Replaced 2 fancy quotes with regular quotes on line 6",
@@ -34,11 +22,11 @@
         "change_type": "FancyQuotesFixup",
         "deprecation": null,
         "edited_location": {
-          "line": 16
+          "line": 26
         },
-        "log": "Replaced 2 fancy quotes with regular quotes on line 16",
+        "log": "Replaced 2 fancy quotes with regular quotes on line 26",
         "original_location": {
-          "line": 16
+          "line": 26
         },
         "rule_name": "replace_fancy_quotes"
       },
@@ -47,13 +35,13 @@
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
-          "line": 10,
+          "line": 13,
           "start": 8
         },
         "log": "Model 'fancy_delimiters_regular_inside' - Config 'custom_config_1' is not an allowed config - Moved under config.meta.",
         "original_location": {
           "end": 22,
-          "line": 9,
+          "line": 12,
           "start": 6
         },
         "rule_name": "restructure_yaml_keys"
@@ -63,13 +51,13 @@
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
-          "line": 16,
+          "line": 24,
           "start": 8
         },
         "log": "Model 'regular_delimiters_fancy_inside' - Config 'custom_config_2' is not an allowed config - Moved under config.meta.",
         "original_location": {
           "end": 22,
-          "line": 14,
+          "line": 22,
           "start": 6
         },
         "rule_name": "restructure_yaml_keys"
@@ -79,13 +67,13 @@
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
-          "line": 22,
+          "line": 35,
           "start": 8
         },
         "log": "Model 'unquoted_with_fancy_inside' - Config 'custom_config_3' is not an allowed config - Moved under config.meta.",
         "original_location": {
           "end": 22,
-          "line": 19,
+          "line": 32,
           "start": 6
         },
         "rule_name": "restructure_yaml_keys"
@@ -95,13 +83,13 @@
         "deprecation": "CustomKeyInConfigDeprecation",
         "edited_location": {
           "end": 24,
-          "line": 28,
+          "line": 46,
           "start": 8
         },
         "log": "Model 'regular_delimiters_escaped_inside' - Config 'custom_config_4' is not an allowed config - Moved under config.meta.",
         "original_location": {
           "end": 22,
-          "line": 24,
+          "line": 42,
           "start": 6
         },
         "rule_name": "restructure_yaml_keys"

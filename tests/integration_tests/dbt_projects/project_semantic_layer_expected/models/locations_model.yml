@@ -1,5 +1,7 @@
-models:
-  - name: locations
+# models
+models: # models - inline
+    # models.[0].name
+  - name: locations # models.[0].name - inline
     semantic_model:
       enabled: true
     description: |
@@ -31,16 +33,24 @@ models:
           granularity: day
           expr: CONCAT(location_name, ' ', opened_at)
     metrics:
-      - name: average_tax_rate
-        description: Average tax rate.
-        expr: tax_rate
-        agg: average
+        # semantic_models.[0].measures.[0].name
+      - name: average_tax_rate # semantic_models.[0].measures.[0].name - inline
+        # semantic_models.[0].measures.[0].description
+        description: Average tax rate. # semantic_models.[0].measures.[0].description - inline
+        # semantic_models.[0].measures.[0].expr
+        expr: tax_rate # semantic_models.[0].measures.[0].expr - inline
+        # semantic_models.[0].measures.[0].agg
+        agg: average # semantic_models.[0].measures.[0].agg - inline
         type: simple
         hidden: true
-      - name: average_tax_rate_fill_nulls_with_8675309
-        description: Average tax rate.
-        expr: tax_rate
-        agg: average
+        # semantic_models.[0].measures.[0].name
+      - name: average_tax_rate_fill_nulls_with_8675309 # semantic_models.[0].measures.[0].name - inline
+        # semantic_models.[0].measures.[0].description
+        description: Average tax rate. # semantic_models.[0].measures.[0].description - inline
+        # semantic_models.[0].measures.[0].expr
+        expr: tax_rate # semantic_models.[0].measures.[0].expr - inline
+        # semantic_models.[0].measures.[0].agg
+        agg: average # semantic_models.[0].measures.[0].agg - inline
         type: simple
         hidden: true
         fill_nulls_with: 8675309

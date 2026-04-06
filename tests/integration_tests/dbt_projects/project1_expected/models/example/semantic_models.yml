@@ -1,74 +1,145 @@
-semantic_models:
-  - name: customers
-    defaults:
-      agg_time_dimension: first_ordered_at
+# semantic_models
+semantic_models: # semantic_models - inline
+  - # semantic_models.[0].name
+    name: customers # semantic_models.[0].name - inline
+    # semantic_models.[0].defaults
+    defaults: # semantic_models.[0].defaults - inline
+      # semantic_models.[0].defaults.agg_time_dimension
+      agg_time_dimension: first_ordered_at # semantic_models.[0].defaults.agg_time_dimension - inline
+    # semantic_models.[0].description
     description: |
       Customer grain mart.
-    model: ref('customers')
-    entities:
-      - name: customer
-        expr: customer_id
-        type: primary
-    dimensions:
-      - name: customer_name
-        type: categorical
-      - name: customer_type
-        type: categorical
-      - name: first_ordered_at
-        type: time
-        type_params:
-          time_granularity: day
-      - name: last_ordered_at
-        type: time
-        type_params:
-          time_granularity: day
-    measures:
-      - name: customers
-        description: Count of unique customers
-        agg: count_distinct
-      - name: count_lifetime_orders
-        description: Total count of orders per customer.
-        agg: sum
-      - name: lifetime_spend_pretax
-        description: Customer lifetime spend before taxes.
-        agg: sum
-      - name: lifetime_spend
-        agg: sum
-        description: Gross customer lifetime spend inclusive of taxes.
+    # semantic_models.[0].model
+    model: ref('customers') # semantic_models.[0].model - inline
+    # semantic_models.[0].entities
+    entities: # semantic_models.[0].entities - inline
+      - # semantic_models.[0].entities.[0].name
+        name: customer # semantic_models.[0].entities.[0].name - inline
+        # semantic_models.[0].entities.[0].expr
+        expr: customer_id # semantic_models.[0].entities.[0].expr - inline
+        # semantic_models.[0].entities.[0].type
+        type: primary # semantic_models.[0].entities.[0].type - inline
+    # semantic_models.[0].dimensions
+    dimensions: # semantic_models.[0].dimensions - inline
+      - # semantic_models.[0].dimensions.[0].name
+        name: customer_name # semantic_models.[0].dimensions.[0].name - inline
+        # semantic_models.[0].dimensions.[0].type
+        type: categorical # semantic_models.[0].dimensions.[0].type - inline
+      - # semantic_models.[0].dimensions.[1].name
+        name: customer_type # semantic_models.[0].dimensions.[1].name - inline
+        # semantic_models.[0].dimensions.[1].type
+        type: categorical # semantic_models.[0].dimensions.[1].type - inline
+      - # semantic_models.[0].dimensions.[2].name
+        name: first_ordered_at # semantic_models.[0].dimensions.[2].name - inline
+        # semantic_models.[0].dimensions.[2].type
+        type: time # semantic_models.[0].dimensions.[2].type - inline
+        # semantic_models.[0].dimensions.[2].type_params
+        type_params: # semantic_models.[0].dimensions.[2].type_params - inline
+          # semantic_models.[0].dimensions.[2].type_params.time_granularity
+          time_granularity: day # semantic_models.[0].dimensions.[2].type_params.time_granularity - inline
+      - # semantic_models.[0].dimensions.[3].name
+        name: last_ordered_at # semantic_models.[0].dimensions.[3].name - inline
+        # semantic_models.[0].dimensions.[3].type
+        type: time # semantic_models.[0].dimensions.[3].type - inline
+        # semantic_models.[0].dimensions.[3].type_params
+        type_params: # semantic_models.[0].dimensions.[3].type_params - inline
+          # semantic_models.[0].dimensions.[3].type_params.time_granularity
+          time_granularity: day # semantic_models.[0].dimensions.[3].type_params.time_granularity - inline
+    # semantic_models.[0].measures
+    measures: # semantic_models.[0].measures - inline
+      - # semantic_models.[0].measures.[0].name
+        name: customers # semantic_models.[0].measures.[0].name - inline
+        # semantic_models.[0].measures.[0].description
+        description: Count of unique customers # semantic_models.[0].measures.[0].description - inline
+        # semantic_models.[0].measures.[0].agg
+        agg: count_distinct # semantic_models.[0].measures.[0].agg - inline
+      - # semantic_models.[0].measures.[1].name
+        name: count_lifetime_orders # semantic_models.[0].measures.[1].name - inline
+        # semantic_models.[0].measures.[1].description
+        description: Total count of orders per customer. # semantic_models.[0].measures.[1].description - inline
+        # semantic_models.[0].measures.[1].agg
+        agg: sum # semantic_models.[0].measures.[1].agg - inline
+      - # semantic_models.[0].measures.[2].name
+        name: lifetime_spend_pretax # semantic_models.[0].measures.[2].name - inline
+        # semantic_models.[0].measures.[2].description
+        description: Customer lifetime spend before taxes. # semantic_models.[0].measures.[2].description - inline
+        # semantic_models.[0].measures.[2].agg
+        agg: sum # semantic_models.[0].measures.[2].agg - inline
+      - # semantic_models.[0].measures.[3].name
+        name: lifetime_spend # semantic_models.[0].measures.[3].name - inline
+        # semantic_models.[0].measures.[3].agg
+        agg: sum # semantic_models.[0].measures.[3].agg - inline
+        # semantic_models.[0].measures.[3].description
+        description: Gross customer lifetime spend inclusive of taxes. # semantic_models.[0].measures.[3].description - inline
 
-metrics:
-  - name: lifetime_spend_pretax
-    description: Customer's lifetime spend before tax
-    label: LTV Pre-tax
-    type: simple
-    type_params:
-      measure: lifetime_spend_pretax
-  - name: count_lifetime_orders
-    description: Count of lifetime orders
-    label: Count Lifetime Orders
-    type: simple
-    type_params:
-      measure: count_lifetime_orders
-  - name: average_order_value
-    description: LTV pre-tax / number of orders
-    label: Average Order Value
-    type: derived
-    type_params:
-      metrics:
-        - count_lifetime_orders
-        - lifetime_spend_pretax
-      expr: lifetime_spend_pretax / count_lifetime_orders
+# metrics
+metrics: # metrics - inline
+  - # metrics.[0].name
+    name: lifetime_spend_pretax # metrics.[0].name - inline
+    # metrics.[0].description
+    description: Customer's lifetime spend before tax # metrics.[0].description - inline
+    # metrics.[0].label
+    label: LTV Pre-tax # metrics.[0].label - inline
+    # metrics.[0].type
+    type: simple # metrics.[0].type - inline
+    # metrics.[0].type_params
+    type_params: # metrics.[0].type_params - inline
+      # metrics.[0].type_params.measure
+      measure: lifetime_spend_pretax # metrics.[0].type_params.measure - inline
+  - # metrics.[1].name
+    name: count_lifetime_orders # metrics.[1].name - inline
+    # metrics.[1].description
+    description: Count of lifetime orders # metrics.[1].description - inline
+    # metrics.[1].label
+    label: Count Lifetime Orders # metrics.[1].label - inline
+    # metrics.[1].type
+    type: simple # metrics.[1].type - inline
+    # metrics.[1].type_params
+    type_params: # metrics.[1].type_params - inline
+      # metrics.[1].type_params.measure
+      measure: count_lifetime_orders # metrics.[1].type_params.measure - inline
+  - # metrics.[2].name
+    name: average_order_value # metrics.[2].name - inline
+    # metrics.[2].description
+    description: LTV pre-tax / number of orders # metrics.[2].description - inline
+    # metrics.[2].label
+    label: Average Order Value # metrics.[2].label - inline
+    # metrics.[2].type
+    type: derived # metrics.[2].type - inline
+    # metrics.[2].type_params
+    type_params: # metrics.[2].type_params - inline
+      # metrics.[2].type_params.metrics
+      metrics: # metrics.[2].type_params.metrics - inline
+        # metrics.[2].type_params.metrics.[0]
+        - count_lifetime_orders # metrics.[2].type_params.metrics.[0] - inline
+        # metrics.[2].type_params.metrics.[1]
+        - lifetime_spend_pretax # metrics.[2].type_params.metrics.[1] - inline
+      # metrics.[2].type_params.expr
+      expr: lifetime_spend_pretax / count_lifetime_orders # metrics.[2].type_params.expr - inline
 
-saved_queries:
-  - name: customer_order_metrics
-    query_params:
-      metrics:
-        - count_lifetime_orders
-        - lifetime_spend_pretax
-        - average_order_value
-      group_by:
-        - Entity('customer')
-    exports:
-      - name: customer_order_metrics
-        config:
-          export_as: table
+# saved_queries
+saved_queries: # saved_queries - inline
+  - # saved_queries.[0].name
+    name: customer_order_metrics # saved_queries.[0].name - inline
+    # saved_queries.[0].query_params
+    query_params: # saved_queries.[0].query_params - inline
+      # saved_queries.[0].query_params.metrics
+      metrics: # saved_queries.[0].query_params.metrics - inline
+        # saved_queries.[0].query_params.metrics.[0]
+        - count_lifetime_orders # saved_queries.[0].query_params.metrics.[0] - inline
+        # saved_queries.[0].query_params.metrics.[1]
+        - lifetime_spend_pretax # saved_queries.[0].query_params.metrics.[1] - inline
+        # saved_queries.[0].query_params.metrics.[2]
+        - average_order_value # saved_queries.[0].query_params.metrics.[2] - inline
+      # saved_queries.[0].query_params.group_by
+      group_by: # saved_queries.[0].query_params.group_by - inline
+        # saved_queries.[0].query_params.group_by.[0]
+        - Entity('customer') # saved_queries.[0].query_params.group_by.[0] - inline
+    # saved_queries.[0].exports
+    exports: # saved_queries.[0].exports - inline
+      - # saved_queries.[0].exports.[0].name
+        name: customer_order_metrics # saved_queries.[0].exports.[0].name - inline
+        # saved_queries.[0].exports.[0].config
+        config: # saved_queries.[0].exports.[0].config - inline
+          # saved_queries.[0].exports.[0].config.export_as
+          export_as: table # saved_queries.[0].exports.[0].config.export_as - inline

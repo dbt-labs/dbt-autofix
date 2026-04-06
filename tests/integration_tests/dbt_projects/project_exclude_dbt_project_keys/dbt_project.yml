@@ -1,0 +1,26 @@
+# name
+name: project_exclude_dbt_project_keys # name - inline
+# version
+version: "1.0.0" # version - inline
+# profile
+profile: project_exclude_dbt_project_keys # profile - inline
+
+# model-paths
+model-paths: ["models"] # model-paths - inline
+# test-paths
+test-paths: ["tests"] # test-paths - inline
+# seed-paths
+seed-paths: ["seeds"] # seed-paths - inline
+# analysis-paths
+analysis-paths: ["analyses"] # analysis-paths - inline
+# macro-paths
+macro-paths: ["macros"] # macro-paths - inline
+# snapshot-paths
+snapshot-paths: ["snapshots"] # snapshot-paths - inline
+# log-path
+log-path: custom_logs # log-path - inline
+
+# flags
+flags: # flags - inline
+  # flags.require_generic_test_arguments_property
+  require_generic_test_arguments_property: true # flags.require_generic_test_arguments_property - inline

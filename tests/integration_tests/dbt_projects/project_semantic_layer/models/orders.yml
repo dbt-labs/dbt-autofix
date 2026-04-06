@@ -1,137 +1,265 @@
-models:
-  - name: orders
-    description: Order overview data mart, offering key details for each order inlcluding if it's a customer's first order and a food vs. drink item breakdown. One row per order.
-    data_tests:
-      - dbt_utils.expression_is_true:
-          expression: "order_items_subtotal = subtotal"
-      - dbt_utils.expression_is_true:
-          expression: "order_total = subtotal + tax_paid"
-    columns:
-      - name: order_id
-        description: The unique key of the orders mart.
-        data_tests:
-          - not_null
-          - unique
-      - name: customer_id
-        description: The foreign key relating to the customer who placed the order.
-        data_tests:
-          - relationships:
-              to: ref('stg_customers')
-              field: customer_id
-      - name: order_total
-        description: The total amount of the order in USD including tax.
-      - name: ordered_at
-        description: The timestamp the order was placed at.
-      - name: order_cost
-        description: The sum of supply expenses to fulfill the order.
-      - name: is_food_order
-        description: A boolean indicating if this order included any food items.
-      - name: is_drink_order
-        description: A boolean indicating if this order included any drink items.
+# models
+models: # models - inline
+  - # models.[0].name
+    name: orders # models.[0].name - inline
+    # models.[0].description
+    description: Order overview data mart, offering key details for each order inlcluding if it's a customer's first order and a food vs. drink item breakdown. One row per order. # models.[0].description - inline
+    # models.[0].data_tests
+    data_tests: # models.[0].data_tests - inline
+      - # models.[0].data_tests.[0].dbt_utils.expression_is_true
+        dbt_utils.expression_is_true: # models.[0].data_tests.[0].dbt_utils.expression_is_true - inline
+          # models.[0].data_tests.[0].dbt_utils.expression_is_true.expression
+          expression: "order_items_subtotal = subtotal" # models.[0].data_tests.[0].dbt_utils.expression_is_true.expression - inline
+      - # models.[0].data_tests.[1].dbt_utils.expression_is_true
+        dbt_utils.expression_is_true: # models.[0].data_tests.[1].dbt_utils.expression_is_true - inline
+          # models.[0].data_tests.[1].dbt_utils.expression_is_true.expression
+          expression: "order_total = subtotal + tax_paid" # models.[0].data_tests.[1].dbt_utils.expression_is_true.expression - inline
+    # models.[0].columns
+    columns: # models.[0].columns - inline
+      - # models.[0].columns.[0].name
+        name: order_id # models.[0].columns.[0].name - inline
+        # models.[0].columns.[0].description
+        description: The unique key of the orders mart. # models.[0].columns.[0].description - inline
+        # models.[0].columns.[0].data_tests
+        data_tests: # models.[0].columns.[0].data_tests - inline
+          # models.[0].columns.[0].data_tests.[0]
+          - not_null # models.[0].columns.[0].data_tests.[0] - inline
+          # models.[0].columns.[0].data_tests.[1]
+          - unique # models.[0].columns.[0].data_tests.[1] - inline
+      - # models.[0].columns.[1].name
+        name: customer_id # models.[0].columns.[1].name - inline
+        # models.[0].columns.[1].description
+        description: The foreign key relating to the customer who placed the order. # models.[0].columns.[1].description - inline
+        # models.[0].columns.[1].data_tests
+        data_tests: # models.[0].columns.[1].data_tests - inline
+          - # models.[0].columns.[1].data_tests.[0].relationships
+            relationships: # models.[0].columns.[1].data_tests.[0].relationships - inline
+              # models.[0].columns.[1].data_tests.[0].relationships.to
+              to: ref('stg_customers') # models.[0].columns.[1].data_tests.[0].relationships.to - inline
+              # models.[0].columns.[1].data_tests.[0].relationships.field
+              field: customer_id # models.[0].columns.[1].data_tests.[0].relationships.field - inline
+      - # models.[0].columns.[2].name
+        name: order_total # models.[0].columns.[2].name - inline
+        # models.[0].columns.[2].description
+        description: The total amount of the order in USD including tax. # models.[0].columns.[2].description - inline
+      - # models.[0].columns.[3].name
+        name: ordered_at # models.[0].columns.[3].name - inline
+        # models.[0].columns.[3].description
+        description: The timestamp the order was placed at. # models.[0].columns.[3].description - inline
+      - # models.[0].columns.[4].name
+        name: order_cost # models.[0].columns.[4].name - inline
+        # models.[0].columns.[4].description
+        description: The sum of supply expenses to fulfill the order. # models.[0].columns.[4].description - inline
+      - # models.[0].columns.[5].name
+        name: is_food_order # models.[0].columns.[5].name - inline
+        # models.[0].columns.[5].description
+        description: A boolean indicating if this order included any food items. # models.[0].columns.[5].description - inline
+      - # models.[0].columns.[6].name
+        name: is_drink_order # models.[0].columns.[6].name - inline
+        # models.[0].columns.[6].description
+        description: A boolean indicating if this order included any drink items. # models.[0].columns.[6].description - inline
 
-semantic_models:
-  - name: orders
-    defaults:
-      agg_time_dimension: ordered_at
+# semantic_models
+semantic_models: # semantic_models - inline
+  - # semantic_models.[0].name
+    name: orders # semantic_models.[0].name - inline
+    # semantic_models.[0].defaults
+    defaults: # semantic_models.[0].defaults - inline
+      # semantic_models.[0].defaults.agg_time_dimension
+      agg_time_dimension: ordered_at # semantic_models.[0].defaults.agg_time_dimension - inline
+    # semantic_models.[0].description
     description: |
       Order fact table. This table is at the order grain with one row per order.
-    model: ref('orders')
-    entities:
-      - name: order_id
-        type: primary
-      - name: location
-        type: foreign
-        expr: location_id
-      - name: customer
-        type: foreign
-        expr: customer_id
-    dimensions:
-      - name: ordered_at
-        expr: ordered_at
-        type: time
-        type_params:
-          time_granularity: day
-      - name: order_total_dim
-        type: categorical
-        expr: order_total
-      - name: is_food_order
-        type: categorical
-      - name: is_drink_order
-        type: categorical
-      - name: customer_order_number
-        type: categorical
-    measures:
-      - name: order_total
-        description: The total amount for each order including taxes.
-        agg: sum
-      - name: order_count
-        expr: 1
-        agg: sum
-      - name: tax_paid
-        description: The total tax paid on each order.
-        agg: sum
-      - name: order_cost
-        description: The cost for each order item. Cost is calculated as a sum of the supply cost for each order item.
-        agg: sum
+    # semantic_models.[0].model
+    model: ref('orders') # semantic_models.[0].model - inline
+    # semantic_models.[0].entities
+    entities: # semantic_models.[0].entities - inline
+      - # semantic_models.[0].entities.[0].name
+        name: order_id # semantic_models.[0].entities.[0].name - inline
+        # semantic_models.[0].entities.[0].type
+        type: primary # semantic_models.[0].entities.[0].type - inline
+      - # semantic_models.[0].entities.[1].name
+        name: location # semantic_models.[0].entities.[1].name - inline
+        # semantic_models.[0].entities.[1].type
+        type: foreign # semantic_models.[0].entities.[1].type - inline
+        # semantic_models.[0].entities.[1].expr
+        expr: location_id # semantic_models.[0].entities.[1].expr - inline
+      - # semantic_models.[0].entities.[2].name
+        name: customer # semantic_models.[0].entities.[2].name - inline
+        # semantic_models.[0].entities.[2].type
+        type: foreign # semantic_models.[0].entities.[2].type - inline
+        # semantic_models.[0].entities.[2].expr
+        expr: customer_id # semantic_models.[0].entities.[2].expr - inline
+    # semantic_models.[0].dimensions
+    dimensions: # semantic_models.[0].dimensions - inline
+      - # semantic_models.[0].dimensions.[0].name
+        name: ordered_at # semantic_models.[0].dimensions.[0].name - inline
+        # semantic_models.[0].dimensions.[0].expr
+        expr: ordered_at # semantic_models.[0].dimensions.[0].expr - inline
+        # semantic_models.[0].dimensions.[0].type
+        type: time # semantic_models.[0].dimensions.[0].type - inline
+        # semantic_models.[0].dimensions.[0].type_params
+        type_params: # semantic_models.[0].dimensions.[0].type_params - inline
+          # semantic_models.[0].dimensions.[0].type_params.time_granularity
+          time_granularity: day # semantic_models.[0].dimensions.[0].type_params.time_granularity - inline
+      - # semantic_models.[0].dimensions.[1].name
+        name: order_total_dim # semantic_models.[0].dimensions.[1].name - inline
+        # semantic_models.[0].dimensions.[1].type
+        type: categorical # semantic_models.[0].dimensions.[1].type - inline
+        # semantic_models.[0].dimensions.[1].expr
+        expr: order_total # semantic_models.[0].dimensions.[1].expr - inline
+      - # semantic_models.[0].dimensions.[2].name
+        name: is_food_order # semantic_models.[0].dimensions.[2].name - inline
+        # semantic_models.[0].dimensions.[2].type
+        type: categorical # semantic_models.[0].dimensions.[2].type - inline
+      - # semantic_models.[0].dimensions.[3].name
+        name: is_drink_order # semantic_models.[0].dimensions.[3].name - inline
+        # semantic_models.[0].dimensions.[3].type
+        type: categorical # semantic_models.[0].dimensions.[3].type - inline
+      - # semantic_models.[0].dimensions.[4].name
+        name: customer_order_number # semantic_models.[0].dimensions.[4].name - inline
+        # semantic_models.[0].dimensions.[4].type
+        type: categorical # semantic_models.[0].dimensions.[4].type - inline
+    # semantic_models.[0].measures
+    measures: # semantic_models.[0].measures - inline
+      - # semantic_models.[0].measures.[0].name
+        name: order_total # semantic_models.[0].measures.[0].name - inline
+        # semantic_models.[0].measures.[0].description
+        description: The total amount for each order including taxes. # semantic_models.[0].measures.[0].description - inline
+        # semantic_models.[0].measures.[0].agg
+        agg: sum # semantic_models.[0].measures.[0].agg - inline
+      - # semantic_models.[0].measures.[1].name
+        name: order_count # semantic_models.[0].measures.[1].name - inline
+        # semantic_models.[0].measures.[1].expr
+        expr: 1 # semantic_models.[0].measures.[1].expr - inline
+        # semantic_models.[0].measures.[1].agg
+        agg: sum # semantic_models.[0].measures.[1].agg - inline
+      - # semantic_models.[0].measures.[2].name
+        name: tax_paid # semantic_models.[0].measures.[2].name - inline
+        # semantic_models.[0].measures.[2].description
+        description: The total tax paid on each order. # semantic_models.[0].measures.[2].description - inline
+        # semantic_models.[0].measures.[2].agg
+        agg: sum # semantic_models.[0].measures.[2].agg - inline
+      - # semantic_models.[0].measures.[3].name
+        name: order_cost # semantic_models.[0].measures.[3].name - inline
+        # semantic_models.[0].measures.[3].description
+        description: The cost for each order item. Cost is calculated as a sum of the supply cost for each order item. # semantic_models.[0].measures.[3].description - inline
+        # semantic_models.[0].measures.[3].agg
+        agg: sum # semantic_models.[0].measures.[3].agg - inline
 
-metrics:
-  - name: order_total
-    description: Sum of total order amonunt. Includes tax + revenue.
-    type: simple
-    label: Order Total
-    type_params:
-      measure: order_total
-  - name: new_customer_orders
-    description: New customer's first order count
-    label: New Customers
-    type: simple
-    type_params:
-      measure: order_count
+# metrics
+metrics: # metrics - inline
+  - # metrics.[0].name
+    name: order_total # metrics.[0].name - inline
+    # metrics.[0].description
+    description: Sum of total order amonunt. Includes tax + revenue. # metrics.[0].description - inline
+    # metrics.[0].type
+    type: simple # metrics.[0].type - inline
+    # metrics.[0].label
+    label: Order Total # metrics.[0].label - inline
+    # metrics.[0].type_params
+    type_params: # metrics.[0].type_params - inline
+      # metrics.[0].type_params.measure
+      measure: order_total # metrics.[0].type_params.measure - inline
+  - # metrics.[1].name
+    name: new_customer_orders # metrics.[1].name - inline
+    # metrics.[1].description
+    description: New customer's first order count # metrics.[1].description - inline
+    # metrics.[1].label
+    label: New Customers # metrics.[1].label - inline
+    # metrics.[1].type
+    type: simple # metrics.[1].type - inline
+    # metrics.[1].type_params
+    type_params: # metrics.[1].type_params - inline
+      # metrics.[1].type_params.measure
+      measure: order_count # metrics.[1].type_params.measure - inline
+    # metrics.[1].filter
     filter: |
       {{ Dimension('order_id__customer_order_number') }} = 1
-  - name: large_orders
-    description: "Count of orders with order total over 20."
-    type: simple
-    label: Large Orders
-    type_params:
-      measure: order_count
+  - # metrics.[2].name
+    name: large_orders # metrics.[2].name - inline
+    # metrics.[2].description
+    description: "Count of orders with order total over 20." # metrics.[2].description - inline
+    # metrics.[2].type
+    type: simple # metrics.[2].type - inline
+    # metrics.[2].label
+    label: Large Orders # metrics.[2].label - inline
+    # metrics.[2].type_params
+    type_params: # metrics.[2].type_params - inline
+      # metrics.[2].type_params.measure
+      measure: order_count # metrics.[2].type_params.measure - inline
+    # metrics.[2].filter
     filter: |
       {{ Dimension('order_id__order_total_dim') }} >= 20
-  - name: orders
-    description: Count of orders.
-    label: Orders
-    type: simple
-    type_params:
-      measure: order_count
-  - name: food_orders
-    description: Count of orders that contain food order items
-    label: Food Orders
-    type: simple
-    type_params:
-      measure: order_count
+  - # metrics.[3].name
+    name: orders # metrics.[3].name - inline
+    # metrics.[3].description
+    description: Count of orders. # metrics.[3].description - inline
+    # metrics.[3].label
+    label: Orders # metrics.[3].label - inline
+    # metrics.[3].type
+    type: simple # metrics.[3].type - inline
+    # metrics.[3].type_params
+    type_params: # metrics.[3].type_params - inline
+      # metrics.[3].type_params.measure
+      measure: order_count # metrics.[3].type_params.measure - inline
+  - # metrics.[4].name
+    name: food_orders # metrics.[4].name - inline
+    # metrics.[4].description
+    description: Count of orders that contain food order items # metrics.[4].description - inline
+    # metrics.[4].label
+    label: Food Orders # metrics.[4].label - inline
+    # metrics.[4].type
+    type: simple # metrics.[4].type - inline
+    # metrics.[4].type_params
+    type_params: # metrics.[4].type_params - inline
+      # metrics.[4].type_params.measure
+      measure: order_count # metrics.[4].type_params.measure - inline
+    # metrics.[4].filter
     filter: |
       {{ Dimension('order_id__is_food_order') }} = true
-  - name: drink_orders
-    description: Count of orders that contain drink order items
-    label: Drink Orders
-    type: simple
-    type_params:
-      measure: order_count
+  - # metrics.[5].name
+    name: drink_orders # metrics.[5].name - inline
+    # metrics.[5].description
+    description: Count of orders that contain drink order items # metrics.[5].description - inline
+    # metrics.[5].label
+    label: Drink Orders # metrics.[5].label - inline
+    # metrics.[5].type
+    type: simple # metrics.[5].type - inline
+    # metrics.[5].type_params
+    type_params: # metrics.[5].type_params - inline
+      # metrics.[5].type_params.measure
+      measure: order_count # metrics.[5].type_params.measure - inline
+    # metrics.[5].filter
     filter: |
       {{ Dimension('order_id__is_drink_order') }} = true
-
-saved_queries:
-  - name: order_metrics
-    query_params:
-      metrics:
-        - orders
-        - new_customer_orders
-        - order_total
-        - food_orders
-        - drink_orders
-      group_by:
-        - TimeDimension('metric_time', 'day')
-    exports:
-      - name: order_metrics
-        config:
-          export_as: table
+# saved_queries
+saved_queries: # saved_queries - inline
+  - # saved_queries.[0].name
+    name: order_metrics # saved_queries.[0].name - inline
+    # saved_queries.[0].query_params
+    query_params: # saved_queries.[0].query_params - inline
+      # saved_queries.[0].query_params.metrics
+      metrics: # saved_queries.[0].query_params.metrics - inline
+        # saved_queries.[0].query_params.metrics.[0]
+        - orders # saved_queries.[0].query_params.metrics.[0] - inline
+        # saved_queries.[0].query_params.metrics.[1]
+        - new_customer_orders # saved_queries.[0].query_params.metrics.[1] - inline
+        # saved_queries.[0].query_params.metrics.[2]
+        - order_total # saved_queries.[0].query_params.metrics.[2] - inline
+        # saved_queries.[0].query_params.metrics.[3]
+        - food_orders # saved_queries.[0].query_params.metrics.[3] - inline
+        # saved_queries.[0].query_params.metrics.[4]
+        - drink_orders # saved_queries.[0].query_params.metrics.[4] - inline
+      # saved_queries.[0].query_params.group_by
+      group_by: # saved_queries.[0].query_params.group_by - inline
+        # saved_queries.[0].query_params.group_by.[0]
+        - TimeDimension('metric_time', 'day') # saved_queries.[0].query_params.group_by.[0] - inline
+    # saved_queries.[0].exports
+    exports: # saved_queries.[0].exports - inline
+      - # saved_queries.[0].exports.[0].name
+        name: order_metrics # saved_queries.[0].exports.[0].name - inline
+        # saved_queries.[0].exports.[0].config
+        config: # saved_queries.[0].exports.[0].config - inline
+          # saved_queries.[0].exports.[0].config.export_as
+          export_as: table # saved_queries.[0].exports.[0].config.export_as - inline

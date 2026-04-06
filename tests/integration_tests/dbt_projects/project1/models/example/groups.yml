@@ -1,9 +1,18 @@
-groups:
-  - name: finance
-    owner:
-      email: finance@jaffleshop.com
-    description: For the finance team
-    custom_field: custom_value
-    config:
-      meta:
-        data_owner: Finance team
+# groups
+groups: # groups - inline
+  - # groups.[0].name
+    name: finance # groups.[0].name - inline
+    # groups.[0].owner
+    owner: # groups.[0].owner - inline
+      # groups.[0].owner.email
+      email: finance@jaffleshop.com # groups.[0].owner.email - inline
+    # groups.[0].description
+    description: For the finance team # groups.[0].description - inline
+    # groups.[0].custom_field
+    custom_field: custom_value # groups.[0].custom_field - inline
+    # groups.[0].config
+    config: # groups.[0].config - inline
+      # groups.[0].config.meta
+      meta: # groups.[0].config.meta - inline
+        # groups.[0].config.meta.data_owner
+        data_owner: Finance team # groups.[0].config.meta.data_owner - inline
