@@ -27,7 +27,6 @@ from dbt_autofix.refactors.yml import (
 )
 from dbt_autofix.retrieve_schemas import DbtProjectSpecs
 
-
 config = """
 rules:
   key-duplicates: enable
@@ -270,9 +269,7 @@ class _PrefixPlusForConfigImpl:
                             log=f"Added '+' in front of the nested config '{k}'",
                             change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
                             deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
-                            original_location=find_key_at_path(
-                                self.content.original_parsed, [*current_yaml_path, k]
-                            ),
+                            original_location=find_key_at_path(self.content.original_parsed, [*current_yaml_path, k]),
                         )
                         self._refactored = True
 
@@ -307,14 +304,12 @@ class _PrefixPlusForConfigImpl:
                             log=f"Moved custom config '{k}' to '+meta'",
                             change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
                             deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
-                            original_location=find_key_at_path(
-                                self.content.original_parsed, [*current_yaml_path, k]
-                            ),
+                            original_location=find_key_at_path(self.content.original_parsed, [*current_yaml_path, k]),
                         )
                         self._refactored = True
 
-                        def resolve(parsed, refactor=refactor, cp=current_yaml_path):
-                            refactor.edited_location = find_key_at_path(parsed, [*cp, "+meta"])
+                        def resolve(parsed, refactor=refactor, cp=current_yaml_path, k=k):
+                            refactor.edited_location = find_key_at_path(parsed, [*cp, "+meta", k])
 
                         self._refactor_entries.append(RefactorEntry(refactor=refactor, resolve=resolve))
 
@@ -345,9 +340,7 @@ class _PrefixPlusForConfigImpl:
                                         self._refactored = True
 
                                         def resolve(parsed, refactor=refactor, cp=current_yaml_path, sk=subkey):
-                                            refactor.edited_location = find_key_at_path(
-                                                parsed, [*cp, "+meta", sk]
-                                            )
+                                            refactor.edited_location = find_key_at_path(parsed, [*cp, "+meta", sk])
 
                                         self._refactor_entries.append(RefactorEntry(refactor=refactor, resolve=resolve))
                                     elif subkey not in allowed_props:
@@ -366,9 +359,7 @@ class _PrefixPlusForConfigImpl:
                                         self._refactored = True
 
                                         def resolve(parsed, refactor=refactor, cp=current_yaml_path, sk=subkey):
-                                            refactor.edited_location = find_key_at_path(
-                                                parsed, [*cp, "+meta", sk]
-                                            )
+                                            refactor.edited_location = find_key_at_path(parsed, [*cp, "+meta", sk])
 
                                         self._refactor_entries.append(RefactorEntry(refactor=refactor, resolve=resolve))
 
@@ -382,9 +373,7 @@ class _PrefixPlusForConfigImpl:
                             log=f"Moved unrecognized config '{k}' to '+meta'",
                             change_type=ChangeType.MISSING_PLUS_PREFIX_DEPRECATION_FIX,
                             deprecation=DeprecationType.MISSING_PLUS_PREFIX_DEPRECATION,
-                            original_location=find_key_at_path(
-                                self.content.original_parsed, [*current_yaml_path, k]
-                            ),
+                            original_location=find_key_at_path(self.content.original_parsed, [*current_yaml_path, k]),
                         )
                         self._refactored = True
 
