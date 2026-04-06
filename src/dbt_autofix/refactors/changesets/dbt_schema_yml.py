@@ -218,14 +218,10 @@ class _OwnerPropertiesImpl:
     def _process(self) -> None:
         for node_type in self.schema_specs.nodes_with_owner:
             if node_type in self.yml_dict:
-                for i, node in enumerate(get_list(self.yml_dict, node_type)):
-                    processed_node, node_refactored = self._restructure_owner_properties(node, node_type)
-                    if node_refactored:
-                        self._refactored = True
-                        self.yml_dict[node_type][i] = processed_node
+                for node in get_list(self.yml_dict, node_type):
+                    self._restructure_owner_node(node, node_type)
 
-    def _restructure_owner_properties(self, node: CommentedMap, node_type: str) -> Tuple[CommentedMap, bool]:
-        refactored = False
+    def _restructure_owner_node(self, node: CommentedMap, node_type: str) -> None:
         pretty_node_type = node_type[:-1].title()
 
         if "owner" in node and isinstance(node["owner"], dict):
@@ -234,7 +230,7 @@ class _OwnerPropertiesImpl:
 
             for field in owner_copy:
                 if field not in self.schema_specs.owner_properties:
-                    refactored = True
+                    self._refactored = True
                     if "config" not in node:
                         node["config"] = {"meta": {}}
                     if "meta" not in node["config"]:
@@ -247,8 +243,6 @@ class _OwnerPropertiesImpl:
                             deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                         )
                     )
-
-        return node, refactored
 
 
 def restructure_owner_properties(
