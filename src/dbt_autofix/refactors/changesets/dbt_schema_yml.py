@@ -28,7 +28,6 @@ from dbt_autofix.refactors.yml import (
     load_yaml,
     yaml_config,
 )
-from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
@@ -244,7 +243,9 @@ class _OwnerPropertiesImpl:
                     original_node = original_nodes[i] if i < len(original_nodes) else None
                     self._restructure_owner_node(node, original_node, node_type, i)
 
-    def _restructure_owner_node(self, node: CommentedMap, original_node: Optional[CommentedMap], node_type: str, i: int) -> None:
+    def _restructure_owner_node(
+        self, node: CommentedMap, original_node: Optional[CommentedMap], node_type: str, i: int
+    ) -> None:
         pretty_node_type = node_type[:-1].title()
 
         if "owner" in node and isinstance(node["owner"], dict):
@@ -470,89 +471,45 @@ class _RefactorYMLStrImpl:
                 original_nodes = get_list(self.content.original_parsed, node_type)
                 for i, node in enumerate(get_list(self.yml_dict, node_type)):
                     original_node = original_nodes[i] if i < len(original_nodes) else None
-                    processed_node, node_refactored, node_deprecation_refactors = restructure_yaml_keys_for_node(
-                        node, original_node, node_type, self.schema_specs
-                    )
-                    if node_refactored:
-                        self._refactored = True
-                        self.yml_dict[node_type][i] = processed_node
-                        for entry in node_deprecation_refactors:
-                            if entry.edited_key_path is not None:
-                                entry.edited_key_path = [node_type, i, *entry.edited_key_path]
-                        self._add_entries(node_deprecation_refactors)
+                    self._restructure_yaml_keys_for_node(node, original_node, node_type, path_prefix=[node_type, i])
 
-                    if "columns" in processed_node:
+                    if "columns" in node:
                         original_columns = get_list(original_node, "columns") if original_node is not None else []
                         for column_i, column in enumerate(node["columns"]):
                             original_column = original_columns[column_i] if column_i < len(original_columns) else None
-                            processed_column, column_refactored, column_deprecation_refactors = (
-                                restructure_yaml_keys_for_node(column, original_column, "columns", self.schema_specs)
+                            self._restructure_yaml_keys_for_node(
+                                column, original_column, "columns", path_prefix=[node_type, i, "columns", column_i]
                             )
-                            if column_refactored:
-                                self._refactored = True
-                                self.yml_dict[node_type][i]["columns"][column_i] = processed_column
-                                for entry in column_deprecation_refactors:
-                                    if entry.edited_key_path is not None:
-                                        entry.edited_key_path = [
-                                            node_type,
-                                            i,
-                                            "columns",
-                                            column_i,
-                                            *entry.edited_key_path,
-                                        ]
-                                self._add_entries(column_deprecation_refactors)
 
                             # there might be some tests, but they can be called tests or data_tests
-                            some_tests = {"tests", "data_tests"} & set(processed_column)
+                            some_tests = {"tests", "data_tests"} & set(column)
                             if some_tests:
                                 test_key = next(iter(some_tests))
                                 original_col_tests = (
                                     get_list(original_column, test_key) if original_column is not None else []
                                 )
-                                for test_i, test in enumerate(node["columns"][column_i][test_key]):
+                                for test_i, test in enumerate(column[test_key]):
                                     original_test = (
                                         original_col_tests[test_i] if test_i < len(original_col_tests) else None
                                     )
-                                    processed_test, test_refactored, test_refactor_deprecations = (
-                                        restructure_yaml_keys_for_test(test, original_test, self.schema_specs)
+                                    self._restructure_yaml_keys_for_test(
+                                        test,
+                                        original_test,
+                                        path_prefix=[node_type, i, "columns", column_i, test_key, test_i],
                                     )
-                                    if test_refactored:
-                                        self._refactored = True
-                                        self.yml_dict[node_type][i]["columns"][column_i][test_key][test_i] = (
-                                            processed_test
-                                        )
-                                        for entry in test_refactor_deprecations:
-                                            if entry.edited_key_path is not None:
-                                                entry.edited_key_path = [
-                                                    node_type,
-                                                    i,
-                                                    "columns",
-                                                    column_i,
-                                                    test_key,
-                                                    test_i,
-                                                    *entry.edited_key_path,
-                                                ]
-                                        self._add_entries(test_refactor_deprecations)
 
                     # if there are tests, we need to restructure them
-                    some_tests = {"tests", "data_tests"} & set(processed_node)
+                    some_tests = {"tests", "data_tests"} & set(node)
                     if some_tests:
                         test_key = next(iter(some_tests))
                         original_node_tests = get_list(original_node, test_key) if original_node is not None else []
                         for test_i, test in enumerate(node[test_key]):
                             original_test = original_node_tests[test_i] if test_i < len(original_node_tests) else None
-                            processed_test, test_refactored, test_refactor_deprecations = (
-                                restructure_yaml_keys_for_test(test, original_test, self.schema_specs)
+                            self._restructure_yaml_keys_for_test(
+                                test, original_test, path_prefix=[node_type, i, test_key, test_i]
                             )
-                            if test_refactored:
-                                self._refactored = True
-                                self.yml_dict[node_type][i][test_key][test_i] = processed_test
-                                for entry in test_refactor_deprecations:
-                                    if entry.edited_key_path is not None:
-                                        entry.edited_key_path = [node_type, i, test_key, test_i, *entry.edited_key_path]
-                                self._add_entries(test_refactor_deprecations)
 
-                    if "versions" in processed_node:
+                    if "versions" in node:
                         original_versions = get_list(original_node, "versions") if original_node is not None else []
                         for version_i, version in enumerate(node["versions"]):
                             original_version = (
@@ -568,26 +525,11 @@ class _RefactorYMLStrImpl:
                                     original_test = (
                                         original_version_tests[test_i] if test_i < len(original_version_tests) else None
                                     )
-                                    processed_test, test_refactored, test_refactor_deprecations = (
-                                        restructure_yaml_keys_for_test(test, original_test, self.schema_specs)
+                                    self._restructure_yaml_keys_for_test(
+                                        test,
+                                        original_test,
+                                        path_prefix=[node_type, i, "versions", version_i, test_key, test_i],
                                     )
-                                    if test_refactored:
-                                        self._refactored = True
-                                        self.yml_dict[node_type][i]["versions"][version_i][test_key][test_i] = (
-                                            processed_test
-                                        )
-                                        for entry in test_refactor_deprecations:
-                                            if entry.edited_key_path is not None:
-                                                entry.edited_key_path = [
-                                                    node_type,
-                                                    i,
-                                                    "versions",
-                                                    version_i,
-                                                    test_key,
-                                                    test_i,
-                                                    *entry.edited_key_path,
-                                                ]
-                                        self._add_entries(test_refactor_deprecations)
 
         if "sources" in self.yml_dict:
             original_sources = get_list(self.content.original_parsed, "sources")
@@ -597,47 +539,27 @@ class _RefactorYMLStrImpl:
                     original_tables = get_list(original_source, "tables") if original_source is not None else []
                     for j, table in enumerate(source["tables"]):
                         original_table = original_tables[j] if j < len(original_tables) else None
-                        processed_source_table, source_table_refactored, source_table_deprecation_refactors = (
-                            restructure_yaml_keys_for_node(table, original_table, "tables", self.schema_specs)
+                        self._restructure_yaml_keys_for_node(
+                            table, original_table, "tables", path_prefix=["sources", i, "tables", j]
                         )
-                        if source_table_refactored:
-                            self._refactored = True
-                            self.yml_dict["sources"][i]["tables"][j] = processed_source_table
-                            for entry in source_table_deprecation_refactors:
-                                if entry.edited_key_path is not None:
-                                    entry.edited_key_path = ["sources", i, "tables", j, *entry.edited_key_path]
-                            self._add_entries(source_table_deprecation_refactors)
 
-                        some_tests = {"tests", "data_tests"} & set(processed_source_table)
+                        some_tests = {"tests", "data_tests"} & set(table)
                         if some_tests:
                             test_key = next(iter(some_tests))
                             original_table_tests = (
                                 get_list(original_table, test_key) if original_table is not None else []
                             )
-                            for test_i, test in enumerate(source["tables"][j][test_key]):
+                            for test_i, test in enumerate(table[test_key]):
                                 original_test = (
                                     original_table_tests[test_i] if test_i < len(original_table_tests) else None
                                 )
-                                processed_test, test_refactored, test_refactor_deprecations = (
-                                    restructure_yaml_keys_for_test(test, original_test, self.schema_specs)
+                                self._restructure_yaml_keys_for_test(
+                                    test,
+                                    original_test,
+                                    path_prefix=["sources", i, "tables", j, test_key, test_i],
                                 )
-                                if test_refactored:
-                                    self._refactored = True
-                                    self.yml_dict["sources"][i]["tables"][j][test_key][test_i] = processed_test
-                                    for entry in test_refactor_deprecations:
-                                        if entry.edited_key_path is not None:
-                                            entry.edited_key_path = [
-                                                "sources",
-                                                i,
-                                                "tables",
-                                                j,
-                                                test_key,
-                                                test_i,
-                                                *entry.edited_key_path,
-                                            ]
-                                    self._add_entries(test_refactor_deprecations)
 
-                        if "columns" in processed_source_table:
+                        if "columns" in table:
                             original_table_columns = (
                                 get_list(original_table, "columns") if original_table is not None else []
                             )
@@ -647,30 +569,14 @@ class _RefactorYMLStrImpl:
                                     if table_column_i < len(original_table_columns)
                                     else None
                                 )
-                                processed_table_column, table_column_refactored, table_column_deprecation_refactors = (
-                                    restructure_yaml_keys_for_node(
-                                        table_column, original_table_column, "columns", self.schema_specs
-                                    )
+                                self._restructure_yaml_keys_for_node(
+                                    table_column,
+                                    original_table_column,
+                                    "columns",
+                                    path_prefix=["sources", i, "tables", j, "columns", table_column_i],
                                 )
-                                if table_column_refactored:
-                                    self._refactored = True
-                                    self.yml_dict["sources"][i]["tables"][j]["columns"][table_column_i] = (
-                                        processed_table_column
-                                    )
-                                    for entry in table_column_deprecation_refactors:
-                                        if entry.edited_key_path is not None:
-                                            entry.edited_key_path = [
-                                                "sources",
-                                                i,
-                                                "tables",
-                                                j,
-                                                "columns",
-                                                table_column_i,
-                                                *entry.edited_key_path,
-                                            ]
-                                    self._add_entries(table_column_deprecation_refactors)
 
-                                some_tests = {"tests", "data_tests"} & set(processed_table_column)
+                                some_tests = {"tests", "data_tests"} & set(table_column)
                                 if some_tests:
                                     test_key = next(iter(some_tests))
                                     original_tc_tests = (
@@ -682,410 +588,342 @@ class _RefactorYMLStrImpl:
                                         original_test = (
                                             original_tc_tests[test_i] if test_i < len(original_tc_tests) else None
                                         )
-                                        processed_test, test_refactored, test_deprecation_refactors = (
-                                            restructure_yaml_keys_for_test(test, original_test, self.schema_specs)
+                                        self._restructure_yaml_keys_for_test(
+                                            test,
+                                            original_test,
+                                            path_prefix=[
+                                                "sources",
+                                                i,
+                                                "tables",
+                                                j,
+                                                "columns",
+                                                table_column_i,
+                                                test_key,
+                                                test_i,
+                                            ],
                                         )
-                                        if test_refactored:
-                                            self._refactored = True
-                                            self.yml_dict["sources"][i]["tables"][j]["columns"][table_column_i][
-                                                test_key
-                                            ][test_i] = processed_test
-                                            for entry in test_deprecation_refactors:
-                                                if entry.edited_key_path is not None:
-                                                    entry.edited_key_path = [
-                                                        "sources",
-                                                        i,
-                                                        "tables",
-                                                        j,
-                                                        "columns",
-                                                        table_column_i,
-                                                        test_key,
-                                                        test_i,
-                                                        *entry.edited_key_path,
-                                                    ]
-                                            self._add_entries(test_deprecation_refactors)
 
-    def _add_entries(self, entries: List[YMLDeprecationRefactor]) -> None:
-        for yr in entries:
-            self._refactor_entries.append(yr.to_entry())
+    def _restructure_yaml_keys_for_test(
+        self,
+        test: CommentedMap,
+        original_test: Optional[CommentedMap],
+        path_prefix: list,
+    ) -> None:
+        # if the test is a string, we leave it as is
+        if isinstance(test, str):
+            return
 
-
-def restructure_yaml_keys_for_test(
-    test: CommentedMap, original_test: Optional[CommentedMap], schema_specs: SchemaSpecs
-) -> Tuple[CommentedMap, bool, List[YMLDeprecationRefactor]]:
-    """Restructure YAML keys for tests according to dbt conventions.
-    Tests are separated from other nodes because
-    - they can be either a string or a dict
-    - when they are a dict, the top level ist just the test name
-
-    Args:
-        test: The test dictionary to process
-        original_test: The original (pre-changeset) test for location computation
-        schema_specs: The schema specifications to use
-
-    Returns:
-        Tuple containing:
-        - The processed test dictionary
-        - Boolean indicating if changes were made
-        - List of refactor logs
-    """
-    deprecation_refactors: List[YMLDeprecationRefactor] = []
-
-    # if the test is a string, we leave it as is
-    if isinstance(test, str):
-        return test, False, []
-
-    # extract the test name and definition
-    test_name = next(iter(test.keys()))
-    if isinstance(test[test_name], dict):
-        # standard test definition syntax
-        test_definition = test[test_name]
-        is_standard_syntax = True
-    else:
-        # alt syntax
-        test_name = test["test_name"]
-        test_definition = test
-        is_standard_syntax = False
-
-    # compute original definition for location lookups
-    original_definition = None
-    if original_test is not None and not isinstance(original_test, str):
-        orig_test_name = next(iter(original_test.keys()))
-        if isinstance(original_test[orig_test_name], dict):
-            original_definition = original_test[orig_test_name]
+        # extract the test name and definition
+        test_name = next(iter(test.keys()))
+        if isinstance(test[test_name], dict):
+            # standard test definition syntax
+            test_definition = test[test_name]
+            is_standard_syntax = True
         else:
-            original_definition = original_test
+            # alt syntax
+            test_name = test["test_name"]
+            test_definition = test
+            is_standard_syntax = False
 
-    sub_refactors = []
-    sub_refactors.extend(refactor_test_common_misspellings(test_definition, original_definition, test_name))
-    sub_refactors.extend(refactor_test_config_fields(test_definition, original_definition, test_name, schema_specs))
-    sub_refactors.extend(refactor_test_args(test_definition, original_definition, test_name))
-    for entry in sub_refactors:
-        if entry.edited_key_path is not None:
-            if is_standard_syntax:
-                entry.edited_key_path = [test_name, *entry.edited_key_path]
-    deprecation_refactors.extend(sub_refactors)
+        # compute original definition for location lookups
+        original_definition = None
+        if original_test is not None and not isinstance(original_test, str):
+            orig_test_name = next(iter(original_test.keys()))
+            if isinstance(original_test[orig_test_name], dict):
+                original_definition = original_test[orig_test_name]
+            else:
+                original_definition = original_test
 
-    return test, len(deprecation_refactors) > 0, deprecation_refactors
+        sub_path = [*path_prefix, test_name] if is_standard_syntax else path_prefix
+        self._refactor_test_common_misspellings(test_definition, original_definition, test_name, sub_path)
+        self._refactor_test_config_fields(test_definition, original_definition, test_name, sub_path)
+        self._refactor_test_args(test_definition, original_definition, test_name, sub_path)
 
+    def _refactor_test_config_fields(
+        self,
+        test_definition: CommentedMap,
+        original_definition: Optional[CommentedMap],
+        test_name: str,
+        path_prefix: list,
+    ) -> None:
+        test_configs = self.schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields
+        test_properties = self.schema_specs.yaml_specs_per_node_type["tests"].allowed_properties
+        _def_for_loc = original_definition if original_definition is not None else test_definition
 
-def refactor_test_config_fields(
-    test_definition: CommentedMap,
-    original_definition: Optional[CommentedMap],
-    test_name: str,
-    schema_specs: SchemaSpecs,
-) -> List[YMLDeprecationRefactor]:
-    deprecation_refactors: List[YMLDeprecationRefactor] = []
+        copy_test_definition = deepcopy(test_definition)
+        for field in copy_test_definition:
+            # dbt_utils.mutually_exclusive_ranges accepts partition_by as an argument
+            # https://github.com/dbt-labs/dbt-utils/blob/0feb9571187119dc48203ad91d8b064a660d6d3a/macros/generic_tests/mutually_exclusive_ranges.sql#L5
+            if field == "partition_by" and test_name == "dbt_utils.mutually_exclusive_ranges":
+                continue
 
-    test_configs = schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields
-    test_properties = schema_specs.yaml_specs_per_node_type["tests"].allowed_properties
-    _def_for_loc = original_definition if original_definition is not None else test_definition
+            # field is a config and not a property
+            if field in test_configs and field not in test_properties:
+                n = pop_node(test_definition, field, original_parent=_def_for_loc)
+                node_config = test_definition.get("config", {})
 
-    copy_test_definition = deepcopy(test_definition)
-    for field in copy_test_definition:
-        # dbt_utils.mutually_exclusive_ranges accepts partition_by as an argument
-        # https://github.com/dbt-labs/dbt-utils/blob/0feb9571187119dc48203ad91d8b064a660d6d3a/macros/generic_tests/mutually_exclusive_ranges.sql#L5
-        if field == "partition_by" and test_name == "dbt_utils.mutually_exclusive_ranges":
-            continue
-
-        # field is a config and not a property
-        if field in test_configs and field not in test_properties:
-            n = pop_node(test_definition, field, original_parent=_def_for_loc)
-            node_config = test_definition.get("config", {})
-
-            # if the field is not under config, move it under config
-            if field not in node_config:
-                deprecation_refactors.append(
-                    YMLDeprecationRefactor(
+                # if the field is not under config, move it under config
+                if field not in node_config:
+                    yr = YMLDeprecationRefactor(
                         refactor=DbtDeprecationRefactor(
                             log=f"Test '{test_name}' - Field '{field}' moved under config.",
                             deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                             change_type=ChangeType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                             original_location=n.original_location,
                         ),
-                        edited_key_path=["config", field],
+                        edited_key_path=[*path_prefix, "config", field],
                     )
-                )
-
-            # if the field is already under config, overwrite it and remove from top level
-            else:
-                deprecation_refactors.append(
-                    YMLDeprecationRefactor(
+                # if the field is already under config, overwrite it and remove from top level
+                else:
+                    yr = YMLDeprecationRefactor(
                         refactor=DbtDeprecationRefactor(
                             log=f"Test '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
                             deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                             change_type=ChangeType.PROPERTY_OVERWRITTEN_IN_CONFIG_DEPRECATION,
                             original_location=n.original_location,
                         ),
-                        edited_key_path=["config", field],
+                        edited_key_path=[*path_prefix, "config", field],
                     )
-                )
-            assign_node(test_definition.setdefault("config", CommentedMap()), field, n)
+                assign_node(test_definition.setdefault("config", CommentedMap()), field, n)
+                self._refactored = True
+                self._refactor_entries.append(yr.to_entry())
 
-    return deprecation_refactors
+    def _refactor_test_common_misspellings(
+        self,
+        test_definition: CommentedMap,
+        original_definition: Optional[CommentedMap],
+        test_name: str,
+        path_prefix: list,
+    ) -> None:
+        _def_for_loc = original_definition if original_definition is not None else test_definition
 
-
-def refactor_test_common_misspellings(
-    test_definition: CommentedMap, original_definition: Optional[CommentedMap], test_name: str
-) -> List[YMLDeprecationRefactor]:
-    deprecation_refactors: List[YMLDeprecationRefactor] = []
-    _def_for_loc = original_definition if original_definition is not None else test_definition
-
-    for field in test_definition:
-        if field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
-            correct_field = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
-            position = list(test_definition.keys()).index(field)
-            n = pop_node(test_definition, field, original_parent=_def_for_loc)
-            deprecation_refactors.append(
-                YMLDeprecationRefactor(
+        for field in test_definition:
+            if field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
+                correct_field = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
+                position = list(test_definition.keys()).index(field)
+                n = pop_node(test_definition, field, original_parent=_def_for_loc)
+                yr = YMLDeprecationRefactor(
                     refactor=DbtDeprecationRefactor(
                         log=f"Test '{test_name}' - Field '{field}' is a common misspelling of '{correct_field}', it has been renamed.",
                         deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                         change_type=ChangeType.PROPERTY_MISSPELLING_DEPRECATION,
                         original_location=n.original_location,
                     ),
-                    edited_key_path=[correct_field],
+                    edited_key_path=[*path_prefix, correct_field],
                 )
-            )
-            assign_node(test_definition, correct_field, n, position=position)
+                assign_node(test_definition, correct_field, n, position=position)
+                self._refactored = True
+                self._refactor_entries.append(yr.to_entry())
 
-    return deprecation_refactors
+    def _refactor_test_args(
+        self,
+        test_definition: CommentedMap,
+        original_definition: Optional[CommentedMap],
+        test_name: str,
+        path_prefix: list,
+    ) -> None:
+        r"""Move non-config args under 'arguments' key.
+        This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name').
+        """
+        _def_for_loc = original_definition if original_definition is not None else test_definition
 
+        copy_test_definition = deepcopy(test_definition)
+        # Avoid refactoring if the test already has an arguments key that is not a dict
+        if "arguments" in test_definition and not isinstance(test_definition["arguments"], dict):
+            return
 
-def refactor_test_args(
-    test_definition: CommentedMap, original_definition: Optional[CommentedMap], test_name: str
-) -> List[YMLDeprecationRefactor]:
-    """Move non-config args under 'arguments' key
-    This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
-    """
-    deprecation_refactors: List[YMLDeprecationRefactor] = []
-    _def_for_loc = original_definition if original_definition is not None else test_definition
-
-    copy_test_definition = deepcopy(test_definition)
-    # Avoid refactoring if the test already has an arguments key that is not a dict
-    if "arguments" in test_definition and not isinstance(test_definition["arguments"], dict):
-        return deprecation_refactors
-
-    for field in copy_test_definition:
-        # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
-        if field in ("config", "arguments", "test_name", "name", "description", "column_name"):
-            continue
-        n = pop_node(test_definition, field, original_parent=_def_for_loc)
-        deprecation_refactors.append(
-            YMLDeprecationRefactor(
+        for field in copy_test_definition:
+            # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
+            if field in ("config", "arguments", "test_name", "name", "description", "column_name"):
+                continue
+            n = pop_node(test_definition, field, original_parent=_def_for_loc)
+            yr = YMLDeprecationRefactor(
                 refactor=DbtDeprecationRefactor(
                     log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'arguments'.",
                     change_type=ChangeType.TEST_ARGUMENT_MOVED_TO_ARGUMENTS,
                     deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION,
                     original_location=n.original_location,
                 ),
-                edited_key_path=["arguments", field],
+                edited_key_path=[*path_prefix, "arguments", field],
             )
-        )
-        test_definition["arguments"] = get_dict(test_definition, "arguments")
-        assign_node(test_definition["arguments"], field, n)
+            test_definition["arguments"] = get_dict(test_definition, "arguments")
+            assign_node(test_definition["arguments"], field, n)
+            self._refactored = True
+            self._refactor_entries.append(yr.to_entry())
 
-    return deprecation_refactors
+    def _restructure_yaml_keys_for_node(
+        self,
+        node: CommentedMap,
+        original_node: Optional[CommentedMap],
+        node_type: str,
+        path_prefix: list,
+    ) -> None:
+        existing_meta = node.get("meta", CommentedMap()).copy()
+        if "meta" in node:
+            copy_ca(node["meta"], existing_meta)
+        existing_config = node.get("config", {}).copy()
+        pretty_node_type = node_type[:-1].title()
+        _node_for_loc = original_node if original_node is not None else node
+        _config_for_loc = original_node.get("config", {}) if original_node is not None else node.get("config", {})
 
+        for field in existing_config:
+            # Special casing target_schema and target_database because they are renamed by another autofix rule
+            if field in self.schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields or field in (
+                "target_schema",
+                "target_database",
+            ):
+                continue
 
-def restructure_yaml_keys_for_node(
-    node: CommentedMap, original_node: Optional[CommentedMap], node_type: str, schema_specs: SchemaSpecs
-) -> Tuple[CommentedMap, bool, List[YMLDeprecationRefactor]]:
-    """Restructure YAML keys according to dbt conventions.
-
-    Args:
-        node: The node dictionary to process
-        original_node: The original (pre-changeset) node for location computation
-        node_type: The type of node to process
-        schema_specs: The schema specifications to use
-
-    Returns:
-        Tuple containing:
-        - The processed model dictionary
-        - Boolean indicating if changes were made
-        - List of refactor logs
-    """
-    refactored = False
-    deprecation_refactors: List[YMLDeprecationRefactor] = []
-    existing_meta = node.get("meta", CommentedMap()).copy()
-    if "meta" in node:
-        copy_ca(node["meta"], existing_meta)
-    existing_config = node.get("config", {}).copy()
-    pretty_node_type = node_type[:-1].title()
-    _node_for_loc = original_node if original_node is not None else node
-    _config_for_loc = original_node.get("config", {}) if original_node is not None else node.get("config", {})
-
-    for field in existing_config:
-        # Special casing target_schema and target_database because they are renamed by another autofix rule
-        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields or field in (
-            "target_schema",
-            "target_database",
-        ):
-            continue
-
-        refactored = True
-        if field in COMMON_CONFIG_MISSPELLINGS:
-            correct_field = COMMON_CONFIG_MISSPELLINGS[field]
-            n = pop_node(node["config"], field, original_parent=_config_for_loc)
-            deprecation_refactors.append(
-                YMLDeprecationRefactor(
+            self._refactored = True
+            if field in COMMON_CONFIG_MISSPELLINGS:
+                correct_field = COMMON_CONFIG_MISSPELLINGS[field]
+                n = pop_node(node["config"], field, original_parent=_config_for_loc)
+                yr = YMLDeprecationRefactor(
                     refactor=DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is a common misspelling of '{correct_field}', it has been renamed.",
                         deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                         change_type=ChangeType.CUSTOM_CONFIG_RENAMED_DEPRECATION,
                         original_location=n.original_location,
                     ),
-                    edited_key_path=["config", correct_field],
+                    edited_key_path=[*path_prefix, "config", correct_field],
                 )
-            )
-            assign_node(node["config"], correct_field, n)
-        else:
-            n = pop_node(node["config"], field, original_parent=_config_for_loc)
-            deprecation_refactors.append(
-                YMLDeprecationRefactor(
+                assign_node(node["config"], correct_field, n)
+            else:
+                n = pop_node(node["config"], field, original_parent=_config_for_loc)
+                yr = YMLDeprecationRefactor(
                     refactor=DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is not an allowed config - Moved under config.meta.",
                         deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                         change_type=ChangeType.CUSTOM_CONFIG_MOVED_TO_META_DEPRECATION,
                         original_location=n.original_location,
                     ),
-                    edited_key_path=["config", "meta", field],
+                    edited_key_path=[*path_prefix, "config", "meta", field],
                 )
-            )
-            node["config"] = get_dict(node, "config")
-            node_config_meta = get_dict(node["config"], "meta")
-            assign_node(node_config_meta, field, n)
-            node["config"]["meta"] = node_config_meta
+                node["config"] = get_dict(node, "config")
+                node_config_meta = get_dict(node["config"], "meta")
+                assign_node(node_config_meta, field, n)
+                node["config"]["meta"] = node_config_meta
+            self._refactor_entries.append(yr.to_entry())
 
-    # we can not loop node and modify it at the same time
-    copy_node = node.copy()
-    copy_ca(node, copy_node)
+        # we can not loop node and modify it at the same time
+        copy_node = node.copy()
+        copy_ca(node, copy_node)
 
-    for field in copy_node:
-        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_properties:
-            continue
-        # This is very hard-coded because it is a 'safe' fix and we don't want to break the user's code
-        elif field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
-            refactored = True
-            correct_field = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
-            position = list(node.keys()).index(field)
-            n = pop_node(node, field, original_parent=_node_for_loc)
-            deprecation_refactors.append(
-                YMLDeprecationRefactor(
+        for field in copy_node:
+            if field in self.schema_specs.yaml_specs_per_node_type[node_type].allowed_properties:
+                continue
+            # This is very hard-coded because it is a 'safe' fix and we don't want to break the user's code
+            elif field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
+                self._refactored = True
+                correct_field = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
+                position = list(node.keys()).index(field)
+                n = pop_node(node, field, original_parent=_node_for_loc)
+                yr = YMLDeprecationRefactor(
                     refactor=DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is a common misspelling of '{correct_field}', it has been renamed.",
                         deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                         change_type=ChangeType.PROPERTY_MISSPELLING_DEPRECATION,
                         original_location=n.original_location,
                     ),
-                    edited_key_path=[correct_field],
+                    edited_key_path=[*path_prefix, correct_field],
                 )
-            )
-            assign_node(node, correct_field, n, position=position)
-            continue
+                assign_node(node, correct_field, n, position=position)
+                self._refactor_entries.append(yr.to_entry())
+                continue
 
-        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields_without_meta:
-            refactored = True
-            n = pop_node(node, field, original_parent=_node_for_loc)
-            node_config = node.get("config", {})
-            config_obj = node.setdefault("config", CommentedMap())
+            if field in self.schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields_without_meta:
+                self._refactored = True
+                n = pop_node(node, field, original_parent=_node_for_loc)
+                node_config = node.get("config", {})
+                config_obj = node.setdefault("config", CommentedMap())
 
-            # if the field is not under config, move it under config
-            if field not in node_config:
-                deprecation_refactors.append(
-                    YMLDeprecationRefactor(
+                # if the field is not under config, move it under config
+                if field not in node_config:
+                    yr = YMLDeprecationRefactor(
                         refactor=DbtDeprecationRefactor(
                             log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config.",
                             change_type=ChangeType.NODE_PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                             deprecation=DeprecationType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                             original_location=n.original_location,
                         ),
-                        edited_key_path=["config", field],
+                        edited_key_path=[*path_prefix, "config", field],
                     )
-                )
-                assign_node(config_obj, field, n)
+                    assign_node(config_obj, field, n)
 
-            # if the field is already under config, it will take precedence there, so we remove it from the top level
-            else:
-                deprecation_refactors.append(
-                    YMLDeprecationRefactor(
+                # if the field is already under config, it will take precedence there, so we remove it from the top level
+                else:
+                    yr = YMLDeprecationRefactor(
                         refactor=DbtDeprecationRefactor(
                             log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is already under config, it has been removed from the top level.",
                             deprecation=DeprecationType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
                             change_type=ChangeType.PROPERTY_ALREADY_IN_CONFIG_DEPRECATION,
                             original_location=n.original_location,
                         ),
-                        edited_key_path=["config", field],
+                        edited_key_path=[*path_prefix, "config", field],
                     )
-                )
-                # Preserve existing config value; only restore the top-level comment
-                if n.comments is not None and hasattr(config_obj, "ca"):
-                    config_obj.ca.items[field] = n.comments
+                    # Preserve existing config value; only restore the top-level comment
+                    if n.comments is not None and hasattr(config_obj, "ca"):
+                        config_obj.ca.items[field] = n.comments
+                self._refactor_entries.append(yr.to_entry())
 
-        if field not in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields:
-            refactored = True
-            n = pop_node(node, field, original_parent=_node_for_loc)
-            closest_match = difflib.get_close_matches(
-                str(field),
-                schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields.union(
-                    set(schema_specs.yaml_specs_per_node_type[node_type].allowed_properties)
-                ),
-                1,
-            )
-            if closest_match:
-                deprecation_refactors.append(
-                    YMLDeprecationRefactor(
+            if field not in self.schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields:
+                self._refactored = True
+                n = pop_node(node, field, original_parent=_node_for_loc)
+                closest_match = difflib.get_close_matches(
+                    str(field),
+                    self.schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields.union(
+                        set(self.schema_specs.yaml_specs_per_node_type[node_type].allowed_properties)
+                    ),
+                    1,
+                )
+                if closest_match:
+                    yr = YMLDeprecationRefactor(
                         refactor=DbtDeprecationRefactor(
                             log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not allowed, but '{closest_match[0]}' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
                             deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                             change_type=ChangeType.CUSTOM_KEY_CLOSEST_MATCH_MOVED_TO_META_DEPRECATION,
                             original_location=n.original_location,
                         ),
-                        edited_key_path=["config", "meta", field],
+                        edited_key_path=[*path_prefix, "config", "meta", field],
                     )
-                )
-            else:
-                deprecation_refactors.append(
-                    YMLDeprecationRefactor(
+                else:
+                    yr = YMLDeprecationRefactor(
                         refactor=DbtDeprecationRefactor(
                             log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not an allowed config - Moved under config.meta.",
                             deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                             change_type=ChangeType.CUSTOM_KEY_MOVED_TO_META_DEPRECATION,
                             original_location=n.original_location,
                         ),
-                        edited_key_path=["config", "meta", field],
+                        edited_key_path=[*path_prefix, "config", "meta", field],
                     )
-                )
-            node["config"] = get_dict(node, "config")
-            node_meta = get_dict(node["config"], "meta")
-            assign_node(node_meta, field, n)
-            node["config"]["meta"] = node_meta
+                node["config"] = get_dict(node, "config")
+                node_meta = get_dict(node["config"], "meta")
+                assign_node(node_meta, field, n)
+                node["config"]["meta"] = node_meta
+                self._refactor_entries.append(yr.to_entry())
 
-    if existing_meta:
-        refactored = True
-        meta_node = pop_node(node, "meta", original_parent=_node_for_loc)
-        deprecation_refactors.append(
-            YMLDeprecationRefactor(
+        if existing_meta:
+            self._refactored = True
+            meta_node = pop_node(node, "meta", original_parent=_node_for_loc)
+            yr = YMLDeprecationRefactor(
                 refactor=DbtDeprecationRefactor(
                     log=f"{pretty_node_type} '{node.get('name', '')}' - Moved all the meta fields under config.meta and merged with existing config.meta.",
                     deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                     change_type=ChangeType.META_FIELDS_MERGED_DEPRECATION,
                     original_location=meta_node.original_location,
                 ),
-                edited_key_path=["config", "meta"],
+                edited_key_path=[*path_prefix, "config", "meta"],
             )
-        )
 
-        if "config" not in node:
-            node["config"] = CommentedMap()
-        if "meta" not in node["config"]:
-            node["config"]["meta"] = CommentedMap()
-        for key in meta_node.value:
-            assign_node(node["config"]["meta"], key, extract_node(meta_node.value, key))
-        if meta_node.comments is not None and hasattr(node.get("config", {}), "ca"):
-            node["config"].ca.items["meta"] = meta_node.comments
-
-    return node, refactored, deprecation_refactors
+            if "config" not in node:
+                node["config"] = CommentedMap()
+            if "meta" not in node["config"]:
+                node["config"]["meta"] = CommentedMap()
+            for key in meta_node.value:
+                assign_node(node["config"]["meta"], key, extract_node(meta_node.value, key))
+            if meta_node.comments is not None and hasattr(node.get("config", {}), "ca"):
+                node["config"].ca.items["meta"] = meta_node.comments
+            self._refactor_entries.append(yr.to_entry())
 
 
 def changeset_replace_non_alpha_underscores_in_name_values(
@@ -1120,16 +958,9 @@ class _ReplaceNonAlphaUnderscoresImpl:
                 original_nodes = get_list(self.content.original_parsed, node_type)
                 for i, node in enumerate(get_list(self.yml_dict, node_type)):
                     original_node = original_nodes[i] if i < len(original_nodes) else None
-                    processed_node, node_deprecation_refactors = replace_node_name_non_alpha_with_underscores(
-                        node, original_node, node_type
+                    self._replace_node_name_non_alpha_with_underscores(
+                        node, original_node, node_type, path_prefix=[node_type, i]
                     )
-                    if node_deprecation_refactors:
-                        for entry in node_deprecation_refactors:
-                            if entry.edited_key_path is not None:
-                                entry.edited_key_path = [node_type, i, *entry.edited_key_path]
-                        self.yml_dict[node_type][i] = processed_node
-                        for yr in node_deprecation_refactors:
-                            self._refactor_entries.append(yr.to_entry())
 
     @staticmethod
     def _replace_spaces_outside_jinja(text: str) -> str:
@@ -1215,45 +1046,41 @@ class _ReplaceNonAlphaUnderscoresImpl:
 
         return "".join(result)
 
-    
-def replace_node_name_non_alpha_with_underscores(
-    node: CommentedMap, original_node: Optional[CommentedMap], node_type: str
-):
-    node_deprecation_refactors: List[YMLDeprecationRefactor] = []
-    pretty_node_type = node_type[:-1].title()
-    _node_for_loc = original_node if original_node is not None else node
+    def _replace_node_name_non_alpha_with_underscores(
+        self,
+        node: CommentedMap,
+        original_node: Optional[CommentedMap],
+        node_type: str,
+        path_prefix: list,
+    ) -> None:
+        pretty_node_type = node_type[:-1].title()
+        _node_for_loc = original_node if original_node is not None else node
 
-    deprecation = None
-    change_type = None
-    name = node.get("name", None)
-    new_name = None
-    if name:
-        if node_type == "exposures":
-            new_name = _ReplaceNonAlphaUnderscoresImpl._replace_spaces_outside_jinja(name)
-            new_name = _ReplaceNonAlphaUnderscoresImpl._remove_non_alpha_outside_jinja(new_name)
-            deprecation = DeprecationType.EXPOSURE_NAME_DEPRECATION
-            change_type = ChangeType.EXPOSURE_NAME_DEPRECATION
-        else:
-            new_name = _ReplaceNonAlphaUnderscoresImpl._replace_spaces_outside_jinja(name)
-            deprecation = DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION
-            change_type = ChangeType.RESOURCE_NAME_WITH_SPACES_DEPRECATION
+        name = node.get("name", None)
+        if name:
+            if node_type == "exposures":
+                new_name = self._replace_spaces_outside_jinja(name)
+                new_name = self._remove_non_alpha_outside_jinja(new_name)
+                deprecation = DeprecationType.EXPOSURE_NAME_DEPRECATION
+                change_type = ChangeType.EXPOSURE_NAME_DEPRECATION
+            else:
+                new_name = self._replace_spaces_outside_jinja(name)
+                deprecation = DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION
+                change_type = ChangeType.RESOURCE_NAME_WITH_SPACES_DEPRECATION
 
-        if new_name and new_name != name:
-            original_location = location_of_key(_node_for_loc, "name")
-            node["name"] = new_name
-            node_deprecation_refactors.append(
-                YMLDeprecationRefactor(
+            if new_name and new_name != name:
+                original_location = location_of_key(_node_for_loc, "name")
+                node["name"] = new_name
+                yr = YMLDeprecationRefactor(
                     refactor=DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{name}' - Updated 'name' from '{name}' to '{new_name}'.",
                         change_type=change_type,
                         deprecation=deprecation,
                         original_location=original_location,
                     ),
-                    edited_key_path=["name"],
+                    edited_key_path=[*path_prefix, "name"],
                 )
-            )
-
-    return node, node_deprecation_refactors
+                self._refactor_entries.append(yr.to_entry())
 
 
 def changeset_remove_duplicate_models(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
@@ -1322,66 +1149,6 @@ class _RemoveDuplicateModelsImpl:
         return self.yml_str
 
 
-def _remove_duplicate_key_lines(yml_str: str, duplicate_line_numbers: set) -> str:
-    """Remove duplicate key lines (and their indented value blocks) from a YAML string.
-
-    yamllint reports the line number of the second (duplicate) occurrence.
-    We remove the FIRST occurrence to keep the last (matching yaml.safe_load behavior).
-    """
-    lines = yml_str.split("\n")
-    lines_to_remove: set = set()
-
-    def remove_block_at(idx: int) -> None:
-        """Mark idx and all following more-indented lines for removal."""
-        lines_to_remove.add(idx)
-        key_indent = len(lines[idx]) - len(lines[idx].lstrip())
-        j = idx + 1
-        while j < len(lines):
-            next_line = lines[j]
-            if next_line.strip() == "":
-                lines_to_remove.add(j)
-                j += 1
-                continue
-            next_indent = len(next_line) - len(next_line.lstrip())
-            if next_indent > key_indent:
-                lines_to_remove.add(j)
-                j += 1
-            else:
-                break
-
-    for line_num in sorted(duplicate_line_numbers):
-        dup_idx = line_num - 1  # convert to 0-indexed
-        if dup_idx >= len(lines):
-            continue
-
-        dup_line = lines[dup_idx]
-        key_indent = len(dup_line) - len(dup_line.lstrip())
-
-        # Extract key name from the duplicate line
-        m = re.match(r"\s*([^:\s][^:]*):", dup_line)
-        if not m:
-            continue
-        key_name = m.group(1).strip()
-
-        # Find the first occurrence at the same indent level within the same mapping
-        first_idx = None
-        for i in range(dup_idx - 1, -1, -1):
-            line = lines[i]
-            if not line.strip():
-                continue
-            indent = len(line) - len(line.lstrip())
-            if indent < key_indent:
-                break
-            if indent == key_indent and re.match(r"\s*" + re.escape(key_name) + r"\s*:", line):
-                first_idx = i
-                break
-
-        if first_idx is not None:
-            remove_block_at(first_idx)
-
-    return "\n".join(line for i, line in enumerate(lines) if i not in lines_to_remove)
-
-
 def changeset_remove_duplicate_keys(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
     """Remove duplicate keys from a YAML string."""
     return _RemoveDuplicateKeysImpl(content, config).execute()
@@ -1419,8 +1186,68 @@ class _RemoveDuplicateKeysImpl:
                 )
 
         if self._refactored:
-            clean_str = _remove_duplicate_key_lines(self.yml_str, duplicate_line_numbers)
+            clean_str = self._remove_duplicate_key_lines(self.yml_str, duplicate_line_numbers)
             parsed = load_yaml(clean_str)
             return DbtYAML().dump_to_string(parsed)
 
         return self.yml_str
+
+    @staticmethod
+    def _remove_duplicate_key_lines(yml_str: str, duplicate_line_numbers: set) -> str:
+        """Remove duplicate key lines (and their indented value blocks) from a YAML string.
+
+        yamllint reports the line number of the second (duplicate) occurrence.
+        We remove the FIRST occurrence to keep the last (matching yaml.safe_load behavior).
+        """
+        lines = yml_str.split("\n")
+        lines_to_remove: set = set()
+
+        def remove_block_at(idx: int) -> None:
+            """Mark idx and all following more-indented lines for removal."""
+            lines_to_remove.add(idx)
+            key_indent = len(lines[idx]) - len(lines[idx].lstrip())
+            j = idx + 1
+            while j < len(lines):
+                next_line = lines[j]
+                if next_line.strip() == "":
+                    lines_to_remove.add(j)
+                    j += 1
+                    continue
+                next_indent = len(next_line) - len(next_line.lstrip())
+                if next_indent > key_indent:
+                    lines_to_remove.add(j)
+                    j += 1
+                else:
+                    break
+
+        for line_num in sorted(duplicate_line_numbers):
+            dup_idx = line_num - 1  # convert to 0-indexed
+            if dup_idx >= len(lines):
+                continue
+
+            dup_line = lines[dup_idx]
+            key_indent = len(dup_line) - len(dup_line.lstrip())
+
+            # Extract key name from the duplicate line
+            m = re.match(r"\s*([^:\s][^:]*):", dup_line)
+            if not m:
+                continue
+            key_name = m.group(1).strip()
+
+            # Find the first occurrence at the same indent level within the same mapping
+            first_idx = None
+            for i in range(dup_idx - 1, -1, -1):
+                line = lines[i]
+                if not line.strip():
+                    continue
+                indent = len(line) - len(line.lstrip())
+                if indent < key_indent:
+                    break
+                if indent == key_indent and re.match(r"\s*" + re.escape(key_name) + r"\s*:", line):
+                    first_idx = i
+                    break
+
+            if first_idx is not None:
+                remove_block_at(first_idx)
+
+        return "\n".join(line for i, line in enumerate(lines) if i not in lines_to_remove)
