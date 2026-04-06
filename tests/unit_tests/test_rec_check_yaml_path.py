@@ -35,7 +35,7 @@ def _call_rec_check(yml_dict, path, node_fields, schema_specs=None, node_type=No
     impl.schema_specs = schema_specs
     impl._refactors = []
     impl._refactored = False
-    result = impl.__call_rec_check(yml_dict, path, node_fields, node_type)
+    result = impl._rec_check_yaml_path(yml_dict, path, node_fields, node_type)
     return result, [r.log for r in impl._refactors]
 
 

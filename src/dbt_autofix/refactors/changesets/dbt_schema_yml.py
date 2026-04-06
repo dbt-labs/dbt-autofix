@@ -11,7 +11,6 @@ from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
-from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
 
@@ -55,7 +54,7 @@ class _ReplaceFancyQuotesImpl:
                 refactored_lines.append(line)
                 continue
 
-            new_line, line_refactored, inside_string_positions = _process_line_fancy_quotes(line)
+            new_line, line_refactored, inside_string_positions = self._process_line_fancy_quotes(line)
 
             if line_refactored:
                 self._refactored = True
@@ -71,122 +70,122 @@ class _ReplaceFancyQuotesImpl:
 
         return "\n".join(refactored_lines)
 
+    @staticmethod
+    def _process_line_fancy_quotes(line: str) -> Tuple[str, bool, List[int]]:
+        r"""Process a single line to handle fancy quotes based on context.
 
-def _process_line_fancy_quotes(line: str) -> Tuple[str, bool, List[int]]:
-    r"""Process a single line to handle fancy quotes based on context.
+        Returns:
+            - The processed line
+            - Whether the line was modified
+            - List of positions where fancy quotes are inside strings (preserved)
+        """
+        result = []
+        inside_string = False
+        string_start_char = None  # Track what character started the current string
+        inside_string_positions = []
+        refactored = False
+        i = 0
 
-    Returns:
-        - The processed line
-        - Whether the line was modified
-        - List of positions where fancy quotes are inside strings (preserved)
-    """
-    result = []
-    inside_string = False
-    string_start_char = None  # Track what character started the current string
-    inside_string_positions = []
-    refactored = False
-    i = 0
+        while i < len(line):
+            char = line[i]
 
-    while i < len(line):
-        char = line[i]
+            # Check if this is an escaped character
+            is_escaped = i > 0 and line[i - 1] == "\\"
 
-        # Check if this is an escaped character
-        is_escaped = i > 0 and line[i - 1] == "\\"
-
-        # Handle regular double quote
-        if char == '"' and not is_escaped:
-            if not inside_string:
-                # Starting a string with regular quote
-                inside_string = True
-                string_start_char = '"'
-            elif string_start_char == '"':
-                # Ending a string that was started with regular quote
-                inside_string = False
-                string_start_char = None
-            elif string_start_char == "\u201c":
-                # Regular quote inside a fancy-quote-delimited string.
-                # If there's a fancy closing quote later, this is content — escape it.
-                # Otherwise it's a mismatched closing delimiter.
-                if "\u201d" in line[i + 1 :]:
-                    refactored = True
-                    result.append("\\")
-                else:
-                    # Mismatched pair: fancy open + regular close
+            # Handle regular double quote
+            if char == '"' and not is_escaped:
+                if not inside_string:
+                    # Starting a string with regular quote
+                    inside_string = True
+                    string_start_char = '"'
+                elif string_start_char == '"':
+                    # Ending a string that was started with regular quote
                     inside_string = False
                     string_start_char = None
-            result.append(char)
-            i += 1
-            continue
-
-        # Handle fancy left quote
-        if char == "\u201c":
-            if not inside_string:
-                # Fancy quote used as opening delimiter - replace with regular quote
-                refactored = True
-                inside_string = True
-                string_start_char = "\u201c"
-                result.append('"')
-            elif string_start_char == '"':
-                # Fancy quote inside a regular-quote-delimited string - keep as-is (not a delimiter)
-                result.append(char)
-                inside_string_positions.append(i)
-            else:
-                # Fancy quote inside a fancy-quote-delimited string - this is content, replace with regular quote
-                refactored = True
-                result.append('"')
-            i += 1
-            continue
-
-        # Handle fancy right quote
-        if char == "\u201d":
-            if inside_string and string_start_char in ('"', "\u201c"):
-                # This could be closing a string or content inside a string
-                if (
-                    string_start_char == "\u201c"
-                    or string_start_char == "\u201d"
-                    or (string_start_char == '"' and _would_close_string(line, i))
-                ):
-                    # Fancy quote used as closing delimiter - replace with regular quote
-                    refactored = True
-                    result.append('"')
-                    if string_start_char in ("\u201c", '"'):
+                elif string_start_char == "\u201c":
+                    # Regular quote inside a fancy-quote-delimited string.
+                    # If there's a fancy closing quote later, this is content — escape it.
+                    # Otherwise it's a mismatched closing delimiter.
+                    if "\u201d" in line[i + 1 :]:
+                        refactored = True
+                        result.append("\\")
+                    else:
+                        # Mismatched pair: fancy open + regular close
                         inside_string = False
                         string_start_char = None
+                result.append(char)
+                i += 1
+                continue
+
+            # Handle fancy left quote
+            if char == "\u201c":
+                if not inside_string:
+                    # Fancy quote used as opening delimiter - replace with regular quote
+                    refactored = True
+                    inside_string = True
+                    string_start_char = "\u201c"
+                    result.append('"')
                 elif string_start_char == '"':
-                    # Fancy quote inside a regular-quote-delimited string - keep as-is
+                    # Fancy quote inside a regular-quote-delimited string - keep as-is (not a delimiter)
                     result.append(char)
                     inside_string_positions.append(i)
                 else:
-                    # Replace with regular quote
+                    # Fancy quote inside a fancy-quote-delimited string - this is content, replace with regular quote
                     refactored = True
                     result.append('"')
-            elif not inside_string:
-                # Fancy quote used as delimiter when not in string - replace
-                refactored = True
-                result.append('"')
-            else:
-                # Keep as-is if inside a regular-quoted string
-                result.append(char)
-                inside_string_positions.append(i)
+                i += 1
+                continue
+
+            # Handle fancy right quote
+            if char == "\u201d":
+                if inside_string and string_start_char in ('"', "\u201c"):
+                    # This could be closing a string or content inside a string
+                    if (
+                        string_start_char == "\u201c"
+                        or string_start_char == "\u201d"
+                        or (string_start_char == '"' and _ReplaceFancyQuotesImpl._would_close_string(line, i))
+                    ):
+                        # Fancy quote used as closing delimiter - replace with regular quote
+                        refactored = True
+                        result.append('"')
+                        if string_start_char in ("\u201c", '"'):
+                            inside_string = False
+                            string_start_char = None
+                    elif string_start_char == '"':
+                        # Fancy quote inside a regular-quote-delimited string - keep as-is
+                        result.append(char)
+                        inside_string_positions.append(i)
+                    else:
+                        # Replace with regular quote
+                        refactored = True
+                        result.append('"')
+                elif not inside_string:
+                    # Fancy quote used as delimiter when not in string - replace
+                    refactored = True
+                    result.append('"')
+                else:
+                    # Keep as-is if inside a regular-quoted string
+                    result.append(char)
+                    inside_string_positions.append(i)
+                i += 1
+                continue
+
+            result.append(char)
             i += 1
-            continue
 
-        result.append(char)
-        i += 1
+        return "".join(result), refactored, inside_string_positions
 
-    return "".join(result), refactored, inside_string_positions
+    @staticmethod
+    def _would_close_string(line: str, pos: int) -> bool:
+        """Check if a fancy right quote at position pos would close a string.
 
-
-def _would_close_string(line: str, pos: int) -> bool:
-    """Check if a fancy right quote at position pos would close a string.
-
-    This is a simple heuristic: if there's no regular closing quote after this position,
-    then this fancy quote is likely the closing delimiter.
-    """
-    # Look ahead to see if there's a regular closing quote
-    remaining = line[pos + 1 :]
-    # If there's no regular quote after, this fancy quote is likely the closer
-    return '"' not in remaining
+        This is a simple heuristic: if there's no regular closing quote after this position,
+        then this fancy quote is likely the closing delimiter.
+        """
+        # Look ahead to see if there's a regular closing quote
+        remaining = line[pos + 1 :]
+        # If there's no regular quote after, this fancy quote is likely the closer
+        return '"' not in remaining
 
 
 def changeset_owner_properties_yml_str(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
@@ -243,46 +242,6 @@ class _OwnerPropertiesImpl:
                             deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                         )
                     )
-
-
-def restructure_owner_properties(
-    node: CommentedMap, node_type: str, schema_specs: SchemaSpecs
-) -> Tuple[CommentedMap, bool, List[str]]:
-    """Restructure owner properties according to dbt conventions.
-
-    Args:
-        node: The node dictionary to process
-        node_type: The type of node to process
-        schema_specs: The schema specifications to use
-
-    Returns:
-        Tuple containing:
-        - The processed node dictionary
-        - Boolean indicating if changes were made
-        - List of refactor logs
-    """
-    refactored = False
-    refactor_logs: List[str] = []
-    pretty_node_type = node_type[:-1].title()
-
-    if "owner" in node and isinstance(node["owner"], dict):
-        owner = node["owner"]
-        owner_copy = owner.copy()
-
-        for field in owner_copy:
-            if field not in schema_specs.owner_properties:
-                refactored = True
-                if "config" not in node:
-                    node["config"] = {"meta": {}}
-                if "meta" not in node["config"]:
-                    node["config"]["meta"] = {}
-                node["config"]["meta"][field] = owner[field]
-                del owner[field]
-                refactor_logs.append(
-                    f"{pretty_node_type} '{node['name']}' - Owner field '{field}' moved under config.meta."
-                )
-
-    return node, refactored, refactor_logs
 
 
 def changeset_remove_tab_only_lines(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
@@ -754,284 +713,6 @@ class _RefactorYMLStrImpl:
         return node, refactored
 
 
-def restructure_yaml_keys_for_test(
-    test: CommentedMap, schema_specs: SchemaSpecs
-) -> Tuple[CommentedMap, bool, List[DbtDeprecationRefactor]]:
-    """Restructure YAML keys for tests according to dbt conventions.
-    Tests are separated from other nodes because
-    - they can be either a string or a dict
-    - when they are a dict, the top level ist just the test name
-
-    Args:
-        test: The test dictionary to process
-        schema_specs: The schema specifications to use
-
-    Returns:
-        Tuple containing:
-        - The processed test dictionary
-        - Boolean indicating if changes were made
-        - List of refactor logs
-    """
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-
-    # if the test is a string, we leave it as is
-    if isinstance(test, str):
-        return test, False, []
-
-    # extract the test name and definition
-    test_name = next(iter(test.keys()))
-    if isinstance(test[test_name], dict):
-        # standard test definition syntax
-        test_definition = test[test_name]
-    else:
-        # alt syntax
-        test_name = test["test_name"]
-        test_definition = test
-
-    deprecation_refactors.extend(refactor_test_common_misspellings(test_definition, test_name))
-    deprecation_refactors.extend(refactor_test_config_fields(test_definition, test_name, schema_specs))
-    deprecation_refactors.extend(refactor_test_args(test_definition, test_name))
-
-    return test, len(deprecation_refactors) > 0, deprecation_refactors
-
-
-def refactor_test_config_fields(
-    test_definition: CommentedMap, test_name: str, schema_specs: SchemaSpecs
-) -> List[DbtDeprecationRefactor]:
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-
-    test_configs = schema_specs.yaml_specs_per_node_type["tests"].allowed_config_fields
-    test_properties = schema_specs.yaml_specs_per_node_type["tests"].allowed_properties
-
-    copy_test_definition = deepcopy(test_definition)
-    for field in copy_test_definition:
-        # dbt_utils.mutually_exclusive_ranges accepts partition_by as an argument
-        # https://github.com/dbt-labs/dbt-utils/blob/0feb9571187119dc48203ad91d8b064a660d6d3a/macros/generic_tests/mutually_exclusive_ranges.sql#L5
-        if field == "partition_by" and test_name == "dbt_utils.mutually_exclusive_ranges":
-            continue
-
-        # field is a config and not a property
-        if field in test_configs and field not in test_properties:
-            node_config = get_dict(test_definition, "config")
-
-            # if the field is not under config, move it under config
-            if field not in node_config:
-                node_config.update({field: test_definition[field]})
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"Test '{test_name}' - Field '{field}' moved under config.",
-                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
-                    )
-                )
-                test_definition["config"] = node_config
-
-            # if the field is already under config, overwrite it and remove from top level
-            else:
-                node_config[field] = test_definition[field]
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"Test '{test_name}' - Field '{field}' is already under config, it has been overwritten and removed from the top level.",
-                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
-                    )
-                )
-                test_definition["config"] = node_config
-            del test_definition[field]
-
-    return deprecation_refactors
-
-
-def refactor_test_common_misspellings(test_definition: CommentedMap, test_name: str) -> List[DbtDeprecationRefactor]:
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-
-    for field in test_definition:
-        if field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Test '{test_name}' - Field '{field}' is a common misspelling of '{COMMON_PROPERTY_MISSPELLINGS[field.lower()]}', it has been renamed.",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
-                )
-            )
-            test_definition[COMMON_PROPERTY_MISSPELLINGS[field.lower()]] = test_definition[field]
-            del test_definition[field]
-
-    return deprecation_refactors
-
-
-def refactor_test_args(test_definition: CommentedMap, test_name: str) -> List[DbtDeprecationRefactor]:
-    """Move non-config args under 'arguments' key
-    This refactor is only necessary for custom tests, or tests making use of the alternative test definition syntax ('test_name')
-    """
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-
-    copy_test_definition = deepcopy(test_definition)
-    # Avoid refactoring if the test already has an arguments key that is not a dict
-    if "arguments" in test_definition and not isinstance(test_definition["arguments"], dict):
-        return deprecation_refactors
-
-    for field in copy_test_definition:
-        # TODO: pull from CustomTestMultiKey on schema_specs once available in jsonschemas
-        if field in ("config", "arguments", "test_name", "name", "description", "column_name"):
-            continue
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log=f"Test '{test_name}' - Custom test argument '{field}' moved under 'arguments'.",
-                deprecation=DeprecationType.MISSING_GENERIC_TEST_ARGUMENTS_PROPERTY_DEPRECATION,
-            )
-        )
-        test_definition["arguments"] = get_dict(test_definition, "arguments")
-        test_definition["arguments"].update({field: test_definition[field]})
-        del test_definition[field]
-
-    return deprecation_refactors
-
-
-def restructure_yaml_keys_for_node(
-    node: CommentedMap, node_type: str, schema_specs: SchemaSpecs
-) -> Tuple[CommentedMap, bool, List[DbtDeprecationRefactor]]:
-    """Restructure YAML keys according to dbt conventions.
-
-    Args:
-        node: The node dictionary to process
-        node_type: The type of node to process
-        schema_specs: The schema specifications to use
-
-    Returns:
-        Tuple containing:
-        - The processed model dictionary
-        - Boolean indicating if changes were made
-        - List of refactor logs
-    """
-    refactored = False
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
-    existing_meta = get_dict(node, "meta").copy()
-    existing_config = get_dict(node, "config").copy()
-    pretty_node_type = node_type[:-1].title()
-
-    for field in existing_config:
-        # Special casing target_schema and target_database because they are renamed by another autofix rule
-        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields or field in (
-            "target_schema",
-            "target_database",
-        ):
-            continue
-
-        refactored = True
-        if field in COMMON_CONFIG_MISSPELLINGS:
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is a common misspelling of '{COMMON_CONFIG_MISSPELLINGS[field]}', it has been renamed.",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
-                )
-            )
-            node["config"][COMMON_CONFIG_MISSPELLINGS[field]] = node["config"][field]
-            del node["config"][field]
-        else:
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"{pretty_node_type} '{node.get('name', '')}' - Config '{field}' is not an allowed config - Moved under config.meta.",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
-                )
-            )
-            node_config_meta = get_dict(get_dict(node, "config"), "meta")
-            node_config_meta.update({field: node["config"][field]})
-            node["config"] = get_dict(node, "config")
-            node["config"].update({"meta": node_config_meta})
-            del node["config"][field]
-
-    # we can not loop node and modify it at the same time
-    copy_node = node.copy()
-
-    for field in copy_node:
-        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_properties:
-            continue
-        # This is very hard-coded because it is a 'safe' fix and we don't want to break the user's code
-        elif field.lower() in COMMON_PROPERTY_MISSPELLINGS.keys():
-            refactored = True
-            correct_field = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is a common misspelling of '{correct_field}', it has been renamed.",
-                    deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
-                )
-            )
-            node[correct_field] = node[field]
-            del node[field]
-            continue
-
-        if field in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields_without_meta:
-            refactored = True
-            node_config = get_dict(node, "config")
-
-            # if the field is not under config, move it under config
-            if field not in node_config:
-                node_config.update({field: node[field]})
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config.",
-                        deprecation=DeprecationType.PROPERTY_MOVED_TO_CONFIG_DEPRECATION,
-                    )
-                )
-                node["config"] = node_config
-
-            # if the field is already under config, it will take precedence there, so we remove it from the top level
-            else:
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is already under config, it has been removed from the top level.",
-                        deprecation="PropertyMovedToConfigDeprecation",
-                    )
-                )
-            del node[field]
-
-        if field not in schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields:
-            refactored = True
-            closest_match = difflib.get_close_matches(
-                str(field),
-                schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields.union(
-                    set(schema_specs.yaml_specs_per_node_type[node_type].allowed_properties)
-                ),
-                1,
-            )
-            if closest_match:
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not allowed, but '{closest_match[0]}' is. Moved as-is under config.meta but you might want to rename it and move it under config.",
-                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
-                    )
-                )
-            else:
-                deprecation_refactors.append(
-                    DbtDeprecationRefactor(
-                        log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' is not an allowed config - Moved under config.meta.",
-                        deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
-                    )
-                )
-            node_meta = get_dict(get_dict(node, "config"), "meta")
-            node_meta.update({field: node[field]})
-            node["config"] = get_dict(node, "config")
-            node["config"].update({"meta": node_meta})
-            del node[field]
-
-    if existing_meta:
-        refactored = True
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log=f"{pretty_node_type} '{node.get('name', '')}' - Moved all the meta fields under config.meta and merged with existing config.meta.",
-                deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
-            )
-        )
-
-        if "config" not in node:
-            node["config"] = {"meta": {}}
-        if "meta" not in node["config"]:
-            node["config"]["meta"] = {}
-        for key, value in existing_meta.items():
-            node["config"]["meta"].update({key: value})
-        del node["meta"]
-
-    return node, refactored, deprecation_refactors
-
-
 def changeset_replace_non_alpha_underscores_in_name_values(
     content: YMLContent, config: YMLRefactorConfig
 ) -> YMLRuleRefactorResult:
@@ -1061,125 +742,125 @@ class _ReplaceNonAlphaUnderscoresImpl:
         for node_type in self.schema_specs.yaml_specs_per_node_type:
             if node_type in self.yml_dict:
                 for i, node in enumerate(get_list(self.yml_dict, node_type)):
-                    processed_node, node_deprecation_refactors = replace_node_name_non_alpha_with_underscores(
+                    processed_node, node_deprecation_refactors = self._replace_node_name_non_alpha_with_underscores(
                         node, node_type
                     )
                     if node_deprecation_refactors:
                         self.yml_dict[node_type][i] = processed_node
                         self._refactors.extend(node_deprecation_refactors)
 
+    @staticmethod
+    def _replace_spaces_outside_jinja(text: str) -> str:
+        """Replace spaces with underscores, but preserve spaces inside Jinja templates.
 
-def _replace_spaces_outside_jinja(text: str) -> str:
-    """Replace spaces with underscores, but preserve spaces inside Jinja templates.
+        This function avoids corrupting Jinja templates like {{ env_var('X') | lower }}
+        by only replacing spaces that are outside of {{ }} blocks.
 
-    This function avoids corrupting Jinja templates like {{ env_var('X') | lower }}
-    by only replacing spaces that are outside of {{ }} blocks.
+        Args:
+            text: The text to process
 
-    Args:
-        text: The text to process
+        Returns:
+            Text with spaces replaced by underscores, except inside Jinja templates
+        """
+        result = []
+        i = 0
+        in_jinja = False
 
-    Returns:
-        Text with spaces replaced by underscores, except inside Jinja templates
-    """
-    result = []
-    i = 0
-    in_jinja = False
+        while i < len(text):
+            # Check for Jinja opening {{
+            if i < len(text) - 1 and text[i : i + 2] == "{{":
+                in_jinja = True
+                result.append("{{")
+                i += 2
+                continue
 
-    while i < len(text):
-        # Check for Jinja opening {{
-        if i < len(text) - 1 and text[i : i + 2] == "{{":
-            in_jinja = True
-            result.append("{{")
-            i += 2
-            continue
+            # Check for Jinja closing }}
+            if i < len(text) - 1 and text[i : i + 2] == "}}":
+                in_jinja = False
+                result.append("}}")
+                i += 2
+                continue
 
-        # Check for Jinja closing }}
-        if i < len(text) - 1 and text[i : i + 2] == "}}":
-            in_jinja = False
-            result.append("}}")
-            i += 2
-            continue
+            # Replace spaces with underscores only outside Jinja blocks
+            if text[i] == " " and not in_jinja:
+                result.append("_")
+            else:
+                result.append(text[i])
 
-        # Replace spaces with underscores only outside Jinja blocks
-        if text[i] == " " and not in_jinja:
-            result.append("_")
-        else:
-            result.append(text[i])
+            i += 1
 
-        i += 1
+        return "".join(result)
 
-    return "".join(result)
+    @staticmethod
+    def _remove_non_alpha_outside_jinja(text: str) -> str:
+        """Remove non-alphanumeric characters (except underscores), but preserve Jinja templates.
 
+        This function avoids corrupting Jinja templates like {{ env_var('X') | lower }}
+        by preserving everything inside {{ }} blocks.
 
-def _remove_non_alpha_outside_jinja(text: str) -> str:
-    """Remove non-alphanumeric characters (except underscores), but preserve Jinja templates.
+        Args:
+            text: The text to process
 
-    This function avoids corrupting Jinja templates like {{ env_var('X') | lower }}
-    by preserving everything inside {{ }} blocks.
+        Returns:
+            Text with non-alphanumeric characters removed, except inside Jinja templates
+        """
+        result = []
+        i = 0
+        jinja_depth = 0
 
-    Args:
-        text: The text to process
+        while i < len(text):
+            # Check for Jinja opening {{
+            if i < len(text) - 1 and text[i : i + 2] == "{{":
+                jinja_depth += 1
+                result.append("{{")
+                i += 2
+                continue
 
-    Returns:
-        Text with non-alphanumeric characters removed, except inside Jinja templates
-    """
-    result = []
-    i = 0
-    jinja_depth = 0
+            # Check for Jinja closing }}
+            if i < len(text) - 1 and text[i : i + 2] == "}}":
+                result.append("}}")
+                jinja_depth -= 1
+                i += 2
+                continue
 
-    while i < len(text):
-        # Check for Jinja opening {{
-        if i < len(text) - 1 and text[i : i + 2] == "{{":
-            jinja_depth += 1
-            result.append("{{")
-            i += 2
-            continue
+            # Keep character if it's alphanumeric/underscore, or if we're inside Jinja
+            char = text[i]
+            if jinja_depth > 0 or char.isalnum() or char == "_":
+                result.append(char)
+            # Otherwise skip the character (it's removed)
 
-        # Check for Jinja closing }}
-        if i < len(text) - 1 and text[i : i + 2] == "}}":
-            result.append("}}")
-            jinja_depth -= 1
-            i += 2
-            continue
+            i += 1
 
-        # Keep character if it's alphanumeric/underscore, or if we're inside Jinja
-        char = text[i]
-        if jinja_depth > 0 or char.isalnum() or char == "_":
-            result.append(char)
-        # Otherwise skip the character (it's removed)
+        return "".join(result)
 
-        i += 1
+    @staticmethod
+    def _replace_node_name_non_alpha_with_underscores(node: CommentedMap, node_type: str):
+        node_deprecation_refactors: List[DbtDeprecationRefactor] = []
+        node_copy = node.copy()
+        pretty_node_type = node_type[:-1].title()
 
-    return "".join(result)
+        deprecation = None
+        name = node.get("name", None)
+        new_name = None
+        if name:
+            if node_type == "exposures":
+                new_name = _ReplaceNonAlphaUnderscoresImpl._replace_spaces_outside_jinja(name)
+                new_name = _ReplaceNonAlphaUnderscoresImpl._remove_non_alpha_outside_jinja(new_name)
+                deprecation = "ExposureNameDeprecation"
+            else:
+                new_name = _ReplaceNonAlphaUnderscoresImpl._replace_spaces_outside_jinja(name)
+                deprecation = "ResourceNamesWithSpacesDeprecation"
 
-
-def replace_node_name_non_alpha_with_underscores(node: CommentedMap, node_type: str):
-    node_deprecation_refactors: List[DbtDeprecationRefactor] = []
-    node_copy = node.copy()
-    pretty_node_type = node_type[:-1].title()
-
-    deprecation = None
-    name = node.get("name", None)
-    new_name = None
-    if name:
-        if node_type == "exposures":
-            new_name = _replace_spaces_outside_jinja(name)
-            new_name = _remove_non_alpha_outside_jinja(new_name)
-            deprecation = "ExposureNameDeprecation"
-        else:
-            new_name = _replace_spaces_outside_jinja(name)
-            deprecation = "ResourceNamesWithSpacesDeprecation"
-
-        if new_name and new_name != name:
-            node_copy["name"] = new_name
-            node_deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"{pretty_node_type} '{node['name']}' - Updated 'name' from '{name}' to '{new_name}'.",
-                    deprecation=deprecation,
+            if new_name and new_name != name:
+                node_copy["name"] = new_name
+                node_deprecation_refactors.append(
+                    DbtDeprecationRefactor(
+                        log=f"{pretty_node_type} '{node['name']}' - Updated 'name' from '{name}' to '{new_name}'.",
+                        deprecation=deprecation,
+                    )
                 )
-            )
 
-    return node_copy, node_deprecation_refactors
+        return node_copy, node_deprecation_refactors
 
 
 def changeset_remove_duplicate_models(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
