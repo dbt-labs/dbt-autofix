@@ -1,7 +1,12 @@
-name: 'test_config_quoted_strings'
-version: '1.0.0'
-config-version: 2
+# name
+name: 'test_config_quoted_strings' # name - inline
+# version
+version: '1.0.0' # version - inline
+# config-version
+config-version: 2 # config-version - inline
 
-profile: 'default'
+# profile
+profile: 'default' # profile - inline
 
-model-paths: ["models"]
+# model-paths
+model-paths: ["models"] # model-paths - inline

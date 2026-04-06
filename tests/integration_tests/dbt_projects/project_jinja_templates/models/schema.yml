@@ -1,25 +1,44 @@
-version: 2
+# version
+version: 2 # version - inline
 
-models:
-  - name: model with spaces {{ env_var('DBT_ENV') | lower }}
-    description: "Model with spaces in name and Jinja template"
-    columns:
-      - name: id
-        description: "Primary key"
-        
-seeds:
-  - name: seed name {{ env_var('DBT_DATABASE') | lower }}
-    description: "Seed with Jinja in name"
-    
-  - name: another_seed_{{ var('version') }}
-    description: "Seed with var() function"
+# models
+models: # models - inline
+  - # models.[0].name
+    name: model with spaces {{ env_var('DBT_ENV') | lower }} # models.[0].name - inline
+    # models.[0].description
+    description: "Model with spaces in name and Jinja template" # models.[0].description - inline
+    # models.[0].columns
+    columns: # models.[0].columns - inline
+      - # models.[0].columns.[0].name
+        name: id # models.[0].columns.[0].name - inline
+        # models.[0].columns.[0].description
+        description: "Primary key" # models.[0].columns.[0].description - inline
+# seeds
+seeds: # seeds - inline
+  - # seeds.[0].name
+    name: seed name {{ env_var('DBT_DATABASE') | lower }} # seeds.[0].name - inline
+    # seeds.[0].description
+    description: "Seed with Jinja in name" # seeds.[0].description - inline
+  - # seeds.[1].name
+    name: another_seed_{{ var('version') }} # seeds.[1].name - inline
+    # seeds.[1].description
+    description: "Seed with var() function" # seeds.[1].description - inline
 
-exposures:
-  - name: exposure with special-chars)(*!# {{ env_var('ENV') }}
-    type: dashboard
-    description: "Exposure with special chars and Jinja"
-    owner:
-      name: Test User
-      email: test@example.com
-    depends_on:
-      - ref('model with spaces {{ env_var("DBT_ENV") | lower }}')
+# exposures
+exposures: # exposures - inline
+  - # exposures.[0].name
+    name: exposure with special-chars)(*!# {{ env_var('ENV') }} # exposures.[0].name - inline
+    # exposures.[0].type
+    type: dashboard # exposures.[0].type - inline
+    # exposures.[0].description
+    description: "Exposure with special chars and Jinja" # exposures.[0].description - inline
+    # exposures.[0].owner
+    owner: # exposures.[0].owner - inline
+      # exposures.[0].owner.name
+      name: Test User # exposures.[0].owner.name - inline
+      # exposures.[0].owner.email
+      email: test@example.com # exposures.[0].owner.email - inline
+    # exposures.[0].depends_on
+    depends_on: # exposures.[0].depends_on - inline
+      # exposures.[0].depends_on.[0]
+      - ref('model with spaces {{ env_var("DBT_ENV") | lower }}') # exposures.[0].depends_on.[0] - inline

@@ -7,32 +7,92 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 2"
+        "edited_location": {
+          "line": 6
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 6",
+        "original_location": {
+          "line": 6
+        },
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 6"
+        "edited_location": {
+          "line": 26
+        },
+        "log": "Replaced 2 fancy quotes with regular quotes on line 26",
+        "original_location": {
+          "line": 26
+        },
+        "rule_name": "replace_fancy_quotes"
       },
       {
-        "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 16"
-      },
-      {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'fancy_delimiters_regular_inside' - Config 'custom_config_1' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 13,
+          "start": 8
+        },
+        "log": "Model 'fancy_delimiters_regular_inside' - Config 'custom_config_1' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 12,
+          "start": 6
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'regular_delimiters_fancy_inside' - Config 'custom_config_2' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 24,
+          "start": 8
+        },
+        "log": "Model 'regular_delimiters_fancy_inside' - Config 'custom_config_2' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 22,
+          "start": 6
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'unquoted_with_fancy_inside' - Config 'custom_config_3' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 35,
+          "start": 8
+        },
+        "log": "Model 'unquoted_with_fancy_inside' - Config 'custom_config_3' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 32,
+          "start": 6
+        },
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'regular_delimiters_escaped_inside' - Config 'custom_config_4' is not an allowed config - Moved under config.meta."
+        "edited_location": {
+          "end": 24,
+          "line": 46,
+          "start": 8
+        },
+        "log": "Model 'regular_delimiters_escaped_inside' - Config 'custom_config_4' is not an allowed config - Moved under config.meta.",
+        "original_location": {
+          "end": 22,
+          "line": 42,
+          "start": 6
+        },
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -41,8 +101,20 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['type_of_dq_test'] to 'meta'"
+        "edited_location": {
+          "end": 26,
+          "line": 5,
+          "start": 11
+        },
+        "log": "Moved custom config 'type_of_dq_test' to 'meta'",
+        "original_location": {
+          "end": 19,
+          "line": 2,
+          "start": 4
+        },
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []

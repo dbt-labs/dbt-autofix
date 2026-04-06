@@ -1,67 +1,135 @@
-models:
-  - name: my_model_with_tests
-    descrption: "description"
-    tests:
-      - unique:
-          column_name: id
-          meta: # meta is a valid test config key - must never be moved to arguments
-            owner: docs-team
-      - custom_test:
-          custom_arg: some_value
-          severity: warn
-      - dbt_utils.mutually_exclusive_ranges:
-          partition_by: account_id
-          lower_bound_column: start_date
-          upper_bound_column: end_date
-          gaps: not_allowed
-    columns:
-      - name: id
-        descrption: The ID.
-        data_tests:
-          - not_null:
-              meta: # meta is a valid test config key - must never be moved to arguments
-                owner: data-quality-team
-                priority: critical
-          - unique
-          - accepted_values:
-              values: [1, 2, 3]
-              desciption: accepted_values test for id
-          - relationships:
-              to:
-                - model: my_other_model
-                  field: id
-                  on_delete: cascade
-                  on_update: cascade
-          - name: my_custom_test
-            test_name: custom_test
-            custom_arg: some_value
-            description: my custom test
-            severity: warn
-          - name: alt_test_syntax_builtin_test
-            test_name: accepted_values
-            values: [1, 2, 3]
-          - custom_test_with_arguments:
-              arguments: my_arguments
-          - test_name: custom_test_with_arguments_alt_format
-            arguments: my_arguments
-          - custom_test_with_arguments_dict:
-              arguments:
-                custom_arg: some_value
-              invalid_custom_arg: some_value
+# models
+models: # models - inline
+  - # models.[0].name
+    name: my_model_with_tests # models.[0].name - inline
+    # models.[0].descrption
+    descrption: "description" # models.[0].descrption - inline
+    # models.[0].tests
+    tests: # models.[0].tests - inline
+      - # models.[0].tests.[0].unique
+        unique: # models.[0].tests.[0].unique - inline
+          # models.[0].tests.[0].unique.column_name
+          column_name: id # models.[0].tests.[0].unique.column_name - inline
+          # models.[0].tests.[0].unique.meta
+          meta: # models.[0].tests.[0].unique.meta - inline
+            # models.[0].tests.[0].unique.meta.owner
+            owner: docs-team # models.[0].tests.[0].unique.meta.owner - inline
+      - # models.[0].tests.[1].custom_test
+        custom_test: # models.[0].tests.[1].custom_test - inline
+          # models.[0].tests.[1].custom_test.custom_arg
+          custom_arg: some_value # models.[0].tests.[1].custom_test.custom_arg - inline
+          # models.[0].tests.[1].custom_test.severity
+          severity: warn # models.[0].tests.[1].custom_test.severity - inline
+      - # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges
+        dbt_utils.mutually_exclusive_ranges: # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges - inline
+          # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.partition_by
+          partition_by: account_id # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.partition_by - inline
+          # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.lower_bound_column
+          lower_bound_column: start_date # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.lower_bound_column - inline
+          # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.upper_bound_column
+          upper_bound_column: end_date # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.upper_bound_column - inline
+          # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.gaps
+          gaps: not_allowed # models.[0].tests.[2].dbt_utils.mutually_exclusive_ranges.gaps - inline
+    # models.[0].columns
+    columns: # models.[0].columns - inline
+      - # models.[0].columns.[0].name
+        name: id # models.[0].columns.[0].name - inline
 
-  - name: my_versioned_model_with_tests
-    versions:
-      - v: 1
-        tests:
-          - dbt_utils.unique_combination_of_columns:
-              combination_of_columns:
-                - a
-                - b
-                - c
-      - v: 2
-        tests:
-          - dbt_utils.unique_combination_of_columns:
-              combination_of_columns:
-                - a
-                - b
-                - c
+        # models.[0].columns.[0].descrption
+        descrption: The ID. # models.[0].columns.[0].descrption - inline
+        # models.[0].columns.[0].data_tests
+        data_tests: # models.[0].columns.[0].data_tests - inline
+          - # models.[0].columns.[0].data_tests.[0].not_null
+            not_null: # models.[0].columns.[0].data_tests.[0].not_null - inline
+              # models.[0].columns.[0].data_tests.[0].not_null.meta
+              meta: # models.[0].columns.[0].data_tests.[0].not_null.meta - inline
+                # models.[0].columns.[0].data_tests.[0].not_null.meta.owner
+                owner: data-quality-team # models.[0].columns.[0].data_tests.[0].not_null.meta.owner - inline
+                # models.[0].columns.[0].data_tests.[0].not_null.meta.priority
+                priority: critical # models.[0].columns.[0].data_tests.[0].not_null.meta.priority - inline
+          # models.[0].columns.[0].data_tests.[1]
+          - unique # models.[0].columns.[0].data_tests.[1] - inline
+          - # models.[0].columns.[0].data_tests.[2].accepted_values
+            accepted_values: # models.[0].columns.[0].data_tests.[2].accepted_values - inline
+              # models.[0].columns.[0].data_tests.[2].accepted_values.values
+              values: [1, 2, 3] # models.[0].columns.[0].data_tests.[2].accepted_values.values - inline
+              # models.[0].columns.[0].data_tests.[2].accepted_values.desciption
+              desciption: accepted_values test for id # models.[0].columns.[0].data_tests.[2].accepted_values.desciption - inline
+          - # models.[0].columns.[0].data_tests.[3].relationships
+            relationships: # models.[0].columns.[0].data_tests.[3].relationships - inline
+              # models.[0].columns.[0].data_tests.[3].relationships.to
+              to: # models.[0].columns.[0].data_tests.[3].relationships.to - inline
+                - # models.[0].columns.[0].data_tests.[3].relationships.to.[0].model
+                  model: my_other_model # models.[0].columns.[0].data_tests.[3].relationships.to.[0].model - inline
+                  # models.[0].columns.[0].data_tests.[3].relationships.to.[0].field
+                  field: id # models.[0].columns.[0].data_tests.[3].relationships.to.[0].field - inline
+                  # models.[0].columns.[0].data_tests.[3].relationships.to.[0].on_delete
+                  on_delete: cascade # models.[0].columns.[0].data_tests.[3].relationships.to.[0].on_delete - inline
+                  # models.[0].columns.[0].data_tests.[3].relationships.to.[0].on_update
+                  on_update: cascade # models.[0].columns.[0].data_tests.[3].relationships.to.[0].on_update - inline
+          - # models.[0].columns.[0].data_tests.[4].name
+            name: my_custom_test # models.[0].columns.[0].data_tests.[4].name - inline
+            # models.[0].columns.[0].data_tests.[4].test_name
+            test_name: custom_test # models.[0].columns.[0].data_tests.[4].test_name - inline
+            # models.[0].columns.[0].data_tests.[4].custom_arg
+            custom_arg: some_value # models.[0].columns.[0].data_tests.[4].custom_arg - inline
+            # models.[0].columns.[0].data_tests.[4].description
+            description: my custom test # models.[0].columns.[0].data_tests.[4].description - inline
+
+            # models.[0].columns.[0].data_tests.[4].severity
+            severity: warn # models.[0].columns.[0].data_tests.[4].severity - inline
+          - # models.[0].columns.[0].data_tests.[5].name
+            name: alt_test_syntax_builtin_test # models.[0].columns.[0].data_tests.[5].name - inline
+            # models.[0].columns.[0].data_tests.[5].test_name
+            test_name: accepted_values # models.[0].columns.[0].data_tests.[5].test_name - inline
+            # models.[0].columns.[0].data_tests.[5].values
+            values: [1, 2, 3] # models.[0].columns.[0].data_tests.[5].values - inline
+          - # models.[0].columns.[0].data_tests.[6].custom_test_with_arguments
+            custom_test_with_arguments: # models.[0].columns.[0].data_tests.[6].custom_test_with_arguments - inline
+              # models.[0].columns.[0].data_tests.[6].custom_test_with_arguments.arguments
+              arguments: my_arguments # models.[0].columns.[0].data_tests.[6].custom_test_with_arguments.arguments - inline
+          - # models.[0].columns.[0].data_tests.[7].test_name
+            test_name: custom_test_with_arguments_alt_format # models.[0].columns.[0].data_tests.[7].test_name - inline
+            # models.[0].columns.[0].data_tests.[7].arguments
+            arguments: my_arguments # models.[0].columns.[0].data_tests.[7].arguments - inline
+          - # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict
+            custom_test_with_arguments_dict: # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict - inline
+              # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict.arguments
+              arguments: # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict.arguments - inline
+                # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict.arguments.custom_arg
+                custom_arg: some_value # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict.arguments.custom_arg - inline
+              # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict.invalid_custom_arg
+              invalid_custom_arg: some_value # models.[0].columns.[0].data_tests.[8].custom_test_with_arguments_dict.invalid_custom_arg - inline
+
+  - # models.[1].name
+    name: my_versioned_model_with_tests # models.[1].name - inline
+    # models.[1].versions
+    versions: # models.[1].versions - inline
+      - # models.[1].versions.[0].v
+        v: 1 # models.[1].versions.[0].v - inline
+        # models.[1].versions.[0].tests
+        tests: # models.[1].versions.[0].tests - inline
+          - # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns
+            dbt_utils.unique_combination_of_columns: # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns - inline
+              # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns
+              combination_of_columns: # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns - inline
+                # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[0]
+                - a # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[0] - inline
+                # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[1]
+                - b # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[1] - inline
+                # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[2]
+                - c # models.[1].versions.[0].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[2] - inline
+      - # models.[1].versions.[1].v
+        v: 2 # models.[1].versions.[1].v - inline
+        # models.[1].versions.[1].tests
+        tests: # models.[1].versions.[1].tests - inline
+          - # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns
+            dbt_utils.unique_combination_of_columns: # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns - inline
+              # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns
+              combination_of_columns: # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns - inline
+                # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[0]
+                - a # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[0] - inline
+                # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[1]
+                - b # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[1] - inline
+                # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[2]
+                - c # models.[1].versions.[1].tests.[0].dbt_utils.unique_combination_of_columns.combination_of_columns.[2] - inline

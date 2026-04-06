@@ -1,26 +1,43 @@
-semantic_models:
-  #The name of the semantic model.
-  - name: products
+# semantic_models
+semantic_models: # semantic_models - inline
+  - # semantic_models.[0].name
+    name: products # semantic_models.[0].name - inline
+    # semantic_models.[0].description
     description: |
       Product dimension table. The grain of the table is one row per product.
-    #The name of the dbt model and schema
-    model: ref('products')
-    #Entities. These usually corespond to keys in the table.
-    entities:
-      - name: product
-        type: primary
-        expr: product_id
-    #Dimensions. Either categorical or time. These add additonal context to metrics. The typical querying pattern is Metric by Dimension.
-    dimensions:
-      - name: product_name
-        type: categorical
-      - name: product_type
-        type: categorical
-      - name: product_description
-        type: categorical
-      - name: is_food_item
-        type: categorical
-      - name: is_drink_item
-        type: categorical
-      - name: product_price
-        type: categorical
+    # semantic_models.[0].model
+    model: ref('products') # semantic_models.[0].model - inline
+    # semantic_models.[0].entities
+    entities: # semantic_models.[0].entities - inline
+      - # semantic_models.[0].entities.[0].name
+        name: product # semantic_models.[0].entities.[0].name - inline
+        # semantic_models.[0].entities.[0].type
+        type: primary # semantic_models.[0].entities.[0].type - inline
+        # semantic_models.[0].entities.[0].expr
+        expr: product_id # semantic_models.[0].entities.[0].expr - inline
+    # semantic_models.[0].dimensions
+    dimensions: # semantic_models.[0].dimensions - inline
+      - # semantic_models.[0].dimensions.[0].name
+        name: product_name # semantic_models.[0].dimensions.[0].name - inline
+        # semantic_models.[0].dimensions.[0].type
+        type: categorical # semantic_models.[0].dimensions.[0].type - inline
+      - # semantic_models.[0].dimensions.[1].name
+        name: product_type # semantic_models.[0].dimensions.[1].name - inline
+        # semantic_models.[0].dimensions.[1].type
+        type: categorical # semantic_models.[0].dimensions.[1].type - inline
+      - # semantic_models.[0].dimensions.[2].name
+        name: product_description # semantic_models.[0].dimensions.[2].name - inline
+        # semantic_models.[0].dimensions.[2].type
+        type: categorical # semantic_models.[0].dimensions.[2].type - inline
+      - # semantic_models.[0].dimensions.[3].name
+        name: is_food_item # semantic_models.[0].dimensions.[3].name - inline
+        # semantic_models.[0].dimensions.[3].type
+        type: categorical # semantic_models.[0].dimensions.[3].type - inline
+      - # semantic_models.[0].dimensions.[4].name
+        name: is_drink_item # semantic_models.[0].dimensions.[4].name - inline
+        # semantic_models.[0].dimensions.[4].type
+        type: categorical # semantic_models.[0].dimensions.[4].type - inline
+      - # semantic_models.[0].dimensions.[5].name
+        name: product_price # semantic_models.[0].dimensions.[5].name - inline
+        # semantic_models.[0].dimensions.[5].type
+        type: categorical # semantic_models.[0].dimensions.[5].type - inline

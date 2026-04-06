@@ -38,13 +38,25 @@ from dbt_autofix.refactors.yml import dict_to_yaml_str
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 
+def _to_cm(d):
+    if isinstance(d, dict):
+        cm = CommentedMap()
+        for k, v in d.items():
+            cm[k] = _to_cm(v)
+        return cm
+    return d
+
+
 def _call_rec_check(yml_dict, path, node_fields, schema_specs=None, node_type=None):
     impl = object.__new__(_PrefixPlusForConfigImpl)
     impl.schema_specs = schema_specs
-    impl._refactors = []
+    impl._refactor_entries = []
     impl._refactored = False
-    result = impl._rec_check_yaml_path(yml_dict, path, node_fields, node_type)
-    return result, [r.log for r in impl._refactors]
+    impl.content = type("_Content", (), {"original_parsed": CommentedMap()})()
+    cm = _to_cm(yml_dict) if isinstance(yml_dict, dict) else yml_dict
+    parent = CommentedMap({"_": cm})
+    node = impl._rec_check_yaml_path(parent, "_", path, node_fields, node_type)
+    return node.value, [r.refactor.log for r in impl._refactor_entries]
 
 
 def _yml(yml_str: str) -> YMLContent:
@@ -2738,10 +2750,11 @@ select 1 as id
 
         assert result.refactored
         assert result.refactored_content == expected_content
-        assert len(result.deprecation_refactors) == 1
+        assert len(result.deprecation_refactors) == 2
         assert "custom_config1" in result.deprecation_refactors[0].log
-        assert "custom_config2" in result.deprecation_refactors[0].log
         assert "meta" in result.deprecation_refactors[0].log
+        assert "custom_config2" in result.deprecation_refactors[1].log
+        assert "meta" in result.deprecation_refactors[1].log
 
     def test_valid_configs_not_moved_to_meta(self, schema_specs: SchemaSpecs):
         """Test that valid configs are not moved to meta (no custom configs present)"""

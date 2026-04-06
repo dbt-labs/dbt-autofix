@@ -1,69 +1,102 @@
-# Name your project! Project names should contain only lowercase characters
-# and underscores. A good package name should reflect your organization's
-# name or the intended use of these models
-name: "dbt_autofix_tests"
-version: "1.0.0"
+# name
+name: "dbt_autofix_tests" # name - inline
+# version
+version: "1.0.0" # version - inline
 
-# This setting configures which "profile" dbt uses for this project.
-profile: "dbt_autofix_tests"
+# profile
+profile: "dbt_autofix_tests" # profile - inline
 
-# These configurations specify where dbt should look for different types of files.
-# The `model-paths` config, for example, states that models in this project can be
-# found in the "models/" directory. You probably won't need to change these!
-model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
-macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
-clean-targets: # directories to be removed by `dbt clean`
-  - "target"
-  - "dbt_packages"
+# model-paths
+model-paths: ["models"] # model-paths - inline
+# analysis-paths
+analysis-paths: ["analyses"] # analysis-paths - inline
+# test-paths
+test-paths: ["tests"] # test-paths - inline
+# seed-paths
+seed-paths: ["seeds"] # seed-paths - inline
+# macro-paths
+macro-paths: ["macros"] # macro-paths - inline
+# snapshot-paths
+snapshot-paths: ["snapshots"] # snapshot-paths - inline
+# target-path
+clean-targets: # clean-targets - inline
+  # clean-targets.[0]
+  - "target" # clean-targets.[0] - inline
+  # clean-targets.[1]
+  - "dbt_packages" # clean-targets.[1] - inline
 
-# Configuring models
-# Full documentation: https://docs.getdbt.com/docs/configuring-models
 
-# In this example config, we tell dbt to build all models in the example/
-# directory as views. These settings can be overridden in the individual model
-# files using the `{{ config(...) }}` macro.
-models:
-  dbt_autofix_tests:
-    # Config indicated by + and applies to all files under models/example/
-    example:
-      my_first_dbt_model:
-        +materialized: table
+# models
+models: # models - inline
+  # models.dbt_autofix_tests
+  dbt_autofix_tests: # models.dbt_autofix_tests - inline
+    # models.dbt_autofix_tests.example
+    example: # models.dbt_autofix_tests.example - inline
+      # models.dbt_autofix_tests.example.materialized
+      +materialized: view # models.dbt_autofix_tests.example.materialized - inline
+
+      # models.dbt_autofix_tests.example.dataset
+      +dataset: my_dataset # models.dbt_autofix_tests.example.dataset - inline
+      # models.dbt_autofix_tests.example.project
+      +project: my_project # models.dbt_autofix_tests.example.project - inline
+      # models.dbt_autofix_tests.example.data_space
+      +data_space: my_data_space # models.dbt_autofix_tests.example.data_space - inline
+      # models.dbt_autofix_tests.example.my_first_dbt_model
+      my_first_dbt_model: # models.dbt_autofix_tests.example.my_first_dbt_model - inline
+        # models.dbt_autofix_tests.example.my_first_dbt_model.materialized
+        +materialized: table # models.dbt_autofix_tests.example.my_first_dbt_model.materialized - inline
         +meta:
-          custom_config: custom_value
-      +materialized: view
+                                    # models.dbt_autofix_tests.example.my_first_dbt_model.custom_config
+          custom_config: custom_value # models.dbt_autofix_tests.example.my_first_dbt_model.custom_config - inline
       +meta:
-        custom_config: custom_value
-      +dataset: my_dataset
-      +project: my_project
-      +data_space: my_data_space
-    analytics:
-      +post-hook:
-        - "{% if target.name == 'prod' %}GRANT SELECT ON {{ this }} TO ROLE analytics_reader; GRANT SELECT ON {{ this }} TO ROLE data_science_team; GRANT SELECT ON {{ this }} TO ROLE executive_dashboard; GRANT SELECT ON {{ this }} TO ROLE finance_team{% endif %}"
-        - "{% set audit_columns = ['table_name', 'schema_name', 'last_updated_timestamp', 'row_count', 'update_frequency', 'data_quality_score', 'completeness_percentage', 'freshness_hours'] %}INSERT INTO {{ target.schema }}.audit_log ({% for col in audit_columns %}{{ col }}{{ ',' if not loop.last }}{% endfor %}) SELECT '{{ this }}', '{{ this.schema }}', CURRENT_TIMESTAMP, COUNT(*), 'daily', 95.5, 99.8, DATEDIFF(hour, MAX(updated_at), CURRENT_TIMESTAMP) FROM {{ this }}"
-        - "{% if var('enable_data_quality_checks', true) %}INSERT INTO {{ target.schema }}.data_quality_results (model_name, check_type, check_result, execution_time) VALUES ('{{ this }}', 'row_count', CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END, CURRENT_TIMESTAMP); INSERT INTO {{ target.schema }}.data_quality_results (model_name, check_type, check_result, execution_time) SELECT '{{ this }}', 'null_check', CASE WHEN COUNT(*) FILTER (WHERE primary_key IS NULL) = 0 THEN 'PASS' ELSE 'FAIL' END, CURRENT_TIMESTAMP FROM {{ this }}{% endif %}"
-        - "CALL {{ target.schema }}.update_metadata_registry('{{ this }}', '{{ run_started_at }}', '{{ invocation_id }}', '{{ target.name }}', '{{ env_var('DBT_CLOUD_PROJECT_ID', 'local') }}', '{{ env_var('DBT_CLOUD_JOB_ID', 'manual') }}', '{{ env_var('DBT_CLOUD_RUN_ID', 'local_run') }}', '{{ dbt_version }}')"
-      +pre-hook: "CREATE SCHEMA IF NOT EXISTS {{ target.schema }}; CREATE TABLE IF NOT EXISTS {{ target.schema }}.audit_log (table_name VARCHAR, schema_name VARCHAR, last_updated_timestamp TIMESTAMP, row_count BIGINT, update_frequency VARCHAR, data_quality_score FLOAT, completeness_percentage FLOAT, freshness_hours INT)"
-      +materialized: table
-      +tags: ["analytics", "daily"]
+                               # models.dbt_autofix_tests.example.custom_config
+        custom_config: custom_value # models.dbt_autofix_tests.example.custom_config - inline
 
-seeds:
-  dbt_autofix_tests:
-    +dataset: my_dataset
-    +project: my_project
-    +data_space: my_data_space
-exposures:
-  +enabled: true
-tests:
-  dbt_autofix_tests:
-    +meta: # meta is a valid test config key - must never be moved to another key
-      owner: data-quality-team
+    # models.dbt_autofix_tests.analytics
+    analytics: # models.dbt_autofix_tests.analytics - inline
+      # models.dbt_autofix_tests.analytics.post-hook
+      +post-hook: # models.dbt_autofix_tests.analytics.post-hook - inline
+        # models.dbt_autofix_tests.analytics.post-hook.[0]
+        - "{% if target.name == 'prod' %}GRANT SELECT ON {{ this }} TO ROLE analytics_reader; GRANT SELECT ON {{ this }} TO ROLE data_science_team; GRANT SELECT ON {{ this }} TO ROLE executive_dashboard; GRANT SELECT ON {{ this }} TO ROLE finance_team{% endif %}" # models.dbt_autofix_tests.analytics.post-hook.[0] - inline
+        # models.dbt_autofix_tests.analytics.post-hook.[1]
+        - "{% set audit_columns = ['table_name', 'schema_name', 'last_updated_timestamp', 'row_count', 'update_frequency', 'data_quality_score', 'completeness_percentage', 'freshness_hours'] %}INSERT INTO {{ target.schema }}.audit_log ({% for col in audit_columns %}{{ col }}{{ ',' if not loop.last }}{% endfor %}) SELECT '{{ this }}', '{{ this.schema }}', CURRENT_TIMESTAMP, COUNT(*), 'daily', 95.5, 99.8, DATEDIFF(hour, MAX(updated_at), CURRENT_TIMESTAMP) FROM {{ this }}" # models.dbt_autofix_tests.analytics.post-hook.[1] - inline
+        # models.dbt_autofix_tests.analytics.post-hook.[2]
+        - "{% if var('enable_data_quality_checks', true) %}INSERT INTO {{ target.schema }}.data_quality_results (model_name, check_type, check_result, execution_time) VALUES ('{{ this }}', 'row_count', CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END, CURRENT_TIMESTAMP); INSERT INTO {{ target.schema }}.data_quality_results (model_name, check_type, check_result, execution_time) SELECT '{{ this }}', 'null_check', CASE WHEN COUNT(*) FILTER (WHERE primary_key IS NULL) = 0 THEN 'PASS' ELSE 'FAIL' END, CURRENT_TIMESTAMP FROM {{ this }}{% endif %}" # models.dbt_autofix_tests.analytics.post-hook.[2] - inline
+        # models.dbt_autofix_tests.analytics.post-hook.[3]
+        - "CALL {{ target.schema }}.update_metadata_registry('{{ this }}', '{{ run_started_at }}', '{{ invocation_id }}', '{{ target.name }}', '{{ env_var('DBT_CLOUD_PROJECT_ID', 'local') }}', '{{ env_var('DBT_CLOUD_JOB_ID', 'manual') }}', '{{ env_var('DBT_CLOUD_RUN_ID', 'local_run') }}', '{{ dbt_version }}')" # models.dbt_autofix_tests.analytics.post-hook.[3] - inline
+      # models.dbt_autofix_tests.analytics.pre-hook
+      +pre-hook: "CREATE SCHEMA IF NOT EXISTS {{ target.schema }}; CREATE TABLE IF NOT EXISTS {{ target.schema }}.audit_log (table_name VARCHAR, schema_name VARCHAR, last_updated_timestamp TIMESTAMP, row_count BIGINT, update_frequency VARCHAR, data_quality_score FLOAT, completeness_percentage FLOAT, freshness_hours INT)" # models.dbt_autofix_tests.analytics.pre-hook - inline
+      # models.dbt_autofix_tests.analytics.materialized
+      +materialized: table # models.dbt_autofix_tests.analytics.materialized - inline
+      # models.dbt_autofix_tests.analytics.tags
+      +tags: ["analytics", "daily"] # models.dbt_autofix_tests.analytics.tags - inline
+# seeds
+seeds: # seeds - inline
+  # seeds.dbt_autofix_tests
+  dbt_autofix_tests: # seeds.dbt_autofix_tests - inline
+    # seeds.dbt_autofix_tests.dataset
+    +dataset: my_dataset # seeds.dbt_autofix_tests.dataset - inline
+    # seeds.dbt_autofix_tests.project
+    +project: my_project # seeds.dbt_autofix_tests.project - inline
+    # seeds.dbt_autofix_tests.data_space
+    +data_space: my_data_space # seeds.dbt_autofix_tests.data_space - inline
 
-unit-tests:
+# exposures
+exposures: # exposures - inline
+  # exposures.enabled
   +enabled: true
-  +tags: ["test_tag"]
+tests: # tests - inline
+  # tests.dbt_autofix_tests
+  dbt_autofix_tests: # tests.dbt_autofix_tests - inline
+    # tests.dbt_autofix_tests.meta
+    +meta: # tests.dbt_autofix_tests.meta - inline
+      # tests.dbt_autofix_tests.meta.owner
+      owner: data-quality-team # tests.dbt_autofix_tests.meta.owner - inline
+
+# unit-tests
+unit-tests: # unit-tests - inline
+  # unit-tests.enabled
+  +enabled: true
+  +tags: ["test_tag"] # unit-tests.tags - inline
 flags:
   require_generic_test_arguments_property: true

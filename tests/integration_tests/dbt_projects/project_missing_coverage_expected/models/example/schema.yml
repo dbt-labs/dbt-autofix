@@ -1,0 +1,43 @@
+# version
+version: 2
+
+# groups
+groups: # groups - inline
+    # groups.[0].name
+  - name: analytics # groups.[0].name - inline
+    # groups.[0].owner
+    owner: # groups.[0].owner - inline
+      # groups.[0].owner.email
+      email: analytics@example.com # groups.[0].owner.email - inline
+    config:
+      meta:
+                                         # groups.[0].owner.team
+        team: analytics-team # groups.[0].owner.team - inline
+
+# models
+models: # models - inline
+    # models.[0].name
+  - name: model_with_property_already_in_config # models.[0].name - inline
+    config: # models.[0].config - inline
+      # models.[0].config.materialized
+      materialized: table # models.[0].materialized - inline
+    # models.[0].config
+  - name: duplicate_model # models.[2].name - inline
+    # models.[2].description
+    description: "second definition" # models.[2].description - inline
+
+    # models.[3].name
+  - name: model_with_test_overwrite # models.[3].name - inline
+    # models.[3].columns
+    columns: # models.[3].columns - inline
+        # models.[3].columns.[0].name
+      - name: id # models.[3].columns.[0].name - inline
+        # models.[3].columns.[0].data_tests
+        data_tests: # models.[3].columns.[0].data_tests - inline
+            # models.[3].columns.[0].data_tests.[0].not_null
+          - not_null: # models.[3].columns.[0].data_tests.[0].not_null - inline
+              config: # models.[3].columns.[0].data_tests.[0].not_null.config - inline
+                # models.[3].columns.[0].data_tests.[0].not_null.config.severity
+              # models.[3].columns.[0].data_tests.[0].not_null.severity
+                severity: error # models.[3].columns.[0].data_tests.[0].not_null.severity - inline
+              # models.[3].columns.[0].data_tests.[0].not_null.config

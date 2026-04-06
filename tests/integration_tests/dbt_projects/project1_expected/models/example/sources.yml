@@ -1,6 +1,14 @@
 
 sources:
   - name: my-source
+    description: |-
+      This is a model about something
+
+      This model contains:
+        * This
+        * That
+        * The other thing
+        
     database: my-db
     schema: my-schema
     loader: my-loader
@@ -17,6 +25,7 @@ sources:
 
       meta:
         custom_property: true
+
         my_meta: my-meta-value
     quoting:
       database: false
@@ -26,6 +35,7 @@ sources:
     tables:
       - name: table1
         description: table1-description
+
         identifier: table1id
         tests:
           - dbt_expectations.expect_table_columns_to_contain_set:
@@ -47,6 +57,7 @@ sources:
                   config:
                     where: 1=1
               - not_null
+              # col1 tests complete
             config:
               meta:
                 my_meta: my-meta-value-col1
@@ -63,11 +74,3 @@ sources:
 
           meta:
             my_meta: my-meta-value-table1
-    description: |-
-      This is a model about something
-
-      This model contains:
-        * This
-        * That
-        * The other thing
-        

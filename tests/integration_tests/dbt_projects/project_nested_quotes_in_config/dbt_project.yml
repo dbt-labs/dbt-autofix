@@ -1,10 +1,18 @@
-name: 'test_nested_quotes_in_config'
-version: '1.0.0'
-config-version: 2
+# name
+name: 'test_nested_quotes_in_config' # name - inline
+# version
+version: '1.0.0' # version - inline
+# config-version
+config-version: 2 # config-version - inline
 
-profile: 'default'
+# profile
+profile: 'default' # profile - inline
 
-model-paths: ["models"]
-test-paths: ["tests"]
-flags:
-  require_generic_test_arguments_property: true
+# model-paths
+model-paths: ["models"] # model-paths - inline
+# test-paths
+test-paths: ["tests"] # test-paths - inline
+# flags
+flags: # flags - inline
+  # flags.require_generic_test_arguments_property
+  require_generic_test_arguments_property: true # flags.require_generic_test_arguments_property - inline

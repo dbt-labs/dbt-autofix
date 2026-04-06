@@ -1,257 +1,503 @@
-models:
-  - name: order_items
-    columns:
-      - name: order_item_id
-        data_tests:
-          - not_null
-          - unique
-      - name: order_id
-        data_tests:
-          - relationships:
-              to: ref('orders')
-              field: order_id
+# models
+models: # models - inline
+  - # models.[0].name
+    name: order_items # models.[0].name - inline
+    # models.[0].columns
+    columns: # models.[0].columns - inline
+      - # models.[0].columns.[0].name
+        name: order_item_id # models.[0].columns.[0].name - inline
+        # models.[0].columns.[0].data_tests
+        data_tests: # models.[0].columns.[0].data_tests - inline
+          # models.[0].columns.[0].data_tests.[0]
+          - not_null # models.[0].columns.[0].data_tests.[0] - inline
+          # models.[0].columns.[0].data_tests.[1]
+          - unique # models.[0].columns.[0].data_tests.[1] - inline
+      - # models.[0].columns.[1].name
+        name: order_id # models.[0].columns.[1].name - inline
+        # models.[0].columns.[1].data_tests
+        data_tests: # models.[0].columns.[1].data_tests - inline
+          - # models.[0].columns.[1].data_tests.[0].relationships
+            relationships: # models.[0].columns.[1].data_tests.[0].relationships - inline
+              # models.[0].columns.[1].data_tests.[0].relationships.to
+              to: ref('orders') # models.[0].columns.[1].data_tests.[0].relationships.to - inline
+              # models.[0].columns.[1].data_tests.[0].relationships.field
+              field: order_id # models.[0].columns.[1].data_tests.[0].relationships.field - inline
 
-semantic_models:
-  - name: order_item
-    defaults:
-      agg_time_dimension: ordered_at
+# semantic_models
+semantic_models: # semantic_models - inline
+  - # semantic_models.[0].name
+    name: order_item # semantic_models.[0].name - inline
+    # semantic_models.[0].defaults
+    defaults: # semantic_models.[0].defaults - inline
+      # semantic_models.[0].defaults.agg_time_dimension
+      agg_time_dimension: ordered_at # semantic_models.[0].defaults.agg_time_dimension - inline
+    # semantic_models.[0].description
     description: |
       Items contatined in each order. The grain of the table is one row per order item.
-    model: ref('order_items')
-    entities:
-      - name: order_item
-        type: primary
-        expr: order_item_id
-      - name: order_id
-        type: foreign
-        expr: order_id
-      - name: product
-        type: foreign
-        expr: product_id
-    dimensions:
-      - name: ordered_at
-        expr: ordered_at
-        type: time
-        type_params:
-          time_granularity: day
-      - name: is_food_item
-        type: categorical
-      - name: is_drink_item
-        type: categorical
-    measures:
-      - name: revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
-        agg: sum
-        expr: product_price
-        config:
-          meta:
-            label_in_meta: text in meta
-      - name: revenue_measure_with_filter
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
-        agg: sum
-        expr: product_price
-      - name: food_revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
-        agg: sum
-        expr: case when is_food_item is true then product_price else 0 end
-      - name: drink_revenue
-        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.
-        agg: sum
-        expr: case when is_drink_item is true then product_price else 0 end
-      - name: median_revenue
-        description: The median revenue generated for each order item.
-        agg: median
-        expr: product_price
+    # semantic_models.[0].model
+    model: ref('order_items') # semantic_models.[0].model - inline
+    # semantic_models.[0].entities
+    entities: # semantic_models.[0].entities - inline
+      - # semantic_models.[0].entities.[0].name
+        name: order_item # semantic_models.[0].entities.[0].name - inline
+        # semantic_models.[0].entities.[0].type
+        type: primary # semantic_models.[0].entities.[0].type - inline
+        # semantic_models.[0].entities.[0].expr
+        expr: order_item_id # semantic_models.[0].entities.[0].expr - inline
+      - # semantic_models.[0].entities.[1].name
+        name: order_id # semantic_models.[0].entities.[1].name - inline
+        # semantic_models.[0].entities.[1].type
+        type: foreign # semantic_models.[0].entities.[1].type - inline
+        # semantic_models.[0].entities.[1].expr
+        expr: order_id # semantic_models.[0].entities.[1].expr - inline
+      - # semantic_models.[0].entities.[2].name
+        name: product # semantic_models.[0].entities.[2].name - inline
+        # semantic_models.[0].entities.[2].type
+        type: foreign # semantic_models.[0].entities.[2].type - inline
+        # semantic_models.[0].entities.[2].expr
+        expr: product_id # semantic_models.[0].entities.[2].expr - inline
+    # semantic_models.[0].dimensions
+    dimensions: # semantic_models.[0].dimensions - inline
+      - # semantic_models.[0].dimensions.[0].name
+        name: ordered_at # semantic_models.[0].dimensions.[0].name - inline
+        # semantic_models.[0].dimensions.[0].expr
+        expr: ordered_at # semantic_models.[0].dimensions.[0].expr - inline
+        # semantic_models.[0].dimensions.[0].type
+        type: time # semantic_models.[0].dimensions.[0].type - inline
+        # semantic_models.[0].dimensions.[0].type_params
+        type_params: # semantic_models.[0].dimensions.[0].type_params - inline
+          # semantic_models.[0].dimensions.[0].type_params.time_granularity
+          time_granularity: day # semantic_models.[0].dimensions.[0].type_params.time_granularity - inline
+      - # semantic_models.[0].dimensions.[1].name
+        name: is_food_item # semantic_models.[0].dimensions.[1].name - inline
+        # semantic_models.[0].dimensions.[1].type
+        type: categorical # semantic_models.[0].dimensions.[1].type - inline
+      - # semantic_models.[0].dimensions.[2].name
+        name: is_drink_item # semantic_models.[0].dimensions.[2].name - inline
+        # semantic_models.[0].dimensions.[2].type
+        type: categorical # semantic_models.[0].dimensions.[2].type - inline
+    # semantic_models.[0].measures
+    measures: # semantic_models.[0].measures - inline
+      - # semantic_models.[0].measures.[0].name
+        name: revenue # semantic_models.[0].measures.[0].name - inline
+        # semantic_models.[0].measures.[0].description
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order. # semantic_models.[0].measures.[0].description - inline
+        # semantic_models.[0].measures.[0].agg
+        agg: sum # semantic_models.[0].measures.[0].agg - inline
+        # semantic_models.[0].measures.[0].expr
+        expr: product_price # semantic_models.[0].measures.[0].expr - inline
+        # semantic_models.[0].measures.[0].config
+        config: # semantic_models.[0].measures.[0].config - inline
+          # semantic_models.[0].measures.[0].config.meta
+          meta: # semantic_models.[0].measures.[0].config.meta - inline
+            # semantic_models.[0].measures.[0].config.meta.label_in_meta
+            label_in_meta: text in meta # semantic_models.[0].measures.[0].config.meta.label_in_meta - inline
+      - # semantic_models.[0].measures.[1].name
+        name: revenue_measure_with_filter # semantic_models.[0].measures.[1].name - inline
+        # semantic_models.[0].measures.[1].description
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order. # semantic_models.[0].measures.[1].description - inline
+        # semantic_models.[0].measures.[1].agg
+        agg: sum # semantic_models.[0].measures.[1].agg - inline
+        # semantic_models.[0].measures.[1].expr
+        expr: product_price # semantic_models.[0].measures.[1].expr - inline
+      - # semantic_models.[0].measures.[2].name
+        name: food_revenue # semantic_models.[0].measures.[2].name - inline
+        # semantic_models.[0].measures.[2].description
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order. # semantic_models.[0].measures.[2].description - inline
+        # semantic_models.[0].measures.[2].agg
+        agg: sum # semantic_models.[0].measures.[2].agg - inline
+        # semantic_models.[0].measures.[2].expr
+        expr: case when is_food_item is true then product_price else 0 end # semantic_models.[0].measures.[2].expr - inline
+      - # semantic_models.[0].measures.[3].name
+        name: drink_revenue # semantic_models.[0].measures.[3].name - inline
+        # semantic_models.[0].measures.[3].description
+        description: The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order. # semantic_models.[0].measures.[3].description - inline
+        # semantic_models.[0].measures.[3].agg
+        agg: sum # semantic_models.[0].measures.[3].agg - inline
+        # semantic_models.[0].measures.[3].expr
+        expr: case when is_drink_item is true then product_price else 0 end # semantic_models.[0].measures.[3].expr - inline
+      - # semantic_models.[0].measures.[4].name
+        name: median_revenue # semantic_models.[0].measures.[4].name - inline
+        # semantic_models.[0].measures.[4].description
+        description: The median revenue generated for each order item. # semantic_models.[0].measures.[4].description - inline
+        # semantic_models.[0].measures.[4].agg
+        agg: median # semantic_models.[0].measures.[4].agg - inline
+        # semantic_models.[0].measures.[4].expr
+        expr: product_price # semantic_models.[0].measures.[4].expr - inline
 
-metrics:
-  # Simple metrics
-  - name: revenue
-    description: Sum of the product revenue for each order item. Excludes tax.
-    type: simple
-    label: Revenue
-    tags: [deprecated_tag_1, deprecated_tag_2]
-    type_params:
-      measure: revenue
-  - name: revenue_with_stacked_filters
-    description: Sum of the product revenue for each order item. Excludes tax.
-    type: simple
-    label: Revenue
-    filter: revenue_filter_on_metric_itself
-    tags: [deprecated_tag_1, deprecated_tag_2]
-    config:
-      tags: [normal_tag_1, normal_tag_2]
-    type_params:
-      measure:
-        name: revenue_measure_with_filter
-        filter: revenue_filter_on_input
-  - name: order_cost
-    description: Sum of cost for each order item.
-    label: Order Cost
-    type: simple
-    type_params:
-      measure: order_cost
-  - name: median_revenue
-    description: The median revenue for each order item. Excludes tax.
-    type: simple
-    label: Median Revenue
-    type_params:
-      measure: median_revenue
-  - name: food_revenue
-    description: The revenue from food in each order
-    label: Food Revenue
-    type: simple
-    type_params:
-      measure: food_revenue
-  - name: drink_revenue
-    description: The revenue from drinks in each order
-    label: Drink Revenue
-    type: simple
-    type_params:
-      measure: drink_revenue
+# metrics
+metrics: # metrics - inline
+  - # metrics.[0].name
+    name: revenue # metrics.[0].name - inline
+    # metrics.[0].description
+    description: Sum of the product revenue for each order item. Excludes tax. # metrics.[0].description - inline
+    # metrics.[0].type
+    type: simple # metrics.[0].type - inline
+    # metrics.[0].label
+    label: Revenue # metrics.[0].label - inline
+    # metrics.[0].tags
+    tags: [deprecated_tag_1, deprecated_tag_2] # metrics.[0].tags - inline
+    # metrics.[0].type_params
+    type_params: # metrics.[0].type_params - inline
+      # metrics.[0].type_params.measure
+      measure: revenue # metrics.[0].type_params.measure - inline
+  - # metrics.[1].name
+    name: revenue_with_stacked_filters # metrics.[1].name - inline
+    # metrics.[1].description
+    description: Sum of the product revenue for each order item. Excludes tax. # metrics.[1].description - inline
+    # metrics.[1].type
+    type: simple # metrics.[1].type - inline
+    # metrics.[1].label
+    label: Revenue # metrics.[1].label - inline
+    # metrics.[1].filter
+    filter: revenue_filter_on_metric_itself # metrics.[1].filter - inline
 
-  # Ratio Metrics
-  - name: food_revenue_pct
-    description: The % of order revenue from food.
-    label: Food Revenue %
-    type: ratio
-    type_params:
-      numerator: food_revenue
-      denominator: revenue
-  - name: drink_revenue_pct
-    description: The % of order revenue from drinks.
-    label: Drink Revenue %
-    type: ratio
-    type_params:
-      numerator: drink_revenue
-      denominator: revenue
-  - name: drink_revenue_pct_wtih_complex_args
-    description: The % of order revenue from drinks.
-    label: Drink Revenue %
-    type: ratio
-    type_params:
-      numerator:
-        name: drink_revenue
-        filter: drink_revenue > 0
-        alias: drink_revenue_filtered
-      denominator:
-        name: revenue
-        filter: revenue > 0
-        alias: revenue_filtered
+    # metrics.[1].tags
+    tags: [deprecated_tag_1, deprecated_tag_2] # metrics.[1].tags - inline
+    # metrics.[1].config
+    config: # metrics.[1].config - inline
+      # metrics.[1].config.tags
+      tags: [normal_tag_1, normal_tag_2] # metrics.[1].config.tags - inline
+    # metrics.[1].type_params
+    type_params: # metrics.[1].type_params - inline
+      # metrics.[1].type_params.measure
+      measure: # metrics.[1].type_params.measure - inline
+        # metrics.[1].type_params.measure.name
+        name: revenue_measure_with_filter # metrics.[1].type_params.measure.name - inline
+        # metrics.[1].type_params.measure.filter
+        filter: revenue_filter_on_input # metrics.[1].type_params.measure.filter - inline
+  - # metrics.[2].name
+    name: order_cost # metrics.[2].name - inline
+    # metrics.[2].description
+    description: Sum of cost for each order item. # metrics.[2].description - inline
+    # metrics.[2].label
+    label: Order Cost # metrics.[2].label - inline
+    # metrics.[2].type
+    type: simple # metrics.[2].type - inline
+    # metrics.[2].type_params
+    type_params: # metrics.[2].type_params - inline
+      # metrics.[2].type_params.measure
+      measure: order_cost # metrics.[2].type_params.measure - inline
+  - # metrics.[3].name
+    name: median_revenue # metrics.[3].name - inline
+    # metrics.[3].description
+    description: The median revenue for each order item. Excludes tax. # metrics.[3].description - inline
+    # metrics.[3].type
+    type: simple # metrics.[3].type - inline
+    # metrics.[3].label
+    label: Median Revenue # metrics.[3].label - inline
+    # metrics.[3].type_params
+    type_params: # metrics.[3].type_params - inline
+      # metrics.[3].type_params.measure
+      measure: median_revenue # metrics.[3].type_params.measure - inline
+  - # metrics.[4].name
+    name: food_revenue # metrics.[4].name - inline
+    # metrics.[4].description
+    description: The revenue from food in each order # metrics.[4].description - inline
+    # metrics.[4].label
+    label: Food Revenue # metrics.[4].label - inline
+    # metrics.[4].type
+    type: simple # metrics.[4].type - inline
+    # metrics.[4].type_params
+    type_params: # metrics.[4].type_params - inline
+      # metrics.[4].type_params.measure
+      measure: food_revenue # metrics.[4].type_params.measure - inline
+  - # metrics.[5].name
+    name: drink_revenue # metrics.[5].name - inline
+    # metrics.[5].description
+    description: The revenue from drinks in each order # metrics.[5].description - inline
+    # metrics.[5].label
+    label: Drink Revenue # metrics.[5].label - inline
+    # metrics.[5].type
+    type: simple # metrics.[5].type - inline
+    # metrics.[5].type_params
+    type_params: # metrics.[5].type_params - inline
+      # metrics.[5].type_params.measure
+      measure: drink_revenue # metrics.[5].type_params.measure - inline
 
-  # Derived Metrics
-  - name: revenue_growth_mom
-    description: "Percentage growth of revenue compared to 1 month ago. Excluded tax"
-    type: derived
-    label: Revenue Growth % M/M
-    type_params:
-      expr: (current_revenue - revenue_prev_month)*100/revenue_prev_month
-      metrics:
-        - name: revenue
-          alias: current_revenue
-        - name: revenue
-          offset_window: 1 month
-          alias: revenue_prev_month
-  - name: multi_model_derived_metric
-    description: "Derived metric that uses metrics from two different models"
-    type: derived
-    label: multi model avg revenue per food order
-    type_params:
-      expr: current_revenue / food_orders
-      metrics:
-        - name: revenue
-          alias: current_revenue
-        - food_orders
-  - name: order_gross_profit
-    description: Gross profit from each order.
-    type: derived
-    label: Order Gross Profit
-    type_params:
-      expr: revenue - cost
-      metrics:
-        - name: revenue
-        - name: order_cost
-          alias: cost
-  - name: aaa_order_multi_layer_derived_metric # aaa in name to make it process earlier than dependencies
-    description: "Derived metric that uses metrics from two different models."
-    type: derived
-    label: multi model avg revenue per food order
-    type_params:
-      expr: current_revenue / cumulative_revenue
-      metrics:
-        - name: revenue
-          alias: current_revenue
-        - cumulative_revenue
-  - name: cumulative_revenue
-    description: The cumulative revenue for all orders.
-    label: Cumulative Revenue (All Time)
-    type: cumulative
-    type_params:
-      measure: revenue
-  - name: cumulative_revenue_with_input_settings
-    description: The cumulative revenue for all orders, but now with fill_nulls_with and join_to_timespine settings.
-    label: Cumulative Revenue (All Time)
-    type: cumulative
-    type_params:
-      cumulative_type_params:
-        period_agg: first
-        grain_to_date: day
-        window: 1 month
-      measure: 
-        name: revenue
-        fill_nulls_with: 0
-        join_to_timespine: true
-        filter: cumulative_filter
-  - name: conversion_metric
-    description: The conversion metric description
-    type: conversion
-    label: Conversion Metric
-    type_params:
-      conversion_type_params:
-        entity: entity
-        calculation: calculation_type
-        base_measure: 
-          name: revenue
-          fill_nulls_with: test
-          join_to_timespine: true
-          filter: filter
-        conversion_measure:
-          name: food_revenue
-          fill_nulls_with: -12
-          join_to_timespine: false
-        window: window
-        constant_properties:
-          - base_property: dimension
-            conversion_property: entity
-  - name: conversion_metric_across_two_models
-    description: The conversion metric description across two models and should be kept top level
-    type: conversion
-    label: Conversion Metric Across Two Models
-    type_params:
-      conversion_type_params:
-        entity: entity
-        calculation: calculation_type
-        base_measure:
-          name: revenue
-          join_to_timespine: true
-        conversion_measure:
-          name: average_tax_rate
-          fill_nulls_with: 8675309
-          filter: blah blah filter stuff here
-        window: window
-        constant_properties:
-          - base_property: dimension
-            conversion_property: entity
+  - # metrics.[6].name
+    name: food_revenue_pct # metrics.[6].name - inline
+    # metrics.[6].description
+    description: The % of order revenue from food. # metrics.[6].description - inline
+    # metrics.[6].label
+    label: Food Revenue % # metrics.[6].label - inline
+    # metrics.[6].type
+    type: ratio # metrics.[6].type - inline
+    # metrics.[6].type_params
+    type_params: # metrics.[6].type_params - inline
+      # metrics.[6].type_params.numerator
+      numerator: food_revenue # metrics.[6].type_params.numerator - inline
+      # metrics.[6].type_params.denominator
+      denominator: revenue # metrics.[6].type_params.denominator - inline
+  - # metrics.[7].name
+    name: drink_revenue_pct # metrics.[7].name - inline
+    # metrics.[7].description
+    description: The % of order revenue from drinks. # metrics.[7].description - inline
+    # metrics.[7].label
+    label: Drink Revenue % # metrics.[7].label - inline
+    # metrics.[7].type
+    type: ratio # metrics.[7].type - inline
+    # metrics.[7].type_params
+    type_params: # metrics.[7].type_params - inline
+      # metrics.[7].type_params.numerator
+      numerator: drink_revenue # metrics.[7].type_params.numerator - inline
+      # metrics.[7].type_params.denominator
+      denominator: revenue # metrics.[7].type_params.denominator - inline
+  - # metrics.[8].name
+    name: drink_revenue_pct_wtih_complex_args # metrics.[8].name - inline
+    # metrics.[8].description
+    description: The % of order revenue from drinks. # metrics.[8].description - inline
+    # metrics.[8].label
+    label: Drink Revenue % # metrics.[8].label - inline
+    # metrics.[8].type
+    type: ratio # metrics.[8].type - inline
+    # metrics.[8].type_params
+    type_params: # metrics.[8].type_params - inline
+      # metrics.[8].type_params.numerator
+      numerator: # metrics.[8].type_params.numerator - inline
+        # metrics.[8].type_params.numerator.name
+        name: drink_revenue # metrics.[8].type_params.numerator.name - inline
+        # metrics.[8].type_params.numerator.filter
+        filter: drink_revenue > 0 # metrics.[8].type_params.numerator.filter - inline
+        # metrics.[8].type_params.numerator.alias
+        alias: drink_revenue_filtered # metrics.[8].type_params.numerator.alias - inline
+      # metrics.[8].type_params.denominator
+      denominator: # metrics.[8].type_params.denominator - inline
+        # metrics.[8].type_params.denominator.name
+        name: revenue # metrics.[8].type_params.denominator.name - inline
+        # metrics.[8].type_params.denominator.filter
+        filter: revenue > 0 # metrics.[8].type_params.denominator.filter - inline
+        # metrics.[8].type_params.denominator.alias
+        alias: revenue_filtered # metrics.[8].type_params.denominator.alias - inline
 
-saved_queries:
-  - name: revenue_metrics
-    query_params:
-      metrics:
-        - revenue
-        - food_revenue
-        - drink_revenue
-      group_by:
-        - TimeDimension('metric_time', 'day')
-    exports:
-      - name: revenue_metrics
-        config:
-          export_as: table
+  - # metrics.[9].name
+    name: revenue_growth_mom # metrics.[9].name - inline
+    # metrics.[9].description
+    description: "Percentage growth of revenue compared to 1 month ago. Excluded tax" # metrics.[9].description - inline
+    # metrics.[9].type
+    type: derived # metrics.[9].type - inline
+    # metrics.[9].label
+    label: Revenue Growth % M/M # metrics.[9].label - inline
+    # metrics.[9].type_params
+    type_params: # metrics.[9].type_params - inline
+      # metrics.[9].type_params.expr
+      expr: (current_revenue - revenue_prev_month)*100/revenue_prev_month # metrics.[9].type_params.expr - inline
+      # metrics.[9].type_params.metrics
+      metrics: # metrics.[9].type_params.metrics - inline
+        - # metrics.[9].type_params.metrics.[0].name
+          name: revenue # metrics.[9].type_params.metrics.[0].name - inline
+          # metrics.[9].type_params.metrics.[0].alias
+          alias: current_revenue # metrics.[9].type_params.metrics.[0].alias - inline
+        - # metrics.[9].type_params.metrics.[1].name
+          name: revenue # metrics.[9].type_params.metrics.[1].name - inline
+          # metrics.[9].type_params.metrics.[1].offset_window
+          offset_window: 1 month # metrics.[9].type_params.metrics.[1].offset_window - inline
+          # metrics.[9].type_params.metrics.[1].alias
+          alias: revenue_prev_month # metrics.[9].type_params.metrics.[1].alias - inline
+  - # metrics.[10].name
+    name: multi_model_derived_metric # metrics.[10].name - inline
+    # metrics.[10].description
+    description: "Derived metric that uses metrics from two different models" # metrics.[10].description - inline
+    # metrics.[10].type
+    type: derived # metrics.[10].type - inline
+    # metrics.[10].label
+    label: multi model avg revenue per food order # metrics.[10].label - inline
+    # metrics.[10].type_params
+    type_params: # metrics.[10].type_params - inline
+      # metrics.[10].type_params.expr
+      expr: current_revenue / food_orders # metrics.[10].type_params.expr - inline
+      # metrics.[10].type_params.metrics
+      metrics: # metrics.[10].type_params.metrics - inline
+        - # metrics.[10].type_params.metrics.[0].name
+          name: revenue # metrics.[10].type_params.metrics.[0].name - inline
+          # metrics.[10].type_params.metrics.[0].alias
+          alias: current_revenue # metrics.[10].type_params.metrics.[0].alias - inline
+        # metrics.[10].type_params.metrics.[1]
+        - food_orders # metrics.[10].type_params.metrics.[1] - inline
+  - # metrics.[11].name
+    name: order_gross_profit # metrics.[11].name - inline
+    # metrics.[11].description
+    description: Gross profit from each order. # metrics.[11].description - inline
+    # metrics.[11].type
+    type: derived # metrics.[11].type - inline
+    # metrics.[11].label
+    label: Order Gross Profit # metrics.[11].label - inline
+    # metrics.[11].type_params
+    type_params: # metrics.[11].type_params - inline
+      # metrics.[11].type_params.expr
+      expr: revenue - cost # metrics.[11].type_params.expr - inline
+      # metrics.[11].type_params.metrics
+      metrics: # metrics.[11].type_params.metrics - inline
+        - # metrics.[11].type_params.metrics.[0].name
+          name: revenue # metrics.[11].type_params.metrics.[0].name - inline
+        - # metrics.[11].type_params.metrics.[1].name
+          name: order_cost # metrics.[11].type_params.metrics.[1].name - inline
+          # metrics.[11].type_params.metrics.[1].alias
+          alias: cost # metrics.[11].type_params.metrics.[1].alias - inline
+  - # metrics.[12].name
+    name: aaa_order_multi_layer_derived_metric # metrics.[12].name - inline
+    # metrics.[12].description
+    description: "Derived metric that uses metrics from two different models." # metrics.[12].description - inline
+    # metrics.[12].type
+    type: derived # metrics.[12].type - inline
+    # metrics.[12].label
+    label: multi model avg revenue per food order # metrics.[12].label - inline
+    # metrics.[12].type_params
+    type_params: # metrics.[12].type_params - inline
+      # metrics.[12].type_params.expr
+      expr: current_revenue / cumulative_revenue # metrics.[12].type_params.expr - inline
+      # metrics.[12].type_params.metrics
+      metrics: # metrics.[12].type_params.metrics - inline
+        - # metrics.[12].type_params.metrics.[0].name
+          name: revenue # metrics.[12].type_params.metrics.[0].name - inline
+          # metrics.[12].type_params.metrics.[0].alias
+          alias: current_revenue # metrics.[12].type_params.metrics.[0].alias - inline
+        # metrics.[12].type_params.metrics.[1]
+        - cumulative_revenue # metrics.[12].type_params.metrics.[1] - inline
+  - # metrics.[13].name
+    name: cumulative_revenue # metrics.[13].name - inline
+    # metrics.[13].description
+    description: The cumulative revenue for all orders. # metrics.[13].description - inline
+    # metrics.[13].label
+    label: Cumulative Revenue (All Time) # metrics.[13].label - inline
+    # metrics.[13].type
+    type: cumulative # metrics.[13].type - inline
+    # metrics.[13].type_params
+    type_params: # metrics.[13].type_params - inline
+      # metrics.[13].type_params.measure
+      measure: revenue # metrics.[13].type_params.measure - inline
+  - # metrics.[14].name
+    name: cumulative_revenue_with_input_settings # metrics.[14].name - inline
+    # metrics.[14].description
+    description: The cumulative revenue for all orders, but now with fill_nulls_with and join_to_timespine settings. # metrics.[14].description - inline
+    # metrics.[14].label
+    label: Cumulative Revenue (All Time) # metrics.[14].label - inline
+    # metrics.[14].type
+    type: cumulative # metrics.[14].type - inline
+    # metrics.[14].type_params
+    type_params: # metrics.[14].type_params - inline
+      # metrics.[14].type_params.cumulative_type_params
+      cumulative_type_params: # metrics.[14].type_params.cumulative_type_params - inline
+        # metrics.[14].type_params.cumulative_type_params.period_agg
+        period_agg: first # metrics.[14].type_params.cumulative_type_params.period_agg - inline
+        # metrics.[14].type_params.cumulative_type_params.grain_to_date
+        grain_to_date: day # metrics.[14].type_params.cumulative_type_params.grain_to_date - inline
+        # metrics.[14].type_params.cumulative_type_params.window
+        window: 1 month # metrics.[14].type_params.cumulative_type_params.window - inline
+      # metrics.[14].type_params.measure
+      measure: # metrics.[14].type_params.measure - inline
+        # metrics.[14].type_params.measure.name
+        name: revenue # metrics.[14].type_params.measure.name - inline
+        # metrics.[14].type_params.measure.fill_nulls_with
+        fill_nulls_with: 0 # metrics.[14].type_params.measure.fill_nulls_with - inline
+        # metrics.[14].type_params.measure.join_to_timespine
+        join_to_timespine: true # metrics.[14].type_params.measure.join_to_timespine - inline
+        # metrics.[14].type_params.measure.filter
+        filter: cumulative_filter # metrics.[14].type_params.measure.filter - inline
+  - # metrics.[15].name
+    name: conversion_metric # metrics.[15].name - inline
+    # metrics.[15].description
+    description: The conversion metric description # metrics.[15].description - inline
+    # metrics.[15].type
+    type: conversion # metrics.[15].type - inline
+    # metrics.[15].label
+    label: Conversion Metric # metrics.[15].label - inline
+    # metrics.[15].type_params
+    type_params: # metrics.[15].type_params - inline
+      # metrics.[15].type_params.conversion_type_params
+      conversion_type_params: # metrics.[15].type_params.conversion_type_params - inline
+        # metrics.[15].type_params.conversion_type_params.entity
+        entity: entity # metrics.[15].type_params.conversion_type_params.entity - inline
+        # metrics.[15].type_params.conversion_type_params.calculation
+        calculation: calculation_type # metrics.[15].type_params.conversion_type_params.calculation - inline
+        # metrics.[15].type_params.conversion_type_params.base_measure
+        base_measure: # metrics.[15].type_params.conversion_type_params.base_measure - inline
+          # metrics.[15].type_params.conversion_type_params.base_measure.name
+          name: revenue # metrics.[15].type_params.conversion_type_params.base_measure.name - inline
+          # metrics.[15].type_params.conversion_type_params.base_measure.fill_nulls_with
+          fill_nulls_with: test # metrics.[15].type_params.conversion_type_params.base_measure.fill_nulls_with - inline
+          # metrics.[15].type_params.conversion_type_params.base_measure.join_to_timespine
+          join_to_timespine: true # metrics.[15].type_params.conversion_type_params.base_measure.join_to_timespine - inline
+          # metrics.[15].type_params.conversion_type_params.base_measure.filter
+          filter: filter # metrics.[15].type_params.conversion_type_params.base_measure.filter - inline
+        # metrics.[15].type_params.conversion_type_params.conversion_measure
+        conversion_measure: # metrics.[15].type_params.conversion_type_params.conversion_measure - inline
+          # metrics.[15].type_params.conversion_type_params.conversion_measure.name
+          name: food_revenue # metrics.[15].type_params.conversion_type_params.conversion_measure.name - inline
+          # metrics.[15].type_params.conversion_type_params.conversion_measure.fill_nulls_with
+          fill_nulls_with: -12 # metrics.[15].type_params.conversion_type_params.conversion_measure.fill_nulls_with - inline
+          # metrics.[15].type_params.conversion_type_params.conversion_measure.join_to_timespine
+          join_to_timespine: false # metrics.[15].type_params.conversion_type_params.conversion_measure.join_to_timespine - inline
+        # metrics.[15].type_params.conversion_type_params.window
+        window: window # metrics.[15].type_params.conversion_type_params.window - inline
+        # metrics.[15].type_params.conversion_type_params.constant_properties
+        constant_properties: # metrics.[15].type_params.conversion_type_params.constant_properties - inline
+          - # metrics.[15].type_params.conversion_type_params.constant_properties.[0].base_property
+            base_property: dimension # metrics.[15].type_params.conversion_type_params.constant_properties.[0].base_property - inline
+            # metrics.[15].type_params.conversion_type_params.constant_properties.[0].conversion_property
+            conversion_property: entity # metrics.[15].type_params.conversion_type_params.constant_properties.[0].conversion_property - inline
+  - # metrics.[16].name
+    name: conversion_metric_across_two_models # metrics.[16].name - inline
+    # metrics.[16].description
+    description: The conversion metric description across two models and should be kept top level # metrics.[16].description - inline
+    # metrics.[16].type
+    type: conversion # metrics.[16].type - inline
+    # metrics.[16].label
+    label: Conversion Metric Across Two Models # metrics.[16].label - inline
+    # metrics.[16].type_params
+    type_params: # metrics.[16].type_params - inline
+      # metrics.[16].type_params.conversion_type_params
+      conversion_type_params: # metrics.[16].type_params.conversion_type_params - inline
+        # metrics.[16].type_params.conversion_type_params.entity
+        entity: entity # metrics.[16].type_params.conversion_type_params.entity - inline
+        # metrics.[16].type_params.conversion_type_params.calculation
+        calculation: calculation_type # metrics.[16].type_params.conversion_type_params.calculation - inline
+        # metrics.[16].type_params.conversion_type_params.base_measure
+        base_measure: # metrics.[16].type_params.conversion_type_params.base_measure - inline
+          # metrics.[16].type_params.conversion_type_params.base_measure.name
+          name: revenue # metrics.[16].type_params.conversion_type_params.base_measure.name - inline
+          # metrics.[16].type_params.conversion_type_params.base_measure.join_to_timespine
+          join_to_timespine: true # metrics.[16].type_params.conversion_type_params.base_measure.join_to_timespine - inline
+        # metrics.[16].type_params.conversion_type_params.conversion_measure
+        conversion_measure: # metrics.[16].type_params.conversion_type_params.conversion_measure - inline
+          # metrics.[16].type_params.conversion_type_params.conversion_measure.name
+          name: average_tax_rate # metrics.[16].type_params.conversion_type_params.conversion_measure.name - inline
+          # metrics.[16].type_params.conversion_type_params.conversion_measure.fill_nulls_with
+          fill_nulls_with: 8675309 # metrics.[16].type_params.conversion_type_params.conversion_measure.fill_nulls_with - inline
+          # metrics.[16].type_params.conversion_type_params.conversion_measure.filter
+          filter: blah blah filter stuff here # metrics.[16].type_params.conversion_type_params.conversion_measure.filter - inline
+        # metrics.[16].type_params.conversion_type_params.window
+        window: window # metrics.[16].type_params.conversion_type_params.window - inline
+        # metrics.[16].type_params.conversion_type_params.constant_properties
+        constant_properties: # metrics.[16].type_params.conversion_type_params.constant_properties - inline
+          - # metrics.[16].type_params.conversion_type_params.constant_properties.[0].base_property
+            base_property: dimension # metrics.[16].type_params.conversion_type_params.constant_properties.[0].base_property - inline
+            # metrics.[16].type_params.conversion_type_params.constant_properties.[0].conversion_property
+            conversion_property: entity # metrics.[16].type_params.conversion_type_params.constant_properties.[0].conversion_property - inline
+
+# saved_queries
+saved_queries: # saved_queries - inline
+  - # saved_queries.[0].name
+    name: revenue_metrics # saved_queries.[0].name - inline
+    # saved_queries.[0].query_params
+    query_params: # saved_queries.[0].query_params - inline
+      # saved_queries.[0].query_params.metrics
+      metrics: # saved_queries.[0].query_params.metrics - inline
+        # saved_queries.[0].query_params.metrics.[0]
+        - revenue # saved_queries.[0].query_params.metrics.[0] - inline
+        # saved_queries.[0].query_params.metrics.[1]
+        - food_revenue # saved_queries.[0].query_params.metrics.[1] - inline
+        # saved_queries.[0].query_params.metrics.[2]
+        - drink_revenue # saved_queries.[0].query_params.metrics.[2] - inline
+      # saved_queries.[0].query_params.group_by
+      group_by: # saved_queries.[0].query_params.group_by - inline
+        # saved_queries.[0].query_params.group_by.[0]
+        - TimeDimension('metric_time', 'day') # saved_queries.[0].query_params.group_by.[0] - inline
+    # saved_queries.[0].exports
+    exports: # saved_queries.[0].exports - inline
+      - # saved_queries.[0].exports.[0].name
+        name: revenue_metrics # saved_queries.[0].exports.[0].name - inline
+        # saved_queries.[0].exports.[0].config
+        config: # saved_queries.[0].exports.[0].config - inline
+          # saved_queries.[0].exports.[0].config.export_as
+          export_as: table # saved_queries.[0].exports.[0].config.export_as - inline

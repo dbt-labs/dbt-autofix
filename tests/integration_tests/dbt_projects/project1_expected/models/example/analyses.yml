@@ -1,10 +1,19 @@
-analyses:
-  - name: analysis_name
-    description: "test description"
-    config:
-      tags: "test"
+# analyses
+analyses: # analyses - inline
+    # analyses.[0].name
+  - name: analysis_name # analyses.[0].name - inline
+    # analyses.[0].description
+    description: "test description" # analyses.[0].description - inline
+    config: # analyses.[0].config - inline
+      # analyses.[0].config.tags
+      tags: "test" # analyses.[0].config.tags - inline
       meta:
-        custom_field: custom_value
-      docs:
-        show: true
-        node_color: purple
+                                        # analyses.[0].custom_field
+        custom_field: custom_value # analyses.[0].custom_field - inline
+    # analyses.[0].docs
+      docs: # analyses.[0].docs - inline
+      # analyses.[0].docs.show
+        show: true # analyses.[0].docs.show - inline
+      # analyses.[0].docs.node_color
+        node_color: purple # analyses.[0].docs.node_color - inline
+    # analyses.[0].config

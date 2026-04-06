@@ -1,0 +1,22 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_exclude_dbt_project_keys/dbt_project.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "change_type": "DeprecatedProjectFieldRemovedNonDefault",
+        "deprecation": "ConfigLogPathDeprecation",
+        "log": "Removed the deprecated field 'log-path' that wasn't set to the default value",
+        "original_location": {
+          "end": 9,
+          "line": 21,
+          "start": 0
+        },
+        "rule_name": "remove_deprecated_config"
+      }
+    ]
+  }
+]

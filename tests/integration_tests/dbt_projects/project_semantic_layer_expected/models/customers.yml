@@ -1,103 +1,174 @@
-models:
-  - name: customers
-    description: "Customer overview data mart, offering key details for each unique customer. One row per customer. Customer grain mart.\n"
-    data_tests:
-      - dbt_utils.expression_is_true:
-          expression: "lifetime_spend_pretax + lifetime_tax_paid = lifetime_spend"
-    columns:
-      - name: customer_id
-        description: The unique key of the orders mart.
-        data_tests:
-          - not_null
-          - unique
+# models
+models: # models - inline
+    # models.[0].name
+  - name: customers # models.[0].name - inline
+    # models.[0].description
+    description: "Customer overview data mart, offering key details for each unique customer. One row per customer. Customer grain mart.\n" # models.[0].description - inline
+    # models.[0].data_tests
+    data_tests: # models.[0].data_tests - inline
+        # models.[0].data_tests.[0].dbt_utils.expression_is_true
+      - dbt_utils.expression_is_true: # models.[0].data_tests.[0].dbt_utils.expression_is_true - inline
+          # models.[0].data_tests.[0].dbt_utils.expression_is_true.expression
+          expression: "lifetime_spend_pretax + lifetime_tax_paid = lifetime_spend" # models.[0].data_tests.[0].dbt_utils.expression_is_true.expression - inline
+    # models.[0].columns
+    columns: # models.[0].columns - inline
+        # models.[0].columns.[0].name
+      - name: customer_id # models.[0].columns.[0].name - inline
+        # models.[0].columns.[0].description
+        description: The unique key of the orders mart. # models.[0].columns.[0].description - inline
+        # models.[0].columns.[0].data_tests
+        data_tests: # models.[0].columns.[0].data_tests - inline
+          # models.[0].columns.[0].data_tests.[0]
+          - not_null # models.[0].columns.[0].data_tests.[0] - inline
+          # models.[0].columns.[0].data_tests.[1]
+          - unique # models.[0].columns.[0].data_tests.[1] - inline
         entity:
           type: primary
           name: customer
-      - name: customer_name
-        description: Customers' full name.
+        # models.[0].columns.[1].name
+      - name: customer_name # models.[0].columns.[1].name - inline
+        # models.[0].columns.[1].description
+        description: Customers' full name. # models.[0].columns.[1].description - inline
         dimension:
           type: categorical
-      - name: count_lifetime_orders
-        description: Total number of orders a customer has ever placed.
-      - name: first_ordered_at
-        description: The timestamp when a customer placed their first order.
+        # models.[0].columns.[2].name
+      - name: count_lifetime_orders # models.[0].columns.[2].name - inline
+        # models.[0].columns.[2].description
+        description: Total number of orders a customer has ever placed. # models.[0].columns.[2].description - inline
+        # models.[0].columns.[3].name
+      - name: first_ordered_at # models.[0].columns.[3].name - inline
+        # models.[0].columns.[3].description
+        description: The timestamp when a customer placed their first order. # models.[0].columns.[3].description - inline
         dimension:
           type: time
         granularity: day
-      - name: last_ordered_at
-        description: The timestamp of a customer's most recent order.
+        # models.[0].columns.[4].name
+      - name: last_ordered_at # models.[0].columns.[4].name - inline
+        # models.[0].columns.[4].description
+        description: The timestamp of a customer's most recent order. # models.[0].columns.[4].description - inline
         dimension:
           type: time
         granularity: day
-      - name: lifetime_spend_pretax
-        description: The sum of all the pre-tax subtotals of every order a customer has placed.
-      - name: lifetime_tax_paid
-        description: The sum of all the tax portion of every order a customer has placed.
-      - name: lifetime_spend
-        description: The sum of all the order totals (including tax) that a customer has ever placed.
-      - name: customer_type
-        description: Options are 'new' or 'returning', indicating if a customer has ordered more than once or has only placed their first order to date.
-        data_tests:
-          - accepted_values:
-              values: ["new", "returning"]
-
+        # models.[0].columns.[5].name
+      - name: lifetime_spend_pretax # models.[0].columns.[5].name - inline
+        # models.[0].columns.[5].description
+        description: The sum of all the pre-tax subtotals of every order a customer has placed. # models.[0].columns.[5].description - inline
+        # models.[0].columns.[6].name
+      - name: lifetime_tax_paid # models.[0].columns.[6].name - inline
+        # models.[0].columns.[6].description
+        description: The sum of all the tax portion of every order a customer has placed. # models.[0].columns.[6].description - inline
+        # models.[0].columns.[7].name
+      - name: lifetime_spend # models.[0].columns.[7].name - inline
+        # models.[0].columns.[7].description
+        description: The sum of all the order totals (including tax) that a customer has ever placed. # models.[0].columns.[7].description - inline
+        # models.[0].columns.[8].name
+      - name: customer_type # models.[0].columns.[8].name - inline
+        # models.[0].columns.[8].description
+        description: Options are 'new' or 'returning', indicating if a customer has ordered more than once or has only placed their first order to date. # models.[0].columns.[8].description - inline
+        # models.[0].columns.[8].data_tests
+        data_tests: # models.[0].columns.[8].data_tests - inline
+            # models.[0].columns.[8].data_tests.[0].accepted_values
+          - accepted_values: # models.[0].columns.[8].data_tests.[0].accepted_values - inline
+              # models.[0].columns.[8].data_tests.[0].accepted_values.values
+              values: ["new", "returning"] # models.[0].columns.[8].data_tests.[0].accepted_values.values - inline
         dimension:
           type: categorical
     semantic_model:
       enabled: true
     agg_time_dimension: first_ordered_at
+# semantic_models
     metrics:
-      - name: lifetime_spend_pretax
-        description: Customer's lifetime spend before tax
-        label: LTV Pre-tax
-        type: simple
+    # metrics.[0].name
+      - name: lifetime_spend_pretax # metrics.[0].name - inline
+    # metrics.[0].description
+        description: Customer's lifetime spend before tax # metrics.[0].description - inline
+    # metrics.[0].label
+        label: LTV Pre-tax # metrics.[0].label - inline
+    # metrics.[0].type
+        type: simple # metrics.[0].type - inline
         agg: sum
-      - name: count_lifetime_orders
-        description: Count of lifetime orders
-        label: Count Lifetime Orders
-        type: simple
+    # metrics.[1].name
+      - name: count_lifetime_orders # metrics.[1].name - inline
+    # metrics.[1].description
+        description: Count of lifetime orders # metrics.[1].description - inline
+    # metrics.[1].label
+        label: Count Lifetime Orders # metrics.[1].label - inline
+    # metrics.[1].type
+        type: simple # metrics.[1].type - inline
         agg: sum
-      - name: customers
-        description: Count of unique customers
-        agg: count_distinct
+        # semantic_models.[0].measures.[0].name
+      - name: customers # semantic_models.[0].measures.[0].name - inline
+        # semantic_models.[0].measures.[0].description
+        description: Count of unique customers # semantic_models.[0].measures.[0].description - inline
+        # semantic_models.[0].measures.[0].agg
+        agg: count_distinct # semantic_models.[0].measures.[0].agg - inline
         type: simple
         hidden: true
-      - name: lifetime_spend
-        agg: sum
-        description: Gross customer lifetime spend inclusive of taxes.
+        # semantic_models.[0].measures.[3].name
+      - name: lifetime_spend # semantic_models.[0].measures.[3].name - inline
+        # semantic_models.[0].measures.[3].agg
+        agg: sum # semantic_models.[0].measures.[3].agg - inline
+        # semantic_models.[0].measures.[3].description
+        description: Gross customer lifetime spend inclusive of taxes. # semantic_models.[0].measures.[3].description - inline
+        # semantic_models.[0].measures.[3].create_metric
         type: simple
-      - name: lifetime_spend_p99_discrete
-        agg: percentile
-        description: P99 of gross customer lifetime spend inclusive of taxes (discrete).
+        # semantic_models.[0].measures.[4].name
+      - name: lifetime_spend_p99_discrete # semantic_models.[0].measures.[4].name - inline
+        # semantic_models.[0].measures.[4].agg
+        agg: percentile # semantic_models.[0].measures.[4].agg - inline
+        # semantic_models.[0].measures.[4].description
+        description: P99 of gross customer lifetime spend inclusive of taxes (discrete). # semantic_models.[0].measures.[4].description - inline
+        # semantic_models.[0].measures.[4].agg_params
         type: simple
         hidden: true
         percentile: 0.99
         percentile_type: discrete
-      - name: lifetime_spend_p95_approximate
-        agg: percentile
-        description: P95 of gross customer lifetime spend inclusive of taxes (approximate).
+        # semantic_models.[0].measures.[5].name
+      - name: lifetime_spend_p95_approximate # semantic_models.[0].measures.[5].name - inline
+        # semantic_models.[0].measures.[5].agg
+        agg: percentile # semantic_models.[0].measures.[5].agg - inline
+        # semantic_models.[0].measures.[5].description
+        description: P95 of gross customer lifetime spend inclusive of taxes (approximate). # semantic_models.[0].measures.[5].description - inline
+        # semantic_models.[0].measures.[5].agg_params
         type: simple
         hidden: true
         percentile: 0.95
         percentile_type: approximate
-      - name: average_order_value
-        description: LTV pre-tax / number of orders
-        label: Average Order Value
-        type: derived
+    # metrics.[2].name
+      - name: average_order_value # metrics.[2].name - inline
+    # metrics.[2].description
+        description: LTV pre-tax / number of orders # metrics.[2].description - inline
+    # metrics.[2].label
+        label: Average Order Value # metrics.[2].label - inline
+    # metrics.[2].type
+        type: derived # metrics.[2].type - inline
+    # metrics.[2].type_params
         expr: lifetime_spend_pretax / count_lifetime_orders
         input_metrics:
           - name: count_lifetime_orders
           - name: lifetime_spend_pretax
-saved_queries:
-  - name: customer_order_metrics
-    query_params:
-      metrics:
-        - count_lifetime_orders
-        - lifetime_spend_pretax
-        - average_order_value
-      group_by:
-        - Entity('customer')
-    exports:
-      - name: customer_order_metrics
-        config:
-          export_as: table
+saved_queries: # saved_queries - inline
+    # saved_queries.[0].name
+  - name: customer_order_metrics # saved_queries.[0].name - inline
+    # saved_queries.[0].query_params
+    query_params: # saved_queries.[0].query_params - inline
+      # saved_queries.[0].query_params.metrics
+      metrics: # saved_queries.[0].query_params.metrics - inline
+        # saved_queries.[0].query_params.metrics.[0]
+        - count_lifetime_orders # saved_queries.[0].query_params.metrics.[0] - inline
+        # saved_queries.[0].query_params.metrics.[1]
+        - lifetime_spend_pretax # saved_queries.[0].query_params.metrics.[1] - inline
+        # saved_queries.[0].query_params.metrics.[2]
+        - average_order_value # saved_queries.[0].query_params.metrics.[2] - inline
+      # saved_queries.[0].query_params.group_by
+      group_by: # saved_queries.[0].query_params.group_by - inline
+        # saved_queries.[0].query_params.group_by.[0]
+        - Entity('customer') # saved_queries.[0].query_params.group_by.[0] - inline
+    # saved_queries.[0].exports
+    exports: # saved_queries.[0].exports - inline
+        # saved_queries.[0].exports.[0].name
+      - name: customer_order_metrics # saved_queries.[0].exports.[0].name - inline
+        # saved_queries.[0].exports.[0].config
+        config: # saved_queries.[0].exports.[0].config - inline
+          # saved_queries.[0].exports.[0].config.export_as
+          export_as: table # saved_queries.[0].exports.[0].config.export_as - inline
