@@ -66,11 +66,11 @@ def upgrade_packages(
         deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
         if not deps_file:
             error_console.print("[red]-- No package dependency config found --[/red]")
-            return
+            raise Exception()
 
         if len(deps_file.package_dependencies) == 0:
             error_console.print("[red]-- No package dependencies found --[/red]")
-            return
+            raise Exception()
 
         package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
 
