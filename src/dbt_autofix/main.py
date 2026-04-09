@@ -57,20 +57,20 @@ def upgrade_packages(
         ),
     ] = False,
 ):
+    if not path.is_dir() or not path.exists():
+        error_console.print("[red]-- The directory specified in --path does not exist --[/red]")
+        return
+
     console.print(f"[green]Identifying packages with available upgrades in {path}[/green]\n")
     try:
-        if not path.is_dir() or not path.exists():
-            error_console.print("[red]-- The directory specified in --path does not exist --[/red]")
-            raise
-
         deps_file: Optional[DbtPackageFile] = generate_package_dependencies(path)
         if not deps_file:
             error_console.print("[red]-- No package dependency config found --[/red]")
-            raise
+            return
 
         if len(deps_file.package_dependencies) == 0:
             error_console.print("[red]-- No package dependencies found --[/red]")
-            raise
+            return
 
         package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
 
