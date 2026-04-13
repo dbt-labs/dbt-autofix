@@ -72,8 +72,9 @@ def get_version_compatibility(
         return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
     elif package_version.is_require_dbt_version_fusion_compatible() is False:
         return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
-    else:
-        PackageVersionFusionCompatibilityState.UNKNOWN
+
+    # fallthrough case - shouldn't reach this but needed for ty
+    return PackageVersionFusionCompatibilityState.UNKNOWN
 
 
 def get_versions_for_package(package_versions) -> dict[str, Any]:
