@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
+from dbt_fusion_package_tools.upgrade_status import PackageVersionFusionCompatibilityState
 from dbt_fusion_package_tools.version_utils import VersionSpecifier
 
 
@@ -37,6 +38,42 @@ def new_name_from_redirect(redirect_name, redirect_namespace, current_name, curr
         return f"{current_namespace}/{redirect_name}"
     else:
         return f"{redirect_namespace}/{current_name}"
+
+
+def get_version_compatibility(
+    package_version: DbtPackageVersion,
+    hub_manually_verified_compatible: bool,
+    hub_manually_verified_incompatible: bool,
+    hub_require_dbt_version_compatible: Optional[bool],
+    hub_require_dbt_version_defined: Optional[bool],
+) -> PackageVersionFusionCompatibilityState:
+    # check for a manual override
+    if hub_manually_verified_incompatible:
+        return PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+    elif hub_manually_verified_compatible:
+        return PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
+    elif package_version.is_version_explicitly_disallowed_on_fusion():
+        return PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+
+    # default: compatibility determined by require dbt version
+    dbt_version_defined = package_version.is_require_dbt_version_defined()
+    # hubcap's require-dbt-version has some missing data for older versions
+    # so use the fusion_compatibility definition if it exists
+    if hub_require_dbt_version_defined is True and dbt_version_defined is False:
+        dbt_version_defined = hub_require_dbt_version_defined
+
+    if not dbt_version_defined:
+        return PackageVersionFusionCompatibilityState.UNKNOWN
+    elif hub_require_dbt_version_defined and hub_require_dbt_version_compatible is True:
+        return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+    elif hub_require_dbt_version_defined and hub_require_dbt_version_compatible is False:
+        return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+    elif package_version.is_require_dbt_version_fusion_compatible() is True:
+        return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+    elif package_version.is_require_dbt_version_fusion_compatible() is False:
+        return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+    else:
+        PackageVersionFusionCompatibilityState.UNKNOWN
 
 
 def get_versions_for_package(package_versions) -> dict[str, Any]:
@@ -88,70 +125,26 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         elif not latest_version or package_version.version > latest_version:
             latest_version = package_version.version
 
-        dbt_version_defined = package_version.is_require_dbt_version_defined()
-        # hubcap's require-dbt-version has some missing data for older versions
-        # so use the fusion_compatibility definition if it exists
-        if hub_require_dbt_version_defined is True and dbt_version_defined is False:
-            dbt_version_defined = hub_require_dbt_version_defined
-
-        # default: compatibility determined by require dbt version
-        if dbt_version_defined:
-            # use package hub first
-            if hub_require_dbt_version_defined and hub_require_dbt_version_compatible is not None:
-                fusion_compatible_version = hub_require_dbt_version_compatible
-            else:
-                fusion_compatible_version = package_version.is_require_dbt_version_fusion_compatible()
-        else:
-            fusion_compatible_version = False
-
-        # data quality checks
-        if (
-            # some older versions of this package are missing dbt project yml
-            version["package_name_version_json"] != "yuki_snowflake_dbt_tags"
-            # oldest version of package is duplicated
-            and version["package_id_from_path"] != "cerebriumai/github"
-            and version["package_id_from_path"] != "cerebriumai/airbyte_dbt_github"
-        ):
-            if hub_require_dbt_version_defined:
-                if package_version.is_require_dbt_version_defined():
-                    assert (
-                        hub_require_dbt_version_compatible == package_version.is_require_dbt_version_fusion_compatible()
-                    )
-                if hub_require_dbt_version_compatible is not None:
-                    assert hub_require_dbt_version_compatible == fusion_compatible_version
-
-        # default: compatibility determined by require dbt version
-        fusion_compatible_version: bool = (
-            dbt_version_defined and package_version.is_require_dbt_version_fusion_compatible()
+        version_compatibility = get_version_compatibility(
+            package_version,
+            hub_manually_verified_compatible,
+            hub_manually_verified_incompatible,
+            hub_require_dbt_version_compatible,
+            hub_require_dbt_version_defined,
         )
 
-        # check for a manual override either in hub or autofix
-        # hub overrides autofix
-        if hub_manually_verified_incompatible:
-            fusion_compatible_version = False
-            fusion_incompatible_versions.append(package_version.version)
-            continue
-        elif hub_manually_verified_compatible:
-            fusion_compatible_version = True
-        elif package_version.is_version_explicitly_disallowed_on_fusion():
-            fusion_compatible_version = False
-            fusion_incompatible_versions.append(package_version.version)
-            continue
-
-        # add to unknown compatibility if require dbt version missing and no override
-        if not fusion_compatible_version and not dbt_version_defined:
-            unknown_compatibility_versions.append(package_version.version)
-            continue
-
-        # remaining versions: either compatible via require dbt version or manual override
-        if fusion_compatible_version:
+        if version_compatibility in (
+            PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
+            PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+        ):
             fusion_compatible_versions.append(package_version.version)
-            if not latest_fusion_version or package_version.version > latest_fusion_version:
-                latest_fusion_version = package_version.version
-            if not oldest_fusion_compatible_version or package_version.version < oldest_fusion_compatible_version:
-                oldest_fusion_compatible_version = package_version.version
-        else:
+        elif version_compatibility in (
+            PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW,
+            PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
+        ):
             fusion_incompatible_versions.append(package_version.version)
+        else:
+            unknown_compatibility_versions.append(package_version.version)
 
     if latest_version_incl_prerelease is None:
         latest_version_incl_prerelease = latest_version
@@ -165,6 +158,9 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         assert len(fusion_compatible_versions) + len(fusion_incompatible_versions) + len(
             unknown_compatibility_versions
         ) == len(versions)
+        if len(fusion_compatible_versions) > 0:
+            oldest_fusion_compatible_version = min(fusion_compatible_versions)
+            latest_fusion_version = max(fusion_compatible_versions)
         if latest_fusion_version:
             assert oldest_fusion_compatible_version is not None
             assert len(fusion_compatible_versions) > 0
