@@ -7,29 +7,35 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SourceFreshnessProjectHooksNotRun",
         "deprecation": "SourceFreshnessProjectHooksNotRun",
-        "log": "Set flag 'source_freshness_run_project_hooks' to 'True' - This will run project hooks (on-run-start/on-run-end) as part of source freshness commands."
+        "log": "Set flag 'source_freshness_run_project_hooks' to 'True' - This will run project hooks (on-run-start/on-run-end) as part of source freshness commands.",
+        "rule_name": "flip_behavior_flags"
       }
     ]
-  },
-  {
-    "file_path": "project_behavior_changes/models/example/python model with spaces.py",
-    "mode": "applied",
-    "refactors": [
-      {
-        "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Renamed 'python model with spaces.py' to 'python_model_with_spaces.py'"
-      }
-    ],
-    "warnings": []
   },
   {
     "file_path": "project_behavior_changes/models/example/model with spaces.sql",
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "SqlFileRenamedForSpaces",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Renamed 'model with spaces.sql' to 'model_with_spaces.sql'"
+        "log": "Renamed 'model with spaces.sql' to 'model_with_spaces.sql'",
+        "rule_name": "rename_sql_files_with_spaces"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_behavior_changes/models/example/python model with spaces.py",
+    "mode": "applied",
+    "refactors": [
+      {
+        "change_type": "RenamePythonFileNamesWithSpaces",
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Renamed 'python model with spaces.py' to 'python_model_with_spaces.py'",
+        "rule_name": "rename_python_files_with_spaces"
       }
     ],
     "warnings": []
@@ -39,16 +45,22 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Model 'model with spaces' - Updated 'name' from 'model with spaces' to 'model_with_spaces'."
+        "log": "Model 'model with spaces' - Updated 'name' from 'model with spaces' to 'model_with_spaces'.",
+        "rule_name": "remove_spaces_in_resource_names"
       },
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Model 'python model with spaces' - Updated 'name' from 'python model with spaces' to 'python_model_with_spaces'."
+        "log": "Model 'python model with spaces' - Updated 'name' from 'python model with spaces' to 'python_model_with_spaces'.",
+        "rule_name": "remove_spaces_in_resource_names"
       },
       {
+        "change_type": "ExposureNameDeprecation",
         "deprecation": "ExposureNameDeprecation",
-        "log": "Exposure 'exposure with spaces' - Updated 'name' from 'exposure with spaces' to 'exposure_with_spaces'."
+        "log": "Exposure 'exposure with spaces' - Updated 'name' from 'exposure with spaces' to 'exposure_with_spaces'.",
+        "rule_name": "remove_spaces_in_resource_names"
       }
     ]
   }
