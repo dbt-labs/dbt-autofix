@@ -1,8 +1,9 @@
-"""Unit tests for SAO cron utilities and YAML changeset."""
+"""Unit tests for SAO cron utilities and YAML/SQL changesets."""
 import pytest
 
 from dbt_autofix.sao import cron_to_build_after, _build_after_minutes
 from dbt_autofix.refactors.changesets.sao_yml import changeset_add_sao_config
+from dbt_autofix.refactors.changesets.sao_sql import changeset_add_sao_config_to_sql
 
 
 class TestCronToBuildAfter:
@@ -113,3 +114,47 @@ models:
         result, changed = changeset_add_sao_config(yml, configs)
         assert changed
         assert "freshness" in result
+
+
+class TestChangesetAddSaoConfigToSql:
+    BA_HOUR = {"count": 12, "period": "hour"}
+    BA_MIN = {"count": 30, "period": "minute"}
+
+    def test_prepends_config_block_when_none_exists(self):
+        sql = "select 1 as id\n"
+        result, changed = changeset_add_sao_config_to_sql(sql, self.BA_HOUR)
+        assert changed
+        assert result.startswith("{{")
+        assert "config(" in result
+        assert '"count": 12' in result
+        assert '"period": "hour"' in result
+        assert '"updates_on": "all"' in result
+        assert "select 1 as id" in result
+
+    def test_idempotent_when_freshness_already_present(self):
+        sql = '{{ config(freshness={"build_after": {"count": 6, "period": "hour", "updates_on": "all"}}) }}\n\nselect 1\n'
+        result, changed = changeset_add_sao_config_to_sql(sql, self.BA_HOUR)
+        assert not changed
+        assert result == sql
+
+    def test_adds_freshness_to_existing_config_with_other_args(self):
+        sql = "{{ config(materialized='table') }}\n\nselect 1\n"
+        result, changed = changeset_add_sao_config_to_sql(sql, self.BA_HOUR)
+        assert changed
+        assert "freshness" in result
+        assert "materialized" in result
+
+    def test_adds_freshness_to_empty_config_block(self):
+        sql = "{{ config() }}\n\nselect 1\n"
+        result, changed = changeset_add_sao_config_to_sql(sql, self.BA_MIN)
+        assert changed
+        assert "freshness" in result
+        assert '"count": 30' in result
+        assert '"period": "minute"' in result
+
+    def test_works_with_multiline_config_block(self):
+        sql = "{{ config(\n    materialized='incremental'\n) }}\n\nselect 1\n"
+        result, changed = changeset_add_sao_config_to_sql(sql, self.BA_HOUR)
+        assert changed
+        assert "freshness" in result
+        assert "materialized" in result

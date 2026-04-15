@@ -11,8 +11,9 @@ import httpx
 from rich.console import Console
 
 from dbt_autofix.dbt_api import DBTClient
+from dbt_autofix.refactors.changesets.sao_sql import changeset_add_sao_config_to_sql
 from dbt_autofix.refactors.changesets.sao_yml import changeset_add_sao_config
-from dbt_autofix.refactors.yml import load_yaml
+from dbt_autofix.refactors.yml import DbtYAML, load_yaml
 
 console = Console()
 
@@ -101,7 +102,7 @@ def resolve_prod_environment(client: DBTClient, project_id: int) -> int:
     """Find the production environment ID for a project."""
     response = client._client.get(
         url=f"{client.base_url}/api/v2/accounts/{client.account_id}/environments/",
-        params={"project_id": project_id, "dbt_version__isnull": False},
+        params={"project_id": project_id},
         headers=client._headers,
     )
     response.raise_for_status()
@@ -126,6 +127,35 @@ def _read_project_name(path: Path) -> str:
     if not name:
         raise ValueError(f"Could not find project name in {project_file}")
     return str(name)
+
+
+def _models_in_yaml_files(yml_files: list[tuple[Path, str]]) -> set[str]:
+    """Return the set of model names that appear in any of the given YAML files."""
+    yaml = DbtYAML()
+    model_names: set[str] = set()
+    for _, yml_str in yml_files:
+        try:
+            data = yaml.load(yml_str)
+            if data and "models" in data:
+                for model in data["models"]:
+                    name = model.get("name")
+                    if name:
+                        model_names.add(str(name))
+        except Exception:
+            continue
+    return model_names
+
+
+def _find_model_sql_files(path: Path) -> dict[str, Path]:
+    """Return a {model_name: path} mapping for all .sql and .py files under models/."""
+    models_dir = path / "models"
+    if not models_dir.exists():
+        return {}
+    result: dict[str, Path] = {}
+    for ext in ("*.sql", "*.py"):
+        for f in models_dir.rglob(ext):
+            result[f.stem] = f
+    return result
 
 
 def _find_model_yamls(path: Path) -> list[tuple[Path, str]]:
@@ -196,12 +226,28 @@ def configure_sao(
     console.print(f"Mapped {len(model_sao_configs)} models to build_after configs")
 
     changed_files = []
-    for yml_path, yml_str in _find_model_yamls(path):
+    yml_files_data = _find_model_yamls(path)
+    for yml_path, yml_str in yml_files_data:
         new_str, changed = changeset_add_sao_config(yml_str, model_sao_configs)
         if changed:
             changed_files.append(yml_path)
             if not dry_run:
                 yml_path.write_text(new_str)
+
+    # For models not documented in any YAML file, inject config() into the model file directly
+    yaml_model_names = _models_in_yaml_files(yml_files_data)
+    sql_files = _find_model_sql_files(path)
+    for model_name, build_after in model_sao_configs.items():
+        if model_name in yaml_model_names:
+            continue
+        sql_path = sql_files.get(model_name)
+        if sql_path is None:
+            continue
+        new_sql_str, changed = changeset_add_sao_config_to_sql(sql_path.read_text(), build_after)
+        if changed:
+            changed_files.append(sql_path)
+            if not dry_run:
+                sql_path.write_text(new_sql_str)
 
     if json_output:
         print(
