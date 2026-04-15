@@ -217,13 +217,13 @@ def sao_command(
         str, typer.Option("--base-url", "-b", help="dbt Cloud base URL", envvar="DBT_BASE_URL")
     ] = "https://cloud.getdbt.com",
     metadata_url: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--metadata-url",
-            help="dbt Cloud metadata API URL",
+            help="dbt Cloud metadata API URL (derived from --base-url if omitted)",
             envvar="DBT_METADATA_URL",
         ),
-    ] = "https://metadata.cloud.getdbt.com/graphql",
+    ] = None,
     environment_id: Annotated[
         Optional[int],
         typer.Option("--environment-id", "-e", help="Production environment ID", envvar="DBT_ENVIRONMENT_ID"),

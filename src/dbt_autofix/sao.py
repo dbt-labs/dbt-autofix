@@ -84,6 +84,19 @@ def _build_after_minutes(ba: dict) -> float:
     return float("inf")
 
 
+def metadata_url_from_base(base_url: str) -> str:
+    """Derive the metadata API URL from the admin base URL.
+
+    Example: https://tk626.us1.dbt.com -> https://tk626.metadata.us1.dbt.com/graphql
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(base_url)
+    host = parsed.hostname or ""
+    first, _, rest = host.partition(".")
+    return f"{parsed.scheme}://{first}.metadata.{rest}/graphql"
+
+
 def resolve_prod_environment(client: DBTClient, project_id: int) -> int:
     """Find the production environment ID for a project."""
     response = client._client.get(
@@ -132,7 +145,7 @@ def configure_sao(
     account_id: int,
     api_key: str,
     base_url: str,
-    metadata_url: str,
+    metadata_url: Optional[str],
     project_id: int,
     environment_id: Optional[int],
     path: Path,
@@ -141,7 +154,8 @@ def configure_sao(
 ) -> None:
     """Auto-configure SAO build_after configs from dbt Cloud job history."""
     dbt_client = DBTClient(account_id=account_id, api_key=api_key, base_url=base_url)
-    discovery_client = DiscoveryClient(api_key=api_key, metadata_url=metadata_url)
+    resolved_metadata_url = metadata_url or metadata_url_from_base(base_url)
+    discovery_client = DiscoveryClient(api_key=api_key, metadata_url=resolved_metadata_url)
 
     if environment_id is None:
         console.print("Resolving production environment...")
@@ -151,7 +165,7 @@ def configure_sao(
     project_name = _read_project_name(path)
     console.print(f"Project: {project_name}")
 
-    jobs = dbt_client.get_jobs(project_ids=[project_id], environment_ids=[environment_id])
+    jobs = dbt_client.get_jobs_for_sao(project_id=project_id, environment_id=environment_id)
 
     eligible_jobs: list[tuple[dict, dict]] = []
     for job in jobs:
