@@ -202,6 +202,58 @@ def jobs(
     )
 
 
+@app.command(name="sao")
+def sao_command(
+    account_id: Annotated[
+        int, typer.Option("--account-id", "-a", help="dbt Cloud account ID", envvar="DBT_ACCOUNT_ID")
+    ],
+    api_key: Annotated[
+        str, typer.Option("--api-key", "-k", help="dbt Cloud API key", envvar="DBT_API_KEY")
+    ],
+    project_id: Annotated[
+        int, typer.Option("--project-id", "-p", help="dbt Cloud project ID", envvar="DBT_PROJECT_ID")
+    ],
+    base_url: Annotated[
+        str, typer.Option("--base-url", "-b", help="dbt Cloud base URL", envvar="DBT_BASE_URL")
+    ] = "https://cloud.getdbt.com",
+    metadata_url: Annotated[
+        str,
+        typer.Option(
+            "--metadata-url",
+            help="dbt Cloud metadata API URL",
+            envvar="DBT_METADATA_URL",
+        ),
+    ] = "https://metadata.cloud.getdbt.com/graphql",
+    environment_id: Annotated[
+        Optional[int],
+        typer.Option("--environment-id", "-e", help="Production environment ID", envvar="DBT_ENVIRONMENT_ID"),
+    ] = None,
+    path: Annotated[
+        Path, typer.Option("--path", help="dbt project root directory")
+    ] = current_dir,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", "-d", help="Preview changes without writing")
+    ] = False,
+    json_output: Annotated[
+        bool, typer.Option("--json", "-j", help="Output results as JSON")
+    ] = False,
+) -> None:
+    """Auto-configure State Aware Orchestration build_after configs."""
+    from dbt_autofix.sao import configure_sao
+
+    configure_sao(
+        account_id=account_id,
+        api_key=api_key,
+        base_url=base_url,
+        metadata_url=metadata_url,
+        project_id=project_id,
+        environment_id=environment_id,
+        path=path,
+        dry_run=dry_run,
+        json_output=json_output,
+    )
+
+
 @app.command(hidden=True)
 def print_fields_matrix(
     json_schema_version: Annotated[

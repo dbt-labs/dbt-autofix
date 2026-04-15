@@ -155,12 +155,20 @@ class DBTClient:
 
         return jobs
 
-    def _fetch_jobs(self, project_ids: List[int], environment_id: Optional[int]) -> List[dict]:
+    def _fetch_jobs(
+        self,
+        project_ids: List[int],
+        environment_id: Optional[int],
+        include_related: Optional[str] = None,
+        state: Optional[int] = None,
+    ) -> List[dict]:
         offset = 0
         jobs: List[dict] = []
 
         while True:
-            parameters = self._build_parameters(project_ids, environment_id, offset)
+            parameters = self._build_parameters(
+                project_ids, environment_id, offset, include_related=include_related, state=state
+            )
             job_data = self._make_request(parameters)
 
             if not job_data:
@@ -178,8 +186,15 @@ class DBTClient:
 
         return jobs
 
-    def _build_parameters(self, project_ids: List[int], environment_id: Optional[int], offset) -> dict[str, Any]:
-        parameters = {"offset": offset}
+    def _build_parameters(
+        self,
+        project_ids: List[int],
+        environment_id: Optional[int],
+        offset: int,
+        include_related: Optional[str] = None,
+        state: Optional[int] = None,
+    ) -> dict[str, Any]:
+        parameters: dict[str, Any] = {"offset": offset}
 
         if len(project_ids) == 1:
             parameters["project_id"] = project_ids[0]
@@ -190,8 +205,31 @@ class DBTClient:
         if environment_id is not None:
             parameters["environment_id"] = environment_id
 
+        if state is not None:
+            parameters["state"] = state
+
+        if include_related is not None:
+            parameters["include_related"] = include_related
+
         logging.debug(f"Request parameters {parameters}")
         return parameters
+
+    def get_jobs_for_sao(self, project_id: int, environment_id: int) -> List[dict]:
+        """Fetch active scheduled jobs with run history for SAO configuration.
+
+        Args:
+            project_id: The dbt Cloud project ID.
+            environment_id: The dbt Cloud environment ID.
+
+        Returns:
+            List of job dicts with most_recent_run and most_recent_completed_run included.
+        """
+        return self._fetch_jobs(
+            [project_id],
+            environment_id,
+            include_related="most_recent_run,most_recent_completed_run",
+            state=1,  # 1 = active jobs only
+        )
 
     def _make_request(self, parameters: dict[str, Any]):
         response = self._client.get(
