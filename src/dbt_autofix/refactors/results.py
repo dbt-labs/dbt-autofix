@@ -275,12 +275,17 @@ class SQLRefactorResult:
                 if refactor.refactor_warnings:
                     flattened_warnings.extend(refactor.refactor_warnings)
 
-            to_print = {
+            to_print: dict = {
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
                 "refactors": flattened_refactors,
                 "warnings": flattened_warnings,
             }
+            if self._abort_remaining_sql_refactors:
+                to_print["remaining_sql_rules_skipped"] = True
+                stopped = next((r.rule_name for r in reversed(self.refactors) if r.skip_remaining_sql_rules), None)
+                if stopped is not None:
+                    to_print["sql_rules_stopped_after_rule"] = stopped
             print(json.dumps(to_print))
             return
 
@@ -301,6 +306,13 @@ class SQLRefactorResult:
                 console.print(f"  {refactor.rule_name}", style="yellow")
                 for warning in refactor.refactor_warnings:
                     console.print(f"    Warning: {warning}", style="red")
+        if self._abort_remaining_sql_refactors:
+            _stopped = next((r.rule_name for r in reversed(self.refactors) if r.skip_remaining_sql_rules), "unknown")
+            console.print(
+                f"  Note: further SQL refactors for this file were not run (stopped after {_stopped!r}). "
+                "Fix the issues above and re-run.",
+                style="yellow",
+            )
 
 
 @dataclass

@@ -119,7 +119,7 @@ _DUPLICATE_OPENER_KEYWORDS = "|".join(
     )
 )
 
-# `{%` ... `{%` ... (before a block keyword) in one go — O(n) per `re.sub`.
+# `{%` ... `{%` before a block keyword. One `finditer` pass over the string (e.g. from `_list_invalid_jinja_block_patterns`).
 _DUPLICATE_JINJA_BLOCK_OPENER = re.compile(
     rf"({_JINJA_BLOCK_OPENER})(?:\s*{_JINJA_BLOCK_OPENER})+(?=\s*(?:{_DUPLICATE_OPENER_KEYWORDS})\b)"
 )
@@ -152,6 +152,9 @@ _STRAY_DUPLICATE_BLOCK_CLOSER = re.compile(
 # `{# ... #}` as in remove_unmatched_endings (kept in sync for comment skipping)
 _JINJA_COMMENT_RE = re.compile(r"{#.*?#}", re.DOTALL)
 
+# Block `{%` ... `%}` (same pattern as the former in-function JINJA_TAG_PATTERN; module-level to avoid re-compiling per call).
+_JINJA_BLOCK_TAG_PATTERN = re.compile(r"{%-?\+?\s*((?s:.*?))\s*\+?-?%}", re.DOTALL)
+
 
 def _jinja_comment_regions(sql_content: str) -> List[Tuple[int, int]]:
     return [(m.start(), m.end()) for m in _JINJA_COMMENT_RE.finditer(sql_content)]
@@ -171,14 +174,16 @@ def _line_number_at(s: str, pos: int) -> int:
     return s.count("\n", 0, pos) + 1
 
 
-def _list_invalid_jinja_block_patterns(sql_content: str) -> list[str]:
+def _list_invalid_jinja_block_patterns(sql_content: str, comment_regions: List[Tuple[int, int]]) -> list[str]:
     """Detect duplicate `{%` openers and stray extra `%}` after a full `{% end* ... %}` (outside `{#` comments only).
 
-    Returns one human-readable message per issue, de-duplicated (order preserved) when the same
-    line produces identical text.
+    `comment_regions` is typically from a single `_jinja_comment_regions(sql_content)` so callers
+    do not re-scan for `{# ... #}` a second time.
+
+    Returns one human-readable message per match; de-duplication uses `dict.fromkeys` (order
+    preserved), merging only when the full message string is byte-for-byte identical.
     """
     issues: list[str] = []
-    comment_regions = _jinja_comment_regions(sql_content)
     for m in _DUPLICATE_JINJA_BLOCK_OPENER.finditer(sql_content):
         if not _range_overlaps_any_of(m.start(), m.end(), comment_regions):
             line = _line_number_at(sql_content, m.start())
@@ -214,7 +219,8 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
     - Malformed comments ({#% ... %}, {# ... %#}, {#% ... %#})
     """
     original_content = content.current_str
-    invalid_msgs = _list_invalid_jinja_block_patterns(original_content)
+    comment_regions = _jinja_comment_regions(original_content)
+    invalid_msgs = _list_invalid_jinja_block_patterns(original_content, comment_regions)
     if invalid_msgs:
         return SQLRuleRefactorResult(
             rule_name="remove_unmatched_endings",
@@ -226,19 +232,10 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
             skip_remaining_sql_rules=True,
         )
     sql_content = original_content
-    # Regex patterns for Jinja tag and comment matching
-    JINJA_TAG_PATTERN = re.compile(r"{%-?\+?\s*((?s:.*?))\s*\+?-?%}", re.DOTALL)
-    # Match proper comments {# ... #} (same as module-level _JINJA_COMMENT_RE)
-    JINJA_COMMENT_PATTERN = _JINJA_COMMENT_RE
     MACRO_START = re.compile(r"^macro\s+([^\s(]+)")  # Captures macro name
     IF_START = re.compile(r"^if[(\s]+.*")  # if blocks can also be {% if(...) %}
     MACRO_END = re.compile(r"^endmacro")
     IF_END = re.compile(r"^endif")
-
-    # First, identify all comment regions to skip them
-    comment_regions: List[Tuple[int, int]] = []
-    for comment_match in JINJA_COMMENT_PATTERN.finditer(sql_content):
-        comment_regions.append((comment_match.start(), comment_match.end()))
 
     def is_in_comment(pos: int) -> bool:
         """Check if a position is within a Jinja comment."""
@@ -298,7 +295,7 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
     clean_content = "".join(clean_content_chars)
 
     # Find all Jinja tags
-    for match in JINJA_TAG_PATTERN.finditer(clean_content):
+    for match in _JINJA_BLOCK_TAG_PATTERN.finditer(clean_content):
         tag_content = match.group(1)
         start_pos = match.start()
         end_pos = match.end()
