@@ -10,7 +10,7 @@ from ruamel.yaml.comments import CommentedMap
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
-from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
+from dbt_autofix.refactors.yml import dict_to_yaml_str, get_dbt_yaml, get_dict, get_list, load_yaml, yaml_config
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
@@ -814,7 +814,7 @@ def changeset_replace_non_alpha_underscores_in_name_values(
                     deprecation_refactors.extend(node_deprecation_refactors)
 
     refactored = len(deprecation_refactors) > 0
-    refactored_yaml = DbtYAML().dump_to_string(yml_dict) if refactored else yml_str
+    refactored_yaml = get_dbt_yaml().dump_to_string(yml_dict) if refactored else yml_str
 
     return YMLRuleRefactorResult(
         rule_name="remove_spaces_in_resource_names",
@@ -1028,7 +1028,7 @@ def changeset_remove_duplicate_keys(content: YMLContent, config: YMLRefactorConf
 
     if refactored:
         # we use dump from ruamel to keep indentation style but this loses quite a bit of formatting though
-        refactored_yaml = DbtYAML().dump_to_string(yaml.safe_load(yml_str))
+        refactored_yaml = get_dbt_yaml().dump_to_string(yaml.safe_load(yml_str))
     else:
         refactored_yaml = yml_str
 
