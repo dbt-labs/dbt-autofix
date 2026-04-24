@@ -55,7 +55,13 @@ from dbt_autofix.refactors.results import (
     YMLRefactorConfig,
     YMLRefactorResult,
 )
-from dbt_autofix.refactors.yml import load_yaml
+from dbt_autofix.refactors.yml import (
+    ProjectYamlCache,
+    build_project_yaml_cache,
+    iter_project_yaml_files,
+    load_yaml,
+    read_project_yaml_text,
+)
 from dbt_autofix.retrieve_schemas import (
     SchemaSpecs,
 )
@@ -78,6 +84,7 @@ def process_yaml_files_except_dbt_project(
     behavior_change: bool = False,
     all: bool = False,
     semantic_definitions: Optional[SemanticDefinitions] = None,
+    yaml_cache: Optional[ProjectYamlCache] = None,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project.
 
@@ -89,6 +96,8 @@ def process_yaml_files_except_dbt_project(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
+        yaml_cache: If set (semantic-layer runs), reuse pre-globbed paths and pre-parsed YAML to avoid duplicate work.
+            ``ProjectYamlCache`` ``ordered_paths`` and dict keys are the same ``Path`` values iterated in this function.
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
@@ -130,53 +139,57 @@ def process_yaml_files_except_dbt_project(
             ],
         ]
 
+    if yaml_cache is not None:
+        project_yaml_files = yaml_cache.ordered_paths
+    else:
+        project_yaml_files = iter_project_yaml_files(root_path, model_paths)
+
     def _apply_changesets(
         file_name_to_yaml_results: Dict[str, YMLRefactorResult],
         changesets: List[Callable],
         cfg: YMLRefactorConfig,
     ) -> None:
-        for model_path in model_paths:
-            yaml_files = set((root_path / Path(model_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(model_path)).resolve().glob("**/*.yaml"))
-            )
+        for yml_file in project_yaml_files:
+            if skip_file(yml_file, select):
+                continue
 
-            for yml_file in yaml_files:
-                if skip_file(yml_file, select):
-                    continue
-
-                if str(yml_file) in file_name_to_yaml_results:
-                    yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
+            if str(yml_file) in file_name_to_yaml_results:
+                yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
+            else:
+                if yaml_cache is not None:
+                    yml_str = (yaml_cache.text_by_path or {}).get(yml_file) or read_project_yaml_text(yml_file)
+                    original_parsed = yaml_cache.parsed_by_path.get(yml_file) or CommentedMap()
                 else:
-                    yml_str = yml_file.read_text()
+                    yml_str = read_project_yaml_text(yml_file)
                     try:
                         original_parsed = load_yaml(yml_str)
                     except Exception:
                         original_parsed = CommentedMap()
-                    yml_refactor_result = YMLRefactorResult(
-                        dry_run=dry_run,
-                        file_path=yml_file,
-                        original_parsed=original_parsed,
-                        refactored_yaml=yml_str,
-                        original_yaml=yml_str,
-                        refactors=[],
+                yml_refactor_result = YMLRefactorResult(
+                    dry_run=dry_run,
+                    file_path=yml_file,
+                    original_parsed=original_parsed,
+                    refactored_yaml=yml_str,
+                    original_yaml=yml_str,
+                    refactors=[],
+                )
+            # Apply each changeset in sequence
+            try:
+                for changeset_func in changesets:
+                    yml_refactor_result.apply_changeset(changeset_func, cfg)
+
+                file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
+
+            except Exception as e:
+                if all:
+                    error_console.print(
+                        f"Warning: Could not apply fixes to {yml_file}: {e.__class__.__name__}: {e}", style="yellow"
                     )
-                # Apply each changeset in sequence
-                try:
-                    for changeset_func in changesets:
-                        yml_refactor_result.apply_changeset(changeset_func, cfg)
-
-                    file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
-
-                except Exception as e:
-                    if all:
-                        error_console.print(
-                            f"Warning: Could not apply fixes to {yml_file}: {e.__class__.__name__}: {e}", style="yellow"
-                        )
-                    else:
-                        error_console.print(
-                            f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
-                        )
-                        exit(1)
+                else:
+                    error_console.print(
+                        f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
+                    )
+                    exit(1)
 
     for changesets in ordered_changesets:
         _apply_changesets(
@@ -208,7 +221,7 @@ def process_dbt_project_yml(
             refactors=[],
         )
 
-    yml_str = (root_path / "dbt_project.yml").read_text()
+    yml_str = read_project_yaml_text(root_path / "dbt_project.yml")
     try:
         original_parsed = load_yaml(yml_str)
     except Exception:
@@ -592,9 +605,14 @@ def changeset_all_files(
     )
 
     # Process YAML files
-    semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
+    if semantic_layer:
+        yaml_cache = build_project_yaml_cache(path, dbt_paths)
+        semantic_definitions = SemanticDefinitions(path, dbt_paths, yaml_cache=yaml_cache)
+    else:
+        yaml_cache = None
+        semantic_definitions = None
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions, yaml_cache
     )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results, python_results

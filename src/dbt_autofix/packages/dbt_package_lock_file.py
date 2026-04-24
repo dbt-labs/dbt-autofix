@@ -6,6 +6,8 @@ import yaml
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from rich.console import Console
 
+from dbt_autofix.refactors.yml import read_project_yaml_text
+
 console = Console()
 
 
@@ -24,7 +26,7 @@ def load_yaml_from_package_lock_file_path(package_lock_yml_path: Path) -> Option
         console.log("File must be package-lock.yml")
         return
     try:
-        parsed_package_lock_file = yaml.safe_load(package_lock_yml_path.read_text())
+        parsed_package_lock_file = yaml.safe_load(read_project_yaml_text(package_lock_yml_path))
     except FileNotFoundError:
         console.log(f"File not found at {package_lock_yml_path}")
         return

@@ -10,7 +10,7 @@ from dbt_autofix.refactors.results import (
     YMLContent,
     YMLRuleRefactorResult,
 )
-from dbt_autofix.refactors.yml import DbtYAML, get_dict, load_yaml
+from dbt_autofix.refactors.yml import get_dbt_yaml, get_dict, load_yaml
 from dbt_autofix.retrieve_schemas import DbtProjectSpecs, SchemaSpecs
 
 config = """
@@ -97,7 +97,7 @@ def changeset_dbt_project_remove_deprecated_config(
     return YMLRuleRefactorResult(
         rule_name="remove_deprecated_config",
         refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
+        refactored_yaml=get_dbt_yaml().dump_to_string(yml_dict) if refactored else yml_str,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
     )
@@ -293,7 +293,7 @@ def changeset_dbt_project_prefix_plus_for_config(
     return YMLRuleRefactorResult(
         rule_name="prefix_plus_for_config",
         refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
+        refactored_yaml=get_dbt_yaml().dump_to_string(yml_dict) if refactored else yml_str,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
     )
@@ -327,7 +327,7 @@ def changeset_dbt_project_flip_behavior_flags(
     return YMLRuleRefactorResult(
         rule_name="flip_behavior_flags",
         refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
+        refactored_yaml=get_dbt_yaml().dump_to_string(yml_dict) if refactored else yml_str,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
     )
@@ -359,7 +359,7 @@ def changeset_dbt_project_flip_test_arguments_behavior_flag(
     return YMLRuleRefactorResult(
         rule_name="changeset_dbt_project_flip_test_arguments_behavior_flag",
         refactored=refactored,
-        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
+        refactored_yaml=get_dbt_yaml().dump_to_string(yml_dict) if refactored else yml_str,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
     )

@@ -6,7 +6,7 @@ import yaml
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from rich.console import Console
 
-from dbt_autofix.refactors.yml import load_yaml
+from dbt_autofix.refactors.yml import load_yaml, read_project_yaml_text
 
 console = Console()
 
@@ -53,7 +53,7 @@ def find_package_paths(
     Returns:
         list[Path]: the file path(s) for all dbt_project.yml files for packages
     """
-    packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
+    packages_path = yaml.safe_load(read_project_yaml_text(root_dir / "dbt_project.yml")).get(
         "packages-install-path", "dbt_packages"
     )
 
