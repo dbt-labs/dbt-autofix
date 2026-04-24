@@ -116,17 +116,20 @@ class SQLRuleRefactorResult:
     deprecation_refactors: list[DbtDeprecationRefactor]
     refactored_file_path: Optional[Path] = None
     refactor_warnings: list[str] = field(default_factory=list)
+    #: When True, process_sql_files must not run later SQL refactors (e.g. invalid Jinja; fix file first).
+    skip_remaining_sql_rules: bool = False
 
     @property
     def refactor_logs(self):
         return [refactor.log for refactor in self.deprecation_refactors]
 
     def to_dict(self) -> dict:
-        ret_dict = {
+        return {
             "rule_name": self.rule_name,
             "deprecation_refactors": [refactor.to_dict() for refactor in self.deprecation_refactors],
+            "refactor_warnings": list(self.refactor_warnings),
+            "skip_remaining_sql_rules": self.skip_remaining_sql_rules,
         }
-        return ret_dict
 
 
 @dataclass
@@ -224,12 +227,15 @@ class SQLRefactorResult:
     original_content: str
     refactors: list[SQLRuleRefactorResult]
     has_warnings: bool = False
+    _abort_remaining_sql_refactors: bool = field(default=False, init=False, repr=False, compare=False)
 
     @property
     def refactored(self) -> bool:
         return any(r.refactored for r in self.refactors) or (self.refactored_file_path != self.file_path)
 
     def apply_changeset(self, func: Callable, config: SQLRefactorConfig) -> None:
+        if self._abort_remaining_sql_refactors:
+            return
         content = SQLContent(
             original_str=self.original_content,
             current_str=self.refactored_content,
@@ -243,6 +249,8 @@ class SQLRefactorResult:
                 self.refactored_file_path = result.refactored_file_path
         if result.refactor_warnings:
             self.has_warnings = True
+        if result.skip_remaining_sql_rules:
+            self._abort_remaining_sql_refactors = True
 
     def update_sql_file(self) -> None:
         """Update the SQL file with the refactored content"""
