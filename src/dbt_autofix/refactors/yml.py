@@ -20,15 +20,6 @@ yaml_config = yamllint.config.YamlLintConfig(config)
 
 logger = logging.getLogger(__name__)
 
-# dbt YAML is UTF-8; use everywhere we read project YAML from disk
-ENCODING_YAML = "utf-8"
-_YAML_READ_KW: dict[str, Any] = {"encoding": ENCODING_YAML, "errors": "replace"}
-
-
-def read_project_yaml_text(path: Path) -> str:
-    """Read project YAML from disk (UTF-8, replacement on undecodable bytes)."""
-    return path.read_text(**_YAML_READ_KW)
-
 
 def _path_is_descendant_of(child: Path, parent: Path) -> bool:
     c, p = child.resolve(), parent.resolve()
@@ -147,7 +138,7 @@ def build_project_yaml_cache(root_path: Path, model_paths: Iterable[str]) -> Pro
     parsed_by_path: dict[Path, CommentedMap] = {}
     text_by_path: dict[Path, str] | None = {} if _yaml_cache_include_file_text() else None
     for p in ordered_paths:
-        t = read_project_yaml_text(p)
+        t = p.read_text()
         if text_by_path is not None:
             text_by_path[p] = t
         try:
@@ -159,8 +150,7 @@ def build_project_yaml_cache(root_path: Path, model_paths: Iterable[str]) -> Pro
 
 
 def load_yaml(path_or_str: Union[Path, str]) -> CommentedMap:
-    """Load YAML. Paths are read with ``read_project_yaml_text`` so encoding matches the rest of the project."""
-    text = read_project_yaml_text(path_or_str) if isinstance(path_or_str, Path) else path_or_str
+    text = path_or_str.read_text() if isinstance(path_or_str, Path) else path_or_str
     return get_dbt_yaml().load(text) or CommentedMap()
 
 

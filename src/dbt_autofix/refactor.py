@@ -55,13 +55,7 @@ from dbt_autofix.refactors.results import (
     YMLRefactorConfig,
     YMLRefactorResult,
 )
-from dbt_autofix.refactors.yml import (
-    ProjectYamlCache,
-    build_project_yaml_cache,
-    iter_project_yaml_files,
-    load_yaml,
-    read_project_yaml_text,
-)
+from dbt_autofix.refactors.yml import ProjectYamlCache, build_project_yaml_cache, iter_project_yaml_files, load_yaml
 from dbt_autofix.retrieve_schemas import (
     SchemaSpecs,
 )
@@ -157,10 +151,10 @@ def process_yaml_files_except_dbt_project(
                 yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
             else:
                 if yaml_cache is not None:
-                    yml_str = (yaml_cache.text_by_path or {}).get(yml_file) or read_project_yaml_text(yml_file)
+                    yml_str = (yaml_cache.text_by_path or {}).get(yml_file) or yml_file.read_text()
                     original_parsed = yaml_cache.parsed_by_path.get(yml_file) or CommentedMap()
                 else:
-                    yml_str = read_project_yaml_text(yml_file)
+                    yml_str = yml_file.read_text()
                     try:
                         original_parsed = load_yaml(yml_str)
                     except Exception:
@@ -221,7 +215,7 @@ def process_dbt_project_yml(
             refactors=[],
         )
 
-    yml_str = read_project_yaml_text(root_path / "dbt_project.yml")
+    yml_str = (root_path / "dbt_project.yml").read_text()
     try:
         original_parsed = load_yaml(yml_str)
     except Exception:

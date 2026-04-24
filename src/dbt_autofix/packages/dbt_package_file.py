@@ -12,7 +12,7 @@ from dbt_fusion_package_tools.upgrade_status import (
 from dbt_fusion_package_tools.version_utils import Matchers
 from rich.console import Console
 
-from dbt_autofix.refactors.yml import load_yaml, read_project_yaml_text
+from dbt_autofix.refactors.yml import load_yaml
 
 console = Console()
 
@@ -122,7 +122,7 @@ class DbtPackageFile:
             console.log("No file path set")
             return
         try:
-            self.yml_str = read_project_yaml_text(self.file_path)
+            self.yml_str = self.file_path.read_text()
             console.log(f"parsed yaml string: {self.yml_str}")
         except:
             console.log(f"Error when parsing package file {self.file_path}")

@@ -14,7 +14,6 @@ from dbt_autofix.refactors.yml import (
     build_project_yaml_cache,
     iter_project_yaml_files,
     load_yaml,
-    read_project_yaml_text,
 )
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 from dbt_autofix.semantic_definitions import SemanticDefinitions, _as_top_level_yaml_list
@@ -22,14 +21,6 @@ from dbt_autofix.semantic_definitions import SemanticDefinitions, _as_top_level_
 
 def _write_dbt_tree(root: Path) -> None:
     (root / "dbt_project.yml").write_text("name: p\nversion: 1.0.0\n", encoding="utf-8")
-
-
-def test_read_project_yaml_text_decodes_with_replace_for_bad_utf8(tmp_path: Path) -> None:
-    p = tmp_path / "b.yml"
-    p.write_bytes(b"key: \xff\xfe value\n")
-    t = read_project_yaml_text(p)
-    assert "key:" in t
-    assert "\ufffd" in t  # replacement character for invalid bytes
 
 
 def test_load_yaml_path_matches_string_content(tmp_path: Path) -> None:
@@ -184,6 +175,6 @@ def test_process_yaml_skips_disk_read_when_text_in_cache(monkeypatch: pytest.Mon
     (tmp_path / "models" / "a.yml").write_text("a: 1\n", encoding="utf-8")
     monkeypatch.setenv("DBT_AUTOFIX_YAML_CACHE_INCLUDE_TEXT", "1")
     cache = build_project_yaml_cache(tmp_path, ["models"])
-    with patch("dbt_autofix.refactor.read_project_yaml_text") as m_read:
+    with patch("pathlib.Path.read_text") as m_read:
         process_yaml_files_except_dbt_project(tmp_path, ["models"], SchemaSpecs(), dry_run=True, yaml_cache=cache)
     m_read.assert_not_called()

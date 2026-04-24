@@ -7,7 +7,7 @@ import yamllint.config
 import yamllint.linter
 from rich.console import Console
 
-from dbt_autofix.refactors.yml import get_dbt_yaml, read_project_yaml_text
+from dbt_autofix.refactors.yml import get_dbt_yaml
 
 console = Console()
 
@@ -41,7 +41,7 @@ def find_duplicate_keys(
     yml_files = set(root_dir.glob("**/*.yml")).union(set(root_dir.glob("**/*.yaml")))
     yml_files_target = set((root_dir / "target").glob("**/*.yml")).union(set((root_dir / "target").glob("**/*.yaml")))
 
-    packages_path = yaml.safe_load(read_project_yaml_text(root_dir / "dbt_project.yml")).get(
+    packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
         "packages-install-path", "dbt_packages"
     )
 
@@ -60,7 +60,7 @@ def find_duplicate_keys(
     # Check project YML files
     for file in yml_files_not_target_or_packages:
         file_with_duplicate = False
-        file_content = read_project_yaml_text(file)
+        file_content = file.read_text()
         for p in yamllint.linter.run(file_content, yaml_config):
             if p.rule == "key-duplicates":
                 file_with_duplicate = True
@@ -78,7 +78,7 @@ def find_duplicate_keys(
 
     # Check package YML files
     for file in yml_files_packages_not_integration_tests:
-        file_content = read_project_yaml_text(file)
+        file_content = file.read_text()
         for p in yamllint.linter.run(file_content, yaml_config):
             if p.rule == "key-duplicates":
                 package_duplicates.append(
