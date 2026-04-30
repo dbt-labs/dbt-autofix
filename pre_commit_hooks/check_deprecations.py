@@ -118,7 +118,6 @@ def has_any_changes(
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    print("Hello", file=sys.stderr)
     """Run dbt-autofix deprecations check on staged files."""
     args = parse_arguments(argv)
 
