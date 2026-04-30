@@ -11,6 +11,7 @@ VALID_DBT_EXTENSIONS = {".sql", ".yml", ".yaml"}
 
 
 def is_relevant_dbt_file(file_path: Path, dbt_paths: dict, root_path: Path = Path.cwd()) -> bool:
+    print("Hello", file=sys.stderr)
     """Check if a file is a relevant dbt file using the project's actual configuration."""
     if file_path.suffix not in VALID_DBT_EXTENSIONS:
         return False
@@ -116,6 +117,7 @@ def has_any_changes(
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    print("Hello", file=sys.stderr)
     """Run dbt-autofix deprecations check on staged files."""
     args = parse_arguments(argv)
 
