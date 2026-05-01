@@ -11,6 +11,7 @@ def apply_static_analysis_config(project_path: Path, level: str) -> None:
 
     yaml = YAML()
     yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=2, offset=2)  # preserves "  - item" sequence style
     with open(dbt_project_file) as f:
         data = yaml.load(f)
 
