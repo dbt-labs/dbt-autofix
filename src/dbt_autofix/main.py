@@ -11,6 +11,7 @@ from typing_extensions import Annotated
 from dbt_autofix.dbt_api import update_jobs
 from dbt_autofix.duplicate_keys import find_duplicate_keys, print_duplicate_keys
 from dbt_autofix.fields_properties_configs import print_matrix
+from dbt_autofix.function_support import get_unsupported_functions, load_function_support
 from dbt_autofix.package_upgrade import (
     PackageUpgradeResult,
     PackageVersionUpgradeResult,
@@ -21,6 +22,9 @@ from dbt_autofix.package_upgrade import (
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.refactor import apply_changesets, changeset_all_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_autofix.sql_function_extractor import scan_compiled_dir
+from dbt_autofix.static_analysis_report import ProjectAnalysisResult, analyze_project
+from dbt_autofix.static_analysis_writer import apply_static_analysis_config
 
 console = Console()
 error_console = Console(stderr=True)
@@ -212,6 +216,61 @@ def print_fields_matrix(
     ] = False,
 ):
     print_matrix(json_schema_version, disable_ssl_verification)
+
+
+@app.command(name="fusion-static-analysis")
+def fusion_static_analysis(  # noqa: PLR0913
+    path: Annotated[Path, typer.Option("--path", "-p", help="Path to the dbt project root")] = current_dir,
+    dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="Report findings without modifying files")] = False,
+    apply: Annotated[
+        bool, typer.Option("--apply", help="Write recommended static_analysis level to dbt_project.yml")
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", "-j", help="Output results as JSON")] = False,
+    select: Annotated[
+        Optional[List[str]], typer.Option("--select", "-s", help="Limit analysis to specific model paths or globs")
+    ] = None,
+    adapter: Annotated[
+        str, typer.Option("--adapter", help="Target adapter for function compatibility lookup")
+    ] = "snowflake",
+    disable_ssl_verification: Annotated[
+        bool, typer.Option("--disable-ssl-verification", help="Disable SSL verification", hidden=True)
+    ] = False,
+):
+    """Check compiled SQL models for functions unsupported in Fusion strict static analysis."""
+    if not path.is_dir() or not path.exists():
+        error_console.print("[red]-- The directory specified in --path does not exist --[/red]")
+        raise typer.Exit(code=1)
+
+    compiled_root = path / "target" / "compiled"
+    if not compiled_root.exists():
+        error_console.print(
+            "[red]-- No target/compiled/ directory found. Run `dbtf compile` or `dbt compile` first. --[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    if not json_output:
+        console.print(f"[green]Scanning compiled SQL in {compiled_root}[/green]\n")
+
+    support_data = load_function_support(adapter=adapter)
+    unsupported = get_unsupported_functions(support_data)
+
+    scans = scan_compiled_dir(path, select=select)
+    result: ProjectAnalysisResult = analyze_project(scans, unsupported)
+
+    result.print_to_console(json_output=json_output)
+
+    if result.models_with_issues and apply and not dry_run:
+        apply_static_analysis_config(path, level=result.recommended_level.value)
+        if not json_output:
+            console.print(
+                f"\n[green]Applied: +static_analysis: {result.recommended_level.value} written to dbt_project.yml[/green]"
+            )
+
+    if json_output:
+        print(json.dumps({"mode": "complete"}))
+
+    if result.models_with_issues:
+        raise typer.Exit(code=1)
 
 
 def version_callback(show_version: bool):
