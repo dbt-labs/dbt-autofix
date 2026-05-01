@@ -2360,8 +2360,8 @@ def test_config_regex(input_str, expected_match):
 class TestRefactorCustomConfigsToMetaSQL:
     """Tests for refactor_custom_configs_to_meta_sql function"""
 
-    def test_on_error_with_env_var_moved_to_meta(self, schema_specs: SchemaSpecs):
-        """Test that on_error config IS moved to meta even when env_var() is present (static analysis)"""
+    def test_on_error_not_moved_to_meta(self, schema_specs: SchemaSpecs):
+        """on_error is a recognized Fusion config key and should NOT be moved to meta"""
         sql_content = """{{
     config(
         materialized=env_var("DBT_MAT_TABLE"),
@@ -2374,23 +2374,10 @@ class TestRefactorCustomConfigsToMetaSQL:
 
 select 1 as id
 """
-        expected_content = """{{ config(
-    materialized=env_var("DBT_MAT_TABLE"), 
-    tags=["smartsheet", "phi_resourcing"], 
-    transient=true, 
-    on_schema_change="sync_all_columns", 
-    meta={'on_error': 'warn'}
-) }}
-
-select 1 as id
-"""
         result = refactor_custom_configs_to_meta_sql(sql_content, schema_specs, "models")
 
-        assert result.refactored
-        assert result.refactored_content == expected_content
-        assert len(result.deprecation_refactors) == 1
-        assert "on_error" in result.deprecation_refactors[0].log
-        assert "meta" in result.deprecation_refactors[0].log
+        assert not result.refactored
+        assert result.refactored_content == sql_content
 
     def test_multiple_custom_configs_with_jinja_moved_to_meta(self, schema_specs: SchemaSpecs):
         """Test that multiple custom configs ARE moved to meta even with Jinja (static analysis)"""
