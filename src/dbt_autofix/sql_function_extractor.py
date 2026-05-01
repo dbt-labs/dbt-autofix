@@ -1,20 +1,9 @@
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-SQL_KEYWORDS = frozenset({
-    "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "IN", "IS", "NULL", "AS",
-    "ON", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "FULL", "CROSS", "USING",
-    "GROUP", "ORDER", "BY", "HAVING", "LIMIT", "OFFSET", "UNION", "ALL",
-    "DISTINCT", "CASE", "WHEN", "THEN", "ELSE", "END", "WITH", "INSERT",
-    "UPDATE", "DELETE", "CREATE", "TABLE", "VIEW", "OVER", "PARTITION",
-    "ROWS", "RANGE", "BETWEEN", "UNBOUNDED", "PRECEDING", "FOLLOWING",
-    "CURRENT", "ROW", "ASC", "DESC", "NULLS", "FIRST", "LAST", "FILTER",
-    "WITHIN", "INTERVAL", "CAST", "TRY_CAST",
-})
-
-_FUNC_CALL_RE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_$]*)\s*\(")
+import sqlglot
+import sqlglot.expressions as exp
 
 
 @dataclass
@@ -24,13 +13,38 @@ class ModelFunctionScan:
 
 
 def extract_functions_from_sql(sql: str) -> set[str]:
-    """Return uppercase SQL function names found in a SQL string, excluding keywords."""
-    found = set()
-    for match in _FUNC_CALL_RE.finditer(sql):
-        name = match.group(1).upper()
-        if name not in SQL_KEYWORDS:
-            found.add(name)
-    return found
+    """Return uppercase SQL function names by walking the sqlglot AST.
+
+    Uses Snowflake dialect so that dialect-specific constructs parse correctly.
+    Anonymous functions (not mapped in sqlglot's Snowflake dialect) are included
+    by their original name. Known functions are emitted using their Snowflake
+    canonical name via the dialect generator.
+    """
+    if not sql.strip():
+        return set()
+    try:
+        statements = sqlglot.parse(sql, dialect="snowflake", error_level=sqlglot.ErrorLevel.IGNORE)
+    except Exception:
+        return set()
+
+    functions: set[str] = set()
+    for statement in statements:
+        if statement is None:
+            continue
+        for node in statement.walk():
+            if isinstance(node, exp.Anonymous):
+                # sqlglot couldn't map this to a known function — original name preserved
+                functions.add(node.name.upper())
+            elif isinstance(node, exp.Func):
+                try:
+                    # Generate back in Snowflake dialect to get the canonical function name
+                    sql_repr = node.sql(dialect="snowflake")
+                    name = sql_repr.split("(")[0].strip().upper()
+                    if name and " " not in name and name.replace("_", "").isalnum():
+                        functions.add(name)
+                except Exception:
+                    pass
+    return functions
 
 
 def scan_compiled_dir(

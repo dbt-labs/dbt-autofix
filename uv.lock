@@ -273,6 +273,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "rich" },
     { name = "ruamel-yaml" },
+    { name = "sqlglot" },
     { name = "typer" },
     { name = "yamllint" },
 ]
@@ -300,6 +301,7 @@ requires-dist = [
     { name = "pyyaml", marker = "python_full_version >= '3.13'", specifier = ">=6.0.2" },
     { name = "rich", specifier = ">=13.7.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10,<0.18.15" },
+    { name = "sqlglot", specifier = ">=25.0" },
     { name = "typer", specifier = ">=0.16.0" },
     { name = "yamllint", specifier = ">=1.37.0" },
 ]
@@ -1187,6 +1189,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/87/a6771e1546d97e7e041b6ae58d80074f81b7d5121207425c964ddf5cfdbd/sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc", size = 20372, upload-time = "2024-02-25T23:20:04.057Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2", size = 10235, upload-time = "2024-02-25T23:20:01.196Z" },
+]
+
+[[package]]
+name = "sqlglot"
+version = "30.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/66/6ece15f197874e56c76e1d0269cebf284ba992a80dfadca9d1972fdf7edf/sqlglot-30.6.0.tar.gz", hash = "sha256:246d34d39927422a50a3fa155f37b2f6346fba85f1a755b13c941eb32ef93361", size = 5835307, upload-time = "2026-04-20T20:11:08.164Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dc/e7/64fe971cbca33a0446b06f4a5ff8e3fa4a1dbd0a039ceabcc3e6cf4087a9/sqlglot-30.6.0-py3-none-any.whl", hash = "sha256:e005fc2f47994f90d7d8df341f1cbe937518497b0b7b1507d4c03c4c9dfd2778", size = 673920, upload-time = "2026-04-20T20:11:05.758Z" },
 ]
 
 [[package]]

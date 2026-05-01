@@ -1,9 +1,7 @@
-import pytest
 from pathlib import Path
 from dbt_autofix.sql_function_extractor import (
     extract_functions_from_sql,
     scan_compiled_dir,
-    SQL_KEYWORDS,
 )
 
 
@@ -19,11 +17,29 @@ def test_extract_is_case_insensitive():
     assert "TO_DATE" in result
 
 
-def test_extract_excludes_sql_keywords():
-    sql = "SELECT col FROM tbl WHERE col IS NOT NULL"
+def test_does_not_emit_sql_keywords():
+    # FROM, WHERE, AS etc. must never appear as function names
+    sql = "SELECT col AS alias FROM tbl WHERE col IS NOT NULL GROUP BY col"
     result = extract_functions_from_sql(sql)
-    for kw in SQL_KEYWORDS:
-        assert kw not in result
+    for kw in ("FROM", "WHERE", "SELECT", "AS", "IS", "NOT", "NULL", "GROUP", "BY"):
+        assert kw not in result, f"keyword {kw!r} should not appear in extracted functions"
+
+
+def test_ignores_function_names_in_comments():
+    # Regex would false-positive on FAKE_FUNC in a comment; AST should not
+    sql = "-- use FAKE_FUNC() here someday\nSELECT TRIM(name) FROM t"
+    result = extract_functions_from_sql(sql)
+    assert "FAKE_FUNC" not in result
+    assert "TRIM" in result
+
+
+def test_ignores_function_names_in_string_literals():
+    # Regex would false-positive on AGG inside a string constant; AST should not
+    sql = "SELECT 'AGG(x) is cool' AS note, CONCAT(a, b) FROM t"
+    result = extract_functions_from_sql(sql)
+    assert "CONCAT" in result
+    # AGG must not be extracted from the string literal
+    assert "AGG" not in result
 
 
 def test_extract_multiple_functions():
@@ -41,6 +57,12 @@ def test_extract_nested_functions():
 
 def test_extract_empty_sql():
     assert extract_functions_from_sql("") == set()
+
+
+def test_extract_window_function():
+    sql = "SELECT ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts) FROM t"
+    result = extract_functions_from_sql(sql)
+    assert "ROW_NUMBER" in result
 
 
 def test_scan_compiled_dir(tmp_path):
