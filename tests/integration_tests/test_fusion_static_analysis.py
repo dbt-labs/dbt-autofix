@@ -9,7 +9,7 @@ from dbt_autofix.main import app
 
 runner = CliRunner()
 
-FIXTURE_PROJECT = Path(__file__).parent / "dbt_projects" / "project_fusion_static_analysis"
+FIXTURE_PROJECT = Path(__file__).parent / "fusion_static_analysis_fixtures" / "project_fusion_static_analysis"
 
 
 @pytest.fixture()
