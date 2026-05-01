@@ -1,0 +1,23 @@
+{
+  "metadata": {"dbt_schema_version": "v12"},
+  "nodes": {
+    "model.my_project.clean_model": {
+      "resource_type": "model",
+      "unique_id": "model.my_project.clean_model",
+      "name": "clean_model",
+      "original_file_path": "models/clean_model.sql",
+      "patch_path": "my_project://models/schema.yml"
+    },
+    "model.my_project.dirty_model": {
+      "resource_type": "model",
+      "unique_id": "model.my_project.dirty_model",
+      "name": "dirty_model",
+      "original_file_path": "models/dirty_model.sql",
+      "patch_path": "my_project://models/schema.yml"
+    }
+  },
+  "child_map": {
+    "model.my_project.clean_model": [],
+    "model.my_project.dirty_model": []
+  }
+}

@@ -22,9 +22,19 @@ from dbt_autofix.package_upgrade import (
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 from dbt_autofix.refactor import apply_changesets, changeset_all_sql_yml_files
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_autofix.manifest_reader import (
+    get_model_infos,
+    get_transitive_descendants,
+    load_manifest,
+    match_compiled_paths_to_unique_ids,
+)
 from dbt_autofix.sql_function_extractor import scan_compiled_dir
 from dbt_autofix.static_analysis_report import ProjectAnalysisResult, analyze_project
-from dbt_autofix.static_analysis_writer import apply_static_analysis_config
+from dbt_autofix.static_analysis_writer import (
+    apply_baseline_to_model_schema,
+    apply_baseline_to_model_sql,
+    apply_strict_project_default,
+)
 
 console = Console()
 error_console = Console(stderr=True)
@@ -258,11 +268,44 @@ def fusion_static_analysis(  # noqa: PLR0913
     result.print_to_console(json_output=json_output)
 
     if result.models_with_issues and apply and not dry_run:
-        apply_static_analysis_config(path, level=result.recommended_level.value)
+        # Load manifest to resolve compiled paths → unique IDs and find DAG descendants
+        try:
+            manifest = load_manifest(path)
+        except FileNotFoundError:
+            error_console.print(
+                "[red]-- --apply requires target/manifest.json. Run `dbtf compile` first. --[/red]"
+            )
+            raise typer.Exit(code=1)
+
+        model_infos = get_model_infos(manifest)
+        offending_compiled = [m.model_path for m in result.models_with_issues]
+        path_to_uid = match_compiled_paths_to_unique_ids(manifest, offending_compiled, path)
+        offending_uids = set(path_to_uid.values())
+        descendant_uids = get_transitive_descendants(manifest, offending_uids)
+        baseline_uids = offending_uids | descendant_uids
+
+        # 1. Strict as the project-wide default
+        apply_strict_project_default(path)
+
+        # 2. Baseline per-model for offenders + their descendants
+        applied_names = []
+        for uid in baseline_uids:
+            info = model_infos.get(uid)
+            if not info:
+                continue
+            if info.patch_path:
+                apply_baseline_to_model_schema(path, info.patch_path, info.name)
+            else:
+                apply_baseline_to_model_sql(path, info.original_file_path)
+            applied_names.append(info.name)
+
         if not json_output:
             console.print(
-                f"\n[green]Applied: +static_analysis: {result.recommended_level.value} written to dbt_project.yml[/green]"
+                "\n[green]Applied:[/green]"
+                "\n  +static_analysis: strict → dbt_project.yml (project default)"
             )
+            for name in sorted(applied_names):
+                console.print(f"  static_analysis: baseline → {name}")
 
     if json_output:
         print(json.dumps({"mode": "complete"}))

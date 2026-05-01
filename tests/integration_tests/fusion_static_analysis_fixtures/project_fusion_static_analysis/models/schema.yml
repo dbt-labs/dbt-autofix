@@ -1,0 +1,6 @@
+version: 2
+models:
+  - name: clean_model
+    description: Uses only Fusion-supported functions
+  - name: dirty_model
+    description: Uses functions unsupported in Fusion strict mode

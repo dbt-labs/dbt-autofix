@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+import yaml
 from typer.testing import CliRunner
 
 from dbt_autofix.main import app
@@ -67,13 +68,32 @@ def test_clean_model_not_flagged(project):
 # ---------------------------------------------------------------------------
 
 
-def test_apply_writes_baseline_to_dbt_project_yml(project):
-    """--apply should write +static_analysis: baseline into dbt_project.yml."""
+def test_apply_writes_strict_to_dbt_project_yml(project):
+    """--apply should set +static_analysis: strict in dbt_project.yml as the project default."""
     result = runner.invoke(app, ["fusion-static-analysis", "--path", str(project), "--apply"])
     assert result.exit_code == 1  # still exits 1 because issues were found
 
     dbt_project_content = (project / "dbt_project.yml").read_text()
-    assert "+static_analysis: baseline" in dbt_project_content
+    assert "+static_analysis: strict" in dbt_project_content
+    assert "+static_analysis: baseline" not in dbt_project_content
+
+
+def test_apply_writes_baseline_to_offending_model_schema(project):
+    """--apply should write static_analysis: baseline into the offending model's schema YAML."""
+    runner.invoke(app, ["fusion-static-analysis", "--path", str(project), "--apply"])
+
+    schema_data = yaml.safe_load((project / "models" / "schema.yml").read_text())
+    dirty = next(m for m in schema_data["models"] if m["name"] == "dirty_model")
+    assert dirty["config"]["static_analysis"] == "baseline"
+
+
+def test_apply_does_not_touch_clean_model_schema(project):
+    """--apply should NOT add baseline config to models that only use supported functions."""
+    runner.invoke(app, ["fusion-static-analysis", "--path", str(project), "--apply"])
+
+    schema_data = yaml.safe_load((project / "models" / "schema.yml").read_text())
+    clean = next(m for m in schema_data["models"] if m["name"] == "clean_model")
+    assert clean.get("config", {}).get("static_analysis") != "baseline"
 
 
 def test_apply_does_not_modify_clean_project(project):
@@ -87,10 +107,12 @@ def test_apply_does_not_modify_clean_project(project):
 
 
 def test_dry_run_does_not_write_config(project):
-    """--apply --dry-run should report but not write to dbt_project.yml."""
-    original = (project / "dbt_project.yml").read_text()
+    """--apply --dry-run should report but not write anything."""
+    original_project = (project / "dbt_project.yml").read_text()
+    original_schema = (project / "models" / "schema.yml").read_text()
     runner.invoke(app, ["fusion-static-analysis", "--path", str(project), "--apply", "--dry-run"])
-    assert (project / "dbt_project.yml").read_text() == original
+    assert (project / "dbt_project.yml").read_text() == original_project
+    assert (project / "models" / "schema.yml").read_text() == original_schema
 
 
 # ---------------------------------------------------------------------------
