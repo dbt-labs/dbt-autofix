@@ -124,6 +124,46 @@ Calling `packages` without `--dry-run` should be safe if your dbt code is part o
 
 Please review the suggested changes to your dbt project before merging to `main` and make those changes go through your typical CI/CD process.
 
+### `fusion-static-analysis` - check Snowflake function compatibility
+
+`dbt-autofix fusion-static-analysis`: scans your compiled SQL models and identifies any Snowflake SQL functions that are not yet supported in Fusion's `strict` static analysis mode. Based on the results, it recommends the appropriate `static_analysis` level for your project.
+
+**Prerequisites:** Run `dbtf compile` (or `dbt compile`) first. The command reads from `target/compiled/` — it needs Jinja-resolved SQL, not raw model files.
+
+```sh
+# Check which models use unsupported functions (report only, no changes)
+dbt-autofix fusion-static-analysis
+
+# Limit to a specific subfolder
+dbt-autofix fusion-static-analysis --select models/marts
+
+# Apply the recommended config to dbt_project.yml
+dbt-autofix fusion-static-analysis --apply
+
+# Dry run: show what --apply would do without writing
+dbt-autofix fusion-static-analysis --apply --dry-run
+
+# Output machine-readable JSON (useful in CI)
+dbt-autofix fusion-static-analysis --json
+```
+
+**How it decides what to recommend:**
+
+| Result | Recommendation | What `--apply` writes |
+|--------|---------------|----------------------|
+| All functions supported | Keep `static_analysis: strict` (default) | Nothing — no change needed |
+| Any unsupported functions found | Set `static_analysis: baseline` | `+static_analysis: baseline` under your project name in `dbt_project.yml` |
+
+The function support list (935 Snowflake functions) is fetched live from the dbt docs repo and refreshed daily. If you're offline or the fetch fails, a bundled snapshot is used automatically.
+
+**Exit codes:** `0` = all functions supported. `1` = unsupported functions found (useful for blocking CI pipelines).
+
+**Troubleshooting:**
+
+- `No target/compiled/ directory found` — run `dbtf compile` or `dbt compile` in your project first
+- The command flags a function you believe is supported — the support list is refreshed daily from [docs.getdbt.com/reference/resource-configs/snowflake-function-support](https://docs.getdbt.com/reference/resource-configs/snowflake-function-support); if a function was recently added to Fusion, it may not appear until the next refresh. You can override by manually setting `+static_analysis: strict` in `dbt_project.yml`
+- A function is NOT flagged but compile still fails with a type error — this can happen with function overloads (e.g. `TO_DATE(string, format)` may be unsupported even though `TO_DATE(string)` is). If Fusion's strict mode rejects a specific calling pattern, either set `+static_analysis: baseline` manually or re-run with `--apply`
+
 ### `jobs`
 
 `dbt-autofix jobs`: update dbt platform jobs steps to use `-s`/`--select` selectors instead of `-m`/`--models`/`--model` which are deprecated in the Fusion engine
