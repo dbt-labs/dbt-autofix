@@ -33,18 +33,17 @@ def apply_baseline_to_model_schema(
     project_path: Path,
     patch_path: str,
     model_name: str,
-) -> None:
+) -> bool:
     """Write static_analysis: baseline into the model's config in its schema YAML.
 
-    patch_path looks like "jaffle_shop://models/schema.yml" — the part before "://"
-    is the project name and is stripped to get the relative file path.
+    Handles both Fusion manifest format ("models/schema.yml") and dbt-Core format
+    ("project_name://models/schema.yml"). Returns True if the write happened.
     """
-    if "://" not in patch_path:
-        return
-    rel_path = patch_path.split("://", 1)[1]
+    # Strip optional "project_name://" prefix (dbt-Core format)
+    rel_path = patch_path.split("://", 1)[-1]
     schema_file = project_path / rel_path
     if not schema_file.exists():
-        return
+        return False
 
     yaml = YAML()
     yaml.preserve_quotes = True
@@ -52,33 +51,43 @@ def apply_baseline_to_model_schema(
         data = yaml.load(f)
 
     if not data or "models" not in data:
-        return
+        return False
 
+    found = False
     for model in data.get("models") or []:
         if model.get("name") == model_name:
             if "config" not in model or model["config"] is None:
                 model["config"] = {}
             model["config"]["static_analysis"] = "baseline"
+            found = True
             break
+
+    if not found:
+        return False
 
     with open(schema_file, "w") as f:
         yaml.dump(data, f)
+    return True
 
 
 def apply_baseline_to_model_sql(
     project_path: Path,
     original_file_path: str,
-) -> None:
-    """Inject {{ config(static_analysis='baseline') }} at top of model SQL (fallback)."""
+) -> bool:
+    """Inject {{ config(static_analysis='baseline') }} at top of model SQL (fallback).
+
+    Returns True if the write happened.
+    """
     sql_file = project_path / original_file_path
     if not sql_file.exists():
-        return
+        return False
 
     content = sql_file.read_text(encoding="utf-8")
     if "static_analysis" in content[:200]:
-        return
+        return True  # already applied
 
     sql_file.write_text("{{ config(static_analysis='baseline') }}\n" + content)
+    return True
 
 
 # Compatibility shim used by existing tests and integration tests.

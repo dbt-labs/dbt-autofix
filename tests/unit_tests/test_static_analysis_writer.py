@@ -68,6 +68,39 @@ def test_strict_raises_when_no_dbt_project(tmp_path):
 
 # --- apply_baseline_to_model_schema ---
 
+def test_baseline_handles_bare_patch_path(tmp_path):
+    """Fusion manifests use bare paths like 'models/schema.yml' without project:// prefix."""
+    schema_path = tmp_path / "models" / "schema.yml"
+    schema_path.parent.mkdir(parents=True)
+    schema_path.write_text(SCHEMA_YML_WITH_MODEL)
+    result = apply_baseline_to_model_schema(tmp_path, "models/schema.yml", "customers")
+    assert result is True
+    data = yaml.safe_load(schema_path.read_text())
+    customers = next(m for m in data["models"] if m["name"] == "customers")
+    assert customers["config"]["static_analysis"] == "baseline"
+
+
+def test_baseline_handles_project_prefix_patch_path(tmp_path):
+    """dbt-Core manifests use 'project_name://models/schema.yml' format."""
+    schema_path = tmp_path / "models" / "schema.yml"
+    schema_path.parent.mkdir(parents=True)
+    schema_path.write_text(SCHEMA_YML_WITH_MODEL)
+    result = apply_baseline_to_model_schema(tmp_path, "my_project://models/schema.yml", "customers")
+    assert result is True
+    data = yaml.safe_load(schema_path.read_text())
+    customers = next(m for m in data["models"] if m["name"] == "customers")
+    assert customers["config"]["static_analysis"] == "baseline"
+
+
+def test_baseline_returns_false_when_model_not_in_schema(tmp_path):
+    """Returns False (and falls through to SQL injection) when model not listed in schema YAML."""
+    schema_path = tmp_path / "models" / "schema.yml"
+    schema_path.parent.mkdir(parents=True)
+    schema_path.write_text(SCHEMA_YML_WITH_MODEL)
+    result = apply_baseline_to_model_schema(tmp_path, "models/schema.yml", "nonexistent_model")
+    assert result is False
+
+
 def test_baseline_added_to_model_without_config(tmp_path):
     schema_path = tmp_path / "models" / "schema.yml"
     schema_path.parent.mkdir(parents=True)

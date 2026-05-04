@@ -287,17 +287,21 @@ def fusion_static_analysis(  # noqa: PLR0913
         # 1. Strict as the project-wide default
         apply_strict_project_default(path)
 
-        # 2. Baseline per-model for offenders + their descendants
+        # 2. Baseline per-model for offenders + their descendants.
+        # Try schema YAML first; fall through to SQL injection if the model
+        # isn't listed there (or if the schema file doesn't exist).
         applied_names = []
         for uid in baseline_uids:
             info = model_infos.get(uid)
             if not info:
                 continue
+            wrote = False
             if info.patch_path:
-                apply_baseline_to_model_schema(path, info.patch_path, info.name)
-            else:
-                apply_baseline_to_model_sql(path, info.original_file_path)
-            applied_names.append(info.name)
+                wrote = apply_baseline_to_model_schema(path, info.patch_path, info.name)
+            if not wrote:
+                wrote = apply_baseline_to_model_sql(path, info.original_file_path)
+            if wrote:
+                applied_names.append(info.name)
 
         if not json_output:
             console.print(
