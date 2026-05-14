@@ -273,8 +273,16 @@ def changeset_dbt_project_prefix_plus_for_config(
                     del yml_dict[node_type][k]
                 # else: already has +, keep as-is, value is the config value (don't recurse)
 
+            # +prefixed key not in schema → move to +meta as a unit
+            elif k.startswith("+"):
+                key_without_plus = k[1:]
+                all_refactor_logs.append(f"Moved unrecognized top-level config '{k}' to '+meta'")
+                meta = get_dict(yml_dict[node_type], "+meta")
+                meta[key_without_plus] = v
+                yml_dict[node_type]["+meta"] = meta
+                del yml_dict[node_type][k]
+
             # otherwise, treat it as a package or logical grouping
-            # TODO: if this is not valid, we could delete it as well
             else:
                 packages_path = path / Path(yml_dict.get("packages-paths", "dbt_packages"))
                 # Only recurse if v is a dict (should be package configs or logical grouping)
@@ -284,7 +292,13 @@ def changeset_dbt_project_prefix_plus_for_config(
                     )
                     yml_dict[node_type][k] = new_dict
                     all_refactor_logs.extend(refactor_logs)
-                # else: non-dict value, keep as-is (unusual but possible)
+                # Non-dict, non-+ key not in schema → move to +meta
+                else:
+                    all_refactor_logs.append(f"Moved unrecognized top-level config '{k}' to '+meta'")
+                    meta = get_dict(yml_dict[node_type], "+meta")
+                    meta[k] = v
+                    yml_dict[node_type]["+meta"] = meta
+                    del yml_dict[node_type][k]
 
     refactored = len(all_refactor_logs) > 0
     deprecation_refactors = [
