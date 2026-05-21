@@ -315,12 +315,9 @@ def check_fusion_schema_compatibility(
                 "  target: dev\n"
                 "  outputs:\n"
                 "    dev:\n"
-                "      type: postgres\n"
-                "      host: localhost\n"
-                "      port: 5432\n"
-                "      user: postgres\n"
-                "      password: postgres\n"
-                "      dbname: postgres\n"
+                "      type: snowflake\n"
+                "      account: none\n"
+                "      database: none\n"
                 "      schema: public\n"
             )
 
