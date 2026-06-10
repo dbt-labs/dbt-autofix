@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
-from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
+from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS
 from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
     PackageVersionFusionCompatibilityState,
@@ -262,20 +262,6 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     installed_version=installed_version,
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
-                    upgraded_version_compatibility_state=None,
-                )
-            )
-            packages_to_check.remove(package)
-        # package has manual override for all versions so can't upgrade
-        elif package in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW,
                     upgraded_version_compatibility_state=None,
                 )
             )

@@ -1,13 +1,9 @@
 EXPLICIT_DISALLOW_ALL_VERSIONS: set[str] = set(
     [
-        "Snowflake-Labs/dbt_constraints",
-        "get-select/dbt_snowflake_query_tags",
         "data-mie/dbt_profiler",
         "dbt-labs/logging",
         "get-select/dbt_snowflake_monitoring",
-        "dbt-labs/dbt_external_tables",
         "tnightengale/dbt_meta_testing",
-        "yu-iskw/dbt_airflow_macros",
         "everpeace/dbt_models_metadata",
     ]
 )
