@@ -884,9 +884,9 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
     },
     "Snowflake-Labs/dbt_constraints": {
         "latest_version": "=1.0.9",
-        "oldest_fusion_compatible_version": None,
-        "latest_fusion_compatible_version": None,
-        "fusion_compatible_versions": [],
+        "oldest_fusion_compatible_version": "=1.0.8",
+        "latest_fusion_compatible_version": "=1.0.9",
+        "fusion_compatible_versions": ["=1.0.8", "=1.0.9"],
         "fusion_incompatible_versions": [
             "=0.1.0",
             "=0.2.0",
@@ -912,8 +912,6 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=1.0.5",
             "=1.0.6",
             "=1.0.7",
-            "=1.0.8",
-            "=1.0.9",
         ],
         "unknown_compatibility_versions": [],
         "package_latest_version_index_json": "=1.0.9",
