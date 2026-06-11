@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: ignored_model
+    description: "This model should NOT be refactored because it is in .dbtignore"
+    materialized: view
+    columns:
+      - name: id
+        description: "Primary key"

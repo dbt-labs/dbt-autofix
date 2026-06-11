@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 
+import pathspec
 import pytest
 from ruamel.yaml.comments import CommentedMap
 from yaml import safe_load
@@ -17,6 +18,7 @@ from dbt_autofix.refactor import (
     changeset_remove_extra_tabs,
     changeset_remove_indentation_version,
     changeset_replace_non_alpha_underscores_in_name_values,
+    load_dbtignore,
     remove_unmatched_endings,
     skip_file,
 )
@@ -1344,6 +1346,93 @@ class TestSkipFile:
         file_path = Path("/path/to/file.sql")
         select = []
         assert not skip_file(file_path, select)  # Changed to expect False since empty list is treated same as None
+
+    def test_skip_file_with_dbtignore(self):
+        """Test that files matching .dbtignore patterns are skipped"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            file_path = root / "models" / "staging" / "stg_orders.sql"
+            file_path.parent.mkdir(parents=True)
+            file_path.touch()
+
+            dbtignore = pathspec.PathSpec.from_lines("gitwildmatch", ["models/staging/"])
+            assert skip_file(file_path, dbtignore=dbtignore, root_path=root)
+
+    def test_skip_file_dbtignore_no_match(self):
+        """Test that files not matching .dbtignore patterns are not skipped"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            file_path = root / "models" / "marts" / "orders.sql"
+            file_path.parent.mkdir(parents=True)
+            file_path.touch()
+
+            dbtignore = pathspec.PathSpec.from_lines("gitwildmatch", ["models/staging/"])
+            assert not skip_file(file_path, dbtignore=dbtignore, root_path=root)
+
+    def test_skip_file_dbtignore_glob_pattern(self):
+        """Test that glob patterns in .dbtignore work correctly"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            file_path = root / "models" / "legacy_model.sql"
+            file_path.parent.mkdir(parents=True)
+            file_path.touch()
+
+            dbtignore = pathspec.PathSpec.from_lines("gitwildmatch", ["**/legacy_*.sql"])
+            assert skip_file(file_path, dbtignore=dbtignore, root_path=root)
+
+    def test_skip_file_dbtignore_combined_with_select(self):
+        """Test that both select and dbtignore are respected together"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            file_path = root / "models" / "staging" / "stg_orders.sql"
+            file_path.parent.mkdir(parents=True)
+            file_path.touch()
+
+            dbtignore = pathspec.PathSpec.from_lines("gitwildmatch", ["models/staging/"])
+            assert skip_file(
+                file_path,
+                select=[str(file_path)],
+                dbtignore=dbtignore,
+                root_path=root,
+            )
+
+
+class TestLoadDbtignore:
+    """Tests for load_dbtignore function"""
+
+    def test_no_dbtignore_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            assert load_dbtignore(Path(tmpdir)) is None
+
+    def test_empty_dbtignore_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, ".dbtignore").write_text("")
+            assert load_dbtignore(Path(tmpdir)) is None
+
+    def test_dbtignore_with_patterns(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, ".dbtignore").write_text("models/staging/\n*.tmp\n")
+            spec = load_dbtignore(Path(tmpdir))
+            assert spec is not None
+            assert spec.match_file("models/staging/stg_orders.sql")
+            assert spec.match_file("something.tmp")
+            assert not spec.match_file("models/marts/orders.sql")
+
+    def test_dbtignore_with_comments_and_blanks(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, ".dbtignore").write_text("# this is a comment\n\nmodels/staging/\n")
+            spec = load_dbtignore(Path(tmpdir))
+            assert spec is not None
+            assert spec.match_file("models/staging/stg_orders.sql")
+            assert not spec.match_file("models/marts/orders.sql")
+
+    def test_dbtignore_negation_pattern(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, ".dbtignore").write_text("*.sql\n!important.sql\n")
+            spec = load_dbtignore(Path(tmpdir))
+            assert spec is not None
+            assert spec.match_file("test.sql")
+            assert not spec.match_file("important.sql")
 
 
 class TestTestConfigurationRefactoring:
