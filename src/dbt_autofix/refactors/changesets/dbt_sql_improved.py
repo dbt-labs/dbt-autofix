@@ -1,7 +1,7 @@
 import re
 from typing import List, Set, Tuple
 
-from dbt_autofix.deprecations import DeprecationType
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
 
 # Statically compiled regex patterns for performance
@@ -107,8 +107,7 @@ def move_custom_config_access_to_meta_sql_improved(
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f'Refactored "{original}" to "{replacement}"',
-                # Use the existing deprecation type (assuming it exists)
-                # If not, this would need to be added to the DeprecationType enum
+                change_type=ChangeType.CONFIG_GET_REFACTORED,
                 deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
             )
         )

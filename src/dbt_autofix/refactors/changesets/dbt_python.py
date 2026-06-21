@@ -9,7 +9,7 @@ import ast
 import re
 from typing import List, Optional, Tuple
 
-from dbt_autofix.deprecations import DeprecationType
+from dbt_autofix.deprecations import ChangeType, DeprecationType
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     PythonContent,
@@ -147,6 +147,7 @@ def rename_python_file_names_with_spaces(
             DbtDeprecationRefactor(
                 log=f"Renamed '{python_file_path.name}' to '{new_file_path.name}'",
                 deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
+                change_type=ChangeType.RENAME_PYTHON_FILE_NAMES_WITH_SPACES,
             )
         )
 
@@ -264,6 +265,7 @@ def refactor_custom_configs_to_meta_python(
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f"Moved custom configs {list(custom_configs.keys())} to 'meta'",
+                change_type=ChangeType.CUSTOM_CONFIG_MOVED_TO_META_DEPRECATION,
                 deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
             )
         )
@@ -349,6 +351,7 @@ def move_custom_config_access_to_meta_python(
         deprecation_refactors.append(
             DbtDeprecationRefactor(
                 log=f"Updated config.get('{key_name}') to config.meta_get('{key_name}')",
+                change_type=ChangeType.CONFIG_GET_REFACTORED,
                 deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
             )
         )

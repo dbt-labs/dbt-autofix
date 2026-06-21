@@ -7,8 +7,10 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "MissingGenericTestArgumentsPropertyDeprecationFix",
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
-        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments.",
+        "rule_name": "changeset_dbt_project_flip_test_arguments_behavior_flag"
       }
     ]
   },
@@ -17,8 +19,10 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom configs ['my_custom_config_1', 'my_custom_config_2', 'my_custom_config_3'] to 'meta'"
+        "log": "Moved custom configs ['my_custom_config_1', 'my_custom_config_2', 'my_custom_config_3'] to 'meta'",
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []

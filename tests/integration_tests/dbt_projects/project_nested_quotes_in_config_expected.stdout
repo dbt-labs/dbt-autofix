@@ -7,32 +7,46 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 2"
+        "log": "Replaced 2 fancy quotes with regular quotes on line 2",
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 6"
+        "log": "Replaced 2 fancy quotes with regular quotes on line 6",
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "FancyQuotesFixup",
         "deprecation": null,
-        "log": "Replaced 2 fancy quotes with regular quotes on line 16"
+        "log": "Replaced 2 fancy quotes with regular quotes on line 16",
+        "rule_name": "replace_fancy_quotes"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'fancy_delimiters_regular_inside' - Config 'custom_config_1' is not an allowed config - Moved under config.meta."
+        "log": "Model 'fancy_delimiters_regular_inside' - Config 'custom_config_1' is not an allowed config - Moved under config.meta.",
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'regular_delimiters_fancy_inside' - Config 'custom_config_2' is not an allowed config - Moved under config.meta."
+        "log": "Model 'regular_delimiters_fancy_inside' - Config 'custom_config_2' is not an allowed config - Moved under config.meta.",
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'unquoted_with_fancy_inside' - Config 'custom_config_3' is not an allowed config - Moved under config.meta."
+        "log": "Model 'unquoted_with_fancy_inside' - Config 'custom_config_3' is not an allowed config - Moved under config.meta.",
+        "rule_name": "restructure_yaml_keys"
       },
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Model 'regular_delimiters_escaped_inside' - Config 'custom_config_4' is not an allowed config - Moved under config.meta."
+        "log": "Model 'regular_delimiters_escaped_inside' - Config 'custom_config_4' is not an allowed config - Moved under config.meta.",
+        "rule_name": "restructure_yaml_keys"
       }
     ]
   },
@@ -41,8 +55,10 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "CustomConfigMovedToMetaDeprecation",
         "deprecation": "CustomKeyInConfigDeprecation",
-        "log": "Moved custom config ['type_of_dq_test'] to 'meta'"
+        "log": "Moved custom config ['type_of_dq_test'] to 'meta'",
+        "rule_name": "move_custom_configs_to_meta_sql"
       }
     ],
     "warnings": []

@@ -7,16 +7,22 @@
     "mode": "applied",
     "refactors": [
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Model 'model with spaces {{ env_var('DBT_ENV') | lower }}' - Updated 'name' from 'model with spaces {{ env_var('DBT_ENV') | lower }}' to 'model_with_spaces_{{ env_var('DBT_ENV') | lower }}'."
+        "log": "Model 'model with spaces {{ env_var('DBT_ENV') | lower }}' - Updated 'name' from 'model with spaces {{ env_var('DBT_ENV') | lower }}' to 'model_with_spaces_{{ env_var('DBT_ENV') | lower }}'.",
+        "rule_name": "remove_spaces_in_resource_names"
       },
       {
+        "change_type": "ResourceNameWithSpacesDeprecation",
         "deprecation": "ResourceNamesWithSpacesDeprecation",
-        "log": "Seed 'seed name {{ env_var('DBT_DATABASE') | lower }}' - Updated 'name' from 'seed name {{ env_var('DBT_DATABASE') | lower }}' to 'seed_name_{{ env_var('DBT_DATABASE') | lower }}'."
+        "log": "Seed 'seed name {{ env_var('DBT_DATABASE') | lower }}' - Updated 'name' from 'seed name {{ env_var('DBT_DATABASE') | lower }}' to 'seed_name_{{ env_var('DBT_DATABASE') | lower }}'.",
+        "rule_name": "remove_spaces_in_resource_names"
       },
       {
+        "change_type": "ExposureNameDeprecation",
         "deprecation": "ExposureNameDeprecation",
-        "log": "Exposure 'exposure with special-chars)(*!# {{ env_var('ENV') }}' - Updated 'name' from 'exposure with special-chars)(*!# {{ env_var('ENV') }}' to 'exposure_with_specialchars_{{ env_var('ENV') }}'."
+        "log": "Exposure 'exposure with special-chars)(*!# {{ env_var('ENV') }}' - Updated 'name' from 'exposure with special-chars)(*!# {{ env_var('ENV') }}' to 'exposure_with_specialchars_{{ env_var('ENV') }}'.",
+        "rule_name": "remove_spaces_in_resource_names"
       }
     ]
   }
