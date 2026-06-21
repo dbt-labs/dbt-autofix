@@ -5,8 +5,17 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from dbt_autofix.refactors.changesets.dbt_project_yml import rec_check_yaml_path
+from dbt_autofix.refactors.changesets.dbt_project_yml import _PrefixPlusForConfigImpl
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+
+
+def _call_rec_check(yml_dict, path, node_fields, schema_specs=None, node_type=None):
+    impl = object.__new__(_PrefixPlusForConfigImpl)
+    impl.schema_specs = schema_specs
+    impl._refactors = []
+    impl._refactored = False
+    result = impl._rec_check_yaml_path(yml_dict, path, node_fields, node_type)
+    return result, [r.log for r in impl._refactors]
 
 
 @pytest.fixture(scope="module")
@@ -45,7 +54,7 @@ def test_persist_docs_with_plus_prefixed_subkeys(models_node_fields, temp_path, 
         },
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 2
@@ -69,7 +78,7 @@ def test_persist_docs_with_correct_subkeys(models_node_fields, temp_path, real_s
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 0  # No changes needed
@@ -95,7 +104,7 @@ def test_persist_docs_with_mixed_subkeys(models_node_fields, temp_path, real_sch
         },
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 2
@@ -121,7 +130,7 @@ def test_labels_with_plus_prefixed_subkeys(models_node_fields, temp_path, real_s
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 0  # No changes - labels accepts any key-value pairs
@@ -145,7 +154,7 @@ def test_grants_with_plus_prefixed_subkeys(models_node_fields, temp_path, real_s
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 0  # No changes - grants accepts any key-value pairs
@@ -185,7 +194,7 @@ def test_multiple_dict_configs_with_various_subkeys(models_node_fields, temp_pat
         },
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 1  # Only one move to meta
@@ -216,7 +225,7 @@ def test_nested_logical_grouping_with_dict_configs(models_node_fields, temp_path
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 1  # Only one for moving +columns to meta
@@ -237,7 +246,7 @@ def test_empty_dict_after_moving_all_subkeys(models_node_fields, temp_path, real
         "+meta": {"+columns": True, "+relation": True},
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 2
@@ -261,7 +270,7 @@ def test_dict_config_with_invalid_non_prefixed_keys(models_node_fields, temp_pat
         },
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 1
@@ -280,7 +289,7 @@ def test_meta_with_any_subkeys(models_node_fields, temp_path, real_schema):
         }
     }
 
-    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields, None, real_schema, "models")
+    result, logs = _call_rec_check(input_dict, temp_path, models_node_fields, real_schema, "models")
 
     assert result == expected_output
     assert len(logs) == 0  # No changes - meta accepts anything

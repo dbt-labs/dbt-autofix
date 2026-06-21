@@ -87,11 +87,8 @@ def _single_to_double_quotes(s: str) -> str:
     Returns:
         The string with single quotes converted to double quotes if applicable
     """
-    # Check if it's a simple single-quoted string (only quotes at start and end)
     if s.startswith("'") and s.endswith("'") and "'" not in s[1:-1]:
-        # Extract content and convert to double quotes
         content = s[1:-1]
-        # Escape any double quotes in the content
         content = content.replace('"', '\\"')
         return f'"{content}"'
     return s
@@ -109,7 +106,6 @@ def _parse_python_kwargs(call_content: str) -> dict[str, str]:
     Returns:
         Dictionary mapping argument names to their source code strings
     """
-    # Wrap in a dummy function call to make it valid Python for AST
     dummy_code = f"func({call_content})"
 
     try:
@@ -122,8 +118,6 @@ def _parse_python_kwargs(call_content: str) -> dict[str, str]:
         result: dict[str, str] = {}
         for keyword in call_node.keywords:
             if keyword.arg is not None:
-                # Extract the source code for this value
-                # ast.unparse produces single quotes, convert to double quotes
                 value_source = ast.unparse(keyword.value)
                 value_source = _single_to_double_quotes(value_source)
                 result[keyword.arg] = value_source
@@ -136,28 +130,36 @@ def _parse_python_kwargs(call_content: str) -> dict[str, str]:
 def rename_python_file_names_with_spaces(
     content: PythonContent, config: PythonRefactorConfig
 ) -> PythonRuleRefactorResult:
-    python_content = content.current_str
-    python_file_path = content.current_file_path
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    return _RenamePythonFileNamesWithSpacesImpl(content, config).execute()
 
-    new_file_path = python_file_path
-    if python_file_path and " " in python_file_path.name:
-        new_file_path = python_file_path.with_name(python_file_path.name.replace(" ", "_"))
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log=f"Renamed '{python_file_path.name}' to '{new_file_path.name}'",
-                deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
+
+class _RenamePythonFileNamesWithSpacesImpl:
+    def __init__(self, content: PythonContent, config: PythonRefactorConfig) -> None:
+        self.python_str = content.current_str
+        self.file_path = content.current_file_path
+        self.config = config
+        self._deprecation_refactors: list[DbtDeprecationRefactor] = []
+
+    def execute(self) -> PythonRuleRefactorResult:
+        python_file_path = self.file_path
+        new_file_path = python_file_path
+        if python_file_path and " " in python_file_path.name:
+            new_file_path = python_file_path.with_name(python_file_path.name.replace(" ", "_"))
+            self._deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Renamed '{python_file_path.name}' to '{new_file_path.name}'",
+                    deprecation=DeprecationType.RESOURCE_NAMES_WITH_SPACES_DEPRECATION,
+                )
             )
-        )
 
-    return PythonRuleRefactorResult(
-        rule_name="rename_python_files_with_spaces",
-        refactored=python_file_path != new_file_path,
-        refactored_content=python_content,
-        original_content=python_content,
-        deprecation_refactors=deprecation_refactors,
-        refactored_file_path=new_file_path,
-    )
+        return PythonRuleRefactorResult(
+            rule_name="rename_python_files_with_spaces",
+            refactored=python_file_path != new_file_path,
+            refactored_content=self.python_str,
+            original_content=self.python_str,
+            deprecation_refactors=self._deprecation_refactors,
+            refactored_file_path=new_file_path,
+        )
 
 
 def refactor_custom_configs_to_meta_python(
@@ -170,111 +172,106 @@ def refactor_custom_configs_to_meta_python(
     To:
         dbt.config(materialized="table", meta={"sla": "24h"})
     """
-    python_content = content.current_str
-    schema_specs = config.schema_specs
-    node_type = config.node_type
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    return _RefactorCustomConfigsToMetaPythonImpl(content, config).execute()
 
-    # Find all dbt.config() calls
-    matches = list(DBT_CONFIG_CALL_PATTERN.finditer(python_content))
-    if not matches:
+
+class _RefactorCustomConfigsToMetaPythonImpl:
+    def __init__(self, content: PythonContent, config: PythonRefactorConfig) -> None:
+        self.python_str = content.current_str
+        self.config = config
+        self.schema_specs = config.schema_specs
+        self.node_type = config.node_type
+        self._deprecation_refactors: list[DbtDeprecationRefactor] = []
+
+    def execute(self) -> PythonRuleRefactorResult:
+        python_content = self.python_str
+
+        matches = list(DBT_CONFIG_CALL_PATTERN.finditer(python_content))
+        if not matches:
+            return PythonRuleRefactorResult(
+                rule_name="move_custom_configs_to_meta_python",
+                refactored=False,
+                refactored_content=python_content,
+                original_content=python_content,
+                deprecation_refactors=[],
+            )
+
+        allowed_config_fields = self.schema_specs.yaml_specs_per_node_type[self.node_type].allowed_config_fields
+
+        refactored_content = python_content
+        refactored = False
+
+        for match in reversed(matches):
+            open_paren_pos = match.end() - 1
+            close_paren_pos = _find_matching_paren(python_content, open_paren_pos)
+
+            if close_paren_pos == -1:
+                continue
+
+            call_content = python_content[open_paren_pos + 1 : close_paren_pos]
+
+            kwargs = _parse_python_kwargs(call_content)
+            if not kwargs:
+                continue
+
+            custom_configs: dict[str, str] = {}
+            native_configs: dict[str, str] = {}
+            existing_meta: Optional[str] = None
+
+            for key, value in kwargs.items():
+                if key == "meta":
+                    existing_meta = value
+                elif key in allowed_config_fields:
+                    native_configs[key] = value
+                else:
+                    custom_configs[key] = value
+
+            if not custom_configs:
+                continue
+
+            meta_items: List[str] = []
+
+            if existing_meta:
+                try:
+                    existing_meta_parsed = ast.literal_eval(existing_meta)
+                    if isinstance(existing_meta_parsed, dict):
+                        for k, v in existing_meta_parsed.items():
+                            meta_items.append(f'"{k}": {_single_to_double_quotes(repr(v))}')
+                except (ValueError, SyntaxError):
+                    pass
+
+            for key, value in custom_configs.items():
+                meta_items.append(f'"{key}": {value}')
+
+            meta_str = "{" + ", ".join(meta_items) + "}"
+
+            new_kwargs: List[str] = []
+            for key, value in native_configs.items():
+                new_kwargs.append(f"{key}={value}")
+            new_kwargs.append(f"meta={meta_str}")
+
+            new_call_content = ", ".join(new_kwargs)
+            new_call = f"dbt.config({new_call_content})"
+
+            full_match_start = match.start()
+            full_match_end = close_paren_pos + 1
+            refactored_content = refactored_content[:full_match_start] + new_call + refactored_content[full_match_end:]
+            refactored = True
+
+            self._deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Moved custom configs {list(custom_configs.keys())} to 'meta'",
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                )
+            )
+
         return PythonRuleRefactorResult(
             rule_name="move_custom_configs_to_meta_python",
-            refactored=False,
-            refactored_content=python_content,
+            refactored=refactored,
+            refactored_content=refactored_content,
             original_content=python_content,
-            deprecation_refactors=[],
+            deprecation_refactors=self._deprecation_refactors,
         )
-
-    allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields
-
-    # Process matches in reverse order to maintain positions
-    refactored_content = python_content
-    refactored = False
-
-    for match in reversed(matches):
-        # Find the matching closing parenthesis
-        open_paren_pos = match.end() - 1  # Position of the (
-        close_paren_pos = _find_matching_paren(python_content, open_paren_pos)
-
-        if close_paren_pos == -1:
-            continue
-
-        # Extract the content inside the parentheses
-        call_content = python_content[open_paren_pos + 1 : close_paren_pos]
-
-        # Parse the kwargs
-        kwargs = _parse_python_kwargs(call_content)
-        if not kwargs:
-            continue
-
-        # Identify custom configs (not in allowed_config_fields)
-        custom_configs: dict[str, str] = {}
-        native_configs: dict[str, str] = {}
-        existing_meta: Optional[str] = None
-
-        for key, value in kwargs.items():
-            if key == "meta":
-                existing_meta = value
-            elif key in allowed_config_fields:
-                native_configs[key] = value
-            else:
-                custom_configs[key] = value
-
-        if not custom_configs:
-            continue
-
-        # Build the new meta dict
-        meta_items: List[str] = []
-
-        # If there's existing meta, try to parse and merge
-        if existing_meta:
-            try:
-                # Parse the existing meta dict
-                existing_meta_parsed = ast.literal_eval(existing_meta)
-                if isinstance(existing_meta_parsed, dict):
-                    for k, v in existing_meta_parsed.items():
-                        meta_items.append(f'"{k}": {_single_to_double_quotes(repr(v))}')
-            except (ValueError, SyntaxError):
-                # Can't parse existing meta, preserve it as-is in the string form
-                # This is a fallback - we'll just add to it
-                pass
-
-        # Add custom configs to meta
-        for key, value in custom_configs.items():
-            meta_items.append(f'"{key}": {value}')
-
-        meta_str = "{" + ", ".join(meta_items) + "}"
-
-        # Build the new call content
-        new_kwargs: List[str] = []
-        for key, value in native_configs.items():
-            new_kwargs.append(f"{key}={value}")
-        new_kwargs.append(f"meta={meta_str}")
-
-        new_call_content = ", ".join(new_kwargs)
-        new_call = f"dbt.config({new_call_content})"
-
-        # Replace in content
-        full_match_start = match.start()
-        full_match_end = close_paren_pos + 1
-        refactored_content = refactored_content[:full_match_start] + new_call + refactored_content[full_match_end:]
-        refactored = True
-
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log=f"Moved custom configs {list(custom_configs.keys())} to 'meta'",
-                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
-            )
-        )
-
-    return PythonRuleRefactorResult(
-        rule_name="move_custom_configs_to_meta_python",
-        refactored=refactored,
-        refactored_content=refactored_content,
-        original_content=python_content,
-        deprecation_refactors=deprecation_refactors,
-    )
 
 
 def move_custom_config_access_to_meta_python(
@@ -292,71 +289,71 @@ def move_custom_config_access_to_meta_python(
     To:
         dbt.config.meta_get("random_config", "default")
     """
-    python_content = content.current_str
-    schema_specs = config.schema_specs
-    node_type = config.node_type
-    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    return _MoveCustomConfigAccessToMetaPythonImpl(content, config).execute()
 
-    allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields
 
-    # Find all dbt.config.get() calls
-    matches = list(DBT_CONFIG_GET_PATTERN.finditer(python_content))
-    if not matches:
-        return PythonRuleRefactorResult(
-            rule_name="move_custom_config_access_to_meta_python",
-            refactored=False,
-            refactored_content=python_content,
-            original_content=python_content,
-            deprecation_refactors=[],
-        )
+class _MoveCustomConfigAccessToMetaPythonImpl:
+    def __init__(self, content: PythonContent, config: PythonRefactorConfig) -> None:
+        self.python_str = content.current_str
+        self.config = config
+        self.schema_specs = config.schema_specs
+        self.node_type = config.node_type
+        self._deprecation_refactors: list[DbtDeprecationRefactor] = []
 
-    # Collect replacements: (start, end, replacement, original)
-    replacements: List[Tuple[int, int, str, str]] = []
+    def execute(self) -> PythonRuleRefactorResult:
+        python_content = self.python_str
+        allowed_config_fields = self.schema_specs.yaml_specs_per_node_type[self.node_type].allowed_config_fields
 
-    for match in matches:
-        config_key = match.group("key")
-
-        # Skip if this is a dbt-native config
-        if config_key in allowed_config_fields:
-            continue
-
-        start, end = match.span()
-        original = match.group(0)
-
-        # Swap method name in-place to preserve original formatting (quotes, whitespace, etc.)
-        replacement = original.replace("dbt.config.get", "dbt.config.meta_get", 1)
-
-        replacements.append((start, end, replacement, original))
-
-    if not replacements:
-        return PythonRuleRefactorResult(
-            rule_name="move_custom_config_access_to_meta_python",
-            refactored=False,
-            refactored_content=python_content,
-            original_content=python_content,
-            deprecation_refactors=[],
-        )
-
-    # Apply replacements in reverse order
-    refactored_content = python_content
-    for start, end, replacement, original in reversed(replacements):
-        refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
-
-        # Extract the key for the log message
-        key_match = re.search(r'["\']([^"\']+)["\']', original)
-        key_name = key_match.group(1) if key_match else "unknown"
-
-        deprecation_refactors.append(
-            DbtDeprecationRefactor(
-                log=f"Updated config.get('{key_name}') to config.meta_get('{key_name}')",
-                deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+        matches = list(DBT_CONFIG_GET_PATTERN.finditer(python_content))
+        if not matches:
+            return PythonRuleRefactorResult(
+                rule_name="move_custom_config_access_to_meta_python",
+                refactored=False,
+                refactored_content=python_content,
+                original_content=python_content,
+                deprecation_refactors=[],
             )
-        )
 
-    return PythonRuleRefactorResult(
-        rule_name="move_custom_config_access_to_meta_python",
-        refactored=True,
-        refactored_content=refactored_content,
-        original_content=python_content,
-        deprecation_refactors=deprecation_refactors,
-    )
+        replacements: List[Tuple[int, int, str, str]] = []
+
+        for match in matches:
+            config_key = match.group("key")
+
+            if config_key in allowed_config_fields:
+                continue
+
+            start, end = match.span()
+            original = match.group(0)
+            replacement = original.replace("dbt.config.get", "dbt.config.meta_get", 1)
+            replacements.append((start, end, replacement, original))
+
+        if not replacements:
+            return PythonRuleRefactorResult(
+                rule_name="move_custom_config_access_to_meta_python",
+                refactored=False,
+                refactored_content=python_content,
+                original_content=python_content,
+                deprecation_refactors=[],
+            )
+
+        refactored_content = python_content
+        for start, end, replacement, original in reversed(replacements):
+            refactored_content = refactored_content[:start] + replacement + refactored_content[end:]
+
+            key_match = re.search(r'["\']([^"\']+)["\']', original)
+            key_name = key_match.group(1) if key_match else "unknown"
+
+            self._deprecation_refactors.append(
+                DbtDeprecationRefactor(
+                    log=f"Updated config.get('{key_name}') to config.meta_get('{key_name}')",
+                    deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
+                )
+            )
+
+        return PythonRuleRefactorResult(
+            rule_name="move_custom_config_access_to_meta_python",
+            refactored=True,
+            refactored_content=refactored_content,
+            original_content=python_content,
+            deprecation_refactors=self._deprecation_refactors,
+        )
