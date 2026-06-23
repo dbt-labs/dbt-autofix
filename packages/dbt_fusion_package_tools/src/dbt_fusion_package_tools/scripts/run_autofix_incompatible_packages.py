@@ -192,6 +192,37 @@ def read_json_from_local_hub_repo_with_conformance(path: str, file_count_limit: 
 
 
 
+def create_tarball_from_directory(
+    source_dir: Path,
+    dest_dir: Path,
+    file_name: str,
+) -> Optional[Path]:
+    """Create a gzipped tarball of a directory and write it to another directory.
+
+    Args:
+        source_dir: Path to the directory to archive
+        dest_dir: Path to the directory where the tarball should be written
+
+    Returns:
+        Path to the created tarball, or None if archiving failed
+    """
+    source_dir = Path(source_dir)
+    dest_dir = Path(dest_dir)
+    if not source_dir.is_dir():
+        error_console.log(f"Source is not a directory: {source_dir}")
+        return None
+    try:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        tar_path = dest_dir / f"{file_name}.tar.gz"
+        with tarfile.open(tar_path, "w:gz") as tar:
+            tar.add(source_dir, arcname=source_dir.name)
+        return tar_path
+    except Exception as e:
+        error_console.log(f"Error when creating tarball for {source_dir}: {e}")
+        return None
+
+
+
 def run_autofix(
     repo_path: Path = Path.cwd(),
     fusion_binary: Optional[str] = None,
@@ -231,6 +262,9 @@ def run_autofix(
         # console.log(f"autofix stdout: {[json.loads(x) for x in autofix_result.stdout.splitlines()]}") 
         autofix_stdout = [json.loads(x) for x in autofix_result.stdout.splitlines()]
         autofix_stderr = [x for x in autofix_result.stderr.splitlines()]
+        # save autofixed version
+
+
         return {
             "autofix_stdout": autofix_stdout,
             "autofix_stderr": autofix_stderr,
@@ -389,6 +423,10 @@ def run_autofix_for_version(
         result["post_autofix_parse_conformance"] = post_autofix_parse_conformance.to_dict()
     else:
         result["post_autofix_parse_conformance"] = {}
+    # save autofixed version
+    tarball_name = f"{'_'.join(package_id.split('/'))}_{tag_version}"
+    create_tarball_from_directory(Path(path), DEFAULT_OUTPUT_PATH / "autofixed_versions", tarball_name)
+    result["autofixed_version_file_name"] = f"{tarball_name}.tar.gz"
     # result.require_dbt_version_defined = new_version.is_require_dbt_version_defined()
     # if result.require_dbt_version_defined:
     #     result.require_dbt_version_compatible = new_version.is_require_dbt_version_fusion_compatible()
@@ -499,7 +537,6 @@ def download_tarball_and_run_autofix(
             return
 
 
-
 def run_autofix_from_tarballs(
     output: defaultdict[str, list[dict[str, Any]]],
     package_latest_version_urls: dict[str, str],
@@ -557,6 +594,7 @@ def run_autofix_from_tarballs(
                 parse_compatible_post_autofix = conformance_output["post_autofix_parse_conformance"]["parse_exit_code"] == 0
                 version_output["parse_compatible_pre_autofix"] = parse_compatible_pre_autofix
                 version_output["parse_compatible_post_autofix"] = parse_compatible_post_autofix
+                version_output["autofixed_version_file_name"] = conformance_output.get("autofixed_version_file_name")
                 if version_output["parse_compatible_hub"] != parse_compatible_pre_autofix:
                     error_console.log(f"Inconsistent parse results for {package} version {package_version_string}: hub {version_output['parse_compatible_hub']}, pre {parse_compatible_pre_autofix}")
                 console.log()

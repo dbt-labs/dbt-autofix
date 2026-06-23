@@ -69,7 +69,7 @@ def main():
                     "parse_compatible_hub_false_pre_true": parse_compatible_hub_false_pre_true,
                     "parse_compatible_hub_false_post_true": parse_compatible_hub_false_post_true,
                     "v2_compatible_eligible": v2_compatible_eligible,
-
+                    "autofixed_version_file_name": package[version].get("autofixed_version_file_name")
                 }
             )
 
