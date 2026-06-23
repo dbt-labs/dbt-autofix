@@ -521,9 +521,9 @@ def run_autofix_from_tarballs(
                 console.log(f"No download URL found for {package} version {package_version_string}")
                 continue
             # console.log(version)
-            parse_compatible = version.get("parse_compatible", False)
-            # if parse_compatible:
-            #     continue
+            parse_compatible = version.get("parse_compatible", True)
+            if parse_compatible:
+                continue
             # else:
             #     console.log(version)
             #     continue
@@ -533,6 +533,7 @@ def run_autofix_from_tarballs(
                 "manually_verified_incompatible": version["manually_verified_incompatible"],
                 "manually_verified_compatible": version["manually_verified_compatible"],
             }
+            console.log(version.get("package_id_from_path"))
             conformance_output: Optional[dict[str, Any]] = download_tarball_and_run_autofix(
                 package_name=package,
                 package_id=version["package_id_from_path"],
@@ -541,7 +542,7 @@ def run_autofix_from_tarballs(
                 latest_package_version_download_url=package_latest_version_urls.get(package),
                 fusion_binary=fusion_binary,
             )
-            if not conformance_output:
+            if not conformance_output or not conformance_output.get("pre_autofix_parse_conformance") or not conformance_output.get("post_autofix_parse_conformance") or not conformance_output.get("autofix_output"):
                 console.log(f"Could not run autofix for {package} version {package_version_string}\n")
                 continue
             else:

@@ -49,6 +49,7 @@ def main():
             parse_compatible_hub_true_post_false = parse_compatible_hub is True and parse_compatible_post_autofix is False
             parse_compatible_hub_false_pre_true = parse_compatible_hub is False and parse_compatible_pre_autofix is True
             parse_compatible_hub_false_post_true = parse_compatible_hub is False and parse_compatible_post_autofix is True
+            v2_compatible_eligible = (parse_compatible_hub is False or parse_compatible_pre_autofix is False) and parse_compatible_post_autofix is True
             package_summary.append(
                 {
                     "package_name": package_name,
@@ -67,6 +68,7 @@ def main():
                     "parse_compatible_hub_true_post_false": parse_compatible_hub_true_post_false,
                     "parse_compatible_hub_false_pre_true": parse_compatible_hub_false_pre_true,
                     "parse_compatible_hub_false_post_true": parse_compatible_hub_false_post_true,
+                    "v2_compatible_eligible": v2_compatible_eligible,
 
                 }
             )
