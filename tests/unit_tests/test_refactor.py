@@ -2807,3 +2807,30 @@ select 1 as id
         assert "meta" in result.deprecation_refactors[0].log
         # Verify Jinja function call is preserved
         assert "get_warehouse('medium')" in result.refactored_content
+
+    def test_multiple_custom_configs_with_jinja_moved_to_meta_that_already_contained_a_list(self, schema_specs: SchemaSpecs):
+          """Test that multiple custom configs ARE moved to meta that already contains a list even with Jinja (static analysis)"""
+          sql_content = """{{ config(
+      doot='burger',
+      on_column='city',
+      nugget=['chicken'],
+      meta={'attributes': [['A', 'B', 'C', 'D'], ['X', 'Y', 'Z'], []], 'cool': 'beans'},
+) }}
+
+select 1 as id
+  """
+          expected_content = """{{ config(
+    meta={'attributes': [['A', 'B', 'C', 'D'], ['X', 'Y', 'Z'], []], 'cool': 'beans', 'doot': 'burger', 'on_column': 'city', 'nugget': ['chicken']}
+) }}
+
+select 1 as id
+  """
+          result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+          assert result.refactored
+          assert result.refactored_content == expected_content
+          assert len(result.deprecation_refactors) == 1
+          assert "doot" in result.deprecation_refactors[0].log
+          assert "on_column" in result.deprecation_refactors[0].log
+          assert "nugget" in result.deprecation_refactors[0].log
+          assert "meta" in result.deprecation_refactors[0].log

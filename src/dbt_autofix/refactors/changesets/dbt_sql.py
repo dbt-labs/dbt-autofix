@@ -231,6 +231,16 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
         deprecation_refactors=deprecation_refactors,
     )
 
+def stringify_value(v):
+    if isinstance(v, str):
+        return v
+    elif isinstance(v, list):
+        new_v = []
+        for item in v:
+            new_v.append(stringify_value(item))
+        return new_v
+    else:
+        return repr(v)
 
 def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
     """Move custom configs to meta in SQL files."""
@@ -308,7 +318,7 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
 
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)
-                        meta_dict = {k: repr(v) if not isinstance(v, str) else f"'{v}'" for k, v in parsed_meta.items()}
+                        meta_dict = {k: stringify_value(v) for k, v in parsed_meta.items()}
                     except (ValueError, SyntaxError):
                         # Parsing failed, skip this meta (might contain Jinja)
                         meta_dict = {}
