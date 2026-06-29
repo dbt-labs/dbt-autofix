@@ -232,7 +232,7 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
     )
 
 
-def stringify_value(v):
+def meta_transform_value(v):
     if isinstance(v, str):
         return v
     elif isinstance(v, list):
@@ -317,7 +317,7 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
 
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)
-                        meta_dict = {k: stringify_value(v) for k, v in parsed_meta.items()}
+                        meta_dict = {k: meta_transform_value(v) for k, v in parsed_meta.items()}
                     except (ValueError, SyntaxError):
                         # Parsing failed, skip this meta (might contain Jinja)
                         meta_dict = {}
