@@ -231,6 +231,7 @@ def remove_unmatched_endings(content: SQLContent, config: SQLRefactorConfig) -> 
         deprecation_refactors=deprecation_refactors,
     )
 
+
 def stringify_value(v):
     if isinstance(v, str):
         return v
@@ -238,6 +239,7 @@ def stringify_value(v):
         return [stringify_value(item) for item in v]
     else:
         return repr(v)
+
 
 def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
     """Move custom configs to meta in SQL files."""
