@@ -236,7 +236,7 @@ def meta_transform_value(v):
     if isinstance(v, str):
         return v
     elif isinstance(v, list):
-        return [stringify_value(item) for item in v]
+        return [meta_transform_value(item) for item in v]
     else:
         return repr(v)
 
