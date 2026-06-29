@@ -235,10 +235,7 @@ def stringify_value(v):
     if isinstance(v, str):
         return v
     elif isinstance(v, list):
-        new_v = []
-        for item in v:
-            new_v.append(stringify_value(item))
-        return new_v
+        return [stringify_value(item) for item in v]
     else:
         return repr(v)
 
