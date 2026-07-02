@@ -1,0 +1,41 @@
+name: 'twitter_ads'
+version: '1.2.0'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+
+models:
+  twitter_ads:
+    +schema: twitter_ads
+    +materialized: table
+    staging:
+      +schema: twitter_ads_source
+      tmp:
+        +materialized: view
+
+vars:
+  twitter_ads:
+    line_item_history: "{{ source('twitter_ads', 'line_item_history') }}"
+    promoted_tweet_report: "{{ source('twitter_ads', 'promoted_tweet_report') }}"
+    promoted_tweet_history: "{{ source('twitter_ads', 'promoted_tweet_history') }}"
+    tweet_url: "{{ source('twitter_ads', 'tweet_url') }}"
+    account_history: "{{ source('twitter_ads', 'account_history') }}"
+    campaign_history: "{{ source('twitter_ads', 'campaign_history') }}"
+    tweet: "{{ source('twitter_ads', 'tweet') }}"
+    campaign_report: "{{ source('twitter_ads', 'campaign_report') }}"
+    line_item_report: "{{ source('twitter_ads', 'line_item_report') }}"
+    line_item_keywords_report: "{{ source('twitter_ads', 'line_item_keywords_report') }}"
+    campaign_locations_report: "{{ source('twitter_ads', 'campaign_locations_report') }}"
+    campaign_regions_report: "{{ source('twitter_ads', 'campaign_regions_report') }}"
+    twitter_ads__campaign_report_passthrough_metrics: []
+    twitter_ads__line_item_report_passthrough_metrics: []
+    twitter_ads__line_item_keywords_report_passthrough_metrics: []
+    twitter_ads__promoted_tweet_report_passthrough_metrics: []
+    twitter_ads__campaign_locations_report_passthrough_metrics: []
+    twitter_ads__campaign_regions_report_passthrough_metrics: []
+
+  twitter_ads__conversion_fields:
+    - conversion_purchases_metric
+    - conversion_custom_metric
+  twitter_ads__conversion_sale_amount_fields:
+    - conversion_purchases_sale_amount
+    - conversion_custom_sale_amount

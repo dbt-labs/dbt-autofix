@@ -1,0 +1,34 @@
+name: 'amazon_ads'
+version: '1.2.0'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+models:
+  amazon_ads:
+    +schema: amazon_ads
+    +materialized: table
+    intermediate:
+      +materialized: view
+    staging:
+      +schema: amazon_ads_source
+      +materialized: table
+      tmp:
+        +materialized: view
+
+vars:
+  amazon_ads:    
+    ad_group_history: "{{ source('amazon_ads', 'ad_group_history') }}"
+    ad_group_level_report: "{{ source('amazon_ads', 'ad_group_level_report') }}"
+    advertised_product_report: "{{ source('amazon_ads', 'advertised_product_report') }}"
+    campaign_history: "{{ source('amazon_ads', 'campaign_history') }}"
+    campaign_level_report: "{{ source('amazon_ads', 'campaign_level_report') }}"
+    portfolio_history: "{{ source('amazon_ads', 'portfolio_history') }}"
+    product_ad_history: "{{ source('amazon_ads', 'product_ad_history') }}"
+    profile: "{{ source('amazon_ads', 'profile') }}"
+    keyword_history: "{{ source('amazon_ads', 'keyword_history') }}"
+    targeting_keyword_report: "{{ source('amazon_ads', 'targeting_keyword_report') }}"
+    search_term_ad_keyword_report: "{{ source('amazon_ads', 'search_term_ad_keyword_report') }}"
+    amazon_ads__ad_group_passthrough_metrics: []
+    amazon_ads__advertised_product_passthrough_metrics: []
+    amazon_ads__campaign_passthrough_metrics: []
+    amazon_ads__search_term_ad_keyword_passthrough_metrics: []
+    amazon_ads__targeting_keyword_passthrough_metrics: []
