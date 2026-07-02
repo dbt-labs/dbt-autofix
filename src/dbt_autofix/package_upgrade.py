@@ -156,13 +156,14 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
         return
 
     # check package-lock.yml
-    package_lock_path: Path = (root_dir / "package-lock.yml")
+    package_lock_path: Path = root_dir / "package-lock.yml"
     package_lock_yml: Optional[dict[Any, Any]] = load_yaml_from_package_lock_file_path(package_lock_path)
     if not package_lock_yml:
-        console.log(f"package-lock.yml not found in {root_dir}. For the most accurate results, please run dbt deps and generate a lock file. Proceeding anyway")
+        console.log(
+            f"package-lock.yml not found in {root_dir}. For the most accurate results, please run dbt deps and generate a lock file. Proceeding anyway"
+        )
     else:
         package_lock_file: DbtPackageLockFile = DbtPackageLockFile(yml_dependencies=package_lock_yml)
-        console.log(f"Package lock file package versions: {[x for x in package_lock_file.installed_package_versions]}")
         if package_lock_file:
             deps_file.merge_package_lock_versions(package_lock_file)
 

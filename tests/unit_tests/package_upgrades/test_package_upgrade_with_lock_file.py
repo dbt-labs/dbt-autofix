@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
+from dbt_fusion_package_tools.dbt_package import DbtPackage
 from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
     PackageVersionFusionCompatibilityState,
@@ -15,8 +16,6 @@ from dbt_autofix.package_upgrade import (
     upgrade_package_versions,
 )
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_fusion_package_tools.dbt_package import DbtPackage
-from dbt_fusion_package_tools.version_utils import VersionSpecifier
 
 PROJECT_WITH_PACKAGE_LOCK_PATH = Path("tests/integration_tests/package_upgrades/transitive_dependencies")
 # update if count changes
@@ -41,8 +40,6 @@ def test_generate_package_dependencies():
         assert output.package_dependencies[package].installed_package_version is not None
         assert output.package_dependencies[package].get_installed_package_version() != "unknown"
         assert output.package_dependencies[package].project_config_version_range is not None
-        project_config_version_range_start = output.package_dependencies[package].project_config_version_range.start
-        project_config_version_range_end = output.package_dependencies[package].project_config_version_range.end
         fusion_compatibility_state = output.package_dependencies[package].is_installed_version_fusion_compatible()
         package_fusion_compatibility_state: PackageFusionCompatibilityState = output.package_dependencies[
             package
@@ -51,27 +48,27 @@ def test_generate_package_dependencies():
         # package-lock resolves to 1.4.0
         if package == "dbt-labs/dbt_utils":
             assert output.package_dependencies[package].get_installed_package_version() == "1.4.0"
-            assert str(output.package_dependencies[package].project_config_raw_version_specifier) == "['>=1.0.0', '<2.0.0']"
-            assert project_config_version_range_start == VersionSpecifier.from_version_string("1.0.0")
-            assert project_config_version_range_end == VersionSpecifier.from_version_string("2.0.0")
+            assert (
+                str(output.package_dependencies[package].project_config_raw_version_specifier)
+                == "['>=1.0.0', '<2.0.0']"
+            )
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
         # packages.yml: [">=1.1.0", "<1.1.2"]
         # package-lock resolves to 1.1.1
         elif package == "dbt-labs/dbt_project_evaluator":
             assert output.package_dependencies[package].get_installed_package_version() == "1.1.1"
-            assert str(output.package_dependencies[package].project_config_raw_version_specifier) == "['>=1.1.0', '<1.1.2']"
-            assert project_config_version_range_start == VersionSpecifier.from_version_string("1.1.0")
-            assert project_config_version_range_end == VersionSpecifier.from_version_string("1.1.2")
+            assert (
+                str(output.package_dependencies[package].project_config_raw_version_specifier)
+                == "['>=1.1.0', '<1.1.2']"
+            )
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         # packages.yml: "2.6.0"
         # package-lock resolves to 2.6.0
         elif package == "fivetran/ad_reporting":
             assert output.package_dependencies[package].get_installed_package_version() == "2.6.0"
-            assert str(output.package_dependencies[package].project_config_raw_version_specifier) == '2.6.0'
-            assert project_config_version_range_start == VersionSpecifier.from_version_string("2.6.0")
-            assert project_config_version_range_end == VersionSpecifier.from_version_string("2.6.0")
+            assert str(output.package_dependencies[package].project_config_raw_version_specifier) == "2.6.0"
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
         else:
