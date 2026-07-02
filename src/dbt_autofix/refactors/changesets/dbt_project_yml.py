@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 
 import yamllint.config
 
+from dbt_autofix.refactors.constants import DBT_PROJECT_CONFIG_MISSPELLINGS
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     DbtProjectYMLRefactorConfig,
@@ -132,8 +133,19 @@ def rec_check_yaml_path(
         if not (path / k).exists() and not _path_exists_as_file(path / k):
             # Case 1: Key doesn't have "+" prefix
             if not k.startswith("+"):
+                # Underscore hook form without "+" (pre_hook/post_hook): rename to the hyphenated,
+                # "+"-prefixed form dbt_project.yml expects, rather than treating it as custom config.
+                if (
+                    k not in node_fields.allowed_config_fields_dbt_project
+                    and k in DBT_PROJECT_CONFIG_MISSPELLINGS
+                    and DBT_PROJECT_CONFIG_MISSPELLINGS[k] in node_fields.allowed_config_fields_dbt_project
+                    and f"+{DBT_PROJECT_CONFIG_MISSPELLINGS[k]}" not in yml_dict
+                ):
+                    new_k = f"+{DBT_PROJECT_CONFIG_MISSPELLINGS[k]}"
+                    yml_dict[new_k] = v
+                    log_msg = f"Renamed config '{k}' to '{new_k}' (dbt_project.yml expects the hyphenated hook form)"
                 # Built-in config missing "+"
-                if k in node_fields.allowed_config_fields_dbt_project:
+                elif k in node_fields.allowed_config_fields_dbt_project:
                     new_k = f"+{k}"
                     yml_dict[new_k] = v
                     log_msg = f"Added '+' in front of the nested config '{k}'"
@@ -165,8 +177,29 @@ def rec_check_yaml_path(
             else:
                 key_without_plus = k[1:]  # Remove the + prefix
 
+                # Underscore hook form (+pre_hook/+post_hook): not valid in dbt_project.yml, but a
+                # functional hook in dbt-core and node-level configs. Rename to the hyphenated form
+                # instead of moving it to +meta (which would silently disable the hook).
+                if (
+                    key_without_plus not in node_fields.allowed_config_fields_dbt_project
+                    and key_without_plus in DBT_PROJECT_CONFIG_MISSPELLINGS
+                    and DBT_PROJECT_CONFIG_MISSPELLINGS[key_without_plus]
+                    in node_fields.allowed_config_fields_dbt_project
+                    and f"+{DBT_PROJECT_CONFIG_MISSPELLINGS[key_without_plus]}" not in yml_dict
+                ):
+                    corrected_key = f"+{DBT_PROJECT_CONFIG_MISSPELLINGS[key_without_plus]}"
+                    log_msg = (
+                        f"Renamed config '{k}' to '{corrected_key}' (dbt_project.yml expects the hyphenated hook form)"
+                    )
+                    yml_dict[corrected_key] = v
+                    del yml_dict[k]
+                    if refactor_logs is None:
+                        refactor_logs = [log_msg]
+                    else:
+                        refactor_logs.append(log_msg)
+
                 # Check if it's a valid config field
-                if key_without_plus in node_fields.allowed_config_fields_dbt_project:
+                elif key_without_plus in node_fields.allowed_config_fields_dbt_project:
                     # Valid config, but we need to check if it's a dict with +prefixed subkeys
                     if isinstance(v, dict) and schema_specs is not None:
                         # Get dict config analysis
