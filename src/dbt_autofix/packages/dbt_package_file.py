@@ -9,9 +9,10 @@ from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
     PackageVersionFusionCompatibilityState,
 )
-from dbt_fusion_package_tools.version_utils import Matchers
+from dbt_fusion_package_tools.version_utils import Matchers, VersionSpecifier
 from rich.console import Console
 
+from dbt_autofix.packages.dbt_package_lock_file import DbtPackageLockFile
 from dbt_autofix.refactors.yml import load_yaml
 
 console = Console()
@@ -115,6 +116,7 @@ class DbtPackageFile:
     yml_dependencies: dict[Any, Any]
     # this is indexed by package id for uniqueness (hopefully)
     package_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
+    transitive_dependencies: dict[str, DbtPackageVersion] = field(default_factory=dict)
     unknown_packages: set[str] = field(default_factory=set)
 
     def parse_file_path_to_string(self):
@@ -153,6 +155,24 @@ class DbtPackageFile:
 
     def add_version_for_package(self, package_id: str, package_version: DbtPackageVersion, installed=False) -> bool:
         return self.package_dependencies[package_id].add_package_version(package_version, installed=installed)
+    
+    def merge_package_lock_versions(self, lock_file: DbtPackageLockFile) -> int:
+        package_lock_found_in_deps: int = 0
+        for lock_file_package in lock_file.installed_package_versions:
+            lock_package_id: Optional[str] = lock_file.installed_package_versions[lock_file_package].package_id
+            if lock_package_id is None or lock_package_id != lock_file_package:
+                console.log(f"Mismatch in lock package: {lock_package_id}, {lock_file_package}")
+                lock_package_id = lock_package_id if lock_package_id is not None else lock_file_package
+            lock_package_version: VersionSpecifier = lock_file.installed_package_versions[lock_file_package].version
+            console.log(f"Parsed package version info: {lock_file_package}, {lock_package_id}, {lock_package_version}")
+            if lock_file_package in self.package_dependencies:
+                self.set_installed_version_for_package(lock_package_id, lock_file.installed_package_versions[lock_package_id])
+                package_lock_found_in_deps += 1
+            else:
+                self.transitive_dependencies[lock_package_id] = lock_file.installed_package_versions[lock_file_package]
+        console.log(f"found {package_lock_found_in_deps} lock file deps in packages.yml and {len(self.transitive_dependencies)} transitive dependencies")
+        assert package_lock_found_in_deps + len(self.transitive_dependencies) == len(lock_file.installed_package_versions)
+        return package_lock_found_in_deps
 
     def merge_installed_versions(self, installed_packages: dict[str, DbtPackageVersion]) -> int:
         package_lookup: dict[str, str] = self.get_reverse_lookup_by_package_name()
