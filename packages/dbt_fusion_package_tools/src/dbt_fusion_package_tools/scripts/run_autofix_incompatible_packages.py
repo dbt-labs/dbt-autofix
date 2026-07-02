@@ -546,6 +546,9 @@ def run_autofix_from_tarballs(
     results: dict[str, dict[str, dict[str, Any]]] = {}
 
     for i, package in enumerate(output):
+        # temporarily skip fivetran packages
+        if package.split("/")[0] != "fivetran" and package.split("/")[0] != "fishtown-analytics":
+            continue
         if package_limit > 0 and i > package_limit:
             break
         results[package] = {}
