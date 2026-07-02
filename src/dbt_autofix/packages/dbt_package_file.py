@@ -183,6 +183,13 @@ class DbtPackageFile:
                 self.unknown_packages.add(package)
                 continue
             package_id = package_lookup[package]
+            # skip if we've already determined the version, such as from the package lock
+            if self.package_dependencies[package_id].installed_package_version is not None:
+                installed_count += 1
+                console.log(f"installed package {package} already has version {self.package_dependencies[package_id].installed_package_version}")
+                continue
+            else:
+                console.log(f"no version found from package lock for {package_id}")
             # kind of hacky - try to correct installed version if package's dbt project yml
             # has an incorrect version
             package_version_range = self.package_dependencies[package_id].project_config_version_range
