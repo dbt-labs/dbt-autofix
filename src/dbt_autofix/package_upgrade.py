@@ -22,6 +22,7 @@ from dbt_autofix.packages.dbt_package_file import (
     parse_package_dependencies_from_dependencies_yml,
     parse_package_dependencies_from_packages_yml,
 )
+from dbt_autofix.packages.dbt_package_lock_file import DbtPackageLockFile, load_yaml_from_package_lock_file_path
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
 
@@ -153,6 +154,19 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
     if not deps_file:
         error_console.log("Project dependencies could not be parsed")
         return
+
+    # check package-lock.yml
+    package_lock_path: Path = root_dir / "package-lock.yml"
+    package_lock_yml: Optional[dict[Any, Any]] = load_yaml_from_package_lock_file_path(package_lock_path)
+    if not package_lock_yml:
+        console.log(
+            f"package-lock.yml not found in {root_dir}. For the most accurate results, please run dbt deps and generate a lock file. Proceeding anyway"
+        )
+    else:
+        package_lock_file: DbtPackageLockFile = DbtPackageLockFile(yml_dependencies=package_lock_yml)
+        if package_lock_file:
+            deps_file.merge_package_lock_versions(package_lock_file)
+
     # check installed packages
     installed_packages: dict[str, DbtPackageVersion] = get_current_installed_package_versions(root_dir)
 

@@ -16,6 +16,7 @@ from dbt_autofix.package_upgrade import (
 )
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
 
+# project does not have a package lock file
 PROJECT_WITH_PACKAGES_PATH = Path("tests/integration_tests/package_upgrades/mixed_versions")
 # update if count changes
 PROJECT_DEPENDENCY_COUNT = 10
@@ -32,6 +33,7 @@ PROJECT_DEPENDENCY_COUNT = 10
 # dbt-labs/snowplow 0.9.0: no upgrade needed (version 0.9.0 has compatible require dbt version)
 
 # needs upgrade to version within config range (should always succeed)
+# packages.yml has a version range (not pinned) so installed version will be inferred as 0.2.1
 # Matts52/dbt_set_similarity 0.2.1: upgrade needed (versions 0.2.2+ compatible)
 # dbt_project.yml require-dbt-version: [">=1.1.0", "<2.0.0"]
 
@@ -59,6 +61,8 @@ def test_generate_package_dependencies():
     assert output is not None
     assert len(output.package_dependencies) == PROJECT_DEPENDENCY_COUNT
     assert len(output.get_private_package_names()) == 0
+    # without package lock file, no transitive dependencies inferred
+    assert len(output.transitive_dependencies) == 0
     for package in output.package_dependencies:
         assert output.package_dependencies[package].get_installed_package_version() != "unknown"
         fusion_compatibility_state = output.package_dependencies[package].is_installed_version_fusion_compatible()
