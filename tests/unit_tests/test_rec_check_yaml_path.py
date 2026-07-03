@@ -93,26 +93,41 @@ def test_correct_configs_unchanged(models_node_fields, temp_path):
 # =============================================================================
 
 
-def test_unsupported_hook_moved_to_meta(models_node_fields, temp_path):
-    """INPUT:  +post_hook with underscore (NOT in schema)
-    OUTPUT: Moved to +meta.post_hook
-    WHY:    Schema doesn't recognize post_hook, so it's treated as custom config
+def test_underscore_hook_renamed_to_hyphen(models_node_fields, temp_path):
+    """INPUT:  +post_hook / +pre_hook with underscore (NOT in dbt_project.yml schema)
+    OUTPUT: Renamed to +post-hook / +pre-hook
+    WHY:    The underscore form is a functional hook in dbt-core; dbt_project.yml expects the
+            hyphenated form. Renaming preserves the hook instead of burying it in +meta.
     """
     input_dict = {"+post_hook": "grant select", "+pre_hook": "begin"}
 
     expected_output = {
-        "+meta": {
-            "post_hook": "grant select",  # Moved to meta
-            "pre_hook": "begin",  # Moved to meta
-        }
+        "+post-hook": "grant select",  # Renamed, not moved to meta
+        "+pre-hook": "begin",  # Renamed, not moved to meta
     }
 
     result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 2
+    assert "+post_hook" in logs[0] and "+post-hook" in logs[0]
+    assert "+pre_hook" in logs[1] and "+pre-hook" in logs[1]
+
+
+def test_underscore_hook_kept_in_meta_when_hyphen_form_already_present(models_node_fields, temp_path):
+    """INPUT:  Both +post-hook (valid) and +post_hook (underscore) present
+    OUTPUT: Valid one kept; underscore one moved to +meta (no clobbering)
+    WHY:    Renaming would overwrite the existing +post-hook value, so we fall back to +meta.
+    """
+    input_dict = {"+post-hook": "select 1", "+post_hook": "select 2"}
+
+    expected_output = {"+post-hook": "select 1", "+meta": {"post_hook": "select 2"}}
+
+    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+
+    assert result == expected_output
+    assert len(logs) == 1
     assert "post_hook" in logs[0] and "meta" in logs[0]
-    assert "pre_hook" in logs[1] and "meta" in logs[1]
 
 
 def test_mixed_valid_and_invalid_configs(models_node_fields, temp_path):
@@ -238,11 +253,12 @@ def test_multiple_unknowns_merged_into_meta(models_node_fields, temp_path):
 
 
 def test_real_world_example_user_config(models_node_fields, temp_path):
-    """INPUT:  Real user config with +post_hook (underscore - not in schema!)
-    OUTPUT: Moved to +meta.post_hook
-    WHY:    post_hook is not in schema, so treated as custom config
+    """INPUT:  Real user config with +post_hook (underscore) and a genuinely custom config
+    OUTPUT: +post_hook renamed to +post-hook; the custom config moved to +meta
+    WHY:    The hook is functional and must be preserved (renamed); the custom key is not a
+            recognized config and belongs under +meta.
 
-    NOTE: Using REAL schema - post_hook with underscore is NOT recognized
+    NOTE: Using REAL schema - post_hook underscore is normalized to the hyphenated form.
     """
     input_dict = {
         "+my_custom_unknown_config": "value",
@@ -255,12 +271,12 @@ def test_real_world_example_user_config(models_node_fields, temp_path):
 
     expected_output = {
         "+materialized": "table",
+        "+post-hook": [  # Renamed from +post_hook (functional hook preserved)
+            "{{ grant_select(this, 'data-analytics') }}",
+            "{{ grant_select(this, 'airflow_service_user_role') }}",
+        ],
         "+meta": {
-            "my_custom_unknown_config": "value",
-            "post_hook": [  # Moved to meta (not in schema)
-                "{{ grant_select(this, 'data-analytics') }}",
-                "{{ grant_select(this, 'airflow_service_user_role') }}",
-            ],
+            "my_custom_unknown_config": "value",  # Genuinely custom - moved to meta
         },
     }
 
@@ -268,8 +284,7 @@ def test_real_world_example_user_config(models_node_fields, temp_path):
 
     assert result == expected_output
     assert len(logs) == 2
-    # Both moved to meta
-    assert any("post_hook" in log and "meta" in log for log in logs)
+    assert any("+post_hook" in log and "+post-hook" in log for log in logs)
     assert any("my_custom_unknown_config" in log and "meta" in log for log in logs)
 
 
@@ -280,7 +295,7 @@ def test_all_scenarios_combined(models_node_fields, temp_path):
     """
     input_dict = {
         "+post-hook": "select 1",  # Valid, keep
-        "+pre_hook": "select 0",  # Invalid (underscore), move to meta
+        "+pre_hook": "select 0",  # Underscore hook, rename to +pre-hook
         "materialized": "table",  # Missing +, add it
         "+enabled": True,  # Valid, keep
         "+custom_unknown": "val",  # Invalid, move to meta
@@ -289,10 +304,10 @@ def test_all_scenarios_combined(models_node_fields, temp_path):
 
     expected_output = {
         "+post-hook": "select 1",
+        "+pre-hook": "select 0",  # Renamed from +pre_hook (functional hook preserved)
         "+materialized": "table",  # + added!
         "+enabled": True,
-        "+meta": {  # All invalids here
-            "pre_hook": "select 0",
+        "+meta": {  # Genuinely custom configs here
             "custom_unknown": "val",
             "another_custom": "val2",
         },
@@ -302,7 +317,7 @@ def test_all_scenarios_combined(models_node_fields, temp_path):
 
     assert result == expected_output
     assert len(logs) == 4
-    # Should have logs for: materialized +, and 3 meta moves
+    # Should have logs for: pre_hook rename, materialized +, and 2 meta moves
 
 
 # =============================================================================
@@ -344,9 +359,9 @@ def test_preserves_complex_values(models_node_fields, temp_path):
 
 
 def test_jinja_in_hook_values_preserved(models_node_fields, temp_path):
-    """INPUT:  Invalid config (+post_hook) with complex Jinja
-    OUTPUT: Moved to meta with Jinja preserved exactly
-    WHY:    We only move keys, never touch the values/Jinja content
+    """INPUT:  Underscore hook (+post_hook) with complex Jinja
+    OUTPUT: Renamed to +post-hook with Jinja preserved exactly
+    WHY:    We only change the key, never touch the values/Jinja content
     """
     input_dict = {
         "+post_hook": [
@@ -356,19 +371,17 @@ def test_jinja_in_hook_values_preserved(models_node_fields, temp_path):
     }
 
     expected_output = {
-        "+meta": {
-            "post_hook": [  # Moved to meta, values preserved exactly
-                "{%- if target.name.startswith('sf')-%}{{ grant_select(this, 'role') }}{%- endif -%}",
-                "CALL UTILS.GOVERNANCE.REAPPLY_JIRA_RESOURCE_GRANTS('{{ this | upper }}')",
-            ]
-        }
+        "+post-hook": [  # Renamed, values preserved exactly
+            "{%- if target.name.startswith('sf')-%}{{ grant_select(this, 'role') }}{%- endif -%}",
+            "CALL UTILS.GOVERNANCE.REAPPLY_JIRA_RESOURCE_GRANTS('{{ this | upper }}')",
+        ]
     }
 
     result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
     assert len(logs) == 1
-    assert "post_hook" in logs[0] and "meta" in logs[0]
+    assert "+post_hook" in logs[0] and "+post-hook" in logs[0]
 
 
 # =============================================================================
@@ -930,7 +943,8 @@ QUICK REFERENCE - What rec_check_yaml_path does:
 Input Key                  | Output Key           | Why
 ---------------------------|----------------------|----------------------------------
 +post-hook                 | +post-hook          | ✅ In schema (hyphen) - kept
-+post_hook                 | +meta.post_hook     | ❌ Not in schema - moved to meta
++post_hook                 | +post-hook          | 🔧 Underscore hook renamed to hyphen
++pre_hook                  | +pre-hook           | 🔧 Underscore hook renamed to hyphen
 post-hook                  | +post-hook          | 🔧 Added + prefix (in schema)
 +materialized              | +materialized       | ✅ In schema - kept
 materialized               | +materialized       | 🔧 Added + prefix (in schema)
@@ -939,9 +953,10 @@ materialized               | +materialized       | 🔧 Added + prefix (in schem
 custom_config              | +meta.custom_config | ❌ Not in schema - moved to meta
 
 Key insights:
-1. Only checks if key is IN SCHEMA - no spelling correction
-2. dbt_project.yml schema expects: +pre-hook, +post-hook (hyphens)
+1. dbt_project.yml schema expects hyphenated hooks: +pre-hook, +post-hook
+2. Underscore hook forms (+pre_hook/+post_hook) are renamed to the hyphenated form,
+   not moved to +meta, so functional hooks are preserved
 3. All configs need + prefix in dbt_project.yml
-4. Any config NOT in schema → moved to +meta
+4. Any other config NOT in schema → moved to +meta
 5. 🎯 Tests use REAL Fusion schema - accurate validation!
 """
