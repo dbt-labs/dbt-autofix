@@ -43,6 +43,7 @@ class PackageVersionUpgradeResult:
     compatible_version: Optional[str] = None
     version_range_config: Optional[str] = None
     upgraded: bool = False
+    package_lock_version_found: bool = False
 
     def package_should_upgrade(self):
         return self.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE
@@ -58,15 +59,20 @@ class PackageVersionUpgradeResult:
     @property
     def package_upgrade_logs(self):
         logs: list[str] = [self.version_reason.value]
+        current_version_text: str = (
+            f"Current version ({self.installed_version})"
+            if self.package_lock_version_found and self.installed_version != "unknown"
+            else "Current version"
+        )
         if self.already_compatible:
             current_version_compat = (
-                f"Current version is compatible: {self.installed_version_compatibility_state.value}"
+                f"{current_version_text} is compatible: {self.installed_version_compatibility_state.value}"
             )
         elif self.installed_version_compatibility_state == PackageVersionFusionCompatibilityState.UNKNOWN:
-            current_version_compat = "Current version compatibility unknown"
+            current_version_compat = f"{current_version_text} compatibility unknown"
         else:
             current_version_compat = (
-                f"Current version is not compatible: {self.installed_version_compatibility_state.value}"
+                f"{current_version_text} is not compatible: {self.installed_version_compatibility_state.value}"
             )
         logs.append(current_version_compat)
         if self.upgraded and self.upgraded_version and self.upgraded_version_compatibility_state is not None:
@@ -79,6 +85,8 @@ class PackageVersionUpgradeResult:
 
     def to_dict(self) -> dict:
         ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
+        if self.package_lock_version_found and self.installed_version != "unknown":
+            ret_dict["installed_version"] = self.installed_version
         return ret_dict
 
 
@@ -180,6 +188,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     # check all packages for upgrades
     # if dry run, write out package upgrades and exit
     package_version_upgrade_results: list[PackageVersionUpgradeResult] = []
+    # flag if we found a package lock file
+    has_package_lock_file: bool = deps_file.has_lock_file
 
     # create a set of all packages in file - packages will be removed once checked
     packages_to_check: set[str] = set([package for package in deps_file.package_dependencies])
@@ -230,6 +240,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
                     installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -244,6 +255,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -262,6 +274,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
                     installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -277,6 +290,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -291,6 +305,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -305,6 +320,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -355,6 +371,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
                     if package in EXPLICIT_ALLOW_ALL_VERSIONS
                     else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -372,6 +389,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
                     if package in EXPLICIT_ALLOW_ALL_VERSIONS
                     else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -387,6 +405,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
                     installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
             packages_to_check.remove(package)
@@ -403,6 +422,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
                 )
             )
     return package_version_upgrade_results
@@ -466,7 +486,7 @@ def upgrade_package_versions(
 
     package_text_file = DbtPackageTextFile(file_path=deps_file.file_path)
     updated_packages: set[str] = package_text_file.update_config_file(
-        packages_to_update, dry_run=dry_run, print_to_console=True
+        packages_to_update, dry_run=dry_run, print_to_console=(not json_output)
     )
 
     upgraded_package_results: list[PackageVersionUpgradeResult] = []
