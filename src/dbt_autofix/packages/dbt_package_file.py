@@ -118,6 +118,8 @@ class DbtPackageFile:
     package_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
     transitive_dependencies: dict[str, DbtPackageVersion] = field(default_factory=dict)
     unknown_packages: set[str] = field(default_factory=set)
+    # track if the project has a package-lock.yml so we can determine canonical versions
+    has_lock_file: bool = False
 
     def parse_file_path_to_string(self):
         if not self.file_path:
@@ -157,6 +159,7 @@ class DbtPackageFile:
         return self.package_dependencies[package_id].add_package_version(package_version, installed=installed)
 
     def merge_package_lock_versions(self, lock_file: DbtPackageLockFile) -> int:
+        self.has_lock_file = True
         package_lock_found_in_deps: int = 0
         for lock_file_package in lock_file.installed_package_versions:
             lock_package_id: Optional[str] = lock_file.installed_package_versions[lock_file_package].package_id
