@@ -79,7 +79,7 @@ def test_check_for_package_upgrades():
     package_file: Optional[DbtPackageFile] = generate_package_dependencies(PROJECT_WITH_PACKAGE_LOCK_PATH)
     assert package_file is not None
     output: list[PackageVersionUpgradeResult] = check_for_package_upgrades(package_file)
-    assert len(output) == PROJECT_DEPENDENCY_COUNT
+    assert len(output) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
     for package_result in output:
         print(f"test output: {package_result.id}, {package_result.version_reason}")
         package = package_result.id
@@ -104,8 +104,8 @@ def test_upgrade_package_versions_no_force_update():
     assert output
     assert not output.upgraded
     assert len(output.upgrades) == 0
-    assert len(output.unchanged) == 3
-    assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT
+    assert len(output.unchanged) == 3 + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
+    assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
     output.print_to_console(json_output=False)
     output.print_to_console(json_output=True)
 
@@ -121,7 +121,7 @@ def test_upgrade_package_versions_with_force_update():
     assert output
     assert output.upgraded
     assert len(output.upgrades) == 1
-    assert len(output.unchanged) == 2
-    assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT
+    assert len(output.unchanged) == 2 + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
+    assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
     output.print_to_console(json_output=False)
     output.print_to_console(json_output=True)
