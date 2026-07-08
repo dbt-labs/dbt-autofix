@@ -58,6 +58,7 @@ class DbtPackage:
     fusion_compatible_versions: list[VersionSpecifier] = field(default_factory=list)
     fusion_incompatible_versions: list[VersionSpecifier] = field(default_factory=list)
     unknown_compatibility_versions: list[VersionSpecifier] = field(default_factory=list)
+    v2_compatible_download_versions: list[VersionSpecifier] = field(default_factory=list)
 
     # check compatibility of latest and installed versions when loading
     latest_version_fusion_compatibility: PackageVersionFusionCompatibilityState = (
@@ -78,10 +79,12 @@ class DbtPackage:
         fusion_compatible_versions = convert_version_string_list_to_spec(output["fusion_compatible_versions"])
         fusion_incompatible_versions = convert_version_string_list_to_spec(output["fusion_incompatible_versions"])
         unknown_compatibility_versions = convert_version_string_list_to_spec(output["unknown_compatibility_versions"])
+        v2_compatible_download_versions = convert_version_string_list_to_spec(output["v2_compatible_download_versions"])
         self.lowest_fusion_compatible_version = oldest_fusion_compatible_version
         self.fusion_compatible_versions = fusion_compatible_versions
         self.fusion_incompatible_versions = fusion_incompatible_versions
         self.unknown_compatibility_versions = unknown_compatibility_versions
+        self.v2_compatible_download_versions = v2_compatible_download_versions
         return True
 
     def __post_init__(self):
@@ -141,6 +144,12 @@ class DbtPackage:
             else:
                 return self.package_versions[installed_version_string].get_fusion_compatibility_state()
 
+    def has_v2_compatible_download_for_installed_version(self) -> bool:
+        if self.installed_package_version is None:
+            return False
+        else:
+            return self.installed_package_version in self.v2_compatible_download_versions
+    
     def find_fusion_compatible_versions_in_requested_range(self) -> list[VersionSpecifier]:
         """Find package versions that are compatible with Fusion AND the version range specified in the project config.
 
