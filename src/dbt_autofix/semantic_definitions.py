@@ -1,23 +1,70 @@
+import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from dbt_autofix.jinja import statically_parse_ref
-from dbt_autofix.refactors.yml import get_list, load_yaml
+from dbt_autofix.refactors.yml import (
+    ProjectYamlCache,
+    get_list,
+    iter_project_yaml_files,
+    load_yaml,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def _as_top_level_yaml_list(yml_dict: CommentedMap, key: str) -> list[Any]:
+    """Top-level `semantic_models` / `models` / `metrics` must be sequences, not a mapping (which would `list` keys)."""
+    v = yml_dict.get(key)
+    if v is None:
+        return []
+    if isinstance(v, (str, bytes, int, float, bool)):
+        return []
+    if isinstance(v, (dict, CommentedMap)):
+        return []
+    if isinstance(v, (list, tuple, CommentedSeq)):
+        return list(v)
+    if isinstance(v, Sequence) and not isinstance(v, (str, bytes)):
+        return list(v)
+    return []
+
+
+def _is_mapping_node(node: Any) -> bool:
+    return isinstance(node, (CommentedMap, dict))
+
+
+def _coerce_semantic_model_node(node: Any) -> Optional[CommentedMap]:
+    """Store only ``CommentedMap`` in the semantic model index; coerce plain ``dict`` from atypical parses."""
+    if isinstance(node, CommentedMap):
+        return node
+    if isinstance(node, dict):
+        c = CommentedMap()
+        for k, v in node.items():
+            c[k] = v
+        return c
+    return None
 
 
 class SemanticDefinitions:
-    def __init__(self, root_path: Path, dbt_paths: List[str]):
+    def __init__(
+        self,
+        root_path: Path,
+        dbt_paths: List[str],
+        *,
+        yaml_cache: "ProjectYamlCache | None" = None,
+    ):
         # All semantic models from semantic_models: entries in schema.yml files, keyed by their model key
-        self.semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = self.collect_semantic_models(
-            root_path, dbt_paths
-        )
-        # All model keys from models: entries in schema.yml files
-        self.model_yml_keys: Set[Tuple[str, Optional[str]]] = self.collect_model_yml_keys(root_path, dbt_paths)
-        # All top-level metrics from metrics: entries in schema.yml files
-        self.initial_metrics: Dict[str, CommentedMap] = self.collect_metrics(root_path, dbt_paths)
+        # All model keys from models: entries in schema.yml files; top-level metrics from metrics:
+        if yaml_cache is not None:
+            self.semantic_models, self.model_yml_keys, self.initial_metrics = self._collect_from_yaml_cache(yaml_cache)
+        else:
+            self.semantic_models, self.model_yml_keys, self.initial_metrics = self._collect_from_project_yaml(
+                root_path, dbt_paths
+            )
 
         self.merged_semantic_models: Set[str] = set()
         self._semantic_model_to_dbt_model_name_map: Dict[str, str] = {}
@@ -37,10 +84,19 @@ class SemanticDefinitions:
         return self.semantic_models.get(model_key) or CommentedMap()
 
     def get_model_key_for_semantic_model(self, semantic_model: CommentedMap) -> Optional[Tuple[str, Optional[str]]]:
-        ref = statically_parse_ref(semantic_model["model"])
-        if not ref:
+        """Resolve the ``(model_name, version)`` key; requires a parseable ``model:`` (``ref``) and non-empty name."""
+        expr = semantic_model.get("model")
+        if expr is None or expr == "":
             return None
-        return (ref.name, ref.version)
+        if not isinstance(expr, str):
+            expr = str(expr)
+        try:
+            ref = statically_parse_ref(expr)
+        except Exception:
+            return None
+        if not ref or not ref.name or not str(ref.name).strip():
+            return None
+        return (str(ref.name), ref.version)
 
     def model_key_exists_for_semantic_model(self, model_key: Tuple[str, Optional[str]]) -> bool:
         return model_key in self.model_yml_keys
@@ -66,7 +122,9 @@ class SemanticDefinitions:
         metric: CommentedMap,
     ):
         self._artificial_metric_names_map[(measure_name, fill_nulls_with, join_to_timespine)] = metric
-        self._set_of_artificial_metric_names.add(metric["name"])
+        name = metric.get("name")
+        if name is not None:
+            self._set_of_artificial_metric_names.add(str(name) if not isinstance(name, str) else name)
 
     def get_artificial_metric(
         self,
@@ -83,53 +141,118 @@ class SemanticDefinitions:
     def get_model_for_semantic_model(self, semantic_model_name: str) -> str:
         return self._semantic_model_to_dbt_model_name_map[semantic_model_name]
 
-    def collect_semantic_models(
-        self, root_path: Path, dbt_paths: List[str]
-    ) -> Dict[Tuple[str, Optional[str]], CommentedMap]:
+    @staticmethod
+    def _merge_yml_dict_into_semantic_indexes(
+        yml_dict: CommentedMap,
+        semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap],
+        model_yml_keys: Set[Tuple[str, Optional[str]]],
+        metrics: Dict[str, CommentedMap],
+    ) -> None:
+        for sm in _as_top_level_yaml_list(yml_dict, "semantic_models"):
+            if not _is_mapping_node(sm):
+                continue
+            expr = sm.get("model")
+            if expr in (None, ""):
+                continue
+            if not isinstance(expr, str):
+                expr = str(expr)
+            try:
+                ref = statically_parse_ref(expr)
+            except Exception:
+                continue
+            if ref and ref.name and str(ref.name).strip():
+                sm_node = _coerce_semantic_model_node(sm)
+                if sm_node is not None:
+                    name_key = str(ref.name)
+                    semantic_models[(name_key, ref.version)] = sm_node
+
+        for model in _as_top_level_yaml_list(yml_dict, "models"):
+            if not _is_mapping_node(model):
+                continue
+            mname = model.get("name")
+            if mname is None or (isinstance(mname, str) and not mname.strip()):
+                continue
+            mname = str(mname) if not isinstance(mname, str) else mname
+            if not model.get("versions"):
+                model_yml_keys.add((mname, None))
+            else:
+                for ver in _as_top_level_yaml_list(model, "versions"):
+                    if not _is_mapping_node(ver):
+                        continue
+                    v_tag = ver.get("v")
+                    if v_tag is not None and not isinstance(v_tag, str):
+                        v_tag = str(v_tag)
+                    model_yml_keys.add((mname, v_tag))
+
+        for metric in _as_top_level_yaml_list(yml_dict, "metrics"):
+            if not _is_mapping_node(metric):
+                continue
+            metric_name = metric.get("name")
+            if metric_name is None:
+                continue
+            if isinstance(metric_name, str) and not metric_name.strip():
+                continue
+            key = str(metric_name) if not isinstance(metric_name, str) else metric_name
+            metrics[key] = metric
+
+    @staticmethod
+    def _collect_from_yaml_cache(
+        yaml_cache: "ProjectYamlCache",
+    ) -> tuple[Dict[Tuple[str, Optional[str]], CommentedMap], Set[Tuple[str, Optional[str]]], Dict[str, CommentedMap]]:
+        """Build indexes from pre-parsed project YAMLs (``build_project_yaml_cache`` in semantic mode)."""
         semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = {}
-        for dbt_path in dbt_paths:
-            yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
-            )
-            for yml_file in yaml_files:
-                yml_dict = load_yaml(yml_file)
-                if "semantic_models" in yml_dict:
-                    for semantic_model in yml_dict["semantic_models"]:
-                        ref = statically_parse_ref(semantic_model["model"])
-                        if ref:
-                            semantic_models[(ref.name, ref.version)] = semantic_model
-        return semantic_models
-
-    def collect_model_yml_keys(self, root_path: Path, dbt_paths: List[str]) -> Set[Tuple[str, Optional[str]]]:
-        model_keys: Set[Tuple[str, Optional[str]]] = set()
-        for dbt_path in dbt_paths:
-            yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
-            )
-            for yml_file in yaml_files:
-                yml_dict = load_yaml(yml_file)
-                if "models" in yml_dict:
-                    for model in yml_dict["models"]:
-                        if not model.get("versions"):
-                            model_keys.add((model["name"], None))
-                        else:
-                            for version in model["versions"]:
-                                model_keys.add((model["name"], version.get("v")))
-        return model_keys
-
-    def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, CommentedMap]:
-        """Returns dict of metric_name -> metric"""
+        model_yml_keys: Set[Tuple[str, Optional[str]]] = set()
         metrics: Dict[str, CommentedMap] = {}
-        for dbt_path in dbt_paths:
-            yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
-            )
-            for yml_file in sorted(yaml_files):
+        for yml_file in yaml_cache.ordered_paths:
+            try:
+                yml_dict = yaml_cache.parsed_by_path.get(yml_file) or CommentedMap()
+                SemanticDefinitions._merge_yml_dict_into_semantic_indexes(
+                    yml_dict, semantic_models, model_yml_keys, metrics
+                )
+            except Exception as e:
+                logger.warning(
+                    "Skipping semantic index merge for %s: %s: %s",
+                    yml_file,
+                    type(e).__name__,
+                    e,
+                    exc_info=logger.isEnabledFor(logging.DEBUG),
+                )
+        return semantic_models, model_yml_keys, metrics
+
+    @staticmethod
+    def _collect_from_project_yaml(
+        root_path: Path, dbt_paths: List[str]
+    ) -> tuple[Dict[Tuple[str, Optional[str]], CommentedMap], Set[Tuple[str, Optional[str]]], Dict[str, CommentedMap]]:
+        """One glob over dbt model paths, one read + parse per file (same as cache build), dispatch into indexes."""
+        semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = {}
+        model_yml_keys: Set[Tuple[str, Optional[str]]] = set()
+        metrics: Dict[str, CommentedMap] = {}
+
+        for yml_file in iter_project_yaml_files(root_path, dbt_paths):
+            try:
                 yml_dict = load_yaml(yml_file)
-                if "metrics" in yml_dict:
-                    for metric in yml_dict["metrics"]:
-                        metrics[metric["name"]] = metric
-        return metrics
+            except Exception as e:
+                logger.warning(
+                    "Could not load YAML for semantic index (skipping %s): %s: %s",
+                    yml_file,
+                    type(e).__name__,
+                    e,
+                    exc_info=logger.isEnabledFor(logging.DEBUG),
+                )
+                continue
+            try:
+                SemanticDefinitions._merge_yml_dict_into_semantic_indexes(
+                    yml_dict, semantic_models, model_yml_keys, metrics
+                )
+            except Exception as e:
+                logger.warning(
+                    "Could not build semantic index from %s: %s: %s",
+                    yml_file,
+                    type(e).__name__,
+                    e,
+                    exc_info=logger.isEnabledFor(logging.DEBUG),
+                )
+        return semantic_models, model_yml_keys, metrics
 
 
 @dataclass
