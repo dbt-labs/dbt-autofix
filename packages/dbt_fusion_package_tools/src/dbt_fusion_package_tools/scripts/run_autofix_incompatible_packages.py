@@ -2,33 +2,40 @@
 
 import json
 import os
-import re
 import subprocess
 import tarfile
+import warnings
+from collections import defaultdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, List, Optional
-import warnings
 
 import requests
 import typer
-from dbtlabs.proto.public.v1.events.fusion.invocation.invocation_pb2 import Invocation
-from dbtlabs.proto.public.v1.events.fusion.log.log_pb2 import LogMessage
-from google.protobuf import json_format
 from rich.console import Console
 from typing_extensions import Annotated
-from collections import defaultdict
 
+from dbt_fusion_package_tools.check_parse_conformance import (
+    check_fusion_schema_compatibility,
+    construct_download_url_from_latest,
+)
 from dbt_fusion_package_tools.compatibility import (
     FusionConformanceResult,
-    FusionLogMessage,
     ParseConformanceLogOutput,
 )
-from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
-from dbt_fusion_package_tools.exceptions import FusionBinaryNotAvailable
+
+# from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
+from dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility import (
+    DEFAULT_FUSION_BINARY_PATH,
+    DEFAULT_HUB_PATH,
+    DEFAULT_OUTPUT_PATH,
+    clean_version,
+    extract_package_id_from_path,
+    get_latest_github_tarball_urls,
+    is_package_index_file,
+    is_package_version_file,
+)
 from dbt_fusion_package_tools.yaml.loader import safe_load
-from dbt_fusion_package_tools.check_parse_conformance import construct_download_url_from_latest, run_conformance_for_version, check_fusion_schema_compatibility
-from dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility import DEFAULT_FUSION_BINARY_PATH, DEFAULT_HUB_PATH, DEFAULT_OUTPUT_PATH, clean_version, extract_package_id_from_path, get_latest_github_tarball_urls, is_package_index_file, is_package_version_file, process_json
 
 console = Console()
 error_console = Console(stderr=True)
@@ -77,8 +84,12 @@ def process_json_with_conformance(file_path: str, parsed_json: Any) -> dict[str,
                     # console.log(f"Download previously failed for {parsed_json['id']}, skipping")
                     return {}
                 parse_conformant = parsed_json["fusion_compatibility"].get("parse_compatible")
-                manually_verified_compatible = parsed_json["fusion_compatibility"].get("manually_verified_compatible", False)
-                manually_verified_incompatible = parsed_json["fusion_compatibility"].get("manually_verified_incompatible", False)
+                manually_verified_compatible = parsed_json["fusion_compatibility"].get(
+                    "manually_verified_compatible", False
+                )
+                manually_verified_incompatible = parsed_json["fusion_compatibility"].get(
+                    "manually_verified_incompatible", False
+                )
                 # if parse_conformant is None:
                 #     # console.log(f"{parsed_json['id']} does not have parse conformance")
                 #     return {}
@@ -102,13 +113,11 @@ def process_json_with_conformance(file_path: str, parsed_json: Any) -> dict[str,
                 "manually_verified_compatible": manually_verified_compatible,
                 "manually_verified_incompatible": manually_verified_incompatible,
             }
-    else:
-        return {}
+    return {}
 
 
 def read_json_from_local_hub_repo_with_conformance(path: str, file_count_limit: int = 0):
-    """Read JSON files from a local copy of the hub repo and return a
-    defaultdict mapping package_id -> list[parsed outputs].
+    """Read JSON files from a local copy of the hub repo.
 
     The `path` argument may be either:
       - the repository root (so files are found under `data/packages/...`),
@@ -119,6 +128,8 @@ def read_json_from_local_hub_repo_with_conformance(path: str, file_count_limit: 
       - JSON files are found recursively
       - each file is parsed and passed to `process_json(file_path, parsed_json)`
       - parsing/IO errors are warned and skipped
+
+    Return a defaultdict mapping package_id -> list[parsed outputs].
     """
     base = Path(path)
     packages: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -191,7 +202,6 @@ def read_json_from_local_hub_repo_with_conformance(path: str, file_count_limit: 
     return packages
 
 
-
 def create_tarball_from_directory(
     source_dir: Path,
     dest_dir: Path,
@@ -202,6 +212,7 @@ def create_tarball_from_directory(
     Args:
         source_dir: Path to the directory to archive
         dest_dir: Path to the directory where the tarball should be written
+        file_name: Tarball name
 
     Returns:
         Path to the created tarball, or None if archiving failed
@@ -222,7 +233,6 @@ def create_tarball_from_directory(
         return None
 
 
-
 def run_autofix(
     repo_path: Path = Path.cwd(),
     fusion_binary: Optional[str] = None,
@@ -231,39 +241,39 @@ def run_autofix(
     """Run autofix deprecations on a package.
 
     Args:
-        fusion_binary_name: name of a valid Fusion binary
         repo_path: Path to the dbt package repository
+        fusion_binary: name of a valid Fusion binary
+        show_fusion_output: display command output from Fusion
 
     Returns:
-        True if fusion compatible (dbtf parse exits with code 0), False otherwise
+        Dict if run succeeds, None otherwise
     """
     # Add a test profiles.yml to the current directory
     # profiles_path = repo_path / Path("profiles.yml")
     try:
         autofix_result = subprocess.run(
-                [
-                    "uv",
-                    "tool",
-                    "run",
-                    "dbt-autofix@latest",
-                    "deprecations",
-                    "--all",
-                    "--json",
-                    "--path",
-                    str(repo_path),
-                ],
-                check=False,
-                text=True,
-                capture_output=True,
-                timeout=60,
-            )
+            [
+                "uv",
+                "tool",
+                "run",
+                "dbt-autofix@latest",
+                "deprecations",
+                "--all",
+                "--json",
+                "--path",
+                str(repo_path),
+            ],
+            check=False,
+            text=True,
+            capture_output=True,
+            timeout=60,
+        )
         # console.log(f"autofix stdout: {autofix_result.stdout}")
         # console.log(f"autofix stderr: {autofix_result.stderr}")
-        # console.log(f"autofix stdout: {[json.loads(x) for x in autofix_result.stdout.splitlines()]}") 
+        # console.log(f"autofix stdout: {[json.loads(x) for x in autofix_result.stdout.splitlines()]}")
         autofix_stdout = [json.loads(x) for x in autofix_result.stdout.splitlines()]
         autofix_stderr = [x for x in autofix_result.stderr.splitlines()]
         # save autofixed version
-
 
         return {
             "autofix_stdout": autofix_stdout,
@@ -381,7 +391,6 @@ def run_autofix_for_version(
             {},
             {},
         )
-        require_dbt_version_string = dbt_project_yml[1].get("require-dbt-version")
     except Exception as e:
         error_console.log(f"dbt_project.yml load failed for {package_id} {tag_version}: {e}")
         return
@@ -393,12 +402,12 @@ def run_autofix_for_version(
                 f.write("\nprofile: test_schema_compat\n")
         except Exception as e:
             error_console.log(f"failed when adding profile to dbt_project.yml for {package_id} {tag_version}: {e}")
-    new_version: DbtPackageVersion = DbtPackageVersion(
-        package_name,
-        tag_version,
-        package_id=package_id,
-        raw_require_dbt_version_range=require_dbt_version_string,
-    )
+    # new_version: DbtPackageVersion = DbtPackageVersion(
+    #     package_name,
+    #     tag_version,
+    #     package_id=package_id,
+    #     raw_require_dbt_version_range=require_dbt_version_string,
+    # )
     # run parse conformance pre autofix
     pre_autofix_parse_conformance = check_fusion_schema_compatibility(
         Path(path), fusion_binary=fusion_binary, show_fusion_output=False
@@ -440,6 +449,7 @@ def run_autofix_for_version(
     #     else:
     #         console.log("Version not conformant after autofix")
     return result
+
 
 def download_tarball_and_run_autofix(
     package_name: str,
@@ -582,24 +592,43 @@ def run_autofix_from_tarballs(
                 latest_package_version_download_url=package_latest_version_urls.get(package),
                 fusion_binary=fusion_binary,
             )
-            if not conformance_output or not conformance_output.get("pre_autofix_parse_conformance") or not conformance_output.get("post_autofix_parse_conformance") or not conformance_output.get("autofix_output"):
+            if (
+                not conformance_output
+                or not conformance_output.get("pre_autofix_parse_conformance")
+                or not conformance_output.get("post_autofix_parse_conformance")
+                or not conformance_output.get("autofix_output")
+            ):
                 console.log(f"Could not run autofix for {package} version {package_version_string}\n")
                 continue
             else:
                 version_output["pre_autofix_parse_conformance"] = conformance_output["pre_autofix_parse_conformance"]
                 version_output["autofix_output"] = conformance_output["autofix_output"]
-                if conformance_output["autofix_output"] is not None and conformance_output["autofix_output"].get("autofix_stdout"):
-                    version_output["autofix_stdout_count"] = len(conformance_output["autofix_output"].get("autofix_stdout"))
-                if conformance_output["autofix_output"] is not None and conformance_output["autofix_output"].get("autofix_stderr"):
-                    version_output["autofix_stderr_count"] = len(conformance_output["autofix_output"].get("autofix_stderr"))
+                if conformance_output["autofix_output"] is not None and conformance_output["autofix_output"].get(
+                    "autofix_stdout"
+                ):
+                    version_output["autofix_stdout_count"] = len(
+                        conformance_output["autofix_output"].get("autofix_stdout")
+                    )
+                if conformance_output["autofix_output"] is not None and conformance_output["autofix_output"].get(
+                    "autofix_stderr"
+                ):
+                    version_output["autofix_stderr_count"] = len(
+                        conformance_output["autofix_output"].get("autofix_stderr")
+                    )
                 version_output["post_autofix_parse_conformance"] = conformance_output["post_autofix_parse_conformance"]
-                parse_compatible_pre_autofix = conformance_output["pre_autofix_parse_conformance"]["parse_exit_code"] == 0
-                parse_compatible_post_autofix = conformance_output["post_autofix_parse_conformance"]["parse_exit_code"] == 0
+                parse_compatible_pre_autofix = (
+                    conformance_output["pre_autofix_parse_conformance"]["parse_exit_code"] == 0
+                )
+                parse_compatible_post_autofix = (
+                    conformance_output["post_autofix_parse_conformance"]["parse_exit_code"] == 0
+                )
                 version_output["parse_compatible_pre_autofix"] = parse_compatible_pre_autofix
                 version_output["parse_compatible_post_autofix"] = parse_compatible_post_autofix
                 version_output["autofixed_version_file_name"] = conformance_output.get("autofixed_version_file_name")
                 if version_output["parse_compatible_hub"] != parse_compatible_pre_autofix:
-                    error_console.log(f"Inconsistent parse results for {package} version {package_version_string}: hub {version_output['parse_compatible_hub']}, pre {parse_compatible_pre_autofix}")
+                    error_console.log(
+                        f"Inconsistent parse results for {package} version {package_version_string}: hub {version_output['parse_compatible_hub']}, pre {parse_compatible_pre_autofix}"
+                    )
                 console.log()
             results[package][package_version_string] = version_output
 
@@ -663,13 +692,15 @@ def main(
     console.log(f"Package limit: {package_limit}")
     console.log(f"Fusion binary: {fusion_binary}")
 
-    original_output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo_with_conformance(path=local_hub_path)
+    original_output: defaultdict[str, list[dict[str, Any]]] = read_json_from_local_hub_repo_with_conformance(
+        path=local_hub_path
+    )
     # console.log(original_output)
     output = refine_output(original_output)
     # console.log(f"Packages to autofix: {len(output)}")
     # for package in output:
     #     console.log(package)
-    
+
     package_latest_version_urls: dict[str, str] = get_latest_github_tarball_urls(output)
     autofix_results: dict[str, dict[str, dict[str, Any]]] = run_autofix_from_tarballs(
         output, package_latest_version_urls, package_limit, fusion_binary

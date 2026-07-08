@@ -12,7 +12,6 @@ package_conformance_all_errors: one line per error per package version
 
 import csv
 import json
-from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -38,38 +37,43 @@ def main():
     conformance_output = reload_output_from_file(output_path / conformance_output_file_name)
     package_summary = []
     for package_name in conformance_output:
-        package: dict[str, dict[str, Any]] = conformance_output[package_name]  # ty: ignore[invalid-assignment]
-        for version in package:
-            # package_version: dict[str, Any] = package[version]
-            parse_compatible_hub = package[version]["parse_compatible_hub"]
-            parse_compatible_pre_autofix = package[version]["parse_compatible_pre_autofix"]
-            parse_compatible_post_autofix = package[version]["parse_compatible_post_autofix"]
+        package: dict[str, dict[str, Any]] = conformance_output[package_name]
+        for version, version_output in package.items():
+            parse_compatible_hub = version_output["parse_compatible_hub"]
+            parse_compatible_pre_autofix = version_output["parse_compatible_pre_autofix"]
+            parse_compatible_post_autofix = version_output["parse_compatible_post_autofix"]
             parse_compatible_hub_pre_mismatch = parse_compatible_hub != parse_compatible_pre_autofix
             parse_compatible_hub_true_pre_false = parse_compatible_hub is True and parse_compatible_pre_autofix is False
-            parse_compatible_hub_true_post_false = parse_compatible_hub is True and parse_compatible_post_autofix is False
+            parse_compatible_hub_true_post_false = (
+                parse_compatible_hub is True and parse_compatible_post_autofix is False
+            )
             parse_compatible_hub_false_pre_true = parse_compatible_hub is False and parse_compatible_pre_autofix is True
-            parse_compatible_hub_false_post_true = parse_compatible_hub is False and parse_compatible_post_autofix is True
-            v2_compatible_eligible = (parse_compatible_hub is False or parse_compatible_pre_autofix is False) and parse_compatible_post_autofix is True
+            parse_compatible_hub_false_post_true = (
+                parse_compatible_hub is False and parse_compatible_post_autofix is True
+            )
+            v2_compatible_eligible = (
+                parse_compatible_hub is False or parse_compatible_pre_autofix is False
+            ) and parse_compatible_post_autofix is True
             package_summary.append(
                 {
                     "package_name": package_name,
                     "package_version": version,
-                    "manually_verified_compatible": package[version]["manually_verified_compatible"],
-                    "manually_verified_incompatible": package[version]["manually_verified_incompatible"],
-                    "parse_compatible_hub": package[version]["parse_compatible_hub"],
-                    "parse_compatible_pre_autofix": package[version]["parse_compatible_pre_autofix"],
-                    "parse_compatible_post_autofix": package[version]["parse_compatible_post_autofix"],
-                    "autofix_stdout_count": package[version].get("autofix_stdout_count"),
-                    "autofix_stderr_count": package[version].get("autofix_stderr_count"),
-                    "parse_errors_pre_autofix": package[version]["pre_autofix_parse_conformance"].get("total_errors"),
-                    "parse_errors_post_autofix": package[version]["post_autofix_parse_conformance"].get("total_errors"),
+                    "manually_verified_compatible": version_output["manually_verified_compatible"],
+                    "manually_verified_incompatible": version_output["manually_verified_incompatible"],
+                    "parse_compatible_hub": version_output["parse_compatible_hub"],
+                    "parse_compatible_pre_autofix": version_output["parse_compatible_pre_autofix"],
+                    "parse_compatible_post_autofix": version_output["parse_compatible_post_autofix"],
+                    "autofix_stdout_count": version_output.get("autofix_stdout_count"),
+                    "autofix_stderr_count": version_output.get("autofix_stderr_count"),
+                    "parse_errors_pre_autofix": version_output["pre_autofix_parse_conformance"].get("total_errors"),
+                    "parse_errors_post_autofix": version_output["post_autofix_parse_conformance"].get("total_errors"),
                     "parse_compatible_hub_pre_mismatch": parse_compatible_hub_pre_mismatch,
                     "parse_compatible_hub_true_pre_false": parse_compatible_hub_true_pre_false,
                     "parse_compatible_hub_true_post_false": parse_compatible_hub_true_post_false,
                     "parse_compatible_hub_false_pre_true": parse_compatible_hub_false_pre_true,
                     "parse_compatible_hub_false_post_true": parse_compatible_hub_false_post_true,
                     "v2_compatible_eligible": v2_compatible_eligible,
-                    "autofixed_version_file_name": package[version].get("autofixed_version_file_name")
+                    "autofixed_version_file_name": version_output.get("autofixed_version_file_name"),
                 }
             )
 
