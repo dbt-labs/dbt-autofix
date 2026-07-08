@@ -463,6 +463,7 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     transitive_dependency_compatibility: PackageVersionFusionCompatibilityState = (
                         transitive_dependency_version.get_fusion_compatibility_state()
                     )
+                    installed_version_v2_download_available = package.has_v2_compatible_download_for_installed_version()
                     package_version_upgrade_results.append(
                         PackageVersionUpgradeResult(
                             id=package_id,
