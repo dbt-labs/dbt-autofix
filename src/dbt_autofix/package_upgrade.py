@@ -80,8 +80,10 @@ class PackageVersionUpgradeResult:
 
     def to_dict(self) -> dict:
         ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
+        # output if we determined a canonical installed version from the package lock file
         if self.package_lock_version_found and self.installed_version != "unknown":
             ret_dict["original_version"] = self.installed_version
+        # separately log the upgraded version for convenience
         if (self.package_should_upgrade() or self.upgraded) and self.upgraded_version:
             ret_dict["upgraded_version"] = self.upgraded_version
         return ret_dict
@@ -423,7 +425,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                 )
             )
 
-    # if we have derived transitive dependencies from a lock file, output those as unchanged
+    # if we have derived transitive dependencies from a lock file, can't upgrade those packages
+    # but still display their compatibility information for reference
     if deps_file.has_lock_file and len(deps_file.transitive_dependencies) > 0:
         packages_already_checked: set[str] = set([x.id for x in package_version_upgrade_results])
         for version in deps_file.transitive_dependencies:
