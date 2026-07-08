@@ -16,7 +16,7 @@ Values that are already valid enum members (``on``, ``off``, ``baseline``, ``str
 ``unsafe``) are left untouched, and so is anything else we don't recognize.
 """
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
@@ -72,7 +72,7 @@ def normalize_static_analysis_source(source: str) -> Optional[str]:
     return None
 
 
-def _normalize_in_place(node: object, changes: List[Tuple[str, object, str]]) -> None:
+def _normalize_in_place(node: Any, changes: List[Tuple[str, Any, str]]) -> None:
     """Recursively walk a parsed YAML structure, normalizing ``static_analysis`` values.
 
     Mutates ``node`` in place and appends ``(key, old_value, new_value)`` tuples to
@@ -106,7 +106,7 @@ def changeset_normalize_static_analysis_yml(content: YMLContent, config: object)
     yml_str = content.current_str
     yml_dict = load_yaml(yml_str)
 
-    changes: List[Tuple[str, object, str]] = []
+    changes: List[Tuple[str, Any, str]] = []
     _normalize_in_place(yml_dict, changes)
 
     deprecation_refactors = [

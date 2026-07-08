@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.refactors.changesets.dbt_sql import refactor_static_analysis_sql
 from dbt_autofix.refactors.results import SQLContent, YMLContent
@@ -57,7 +58,7 @@ def test_normalize_static_analysis_source(source, expected):
 
 
 def _run_yml(yml_str: str) -> str:
-    content = YMLContent(original_str=yml_str, original_parsed=None, current_str=yml_str)
+    content = YMLContent(original_str=yml_str, original_parsed=CommentedMap(), current_str=yml_str)
     result = changeset_normalize_static_analysis_yml(content, None)
     return result.refactored_yaml if result.refactored else yml_str
 
@@ -111,7 +112,7 @@ def test_schema_yml_no_change_is_noop():
             "      static_analysis: baseline",
         ]
     )
-    content = YMLContent(original_str=yml_str, original_parsed=None, current_str=yml_str)
+    content = YMLContent(original_str=yml_str, original_parsed=CommentedMap(), current_str=yml_str)
     result = changeset_normalize_static_analysis_yml(content, None)
     assert result.refactored is False
 

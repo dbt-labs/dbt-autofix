@@ -406,7 +406,9 @@ def _iter_config_macro_spans(sql_content: str) -> List[Tuple[int, int, str]]:
     return spans
 
 
-def refactor_static_analysis_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
+def refactor_static_analysis_sql(
+    content: SQLContent, config: Optional[SQLRefactorConfig] = None
+) -> SQLRuleRefactorResult:
     """Normalize boolean ``static_analysis`` values in SQL ``{{ config(...) }}`` calls.
 
     Converts ``static_analysis=True`` -> ``static_analysis='baseline'`` and
