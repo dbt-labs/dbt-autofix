@@ -6,6 +6,11 @@ from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
+from dbt_autofix.refactors.static_analysis import (
+    STATIC_ANALYSIS_DEPRECATION,
+    STATIC_ANALYSIS_KEY,
+    normalize_static_analysis_source,
+)
 
 CONFIG_MACRO_PATTERN = re.compile(r"(\{\{\s*config\s*\()(.*?)(\)\s*\}\})", re.DOTALL)
 
@@ -376,6 +381,85 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
         original_content=sql_content,
         deprecation_refactors=deprecation_refactors,
         refactor_warnings=refactor_warnings,
+    )
+
+
+def _iter_config_macro_spans(sql_content: str) -> List[Tuple[int, int, str]]:
+    """Return ``(start, end, macro_str)`` for every ``{{ config(...) }}`` call in the content.
+
+    Iterating over all calls (rather than just the first) means a ``{{ config() }}`` that
+    appears in a comment ahead of the real config block doesn't shadow it.
+    """
+    spans: List[Tuple[int, int, str]] = []
+    pos = 0
+    while True:
+        match = re.search(r"\{\{\s*config\s*\(", sql_content[pos:])
+        if not match:
+            break
+        abs_start = pos + match.start()
+        macro = extract_config_macro(sql_content[abs_start:])
+        if macro is None:
+            pos = abs_start + match.end() - match.start()
+            continue
+        spans.append((abs_start, abs_start + len(macro), macro))
+        pos = abs_start + len(macro)
+    return spans
+
+
+def refactor_static_analysis_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
+    """Normalize boolean ``static_analysis`` values in SQL ``{{ config(...) }}`` calls.
+
+    Converts ``static_analysis=True`` -> ``static_analysis='baseline'`` and
+    ``static_analysis=False`` -> ``static_analysis='off'`` so Fusion can load the project.
+    Already-valid enum values are left untouched.
+    """
+    sql_content = content.current_str
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+
+    if "config(" not in sql_content:
+        return SQLRuleRefactorResult(
+            rule_name="normalize_static_analysis_sql",
+            refactored=False,
+            refactored_content=sql_content,
+            original_content=sql_content,
+            deprecation_refactors=[],
+        )
+
+    refactored_content = sql_content
+    # Process macros from last to first so earlier spans keep their positions after splicing.
+    for start, end, macro_str in reversed(_iter_config_macro_spans(sql_content)):
+        parsed_config = statically_parse_unrendered_config(macro_str)
+        if not parsed_config or STATIC_ANALYSIS_KEY not in parsed_config:
+            continue
+
+        original_source = parsed_config[STATIC_ANALYSIS_KEY]
+        new_enum = normalize_static_analysis_source(str(original_source))
+        if new_enum is None:
+            continue
+
+        # Preserve every other config value verbatim via the source map, overriding only static_analysis.
+        config_source_map = dict(parsed_config)
+        config_source_map[STATIC_ANALYSIS_KEY] = f"'{new_enum}'"
+
+        new_config_str = _serialize_config_macro_call(parsed_config, config_source_map)
+        new_macro = f"{{{{ config({new_config_str}\n) }}}}"
+        refactored_content = refactored_content[:start] + new_macro + refactored_content[end:]
+
+        deprecation_refactors.insert(
+            0,
+            DbtDeprecationRefactor(
+                log=f"Converted static_analysis={original_source} to static_analysis='{new_enum}' "
+                "(static_analysis must be a Fusion enum value)",
+                deprecation=STATIC_ANALYSIS_DEPRECATION,
+            ),
+        )
+
+    return SQLRuleRefactorResult(
+        rule_name="normalize_static_analysis_sql",
+        refactored=refactored_content != sql_content,
+        refactored_content=refactored_content,
+        original_content=sql_content,
+        deprecation_refactors=deprecation_refactors,
     )
 
 

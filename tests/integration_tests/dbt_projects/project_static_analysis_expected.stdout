@@ -1,0 +1,79 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_static_analysis/dbt_project.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted 'static_analysis: True' to 'static_analysis: baseline' (static_analysis must be a Fusion enum value)"
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted '+static_analysis: False' to '+static_analysis: off' (static_analysis must be a Fusion enum value)"
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted '+static_analysis: yes' to '+static_analysis: baseline' (static_analysis must be a Fusion enum value)"
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted '+static_analysis: no' to '+static_analysis: off' (static_analysis must be a Fusion enum value)"
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted '+static_analysis: True' to '+static_analysis: baseline' (static_analysis must be a Fusion enum value)"
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted '+static_analysis: False' to '+static_analysis: off' (static_analysis must be a Fusion enum value)"
+      }
+    ]
+  },
+  {
+    "file_path": "project_static_analysis/models/model_sql_false.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted static_analysis=False to static_analysis='off' (static_analysis must be a Fusion enum value)"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_static_analysis/models/model_sql_true.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted static_analysis=True to static_analysis='baseline' (static_analysis must be a Fusion enum value)"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_static_analysis/models/schema.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted 'static_analysis: True' to 'static_analysis: baseline' (static_analysis must be a Fusion enum value)"
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted 'static_analysis: False' to 'static_analysis: off' (static_analysis must be a Fusion enum value)"
+      },
+      {
+        "deprecation": "StaticAnalysisDeprecation",
+        "log": "Converted 'static_analysis: yes' to 'static_analysis: baseline' (static_analysis must be a Fusion enum value)"
+      }
+    ]
+  }
+]
