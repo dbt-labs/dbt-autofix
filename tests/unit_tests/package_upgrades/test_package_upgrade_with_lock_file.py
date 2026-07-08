@@ -105,7 +105,9 @@ def test_upgrade_package_versions_no_force_update():
     assert not output.upgraded
     assert len(output.upgrades) == 0
     assert len(output.unchanged) == 3 + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
-    assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
+    assert (
+        len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
+    )
     output.print_to_console(json_output=False)
     output.print_to_console(json_output=True)
 
@@ -122,6 +124,8 @@ def test_upgrade_package_versions_with_force_update():
     assert output.upgraded
     assert len(output.upgrades) == 1
     assert len(output.unchanged) == 2 + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
-    assert len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
+    assert (
+        len(output.upgrades) + len(output.unchanged) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
+    )
     output.print_to_console(json_output=False)
     output.print_to_console(json_output=True)
