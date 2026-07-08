@@ -252,6 +252,15 @@ class DbtPackageFile:
             compatibility[fusion_compatibility].add(package)
         return compatibility
 
+    def get_v2_compatible_downloads(self) -> set[str]:
+        """Return packages that have a v2-compatible download available."""
+        packages_with_v2_compatible_downloads: set[str] = set()
+        for package_id, package in self.package_dependencies.items():
+            if len(package.v2_compatible_download_versions) > 0:
+                packages_with_v2_compatible_downloads.add(package_id)
+
+        return packages_with_v2_compatible_downloads
+
 
 def parse_package_dependencies_from_yml(
     parsed_yml: dict[Any, Any], package_file_name: str, package_file_path: Optional[Path]
