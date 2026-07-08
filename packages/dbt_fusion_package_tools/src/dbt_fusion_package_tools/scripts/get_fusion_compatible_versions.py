@@ -113,12 +113,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             hub_manually_verified_incompatible = fusion_compatibility.get("manually_verified_incompatible")
             hub_require_dbt_version_compatible = fusion_compatibility.get("require_dbt_version_compatible")
             hub_require_dbt_version_defined = fusion_compatibility.get("require_dbt_version_defined")
-            if "fusion_compatible_download" in fusion_compatibility:
-                v2_compatible_download_available = "tarball" in fusion_compatibility.get(
-                    "fusion_compatible_download", {}
-                )
-            else:
-                v2_compatible_download_available = False
+            v2_compatible_download_available = fusion_compatibility.get("v2_compatible_download_available")
         else:
             hub_manually_verified_compatible = False
             hub_manually_verified_incompatible = False

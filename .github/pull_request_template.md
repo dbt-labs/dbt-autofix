@@ -11,7 +11,7 @@ Please describe the changes made and why they were made. Link to any relevant is
 
 ## Checklist
 
-*   [ ] Ran `uv run ruff check . --config pyproject.toml` 
+*   [ ] Ran `uv run ruff check . --config pyproject.toml`
 *   [ ] Ran `uv run ruff format --config pyproject.toml`
 *   [ ] Ran `uv run ty check`
 *   [ ] If this is a bug fix:
