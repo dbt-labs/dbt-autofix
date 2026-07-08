@@ -86,6 +86,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
     fusion_compatible_versions: list[VersionSpecifier] = []
     fusion_incompatible_versions: list[VersionSpecifier] = []
     unknown_compatibility_versions: list[VersionSpecifier] = []
+    v2_compatible_download_versions: list[VersionSpecifier] = []
     package_latest_version_index_json: Optional[VersionSpecifier] = None
     package_redirect_name: Optional[str] = None
     package_redirect_namespace: Optional[str] = None
@@ -112,11 +113,18 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             hub_manually_verified_incompatible = fusion_compatibility.get("manually_verified_incompatible")
             hub_require_dbt_version_compatible = fusion_compatibility.get("require_dbt_version_compatible")
             hub_require_dbt_version_defined = fusion_compatibility.get("require_dbt_version_defined")
+            if "fusion_compatible_download" in fusion_compatibility:
+                v2_compatible_download_available = "tarball" in fusion_compatibility.get(
+                    "fusion_compatible_download", {}
+                )
+            else:
+                v2_compatible_download_available = False
         else:
             hub_manually_verified_compatible = False
             hub_manually_verified_incompatible = False
             hub_require_dbt_version_compatible = None
             hub_require_dbt_version_defined = None
+            v2_compatible_download_available = False
         versions.append(version)
 
         # update package latest version - should match what's in hub at end
@@ -146,6 +154,8 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
             fusion_incompatible_versions.append(package_version.version)
         else:
             unknown_compatibility_versions.append(package_version.version)
+        if v2_compatible_download_available:
+            v2_compatible_download_versions.append(package_version.version)
 
     if latest_version_incl_prerelease is None:
         latest_version_incl_prerelease = latest_version
@@ -175,6 +185,7 @@ def get_versions_for_package(package_versions) -> dict[str, Any]:
         "fusion_compatible_versions": [convert_version_spec_to_string(x) for x in fusion_compatible_versions],
         "fusion_incompatible_versions": [convert_version_spec_to_string(x) for x in fusion_incompatible_versions],
         "unknown_compatibility_versions": [convert_version_spec_to_string(x) for x in unknown_compatibility_versions],
+        "v2_compatible_download_versions": [convert_version_spec_to_string(x) for x in v2_compatible_download_versions],
         "package_latest_version_index_json": convert_version_spec_to_string(package_latest_version_index_json),
         "package_redirect_name": package_redirect_name,
         "package_redirect_namespace": package_redirect_namespace,
