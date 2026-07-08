@@ -116,7 +116,7 @@ class DbtPackageFile:
     yml_dependencies: dict[Any, Any]
     # this is indexed by package id for uniqueness (hopefully)
     package_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
-    transitive_dependencies: dict[str, DbtPackageVersion] = field(default_factory=dict)
+    transitive_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
     unknown_packages: set[str] = field(default_factory=set)
     # track if the project has a package-lock.yml so we can determine canonical versions
     has_lock_file: bool = False
@@ -161,17 +161,20 @@ class DbtPackageFile:
     def merge_package_lock_versions(self, lock_file: DbtPackageLockFile) -> int:
         self.has_lock_file = True
         package_lock_found_in_deps: int = 0
-        for lock_file_package in lock_file.installed_package_versions:
-            lock_package_id: Optional[str] = lock_file.installed_package_versions[lock_file_package].package_id
+        for lock_file_package, lock_file_version in lock_file.installed_package_versions.items():
+            lock_package_id: Optional[str] = lock_file_version.package_id
             if lock_package_id is None or lock_package_id != lock_file_package:
                 lock_package_id = lock_package_id if lock_package_id is not None else lock_file_package
             if lock_file_package in self.package_dependencies:
-                self.set_installed_version_for_package(
-                    lock_package_id, lock_file.installed_package_versions[lock_package_id]
-                )
+                self.set_installed_version_for_package(lock_package_id, lock_file_version)
                 package_lock_found_in_deps += 1
             else:
-                self.transitive_dependencies[lock_package_id] = lock_file.installed_package_versions[lock_file_package]
+                self.transitive_dependencies[lock_package_id] = DbtPackage(
+                    package_id=lock_package_id,
+                    package_name=lock_file_version.package_name,
+                    project_config_raw_version_specifier=None,
+                )
+                self.transitive_dependencies[lock_package_id].add_package_version(lock_file_version, installed=True)
         assert package_lock_found_in_deps + len(self.transitive_dependencies) == len(
             lock_file.installed_package_versions
         )

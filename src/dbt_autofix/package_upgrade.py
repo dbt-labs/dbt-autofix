@@ -429,24 +429,28 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     # but still display their compatibility information for reference
     if deps_file.has_lock_file and len(deps_file.transitive_dependencies) > 0:
         packages_already_checked: set[str] = set([x.id for x in package_version_upgrade_results])
-        for version in deps_file.transitive_dependencies:
-            if version not in packages_already_checked:
-                transitive_dependency_version: DbtPackageVersion = deps_file.transitive_dependencies[version]
-                transitive_dependency_compatibility: PackageVersionFusionCompatibilityState = (
-                    transitive_dependency_version.get_fusion_compatibility_state()
+        for package_id, package in deps_file.transitive_dependencies.items():
+            if package_id not in packages_already_checked:
+                transitive_dependency_version_str: str = package.get_installed_package_version()
+                transitive_dependency_version: Optional[DbtPackageVersion] = package.package_versions.get(
+                    transitive_dependency_version_str
                 )
-                package_version_upgrade_results.append(
-                    PackageVersionUpgradeResult(
-                        id=version,
-                        public_package=True,
-                        installed_version=transitive_dependency_version.package_version_str,
-                        version_reason=PackageVersionUpgradeType.TRANSITIVE_DEPENDENCY,
-                        installed_version_compatibility_state=transitive_dependency_compatibility,
-                        upgraded_version_compatibility_state=None,
-                        upgraded=False,
-                        package_lock_version_found=True,
+                if transitive_dependency_version is not None:
+                    transitive_dependency_compatibility: PackageVersionFusionCompatibilityState = (
+                        transitive_dependency_version.get_fusion_compatibility_state()
                     )
-                )
+                    package_version_upgrade_results.append(
+                        PackageVersionUpgradeResult(
+                            id=package_id,
+                            public_package=True,
+                            installed_version=transitive_dependency_version_str,
+                            version_reason=PackageVersionUpgradeType.TRANSITIVE_DEPENDENCY,
+                            installed_version_compatibility_state=transitive_dependency_compatibility,
+                            upgraded_version_compatibility_state=None,
+                            upgraded=False,
+                            package_lock_version_found=True,
+                        )
+                    )
 
     return package_version_upgrade_results
 

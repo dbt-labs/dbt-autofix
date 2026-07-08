@@ -149,7 +149,7 @@ class DbtPackage:
             return False
         else:
             return self.installed_package_version in self.v2_compatible_download_versions
-    
+
     def find_fusion_compatible_versions_in_requested_range(self) -> list[VersionSpecifier]:
         """Find package versions that are compatible with Fusion AND the version range specified in the project config.
 
