@@ -97,7 +97,7 @@ def test_upgrade_package_versions_no_force_update():
     package_file: Optional[DbtPackageFile] = generate_package_dependencies(PROJECT_WITH_PACKAGE_LOCK_PATH)
     assert package_file is not None
     upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(package_file)
-    assert len(upgrades) == PROJECT_DEPENDENCY_COUNT
+    assert len(upgrades) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
     output: PackageUpgradeResult = upgrade_package_versions(
         package_file, upgrades, dry_run=True, override_pinned_version=False
     )
@@ -114,7 +114,7 @@ def test_upgrade_package_versions_with_force_update():
     package_file: Optional[DbtPackageFile] = generate_package_dependencies(PROJECT_WITH_PACKAGE_LOCK_PATH)
     assert package_file is not None
     upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(package_file)
-    assert len(upgrades) == PROJECT_DEPENDENCY_COUNT
+    assert len(upgrades) == PROJECT_DEPENDENCY_COUNT + PROJECT_TRANSITIVE_DEPENDENCY_COUNT
     output: PackageUpgradeResult = upgrade_package_versions(
         package_file, upgrades, dry_run=True, override_pinned_version=True
     )
