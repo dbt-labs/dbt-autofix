@@ -40,6 +40,7 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
 )
 from dbt_autofix.refactors.changesets.dbt_sql import (
     refactor_custom_configs_to_meta_sql,
+    refactor_static_analysis_sql,
     remove_unmatched_endings,
     rename_sql_file_names_with_spaces,
 )
@@ -54,6 +55,9 @@ from dbt_autofix.refactors.results import (
     SQLRefactorResult,
     YMLRefactorConfig,
     YMLRefactorResult,
+)
+from dbt_autofix.refactors.static_analysis import (
+    changeset_normalize_static_analysis_yml,
 )
 from dbt_autofix.refactors.yml import load_yaml
 from dbt_autofix.retrieve_schemas import (
@@ -106,6 +110,7 @@ def process_yaml_files_except_dbt_project(
         changeset_remove_duplicate_models,
         changeset_refactor_yml_str,
         changeset_owner_properties_yml_str,
+        changeset_normalize_static_analysis_yml,
     ]
     all_rules: List[Callable] = [*safe_change_rules, *behavior_change_rules]
     changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
@@ -236,6 +241,7 @@ def process_dbt_project_yml(
         changeset_dbt_project_remove_deprecated_config,
         changeset_fix_space_after_plus,
         changeset_dbt_project_prefix_plus_for_config,
+        changeset_normalize_static_analysis_yml,
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
@@ -283,6 +289,7 @@ def process_sql_files(
     safe_change_rules: List[Callable] = [
         remove_unmatched_endings,
         refactor_custom_configs_to_meta_sql,
+        refactor_static_analysis_sql,
         move_custom_config_access_to_meta_sql_improved,
     ]
     all_rules = [*behavior_change_rules, *safe_change_rules]

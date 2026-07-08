@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: model_sql_true
+    config:
+      static_analysis: 'baseline'
+  - name: model_sql_false
+    config:
+      static_analysis: 'off'
+  - name: model_yaml_yes
+    config:
+      static_analysis: 'baseline'
+  - name: model_already_valid
+    config:
+      static_analysis: baseline

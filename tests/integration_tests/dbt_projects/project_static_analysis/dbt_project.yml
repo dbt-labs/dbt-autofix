@@ -1,0 +1,28 @@
+name: 'project_static_analysis'
+version: '1.0.0'
+profile: 'test'
+
+# top-level boolean True -> 'baseline'
+static_analysis: True
+
+models:
+  project_static_analysis:
+    # +static_analysis boolean False -> 'off'
+    +static_analysis: False
+    staging:
+      +static_analysis: yes
+    legacy:
+      +static_analysis: no
+    # already-valid enum values are left untouched
+    valid_zone:
+      +static_analysis: baseline
+    off_zone:
+      +static_analysis: off
+
+seeds:
+  project_static_analysis:
+    +static_analysis: True
+
+snapshots:
+  project_static_analysis:
+    +static_analysis: False

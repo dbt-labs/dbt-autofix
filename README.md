@@ -28,6 +28,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | `ResourceNamesWithSpacesDeprecation` | SQL files, Python files, YAML files | Replaces spaces with underscores in resource names, updating .sql filenames as necessary | Full | Yes |  
 | `SourceFreshnessProjectHooksNotRun` | `dbt_project.yml` | Set `source_freshness_run_project_hooks` in `dbt_project.yml` "flags" to true | Full | Yes |
 | `MissingArgumentsPropertyInGenericTestDeprecation` | YAML files | Move any keyword arguments defined as top-level property on generic test to `arguments` property | Full | No |
+| `StaticAnalysisDeprecation` | `dbt_project.yml`, YAML files, SQL files | Convert boolean `static_analysis` values to the Fusion enum (`True`→`baseline`, `False`→`off`) | Full | No |
 
 ## Deprecation Coverage - CLI Commands
 
