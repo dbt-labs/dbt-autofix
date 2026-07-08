@@ -35,4 +35,5 @@ class PackageVersionUpgradeType(str, Enum):
         "Public package has Fusion-compatible version that is outside the project's requested version range"
     )
     PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION = "Private package requires a compatible require-dbt-version (>=2.0.0, <3.0.0) to be available on Fusion. https://docs.getdbt.com/reference/project-configs/require-dbt-version"
+    TRANSITIVE_DEPENDENCY = "Package is a transitive dependency of another package in your project"
     UNKNOWN = "Package's Fusion eligibility unknown"

@@ -59,20 +59,15 @@ class PackageVersionUpgradeResult:
     @property
     def package_upgrade_logs(self):
         logs: list[str] = [self.version_reason.value]
-        current_version_text: str = (
-            f"Current version ({self.installed_version})"
-            if self.package_lock_version_found and self.installed_version != "unknown"
-            else "Current version"
-        )
         if self.already_compatible:
             current_version_compat = (
-                f"{current_version_text} is compatible: {self.installed_version_compatibility_state.value}"
+                f"Current version is compatible: {self.installed_version_compatibility_state.value}"
             )
         elif self.installed_version_compatibility_state == PackageVersionFusionCompatibilityState.UNKNOWN:
-            current_version_compat = f"{current_version_text} compatibility unknown"
+            current_version_compat = "Current version compatibility unknown"
         else:
             current_version_compat = (
-                f"{current_version_text} is not compatible: {self.installed_version_compatibility_state.value}"
+                f"Current version is not compatible: {self.installed_version_compatibility_state.value}"
             )
         logs.append(current_version_compat)
         if self.upgraded and self.upgraded_version and self.upgraded_version_compatibility_state is not None:
@@ -86,7 +81,9 @@ class PackageVersionUpgradeResult:
     def to_dict(self) -> dict:
         ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
         if self.package_lock_version_found and self.installed_version != "unknown":
-            ret_dict["installed_version"] = self.installed_version
+            ret_dict["original_version"] = self.installed_version
+        if (self.package_should_upgrade() or self.upgraded) and self.upgraded_version:
+            ret_dict["upgraded_version"] = self.upgraded_version
         return ret_dict
 
 
@@ -425,6 +422,29 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     package_lock_version_found=has_package_lock_file,
                 )
             )
+
+    # if we have derived transitive dependencies from a lock file, output those as unchanged
+    if deps_file.has_lock_file and len(deps_file.transitive_dependencies) > 0:
+        packages_already_checked: set[str] = set([x.id for x in package_version_upgrade_results])
+        for version in deps_file.transitive_dependencies:
+            if version not in packages_already_checked:
+                transitive_dependency_version: DbtPackageVersion = deps_file.transitive_dependencies[version]
+                transitive_dependency_compatibility: PackageVersionFusionCompatibilityState = (
+                    transitive_dependency_version.get_fusion_compatibility_state()
+                )
+                package_version_upgrade_results.append(
+                    PackageVersionUpgradeResult(
+                        id=version,
+                        public_package=True,
+                        installed_version=transitive_dependency_version.package_version_str,
+                        version_reason=PackageVersionUpgradeType.TRANSITIVE_DEPENDENCY,
+                        installed_version_compatibility_state=transitive_dependency_compatibility,
+                        upgraded_version_compatibility_state=None,
+                        upgraded=False,
+                        package_lock_version_found=True,
+                    )
+                )
+
     return package_version_upgrade_results
 
 
