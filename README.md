@@ -2,6 +2,28 @@
 
 dbt-autofix automatically scans your dbt project for deprecated configurations and updates them to align with the latest best practices. This makes it easier to resolve deprecation warnings introduced in dbt v1.10 as well as prepare for migration to the dbt Fusion engine.
 
+## Goal: Preserve Behavior, Not Intent
+
+**The goal of dbt-autofix is not to update your project to what we think you *meant* by certain configs and specifications.** Instead, its purpose is to modify your project so that it behaves identically on Fusion as it does on dbt Core 1.10.
+
+This distinction matters because some configurations in your project may *look* functional but are actually being silently ignored by dbt Core today. When dbt-autofix encounters these, it will comment them out or remove them, not because they're "wrong", but because that's what preserves the actual runtime behavior.
+
+For example, in `dbt_project.yml`, if you define a post-hook using `post_hook` (with an underscore) instead of the correct `post-hook` (with a hyphen), dbt Core silently ignores it. To preserve this behavior on Fusion, dbt-autofix will comment out that line:
+
+```yaml
+# Before: This config is silently ignored in dbt Core 1.10
+models:
+  my_project:
+    +post_hook: "GRANT SELECT ON {{ this }} TO ROLE reporter"
+
+# After: dbt-autofix comments it out to preserve the same (no-op) behavior
+models:
+  my_project:
+    # +post_hook: "GRANT SELECT ON {{ this }} TO ROLE reporter" 
+```
+
+If this hook was something you intended to run, the fix is to correct the key name to `+post-hook`. But dbt-autofix won't make that assumption for you; it only ensures your project continues to behave the same way it did before.
+
 ***NEW in version 0.17.0***: dbt-autofix can now check package dependencies for compatibility with dbt Fusion and dbt 2.0 and automatically upgrade packages to newer compatible versions. See `packages` in the `Usage` section below for more detail.
 
 There will also be cases that dbt-autofix cannot resolve and require manual intervention. For those scenarios, using AI Agents can be helpfiul see the below section on [Using `AGENTS.md`](#using-agentsmd). Even if you don't intend to use LLMs, the [`AGENTS.md`](./AGENTS.md) can be a very helpful guidance for work that may need to be done after autofix has done it's part.
