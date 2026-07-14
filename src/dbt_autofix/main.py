@@ -56,6 +56,15 @@ def upgrade_packages(
             "--force-upgrade", "-f", help="Override package version config when upgrading to Fusion-compatible versions"
         ),
     ] = False,
+    v2_compatible_downloads: Annotated[
+        bool,
+        typer.Option(
+            "--v2-compatible-downloads",
+            "-f",
+            help="Use v2-compatible downloads when available instead of upgrading",
+            hidden=True,
+        ),
+    ] = False,
 ):
     if not path.is_dir() or not path.exists():
         error_console.print("[red]-- The directory specified in --path does not exist --[/red]")
@@ -72,7 +81,9 @@ def upgrade_packages(
             error_console.print("[red]-- No package dependencies found --[/red]")
             raise Exception()
 
-        package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
+        package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(
+            deps_file, prefer_v2_compatible_downloads=v2_compatible_downloads
+        )
 
         packages_upgraded: PackageUpgradeResult = upgrade_package_versions(
             deps_file=deps_file,
@@ -80,6 +91,7 @@ def upgrade_packages(
             dry_run=dry_run,
             override_pinned_version=force_upgrade,
             json_output=json_output,
+            prefer_v2_compatible_downloads=v2_compatible_downloads,
         )
         packages_upgraded.print_to_console(json_output=json_output)
     except:
