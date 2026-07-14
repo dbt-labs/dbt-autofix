@@ -61,8 +61,9 @@ def upgrade_packages(
     v2_compatible_downloads: Annotated[
         bool,
         typer.Option(
+            "--use-v2-compatible-package-downloads",
+            "-v",
             "--v2-compatible-downloads",
-            "-f",
             help="Use v2-compatible downloads when available instead of upgrading",
             hidden=True,
         ),
