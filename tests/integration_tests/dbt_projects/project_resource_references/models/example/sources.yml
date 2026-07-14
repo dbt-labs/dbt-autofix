@@ -1,0 +1,5 @@
+sources:
+  - name: source with spaces
+    schema: raw
+    tables:
+      - name: my_table

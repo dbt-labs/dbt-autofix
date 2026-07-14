@@ -20,14 +20,28 @@ from dbt_autofix.refactor import (
     remove_unmatched_endings,
     skip_file,
 )
-from dbt_autofix.refactors.changesets.dbt_project_yml import rec_check_yaml_path
+from dbt_autofix.refactors.changesets.dbt_project_yml import (
+    changeset_dbt_project_flip_behavior_flags,
+    changeset_dbt_project_rename_tests_to_data_tests,
+    rec_check_yaml_path,
+)
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_remove_duplicate_models,
+    changeset_rename_tests_to_data_tests,
     changeset_replace_fancy_quotes,
 )
 from dbt_autofix.refactors.changesets.dbt_sql import CONFIG_MACRO_PATTERN, refactor_custom_configs_to_meta_sql
+from dbt_autofix.refactors.changesets.resource_references import (
+    build_resource_rename_map,
+    changeset_update_resource_references_yml,
+    update_resource_references_python,
+    update_resource_references_sql,
+)
 from dbt_autofix.refactors.results import (
     DbtProjectYMLRefactorConfig,
+    PythonContent,
+    PythonRefactorConfig,
+    ResourceRenameMap,
     SQLContent,
     SQLRefactorConfig,
     YMLContent,
@@ -2836,3 +2850,217 @@ select 1 as id
         assert "on_column" in result.deprecation_refactors[0].log
         assert "nugget" in result.deprecation_refactors[0].log
         assert "meta" in result.deprecation_refactors[0].log
+
+
+# ---------------------------------------------------------------------------
+# Task 1: tests -> data_tests rename
+# ---------------------------------------------------------------------------
+
+
+class TestRenameTestsToDataTests:
+    def test_schema_yml_rename_at_all_levels(self, schema_specs: SchemaSpecs):
+        input_yaml = """
+version: 2
+models:
+  - name: my_model
+    tests:
+      - unique
+    columns:
+      - name: id
+        tests:
+          - not_null
+sources:
+  - name: my_source
+    tables:
+      - name: my_table
+        tests:
+          - unique
+        columns:
+          - name: id
+            tests:
+              - not_null
+"""
+        result = changeset_rename_tests_to_data_tests(_yml(input_yaml), _yml_cfg(schema_specs))
+        assert result.refactored
+        d = safe_load(result.refactored_yaml)
+        assert "tests" not in d["models"][0]
+        assert d["models"][0]["data_tests"] == ["unique"]
+        assert d["models"][0]["columns"][0]["data_tests"] == ["not_null"]
+        table = d["sources"][0]["tables"][0]
+        assert table["data_tests"] == ["unique"]
+        assert table["columns"][0]["data_tests"] == ["not_null"]
+
+    def test_schema_yml_merge_when_both_present(self, schema_specs: SchemaSpecs):
+        input_yaml = """
+version: 2
+models:
+  - name: my_model
+    tests:
+      - unique
+    data_tests:
+      - not_null
+"""
+        result = changeset_rename_tests_to_data_tests(_yml(input_yaml), _yml_cfg(schema_specs))
+        assert result.refactored
+        d = safe_load(result.refactored_yaml)
+        node = d["models"][0]
+        assert "tests" not in node
+        # existing data_tests kept, tests entries appended
+        assert node["data_tests"] == ["not_null", "unique"]
+
+    def test_schema_yml_no_tests_no_change(self, schema_specs: SchemaSpecs):
+        input_yaml = """
+version: 2
+models:
+  - name: my_model
+    data_tests:
+      - unique
+"""
+        result = changeset_rename_tests_to_data_tests(_yml(input_yaml), _yml_cfg(schema_specs))
+        assert not result.refactored
+
+    def test_dbt_project_top_level_rename(self):
+        input_yaml = """
+name: my_project
+tests:
+  +enabled: true
+"""
+        result = changeset_dbt_project_rename_tests_to_data_tests(_yml(input_yaml), _dbt_cfg())
+        assert result.refactored
+        d = safe_load(result.refactored_yaml)
+        assert "tests" not in d
+        assert d["data_tests"] == {"+enabled": True}
+
+    def test_dbt_project_merge_when_both_present(self):
+        input_yaml = """
+name: my_project
+tests:
+  +enabled: true
+  +severity: warn
+data_tests:
+  +enabled: false
+"""
+        result = changeset_dbt_project_rename_tests_to_data_tests(_yml(input_yaml), _dbt_cfg())
+        assert result.refactored
+        d = safe_load(result.refactored_yaml)
+        assert "tests" not in d
+        # existing data_tests values win, tests-only keys merged in
+        assert d["data_tests"]["+enabled"] is False
+        assert d["data_tests"]["+severity"] == "warn"
+
+
+# ---------------------------------------------------------------------------
+# Task 2: ref()/source() reference rewriting
+# ---------------------------------------------------------------------------
+
+
+def _rename_map() -> ResourceRenameMap:
+    return ResourceRenameMap(
+        node_renames={"model with spaces": "model_with_spaces"},
+        source_renames={"src with space": "src_with_space"},
+    )
+
+
+class TestUpdateResourceReferences:
+    def test_sql_ref_and_source(self):
+        content = (
+            "select * from {{ ref('model with spaces') }}\n"
+            "join {{ source('src with space', 'tbl') }}\n"
+            "left join {{ ref('unrelated') }}"
+        )
+        cfg = SQLRefactorConfig(schema_specs=MockSchemaSpecs(), node_type="models", resource_rename_map=_rename_map())
+        sql_content = SQLContent(original_str=content, current_str=content, current_file_path=Path("m.sql"))
+        result = update_resource_references_sql(sql_content, cfg)
+        assert result.refactored
+        assert "ref('model_with_spaces')" in result.refactored_content
+        assert "source('src_with_space', 'tbl')" in result.refactored_content
+        assert "ref('unrelated')" in result.refactored_content
+
+    def test_sql_two_arg_ref(self):
+        content = "{{ ref('my_pkg', 'model with spaces') }}"
+        cfg = SQLRefactorConfig(schema_specs=MockSchemaSpecs(), node_type="models", resource_rename_map=_rename_map())
+        sql_content = SQLContent(original_str=content, current_str=content, current_file_path=Path("m.sql"))
+        result = update_resource_references_sql(sql_content, cfg)
+        assert result.refactored
+        assert "ref('my_pkg', 'model_with_spaces')" in result.refactored_content
+
+    def test_python_dbt_ref_and_source(self):
+        content = 'x = dbt.ref("model with spaces")\ny = dbt.source("src with space", "tbl")\n'
+        cfg = PythonRefactorConfig(
+            schema_specs=MockSchemaSpecs(), node_type="models", resource_rename_map=_rename_map()
+        )
+        py_content = PythonContent(original_str=content, current_str=content, current_file_path=Path("m.py"))
+        result = update_resource_references_python(py_content, cfg)
+        assert result.refactored
+        assert 'dbt.ref("model_with_spaces")' in result.refactored_content
+        assert 'dbt.source("src_with_space", "tbl")' in result.refactored_content
+
+    def test_yml_exposure_depends_on(self):
+        content = (
+            "exposures:\n"
+            "  - name: e\n"
+            "    depends_on:\n"
+            "      - ref('model with spaces')\n"
+            "      - source('src with space', 'tbl')\n"
+        )
+        cfg = YMLRefactorConfig(schema_specs=MockSchemaSpecs(), resource_rename_map=_rename_map())
+        result = changeset_update_resource_references_yml(_yml(content), cfg)
+        assert result.refactored
+        assert "ref('model_with_spaces')" in result.refactored_yaml
+        assert "source('src_with_space', 'tbl')" in result.refactored_yaml
+
+    def test_no_rename_map_is_noop(self):
+        content = "{{ ref('model with spaces') }}"
+        cfg = SQLRefactorConfig(schema_specs=MockSchemaSpecs(), node_type="models", resource_rename_map=None)
+        sql_content = SQLContent(original_str=content, current_str=content, current_file_path=Path("m.sql"))
+        result = update_resource_references_sql(sql_content, cfg)
+        assert not result.refactored
+
+
+class TestBuildResourceRenameMap:
+    def test_map_from_yaml_and_files(self, tmp_path):
+        models = tmp_path / "models"
+        models.mkdir()
+        (models / "schema.yml").write_text("models:\n  - name: model with spaces\nsources:\n  - name: src with space\n")
+        (models / "seed file.sql").write_text("select 1")
+        rename_map = build_resource_rename_map(tmp_path, {"models": "models"})
+        assert rename_map.node_renames["model with spaces"] == "model_with_spaces"
+        assert rename_map.node_renames["seed file"] == "seed_file"
+        assert rename_map.source_renames["src with space"] == "src_with_space"
+
+
+# ---------------------------------------------------------------------------
+# Task 3: require_explicit_package_overrides_for_builtin_materializations
+# ---------------------------------------------------------------------------
+
+
+class TestFlipBehaviorFlags:
+    def test_flips_package_override_flag_when_present_and_false(self):
+        input_yaml = """
+name: my_project
+flags:
+  require_explicit_package_overrides_for_builtin_materializations: false
+"""
+        result = changeset_dbt_project_flip_behavior_flags(_yml(input_yaml), _dbt_cfg())
+        assert result.refactored
+        d = safe_load(result.refactored_yaml)
+        assert d["flags"]["require_explicit_package_overrides_for_builtin_materializations"] is True
+        assert any(r.deprecation == "PackageMaterializationOverrideDeprecation" for r in result.deprecation_refactors)
+
+    def test_no_change_when_flag_absent(self):
+        input_yaml = """
+name: my_project
+flags:
+  some_other_flag: false
+"""
+        result = changeset_dbt_project_flip_behavior_flags(_yml(input_yaml), _dbt_cfg())
+        assert not result.refactored
+
+    def test_no_change_when_flag_already_true(self):
+        input_yaml = """
+name: my_project
+flags:
+  require_explicit_package_overrides_for_builtin_materializations: true
+"""
+        result = changeset_dbt_project_flip_behavior_flags(_yml(input_yaml), _dbt_cfg())
+        assert not result.refactored

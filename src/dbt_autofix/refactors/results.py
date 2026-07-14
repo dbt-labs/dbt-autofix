@@ -2,7 +2,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 
 from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
@@ -57,9 +57,28 @@ class PythonContent:
 
 
 @dataclass
+class ResourceRenameMap:
+    """Maps old resource names (with spaces / non-alpha chars) to their normalized new names.
+
+    Used to rewrite ref()/source() references to resources renamed by the
+    "spaces in resource names" behavior-change fixes.
+
+    - node_renames: maps old model/seed/snapshot name -> new name (targets of ref())
+    - source_renames: maps old source name -> new name (first arg of source())
+    """
+
+    node_renames: Dict[str, str] = field(default_factory=dict)
+    source_renames: Dict[str, str] = field(default_factory=dict)
+
+    def is_empty(self) -> bool:
+        return not self.node_renames and not self.source_renames
+
+
+@dataclass
 class YMLRefactorConfig:
     schema_specs: SchemaSpecs
     semantic_definitions: Optional[SemanticDefinitions] = None
+    resource_rename_map: Optional["ResourceRenameMap"] = None
 
 
 @dataclass
@@ -73,12 +92,14 @@ class DbtProjectYMLRefactorConfig:
 class SQLRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
+    resource_rename_map: Optional["ResourceRenameMap"] = None
 
 
 @dataclass
 class PythonRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
+    resource_rename_map: Optional["ResourceRenameMap"] = None
 
 
 # ---------------------------------------------------------------------------

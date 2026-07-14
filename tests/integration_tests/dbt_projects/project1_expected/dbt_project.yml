@@ -57,7 +57,7 @@ seeds:
     +data_space: my_data_space
 exposures:
   +enabled: true
-tests:
+data_tests:
   dbt_autofix_tests:
     +meta: # meta is a valid test config key - must never be moved to another key
       owner: data-quality-team

@@ -104,6 +104,54 @@ def changeset_dbt_project_remove_deprecated_config(
     )
 
 
+def changeset_dbt_project_rename_tests_to_data_tests(
+    content: YMLContent, config: DbtProjectYMLRefactorConfig
+) -> YMLRuleRefactorResult:
+    """Rename the top-level 'tests:' config block to 'data_tests:' in dbt_project.yml.
+
+    dbt renamed the 'tests' config to 'data_tests' (dbt-core CHANGELOG #8699).
+
+    Edge case: if 'data_tests' already exists alongside 'tests', we do not clobber the
+    existing 'data_tests'. When both are dicts we merge the 'tests' block into the existing
+    'data_tests' block (existing 'data_tests' values win on key collision); otherwise we keep
+    the existing 'data_tests' and drop 'tests'. Either way 'tests' is removed.
+    """
+    yml_str = content.current_str
+    yml_dict = load_yaml(yml_str)
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    refactored = False
+
+    if "tests" in yml_dict:
+        tests_value = yml_dict["tests"]
+        if "data_tests" not in yml_dict:
+            # Simple rename preserving position.
+            new_items = [("data_tests", v) if k == "tests" else (k, v) for k, v in yml_dict.items()]
+            yml_dict.clear()
+            for k, v in new_items:
+                yml_dict[k] = v
+            log = "Renamed top-level 'tests' config to 'data_tests'."
+        else:
+            existing = yml_dict["data_tests"]
+            if isinstance(existing, dict) and isinstance(tests_value, dict):
+                for k, v in tests_value.items():
+                    if k not in existing:
+                        existing[k] = v
+                log = "Merged top-level 'tests' config into existing 'data_tests' and removed 'tests'."
+            else:
+                log = "Removed top-level 'tests' config (kept existing 'data_tests')."
+            del yml_dict["tests"]
+        refactored = True
+        deprecation_refactors.append(DbtDeprecationRefactor(log=log, deprecation="TestsConfigDeprecation"))
+
+    return YMLRuleRefactorResult(
+        rule_name="rename_tests_to_data_tests",
+        refactored=refactored,
+        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if refactored else yml_str,
+        original_yaml=yml_str,
+        deprecation_refactors=deprecation_refactors,
+    )
+
+
 def rec_check_yaml_path(
     yml_dict: Any,
     path: Path,
@@ -341,7 +389,13 @@ def changeset_dbt_project_flip_behavior_flags(
     refactored = False
 
     behavior_change_flag_to_explainations = {
-        "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands"
+        "source_freshness_run_project_hooks": "run project hooks (on-run-start/on-run-end) as part of source freshness commands",
+        "require_explicit_package_overrides_for_builtin_materializations": "require packages to explicitly override built-in materializations instead of silently overriding them",
+    }
+
+    behavior_change_flag_to_deprecation = {
+        "source_freshness_run_project_hooks": "SourceFreshnessProjectHooksNotRun",
+        "require_explicit_package_overrides_for_builtin_materializations": "PackageMaterializationOverrideDeprecation",
     }
 
     for key in yml_dict:
@@ -353,7 +407,7 @@ def changeset_dbt_project_flip_behavior_flags(
                     deprecation_refactors.append(
                         DbtDeprecationRefactor(
                             log=f"Set flag '{behavior_change_flag}' to 'True' - This will {behavior_change_flag_to_explainations[behavior_change_flag]}.",
-                            deprecation="SourceFreshnessProjectHooksNotRun",
+                            deprecation=behavior_change_flag_to_deprecation[behavior_change_flag],
                         )
                     )
 

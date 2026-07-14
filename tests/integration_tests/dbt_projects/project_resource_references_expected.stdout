@@ -1,0 +1,89 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_resource_references/models/example/downstream.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Updated 2 ref() reference(s) to renamed resource(s)."
+      },
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Updated 1 source() reference(s) to renamed source(s)."
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_resource_references/models/example/downstream_py.py",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Updated 1 ref() reference(s) to renamed resource(s)."
+      },
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Updated 1 source() reference(s) to renamed source(s)."
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_resource_references/models/example/model with spaces.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Renamed 'model with spaces.sql' to 'model_with_spaces.sql'"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_resource_references/models/example/python model with spaces.py",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Renamed 'python model with spaces.py' to 'python_model_with_spaces.py'"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_resource_references/models/example/schema.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Model 'model with spaces' - Updated 'name' from 'model with spaces' to 'model_with_spaces'."
+      },
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Model 'python model with spaces' - Updated 'name' from 'python model with spaces' to 'python_model_with_spaces'."
+      },
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Updated 1 ref() reference(s) to renamed resource(s)."
+      },
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Updated 1 source() reference(s) to renamed source(s)."
+      }
+    ]
+  },
+  {
+    "file_path": "project_resource_references/models/example/sources.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "ResourceNamesWithSpacesDeprecation",
+        "log": "Source 'source with spaces' - Updated 'name' from 'source with spaces' to 'source_with_spaces'."
+      }
+    ]
+  }
+]

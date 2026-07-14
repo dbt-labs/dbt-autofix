@@ -19,6 +19,10 @@
         "log": "Removed the deprecated field 'target-path'"
       },
       {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Renamed top-level 'tests' config to 'data_tests'."
+      },
+      {
         "deprecation": "MissingPlusPrefixDeprecation",
         "log": "Added '+' in front of the nested config 'materialized'"
       },
@@ -292,6 +296,18 @@
       {
         "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
         "log": "Test 'dbt_utils.unique_combination_of_columns' - Custom test argument 'combination_of_columns' moved under 'arguments'."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Model 'my_model_with_tests' - Renamed 'tests' to 'data_tests'."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Model 'my_versioned_model_with_tests' version '1' - Renamed 'tests' to 'data_tests'."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Model 'my_versioned_model_with_tests' version '2' - Renamed 'tests' to 'data_tests'."
       }
     ]
   },
@@ -354,6 +370,14 @@
       {
         "deprecation": "CustomKeyInObjectDeprecation",
         "log": "Test 'unique' - Field 'where' moved under config."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Source 'my-source' table 'table1' - Renamed 'tests' to 'data_tests'."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Source 'my-source' table 'table1' column 'col1' - Renamed 'tests' to 'data_tests'."
       }
     ]
   },

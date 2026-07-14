@@ -1,0 +1,24 @@
+models:
+  - name: my_model
+    data_tests:
+      - unique
+    columns:
+      - name: id
+        data_tests:
+          - unique
+          - not_null
+      - name: name
+        data_tests:
+          - not_null
+
+sources:
+  - name: my_source
+    schema: raw
+    tables:
+      - name: my_table
+        data_tests:
+          - unique
+        columns:
+          - name: id
+            data_tests:
+              - not_null

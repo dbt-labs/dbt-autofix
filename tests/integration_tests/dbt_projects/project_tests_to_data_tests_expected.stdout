@@ -1,0 +1,45 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_tests_to_data_tests/dbt_project.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+      },
+      {
+        "deprecation": "ConfigTargetPathDeprecation",
+        "log": "Removed the deprecated field 'target-path'"
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Renamed top-level 'tests' config to 'data_tests'."
+      }
+    ]
+  },
+  {
+    "file_path": "project_tests_to_data_tests/models/example/schema.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Model 'my_model' - Renamed 'tests' to 'data_tests'."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Model 'my_model' column 'id' - Renamed 'tests' to 'data_tests'."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Source 'my_source' table 'my_table' - Renamed 'tests' to 'data_tests'."
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Source 'my_source' table 'my_table' column 'id' - Renamed 'tests' to 'data_tests'."
+      }
+    ]
+  }
+]

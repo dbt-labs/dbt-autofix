@@ -1,0 +1,14 @@
+models:
+  - name: model_with_spaces
+  - name: python_model_with_spaces
+  - name: downstream
+  - name: downstream_py
+
+exposures:
+  - name: my_exposure
+    type: dashboard
+    owner:
+      name: analytics
+    depends_on:
+      - ref('model_with_spaces')
+      - source('source_with_spaces', 'my_table')

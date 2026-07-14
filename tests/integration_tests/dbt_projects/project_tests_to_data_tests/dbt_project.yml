@@ -1,0 +1,20 @@
+name: 'dbt_autofix_tests'
+version: '1.0.0'
+profile: 'dbt_autofix_tests'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+target-path: "target"
+
+tests:
+  +enabled: true
+  dbt_autofix_tests:
+    +severity: warn
+
+clean-targets:
+  - "target"
+  - "dbt_packages"

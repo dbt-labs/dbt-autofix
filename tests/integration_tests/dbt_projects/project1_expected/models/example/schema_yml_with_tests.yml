@@ -1,6 +1,6 @@
 models:
   - name: my_model_with_tests
-    tests:
+    data_tests:
       - unique:
           column_name: id
           config:
@@ -61,7 +61,7 @@ models:
   - name: my_versioned_model_with_tests
     versions:
       - v: 1
-        tests:
+        data_tests:
           - dbt_utils.unique_combination_of_columns:
               arguments:
                 combination_of_columns:
@@ -69,7 +69,7 @@ models:
                   - b
                   - c
       - v: 2
-        tests:
+        data_tests:
           - dbt_utils.unique_combination_of_columns:
               arguments:
                 combination_of_columns:

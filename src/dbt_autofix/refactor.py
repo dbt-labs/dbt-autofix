@@ -11,6 +11,7 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_flip_test_arguments_behavior_flag,
     changeset_dbt_project_prefix_plus_for_config,
     changeset_dbt_project_remove_deprecated_config,
+    changeset_dbt_project_rename_tests_to_data_tests,
     changeset_fix_space_after_plus,
 )
 from dbt_autofix.refactors.changesets.dbt_python import (
@@ -26,6 +27,7 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml import (
     changeset_remove_extra_tabs,
     changeset_remove_indentation_version,
     changeset_remove_tab_only_lines,
+    changeset_rename_tests_to_data_tests,
     changeset_replace_fancy_quotes,
     changeset_replace_non_alpha_underscores_in_name_values,
 )
@@ -47,10 +49,17 @@ from dbt_autofix.refactors.changesets.dbt_sql import (
 from dbt_autofix.refactors.changesets.dbt_sql_improved import (
     move_custom_config_access_to_meta_sql_improved,
 )
+from dbt_autofix.refactors.changesets.resource_references import (
+    build_resource_rename_map,
+    changeset_update_resource_references_yml,
+    update_resource_references_python,
+    update_resource_references_sql,
+)
 from dbt_autofix.refactors.results import (
     DbtProjectYMLRefactorConfig,
     PythonRefactorConfig,
     PythonRefactorResult,
+    ResourceRenameMap,
     SQLRefactorConfig,
     SQLRefactorResult,
     YMLRefactorConfig,
@@ -82,6 +91,7 @@ def process_yaml_files_except_dbt_project(
     behavior_change: bool = False,
     all: bool = False,
     semantic_definitions: Optional[SemanticDefinitions] = None,
+    resource_rename_map: Optional[ResourceRenameMap] = None,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project.
 
@@ -96,10 +106,11 @@ def process_yaml_files_except_dbt_project(
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
-    config = YMLRefactorConfig(schema_specs=schema_specs)
+    config = YMLRefactorConfig(schema_specs=schema_specs, resource_rename_map=resource_rename_map)
 
     behavior_change_rules: List[Callable] = [
         changeset_replace_non_alpha_underscores_in_name_values,
+        changeset_update_resource_references_yml,
     ]
     safe_change_rules: List[Callable] = [
         changeset_replace_fancy_quotes,
@@ -109,6 +120,7 @@ def process_yaml_files_except_dbt_project(
         changeset_remove_duplicate_keys,
         changeset_remove_duplicate_models,
         changeset_refactor_yml_str,
+        changeset_rename_tests_to_data_tests,
         changeset_owner_properties_yml_str,
         changeset_normalize_static_analysis_yml,
     ]
@@ -119,7 +131,11 @@ def process_yaml_files_except_dbt_project(
 
     # Override ordered changesets if semantic definitions are provided
     if semantic_definitions:
-        sl_config = YMLRefactorConfig(schema_specs=schema_specs, semantic_definitions=semantic_definitions)
+        sl_config = YMLRefactorConfig(
+            schema_specs=schema_specs,
+            semantic_definitions=semantic_definitions,
+            resource_rename_map=resource_rename_map,
+        )
         # Certain changesets can only be applied after all the other changesets have been applied to all the files
         ordered_changesets = [
             [
@@ -239,6 +255,7 @@ def process_dbt_project_yml(
         changeset_remove_duplicate_keys,
         changeset_dbt_project_flip_test_arguments_behavior_flag,
         changeset_dbt_project_remove_deprecated_config,
+        changeset_dbt_project_rename_tests_to_data_tests,
         changeset_fix_space_after_plus,
         changeset_dbt_project_prefix_plus_for_config,
         changeset_normalize_static_analysis_yml,
@@ -269,6 +286,7 @@ def process_sql_files(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
+    resource_rename_map: Optional[ResourceRenameMap] = None,
 ) -> List[SQLRefactorResult]:
     """Process all SQL files in the given paths for unmatched endings.
 
@@ -285,7 +303,10 @@ def process_sql_files(
     """
     results: List[SQLRefactorResult] = []
 
-    behavior_change_rules: List[Callable] = [rename_sql_file_names_with_spaces]
+    behavior_change_rules: List[Callable] = [
+        rename_sql_file_names_with_spaces,
+        update_resource_references_sql,
+    ]
     safe_change_rules: List[Callable] = [
         remove_unmatched_endings,
         refactor_custom_configs_to_meta_sql,
@@ -304,7 +325,9 @@ def process_sql_files(
             error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
             continue
 
-        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = SQLRefactorConfig(
+            schema_specs=schema_specs, node_type=node_type, resource_rename_map=resource_rename_map
+        )
 
         sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
@@ -345,6 +368,7 @@ def process_python_files(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
+    resource_rename_map: Optional[ResourceRenameMap] = None,
 ) -> List[PythonRefactorResult]:
     """Process all Python model files in the given paths.
 
@@ -365,7 +389,10 @@ def process_python_files(
     """
     results: List[PythonRefactorResult] = []
 
-    behavior_change_rules: List[Callable] = [rename_python_file_names_with_spaces]
+    behavior_change_rules: List[Callable] = [
+        rename_python_file_names_with_spaces,
+        update_resource_references_python,
+    ]
     safe_change_rules: List[Callable] = [
         refactor_custom_configs_to_meta_python,
         move_custom_config_access_to_meta_python,
@@ -385,7 +412,9 @@ def process_python_files(
         if not full_path.exists():
             continue
 
-        config = PythonRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = PythonRefactorConfig(
+            schema_specs=schema_specs, node_type=node_type, resource_rename_map=resource_rename_map
+        )
 
         python_files = full_path.glob("**/*.py")
         for python_file in python_files:
@@ -593,15 +622,32 @@ def changeset_all_files(
     dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages, include_private_packages)
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
-    sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
+    # Build the resource rename map (old name -> new name) from the current on-disk state, before
+    # any renames are applied, so that ref()/source() references can be rewritten to match. This is
+    # only relevant when the "spaces in resource names" behavior-change fixes run.
+    resource_rename_map: Optional[ResourceRenameMap] = None
+    if behavior_change or all:
+        resource_rename_map = build_resource_rename_map(path, dbt_paths_to_node_type)
+
+    sql_results = process_sql_files(
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, resource_rename_map
+    )
     python_results = process_python_files(
-        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, resource_rename_map
     )
 
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
+        path,
+        dbt_paths,
+        schema_specs,
+        dry_run,
+        select,
+        behavior_change,
+        all,
+        semantic_definitions,
+        resource_rename_map,
     )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results, python_results

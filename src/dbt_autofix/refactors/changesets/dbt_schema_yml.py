@@ -825,6 +825,127 @@ def changeset_replace_non_alpha_underscores_in_name_values(
     )
 
 
+def _rename_tests_key_in_container(container: CommentedMap, context_label: str) -> List[DbtDeprecationRefactor]:
+    """Rename a 'tests' key to 'data_tests' within a single container (node, column, version...).
+
+    dbt renamed the 'tests' property/config key to 'data_tests' (dbt-core CHANGELOG #8699).
+    This renames the key in-place, preserving the test list contents.
+
+    Edge case: if 'data_tests' already exists alongside 'tests', we do not clobber the
+    existing 'data_tests'. Instead we append the 'tests' entries onto the existing
+    'data_tests' list (least-surprising: no test definitions are silently dropped) and
+    remove the 'tests' key.
+
+    Returns a list of deprecation refactors describing what changed (empty if nothing changed).
+    """
+    if not isinstance(container, dict) or "tests" not in container:
+        return []
+
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    tests_value = container["tests"]
+
+    if "data_tests" not in container:
+        # Simple rename, preserving position: rebuild the mapping so 'data_tests' takes
+        # the place 'tests' occupied instead of moving to the end.
+        new_container_items = []
+        for key, value in container.items():
+            if key == "tests":
+                new_container_items.append(("data_tests", value))
+            else:
+                new_container_items.append((key, value))
+        container.clear()
+        for key, value in new_container_items:
+            container[key] = value
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=f"{context_label} - Renamed 'tests' to 'data_tests'.",
+                deprecation=DeprecationType.TESTS_CONFIG_DEPRECATION,
+            )
+        )
+    else:
+        # Both keys present: merge 'tests' entries into the existing 'data_tests' list.
+        existing = container["data_tests"]
+        if isinstance(existing, list) and isinstance(tests_value, list):
+            existing.extend(tests_value)
+            log = f"{context_label} - Merged 'tests' entries into existing 'data_tests' and removed 'tests'."
+        else:
+            log = f"{context_label} - Removed 'tests' (kept existing 'data_tests') to avoid conflicting keys."
+        del container["tests"]
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=log,
+                deprecation=DeprecationType.TESTS_CONFIG_DEPRECATION,
+            )
+        )
+
+    return deprecation_refactors
+
+
+def changeset_rename_tests_to_data_tests(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    """Rename the 'tests' key to 'data_tests' in schema YAML files.
+
+    dbt renamed the 'tests' property to 'data_tests' (dbt-core CHANGELOG #8699). This applies
+    at the node level (models, seeds, snapshots, sources, source tables, analyses, unit_tests, etc.),
+    under individual columns, and under versions. The test list contents are left unchanged.
+    """
+    yml_str = content.current_str
+    schema_specs = config.schema_specs
+    deprecation_refactors: List[DbtDeprecationRefactor] = []
+    yml_dict = load_yaml(yml_str)
+
+    def _rename_in_columns(node: CommentedMap, node_label: str) -> None:
+        if isinstance(node.get("columns"), list):
+            for column in node["columns"]:
+                if isinstance(column, dict):
+                    col_label = f"{node_label} column '{column.get('name', '')}'"
+                    deprecation_refactors.extend(_rename_tests_key_in_container(column, col_label))
+
+    for node_type in schema_specs.yaml_specs_per_node_type:
+        if node_type not in yml_dict or not isinstance(yml_dict[node_type], list):
+            continue
+        pretty_node_type = node_type[:-1].title() if node_type.endswith("s") else node_type.title()
+        for node in yml_dict[node_type]:
+            if not isinstance(node, dict):
+                continue
+            node_label = f"{pretty_node_type} '{node.get('name', '')}'"
+
+            # node-level tests
+            deprecation_refactors.extend(_rename_tests_key_in_container(node, node_label))
+            # column-level tests
+            _rename_in_columns(node, node_label)
+            # version-level tests (and their columns)
+            if isinstance(node.get("versions"), list):
+                for version in node["versions"]:
+                    if isinstance(version, dict):
+                        version_label = f"{node_label} version '{version.get('v', '')}'"
+                        deprecation_refactors.extend(_rename_tests_key_in_container(version, version_label))
+                        _rename_in_columns(version, version_label)
+
+    # sources: tests can be set at the table level and under table columns
+    if isinstance(yml_dict.get("sources"), list):
+        for source in yml_dict["sources"]:
+            if not isinstance(source, dict) or not isinstance(source.get("tables"), list):
+                continue
+            source_label = f"Source '{source.get('name', '')}'"
+            for table in source["tables"]:
+                if not isinstance(table, dict):
+                    continue
+                table_label = f"{source_label} table '{table.get('name', '')}'"
+                deprecation_refactors.extend(_rename_tests_key_in_container(table, table_label))
+                _rename_in_columns(table, table_label)
+
+    refactored = len(deprecation_refactors) > 0
+    refactored_yaml = dict_to_yaml_str(yml_dict) if refactored else yml_str
+
+    return YMLRuleRefactorResult(
+        rule_name="rename_tests_to_data_tests",
+        refactored=refactored,
+        refactored_yaml=refactored_yaml,
+        original_yaml=yml_str,
+        deprecation_refactors=deprecation_refactors,
+    )
+
+
 def _replace_spaces_outside_jinja(text: str) -> str:
     """Replace spaces with underscores, but preserve spaces inside Jinja templates.
 
