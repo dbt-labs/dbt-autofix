@@ -9,6 +9,7 @@ class PackageVersionFusionCompatibilityState(str, Enum):
     DBT_VERSION_RANGE_INCLUDES_2_0 = "require-dbt-version includes version 2.0"
     EXPLICIT_ALLOW = "Version has been verified by dbt as Fusion-compatible even though its declared require-dbt-version may not include 2.0"
     EXPLICIT_DISALLOW = "Version has been verified by dbt as incompatible with Fusion"
+    V2_COMPATIBLE_DOWNLOAD = "Version is incompatible but has a v2-compatible package download available"
     UNKNOWN = "Version state unknown"
 
 
@@ -36,4 +37,5 @@ class PackageVersionUpgradeType(str, Enum):
     )
     PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION = "Private package requires a compatible require-dbt-version (>=2.0.0, <3.0.0) to be available on Fusion. https://docs.getdbt.com/reference/project-configs/require-dbt-version"
     TRANSITIVE_DEPENDENCY = "Package is a transitive dependency of another package in your project"
+    PUBLIC_PACKAGE_HAS_V2_COMPATIBLE_DOWNLOAD = "Installed package version has a v2-compatible download available. Run dbt deps --use-v2-compatible-package-downloads flag"
     UNKNOWN = "Package's Fusion eligibility unknown"

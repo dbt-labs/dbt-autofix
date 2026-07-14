@@ -186,7 +186,25 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
     return deps_file
 
 
-def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersionUpgradeResult]:
+def check_for_package_upgrades(
+    deps_file: DbtPackageFile, prefer_v2_compatible_downloads: bool = False
+) -> list[PackageVersionUpgradeResult]:
+    """Determine if package versions are compatible and identify if upgrades are available.
+
+    This iterates through all the installed packages in the project and checks if the
+    installed package version is compatible with dbt v2. It also checks if the versions
+    have a v2-compatible package download available as an alternative to upgrading the
+    package version. If a version is not compatible, it will try to find a compatible
+    version within the project's defined version range, or else look for the first compatible
+    version about the project's defined version range.
+
+    Args:
+        deps_file (DbtPackageFile): the parsed packages.yml or dependencies.yml
+        prefer_v2_compatible_downloads (bool, optional): CLI option to prioritize v2-compatible downloads over upgrading a package's version. Defaults to False.
+
+    Returns:
+        list[PackageVersionUpgradeResult]: list of package versions with compatibility info
+    """
     # check all packages for upgrades
     # if dry run, write out package upgrades and exit
     package_version_upgrade_results: list[PackageVersionUpgradeResult] = []
@@ -360,8 +378,31 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         package_version_range: Optional[VersionRange] = deps_file.package_dependencies[
             package
         ].project_config_version_range
-
         installed_version_spec = dbt_package.installed_package_version
+
+        # If we know the installed version has a v2-compatible download,
+        # use that instead of upgrading
+        if (
+            prefer_v2_compatible_downloads
+            and installed_version_spec is not None
+            and installed_version_v2_download_available
+        ):
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    public_package=True,
+                    installed_version=installed_package_versions[package],
+                    compatible_version=installed_package_versions[package],
+                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_HAS_V2_COMPATIBLE_DOWNLOAD,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.V2_COMPATIBLE_DOWNLOAD,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
+                )
+            )
+            packages_to_check.remove(package)
+            continue
+
         # in case the user hadn't run dbt deps, estimate version
         if installed_version_spec is None:
             if package_version_range is not None:
@@ -487,7 +528,21 @@ def upgrade_package_versions(
     dry_run: bool = True,
     override_pinned_version: bool = False,
     json_output: bool = False,
+    prefer_v2_compatible_downloads: bool = False,
 ) -> PackageUpgradeResult:
+    """Upgrade incompatible package versions.
+
+    Args:
+        deps_file (DbtPackageFile): the parsed packages.yml or dependencies.yml
+        package_dependencies_with_upgrades (list[PackageVersionUpgradeResult]): result of check_for_package_upgrades
+        dry_run (bool, optional): CLI option that prints output without making changes. Defaults to True.
+        override_pinned_version (bool, optional): CLI option that will upgrade packages beyond the version range specified in the original packages.yml. Defaults to False.
+        json_output (bool, optional): CLI option to print logs output in JSON format. Defaults to False.
+        prefer_v2_compatible_downloads (bool, optional): If a package with an available upgrade also has a v2-compatible download for the currently installed version, use that instead of upgrading the package. Defaults to False.
+
+    Returns:
+        PackageUpgradeResult: final result of package upgrades output from CLI
+    """
     # if package dependencies have upgrades:
     # update dependencies.yml
     # update packages.yml

@@ -47,13 +47,25 @@ def identify_duplicate_keys(
 
 @app.command(name="packages")
 def upgrade_packages(
-    path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
+    path: Annotated[
+        Path, typer.Option("--path", "-p", "--project-dir", help="The path to the dbt project")
+    ] = current_dir,
     dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
     force_upgrade: Annotated[
         bool,
         typer.Option(
             "--force-upgrade", "-f", help="Override package version config when upgrading to Fusion-compatible versions"
+        ),
+    ] = False,
+    v2_compatible_downloads: Annotated[
+        bool,
+        typer.Option(
+            "--use-v2-compatible-package-downloads",
+            "-v",
+            "--v2-compatible-downloads",
+            help="Use v2-compatible downloads when available instead of upgrading",
+            hidden=True,
         ),
     ] = False,
 ):
@@ -72,7 +84,9 @@ def upgrade_packages(
             error_console.print("[red]-- No package dependencies found --[/red]")
             raise Exception()
 
-        package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(deps_file)
+        package_upgrades: list[PackageVersionUpgradeResult] = check_for_package_upgrades(
+            deps_file, prefer_v2_compatible_downloads=v2_compatible_downloads
+        )
 
         packages_upgraded: PackageUpgradeResult = upgrade_package_versions(
             deps_file=deps_file,
@@ -80,6 +94,7 @@ def upgrade_packages(
             dry_run=dry_run,
             override_pinned_version=force_upgrade,
             json_output=json_output,
+            prefer_v2_compatible_downloads=v2_compatible_downloads,
         )
         packages_upgraded.print_to_console(json_output=json_output)
     except:
@@ -90,7 +105,9 @@ def upgrade_packages(
 
 @app.command(name="deprecations")
 def refactor_yml(
-    path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
+    path: Annotated[
+        Path, typer.Option("--path", "-p", "--project-dir", help="The path to the dbt project")
+    ] = current_dir,
     dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
     exclude_dbt_project_keys: Annotated[
