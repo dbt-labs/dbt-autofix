@@ -189,6 +189,22 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
 def check_for_package_upgrades(
     deps_file: DbtPackageFile, prefer_v2_compatible_downloads: bool = False
 ) -> list[PackageVersionUpgradeResult]:
+    """Determine if package versions are compatible and identify if upgrades are available.
+
+    This iterates through all the installed packages in the project and checks if the
+    installed package version is compatible with dbt v2. It also checks if the versions
+    have a v2-compatible package download available as an alternative to upgrading the
+    package version. If a version is not compatible, it will try to find a compatible
+    version within the project's defined version range, or else look for the first compatible
+    version about the project's defined version range.
+
+    Args:
+        deps_file (DbtPackageFile): the parsed packages.yml or dependencies.yml
+        prefer_v2_compatible_downloads (bool, optional): CLI option to prioritize v2-compatible downloads over upgrading a package's version. Defaults to False.
+
+    Returns:
+        list[PackageVersionUpgradeResult]: list of package versions with compatibility info
+    """
     # check all packages for upgrades
     # if dry run, write out package upgrades and exit
     package_version_upgrade_results: list[PackageVersionUpgradeResult] = []
@@ -525,7 +541,7 @@ def upgrade_package_versions(
         prefer_v2_compatible_downloads (bool, optional): If a package with an available upgrade also has a v2-compatible download for the currently installed version, use that instead of upgrading the package. Defaults to False.
 
     Returns:
-        PackageUpgradeResult: _description_
+        PackageUpgradeResult: final result of package upgrades output from CLI
     """
     # if package dependencies have upgrades:
     # update dependencies.yml
