@@ -47,7 +47,9 @@ def identify_duplicate_keys(
 
 @app.command(name="packages")
 def upgrade_packages(
-    path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
+    path: Annotated[
+        Path, typer.Option("--path", "-p", "--project-dir", help="The path to the dbt project")
+    ] = current_dir,
     dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
     force_upgrade: Annotated[
@@ -102,7 +104,9 @@ def upgrade_packages(
 
 @app.command(name="deprecations")
 def refactor_yml(
-    path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
+    path: Annotated[
+        Path, typer.Option("--path", "-p", "--project-dir", help="The path to the dbt project")
+    ] = current_dir,
     dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
     exclude_dbt_project_keys: Annotated[
