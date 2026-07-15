@@ -10,7 +10,15 @@ from ruamel.yaml.comments import CommentedMap
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
-from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
+from dbt_autofix.refactors.yml import (
+    DbtYAML,
+    copy_key_comment,
+    dict_to_yaml_str,
+    get_dict,
+    get_list,
+    load_yaml,
+    yaml_config,
+)
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 NUM_SPACES_TO_REPLACE_TAB = 2
@@ -255,10 +263,11 @@ def restructure_owner_properties(
             if field not in schema_specs.owner_properties:
                 refactored = True
                 if "config" not in node:
-                    node["config"] = {"meta": {}}
+                    node["config"] = CommentedMap()
                 if "meta" not in node["config"]:
-                    node["config"]["meta"] = {}
+                    node["config"]["meta"] = CommentedMap()
                 node["config"]["meta"][field] = owner[field]
+                copy_key_comment(owner, field, node["config"]["meta"])
                 del owner[field]
                 refactor_logs.append(
                     f"{pretty_node_type} '{node['name']}' - Owner field '{field}' moved under config.meta."
@@ -598,6 +607,7 @@ def refactor_test_config_fields(
                     )
                 )
                 test_definition["config"] = node_config
+            copy_key_comment(test_definition, field, node_config)
             del test_definition[field]
 
     return deprecation_refactors
@@ -614,7 +624,9 @@ def refactor_test_common_misspellings(test_definition: CommentedMap, test_name: 
                     deprecation=DeprecationType.CUSTOM_KEY_IN_OBJECT_DEPRECATION,
                 )
             )
-            test_definition[COMMON_PROPERTY_MISSPELLINGS[field.lower()]] = test_definition[field]
+            corrected = COMMON_PROPERTY_MISSPELLINGS[field.lower()]
+            test_definition[corrected] = test_definition[field]
+            copy_key_comment(test_definition, field, test_definition, corrected)
             del test_definition[field]
 
     return deprecation_refactors
@@ -643,6 +655,7 @@ def refactor_test_args(test_definition: CommentedMap, test_name: str) -> List[Db
         )
         test_definition["arguments"] = get_dict(test_definition, "arguments")
         test_definition["arguments"].update({field: test_definition[field]})
+        copy_key_comment(test_definition, field, test_definition["arguments"])
         del test_definition[field]
 
     return deprecation_refactors
@@ -686,7 +699,9 @@ def restructure_yaml_keys_for_node(
                     deprecation=DeprecationType.CUSTOM_KEY_IN_CONFIG_DEPRECATION,
                 )
             )
-            node["config"][COMMON_CONFIG_MISSPELLINGS[field]] = node["config"][field]
+            corrected = COMMON_CONFIG_MISSPELLINGS[field]
+            node["config"][corrected] = node["config"][field]
+            copy_key_comment(node["config"], field, node["config"], corrected)
             del node["config"][field]
         else:
             deprecation_refactors.append(
@@ -697,6 +712,7 @@ def restructure_yaml_keys_for_node(
             )
             node_config_meta = get_dict(get_dict(node, "config"), "meta")
             node_config_meta.update({field: node["config"][field]})
+            copy_key_comment(node["config"], field, node_config_meta)
             node["config"] = get_dict(node, "config")
             node["config"].update({"meta": node_config_meta})
             del node["config"][field]
@@ -718,6 +734,7 @@ def restructure_yaml_keys_for_node(
                 )
             )
             node[correct_field] = node[field]
+            copy_key_comment(node, field, node, correct_field)
             del node[field]
             continue
 
@@ -728,6 +745,7 @@ def restructure_yaml_keys_for_node(
             # if the field is not under config, move it under config
             if field not in node_config:
                 node_config.update({field: node[field]})
+                copy_key_comment(node, field, node_config)
                 deprecation_refactors.append(
                     DbtDeprecationRefactor(
                         log=f"{pretty_node_type} '{node.get('name', '')}' - Field '{field}' moved under config.",
@@ -771,6 +789,7 @@ def restructure_yaml_keys_for_node(
                 )
             node_meta = get_dict(get_dict(node, "config"), "meta")
             node_meta.update({field: node[field]})
+            copy_key_comment(node, field, node_meta)
             node["config"] = get_dict(node, "config")
             node["config"].update({"meta": node_meta})
             del node[field]
@@ -785,11 +804,12 @@ def restructure_yaml_keys_for_node(
         )
 
         if "config" not in node:
-            node["config"] = {"meta": {}}
+            node["config"] = CommentedMap()
         if "meta" not in node["config"]:
-            node["config"]["meta"] = {}
+            node["config"]["meta"] = CommentedMap()
         for key, value in existing_meta.items():
             node["config"]["meta"].update({key: value})
+            copy_key_comment(existing_meta, key, node["config"]["meta"])
         del node["meta"]
 
     return node, refactored, deprecation_refactors
