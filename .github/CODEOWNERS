@@ -3,4 +3,4 @@
 
 ### Deprecations
 
-/dbt_autofix/deprecations.py    @dbt-labs/growth-pricing
+/src/dbt_autofix/deprecations.py    @dbt-labs/growth-pricing
