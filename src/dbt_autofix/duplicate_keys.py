@@ -59,6 +59,8 @@ def find_duplicate_keys(
 
     # Check project YML files
     for file in yml_files_not_target_or_packages:
+        if not file.is_file():
+            continue
         file_with_duplicate = False
         file_content = file.read_text()
         for p in yamllint.linter.run(file_content, yaml_config):
@@ -79,6 +81,8 @@ def find_duplicate_keys(
 
     # Check package YML files
     for file in yml_files_packages_not_integration_tests:
+        if not file.is_file():
+            continue
         file_content = file.read_text()
         for p in yamllint.linter.run(file_content, yaml_config):
             if p.rule == "key-duplicates":
