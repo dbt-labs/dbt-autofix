@@ -2,7 +2,7 @@
 
 ## Installation
 
-This project uses `uv` for workspace and virutalenv management.
+This project uses `uv` for workspace and virtualenv management.
 
 1. Clone the repo: `gh repo clone dbt-labs/dbt-autofix`
 2. Install `uv`: [See docs](https://docs.astral.sh/uv/getting-started/installation/)
