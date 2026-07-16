@@ -39,9 +39,13 @@ current_dir = Path.cwd()
 @app.command(name="list-yaml-duplicates")
 def identify_duplicate_keys(
     path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
+    exclude: Annotated[
+        Optional[List[str]],
+        typer.Option("--exclude", "-e", help="YAML files or directories to exclude, relative to --path"),
+    ] = None,
 ):
     print(f"[green]Identifying duplicates in {path}[/green]\n")
-    project_duplicates, package_duplicates = find_duplicate_keys(path)
+    project_duplicates, package_duplicates = find_duplicate_keys(path, excluded_paths=exclude)
     print_duplicate_keys(project_duplicates, package_duplicates)
 
 
