@@ -6,11 +6,9 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
+from dbt_fusion_package_tools.scripts.constants import DEFAULT_FUSION_BINARY_PATH, DEFAULT_HUB_PATH, DEFAULT_OUTPUT_PATH
 from dbt_fusion_package_tools.scripts.update_package_hub_json import (
     DEFAULT_CONFORMANCE_OUTPUT_FILE,
-    DEFAULT_FUSION_BINARY_PATH,
-    DEFAULT_HUB_PATH,
-    DEFAULT_OUTPUT_PATH,
 )
 
 console = Console()

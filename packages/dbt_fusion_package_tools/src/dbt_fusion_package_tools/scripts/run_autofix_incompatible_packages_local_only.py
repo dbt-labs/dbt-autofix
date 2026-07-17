@@ -12,17 +12,16 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
+from dbt_fusion_package_tools.scripts.constants import (
+    DEFAULT_AUTOFIXED_TARBALL_PATH,
+    DEFAULT_HUB_PATH,
+    DEFAULT_OUTPUT_PATH,
+)
 from dbt_fusion_package_tools.scripts.download_package_version_tarballs import (
     DEFAULT_DOWNLOAD_PATH,
     DownloadedTarballOutput,
 )
-
-# from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
-from dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility import (
-    DEFAULT_HUB_PATH,
-    DEFAULT_OUTPUT_PATH,
-)
-from dbt_fusion_package_tools.scripts.run_autofix_incompatible_packages import (
+from dbt_fusion_package_tools.scripts.helpers import (
     create_tarball_from_directory,
     read_json_from_local_hub_repo_with_conformance,
     run_autofix,
@@ -52,7 +51,7 @@ def run_autofix_for_version(
     result = {}
 
     # run autofix on version
-    autofix_output = run_autofix(Path(path), fusion_binary=fusion_binary, show_fusion_output=True)
+    autofix_output = run_autofix(Path(path))
     # don't rerun if autofix failed
     if autofix_output is None:
         console.log("Autofix failed")
@@ -61,7 +60,7 @@ def run_autofix_for_version(
 
     # save autofixed version
     tarball_name = f"{'_'.join(package_id.split('/'))}_{tag_version}"
-    create_tarball_from_directory(Path(path), DEFAULT_OUTPUT_PATH / "autofixed_versions", tarball_name)
+    create_tarball_from_directory(Path(path), DEFAULT_AUTOFIXED_TARBALL_PATH, tarball_name)
     result["autofixed_version_file_name"] = f"{tarball_name}.tar.gz"
 
     return result
@@ -112,9 +111,6 @@ def run_autofix_from_tarballs(
     results: dict[str, dict[str, dict[str, Any]]] = {}
 
     for i, package in enumerate(output):
-        # temporarily skip fivetran packages
-        # if package.split("/")[0] != "fivetran" and package.split("/")[0] != "fishtown-analytics":
-        #     continue
         if package_limit > 0 and i > package_limit:
             break
         results[package] = {}
@@ -175,9 +171,6 @@ def write_autofix_output_to_json(
     indent: int = 2,
     sort_keys: bool = True,
 ):
-    # data_output = {}
-    # for k, v in data.items():
-    #     data_output[k] = {version: result.to_dict() for version, result in v.items()}
     out_file = Path(dest_dir) / "conformance_autofix_output_local.json"
     with out_file.open("w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=indent, sort_keys=sort_keys, ensure_ascii=False)

@@ -23,12 +23,10 @@ from dbt_fusion_package_tools.compatibility import (
     FusionConformanceResult,
     ParseConformanceLogOutput,
 )
+from dbt_fusion_package_tools.scripts.constants import DEFAULT_FUSION_BINARY_PATH, DEFAULT_HUB_PATH, DEFAULT_OUTPUT_PATH
 
 # from dbt_fusion_package_tools.dbt_package_version import DbtPackageVersion
 from dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility import (
-    DEFAULT_FUSION_BINARY_PATH,
-    DEFAULT_HUB_PATH,
-    DEFAULT_OUTPUT_PATH,
     clean_version,
     extract_package_id_from_path,
     get_latest_github_tarball_urls,
