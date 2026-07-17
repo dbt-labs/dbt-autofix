@@ -18,6 +18,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from dbt_fusion_package_tools.check_parse_conformance import construct_download_url_from_latest
+from dbt_fusion_package_tools.scripts.constants import DEFAULT_HUB_PATH, DEFAULT_OUTPUT_PATH
 from dbt_fusion_package_tools.scripts.package_hub_fusion_compatibility import (
     get_latest_github_tarball_urls,
     read_json_from_local_hub_repo,
@@ -30,9 +31,6 @@ app = typer.Typer()
 
 current_dir = Path.cwd()
 DEFAULT_OUTPUT_FILE_NAME = "package_tarball_downloads.json"
-DEFAULT_OUTPUT_PATH = current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
-DEFAULT_HUB_PATH = Path.home() / "workplace" / "hub.getdbt.com"
-DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
 DEFAULT_DOWNLOAD_PATH = Path.home() / "workplace" / "package-tarballs"
 
 
