@@ -18,10 +18,12 @@ def is_relevant_dbt_file(file_path: Path, dbt_paths: dict, root_path: Path = Pat
     if file_path.name == "dbt_project.yml":
         return True
 
-    # Normalize to posix paths for cross-platform comparison
-    # If file_path relative, resolve to root_path
+    # Normalize to posix paths for cross-platform comparison.
+    # Pre-commit passes filenames relative to the git root (cwd), not root_path,
+    # so resolve file_path against cwd rather than root_path to avoid a doubled
+    # path like dbt/dbt/models/... which would never match any dbt_path.
     if not file_path.is_absolute():
-        file_path_posix = (root_path / file_path).resolve().as_posix()
+        file_path_posix = (Path.cwd() / file_path).resolve().as_posix()
     else:
         file_path_posix = file_path.resolve().as_posix()
 
