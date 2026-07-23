@@ -162,13 +162,19 @@ def main(
     )
     for package, versions in conformance_output.items():
         package_org = package.split("/")[0]
+        # console.log(package_org, package)
         if package_org not in orgs:
             continue
+        # console.log(package_org, package)
         for version, version_output in versions.items():
+            # console.log(package_org, package, version, version_output.get("parse_compatible_hub", False), version_output.get(
+            #     "parse_compatible_post_autofix", False
+            # ))
             # only update versions that weren't parse compatible but are now
-            if not version_output.get("parse_compatible_pre_autofix", False) and version_output.get(
-                "parse_compatible_post_autofix", False
+            if not version_output.get("parse_compatible_hub", False) and version_output.get(
+                "parse_compatible_after_autofix", False
             ):
+                console.log(package_org, package, version)
                 updated_json = update_hub_json(version_output, package, version)
                 if updated_json is None:
                     error_console.log(f"Unable to update hub json for {package}/{version}")
