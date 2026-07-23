@@ -171,7 +171,7 @@ def main(
             #     "parse_compatible_post_autofix", False
             # ))
             # only update versions that weren't parse compatible but are now
-            if not version_output.get("parse_compatible_hub", False) and version_output.get(
+            if (not version_output.get("parse_compatible_hub", False) or version_output.get("manually_verified_incompatible", False)) and version_output.get(
                 "parse_compatible_after_autofix", False
             ):
                 console.log(package_org, package, version)
