@@ -233,10 +233,7 @@ def check_for_package_upgrades(
     no_versions_compatible = package_fusion_compatibility.get(
         PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE, set()
     )
-    # packages that don't define dbt require version on any versions in package hub
-    missing_compatibility = package_fusion_compatibility.get(
-        PackageFusionCompatibilityState.MISSING_COMPATIBILITY, set()
-    )
+
     # if a package has v2-compatible downloads, consider that as having compatible versions
     for package in deps_file.get_v2_compatible_downloads():
         if package in no_versions_compatible:

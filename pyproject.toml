@@ -89,6 +89,7 @@ ignore = [
     "PLR0912",  # Too many branches
     "PLR0913",  # Too many arguments in function definition
     "PLR0915",  # Too many statements
+    "PLW0108",  # Inline function call
 ]
 
 [tool.pyright]
