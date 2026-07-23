@@ -124,7 +124,7 @@ def test_check_for_package_upgrades():
                 == PackageVersionUpgradeType.PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG
             )
         elif package == "avohq/avo_audit":
-            assert fusion_compatibility_state == PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY
+            assert fusion_compatibility_state == PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION
         elif package == "MaterializeInc/materialize_dbt_utils":
             assert fusion_compatibility_state == PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION
         elif package == "dbt-labs/dbt_project_evaluator":
