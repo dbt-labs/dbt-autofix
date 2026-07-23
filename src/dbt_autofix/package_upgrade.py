@@ -258,8 +258,24 @@ def check_for_package_upgrades(
             package
         ].has_v2_compatible_download_for_installed_version()
 
+        # if v2-compatible downloads requested, remove those first
+        if prefer_v2_compatible_downloads and has_package_lock_file and installed_version_v2_download_available:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    public_package=True,
+                    installed_version=installed_package_versions[package],
+                    compatible_version=installed_package_versions[package],
+                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_HAS_V2_COMPATIBLE_DOWNLOAD,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.V2_COMPATIBLE_DOWNLOAD,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
+                )
+            )
+            packages_to_check.remove(package)
         # if version is compatible based on version range, include private packages
-        if installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0:
+        elif installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0:
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(
                     id=package,
@@ -338,22 +354,6 @@ def check_for_package_upgrades(
                     installed_version=installed_version,
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
-                    upgraded_version_compatibility_state=None,
-                    package_lock_version_found=has_package_lock_file,
-                    v2_compatible_download_available=installed_version_v2_download_available,
-                )
-            )
-            packages_to_check.remove(package)
-        # all versions don't have require-dbt-version defined
-        elif package in missing_compatibility:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
                     upgraded_version_compatibility_state=None,
                     package_lock_version_found=has_package_lock_file,
                     v2_compatible_download_available=installed_version_v2_download_available,
