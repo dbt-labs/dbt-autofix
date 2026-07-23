@@ -171,8 +171,13 @@ def main(
             #     "parse_compatible_post_autofix", False
             # ))
             # only update versions that weren't parse compatible but are now
-            if (not version_output.get("parse_compatible_hub", False) or version_output.get("manually_verified_incompatible", False)) and version_output.get(
-                "parse_compatible_after_autofix", False
+            parse_compatible_before_autofix = version_output.get("parse_compatible_hub", False)
+            manually_verified_incompatible = version_output.get("manually_verified_incompatible", False)
+            autofix_stdout = version_output.get("autofix_output", {}).get("autofix_stdout", [])
+            autofix_made_changes = len(autofix_stdout) > 1 and len(autofix_stdout[0].get("refactors", [])) > 1
+            parse_compatible_after_autofix = version_output.get("parse_compatible_after_autofix", False)
+            if parse_compatible_after_autofix and (
+                not parse_compatible_before_autofix or manually_verified_incompatible or autofix_made_changes
             ):
                 console.log(package_org, package, version)
                 updated_json = update_hub_json(version_output, package, version)
