@@ -84,8 +84,10 @@ class PackageVersionUpgradeResult:
     def to_dict(self) -> dict:
         ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
         # output if we determined a canonical installed version from the package lock file
-        if self.package_lock_version_found and self.installed_version != "unknown":
+        if self.package_lock_version_found or self.installed_version != "unknown":
             ret_dict["original_version"] = self.installed_version
+        else:
+            ret_dict["original_version"] = "unknown"
         # separately log the upgraded version for convenience
         if (self.package_should_upgrade() or self.upgraded) and self.upgraded_version:
             ret_dict["upgraded_version"] = self.upgraded_version
