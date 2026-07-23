@@ -324,39 +324,6 @@ def check_for_package_upgrades(
                 )
             )
             packages_to_check.remove(package)
-        # package has manual override for all versions - don't upgrade
-        elif package in EXPLICIT_ALLOW_ALL_VERSIONS:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    already_compatible=True,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
-                    upgraded_version_compatibility_state=None,
-                    package_lock_version_found=has_package_lock_file,
-                    v2_compatible_download_available=installed_version_v2_download_available,
-                )
-            )
-            packages_to_check.remove(package)
-        # all versions have require-dbt-version < 2.0
-        elif package in no_versions_compatible:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
-                    upgraded_version_compatibility_state=None,
-                    package_lock_version_found=has_package_lock_file,
-                    v2_compatible_download_available=installed_version_v2_download_available,
-                )
-            )
-            packages_to_check.remove(package)
 
     # exit if all packages are accounted for (optimistic)
     if len(packages_to_check) == 0:
