@@ -3720,17 +3720,17 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
         "latest_version_incl_prerelease": "=0.4.12",
     },
     "fivetran/ga4_export": {
-        "latest_version": "=0.7.0",
+        "latest_version": "=0.7.1",
         "oldest_fusion_compatible_version": "=0.5.0",
-        "latest_fusion_compatible_version": "=0.7.0",
-        "fusion_compatible_versions": ["=0.5.0", "=0.6.0", "=0.6.1", "=0.7.0"],
+        "latest_fusion_compatible_version": "=0.7.1",
+        "fusion_compatible_versions": ["=0.5.0", "=0.6.0", "=0.6.1", "=0.7.0", "=0.7.1"],
         "fusion_incompatible_versions": ["=0.1.0", "=0.2.0", "=0.3.0", "=0.4.0"],
         "unknown_compatibility_versions": [],
         "v2_compatible_download_versions": ["=0.1.0", "=0.2.0", "=0.3.0"],
-        "package_latest_version_index_json": "=0.7.0",
+        "package_latest_version_index_json": "=0.7.1",
         "package_redirect_name": None,
         "package_redirect_namespace": None,
-        "latest_version_incl_prerelease": "=0.7.0",
+        "latest_version_incl_prerelease": "=0.7.1",
     },
     "fivetran/github": {
         "latest_version": "=1.4.0",
@@ -5367,9 +5367,9 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
         "latest_version_incl_prerelease": "=0.2.0",
     },
     "fivetran/stripe": {
-        "latest_version": "=1.8.0",
+        "latest_version": "=1.9.0",
         "oldest_fusion_compatible_version": "=0.1.0",
-        "latest_fusion_compatible_version": "=1.8.0",
+        "latest_fusion_compatible_version": "=1.9.0",
         "fusion_compatible_versions": [
             "=0.1.0",
             "=0.5.0",
@@ -5387,6 +5387,7 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=1.6.1",
             "=1.7.0",
             "=1.8.0",
+            "=1.9.0",
         ],
         "fusion_incompatible_versions": [
             "=0.10.0",
@@ -5447,10 +5448,10 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=0.19.2",
             "=0.9.0",
         ],
-        "package_latest_version_index_json": "=1.8.0",
+        "package_latest_version_index_json": "=1.9.0",
         "package_redirect_name": "stripe",
         "package_redirect_namespace": "fivetran",
-        "latest_version_incl_prerelease": "=1.8.0",
+        "latest_version_incl_prerelease": "=1.9.0",
         "package_redirect_id": "fivetran/stripe",
     },
     "fivetran/tiktok_ads": {
@@ -10880,9 +10881,9 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
         "package_redirect_id": "fivetran/snapchat_ads",
     },
     "fivetran/stripe_source": {
-        "latest_version": "=1.8.0",
+        "latest_version": "=1.9.0",
         "oldest_fusion_compatible_version": "=0.1.0",
-        "latest_fusion_compatible_version": "=1.8.0",
+        "latest_fusion_compatible_version": "=1.9.0",
         "fusion_compatible_versions": [
             "=0.1.0",
             "=0.5.0",
@@ -10900,6 +10901,7 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=1.6.1",
             "=1.7.0",
             "=1.8.0",
+            "=1.9.0",
         ],
         "fusion_incompatible_versions": [
             "=0.10.0",
@@ -10960,10 +10962,10 @@ FUSION_VERSION_COMPATIBILITY_OUTPUT: dict[str, dict[str, Any]] = {
             "=0.19.2",
             "=0.9.0",
         ],
-        "package_latest_version_index_json": "=1.8.0",
+        "package_latest_version_index_json": "=1.9.0",
         "package_redirect_name": "stripe",
         "package_redirect_namespace": "fivetran",
-        "latest_version_incl_prerelease": "=1.8.0",
+        "latest_version_incl_prerelease": "=1.9.0",
         "package_redirect_id": "fivetran/stripe",
     },
     "fivetran/tiktok_ads_source": {
