@@ -103,7 +103,7 @@ def print_duplicate_keys(project_duplicates: List[DuplicateFound], package_dupli
         console.print("\nThere are issues in your project YML files", style="bold red")
         console.print(
             (
-                "Please remove duplicates by hand. dbt's default behavior is to keep the last occurence of a key.\n"
+                "Please remove duplicates by hand. dbt's default behavior is to keep the last occurrence of a key.\n"
                 "If you want to keep the same behaviour remove or comments lines found for the same key and before in the file.\n"
                 "Once you have done all the changes in the files, run the tool again.\n"
             )
