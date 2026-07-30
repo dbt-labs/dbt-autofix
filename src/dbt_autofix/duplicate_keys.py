@@ -45,11 +45,7 @@ def find_duplicate_keys(
 
     if dbtignore is not None:
         resolved_root = root_dir.resolve()
-        yml_files = {
-            f
-            for f in yml_files
-            if not dbtignore.match_file(str(f.resolve().relative_to(resolved_root)))
-        }
+        yml_files = {f for f in yml_files if not dbtignore.match_file(str(f.resolve().relative_to(resolved_root)))}
 
     packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
         "packages-install-path", "dbt_packages"
