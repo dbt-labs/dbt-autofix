@@ -308,7 +308,7 @@ def follow_redirects(package_name: str, packages: dict[str, dict[str, Optional[s
     if not package_redirect_name and not package_redirect_namespace:
         return package_name
     # recursive case: follow redirect
-    original_namespace = package_name.split("/")[0]
+    original_namespace = package_name.split("/", maxsplit=1)[0]
     original_name = package_name.split("/")[1]
     if package_redirect_name and package_redirect_namespace:
         package_after_redirect: str = f"{package_redirect_namespace}/{package_redirect_name}"

@@ -1,0 +1,34 @@
+name: 'pinterest'
+version: '1.2.1'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+models:
+  pinterest:
+    +schema: pinterest
+    +materialized: table
+    staging:
+      +schema: pinterest_source
+      +materialized: table
+      tmp:
+        +materialized: view
+vars:
+  pinterest:
+    ad_group_history: "{{ source('pinterest_ads', 'ad_group_history') }}"
+    ad_group_report: "{{ source('pinterest_ads', 'ad_group_report') }}"
+    advertiser_history: "{{ source('pinterest_ads', 'advertiser_history') }}"
+    advertiser_report: "{{ source('pinterest_ads', 'advertiser_report') }}"
+    campaign_history: "{{ source('pinterest_ads', 'campaign_history') }}"
+    campaign_report: "{{ source('pinterest_ads', 'campaign_report') }}"
+    keyword_history: "{{ source('pinterest_ads', 'keyword_history') }}"
+    keyword_report: "{{ source('pinterest_ads', 'keyword_report') }}"
+    pin_promotion_history: "{{ source('pinterest_ads', 'pin_promotion_history') }}"
+    pin_promotion_report: "{{ source('pinterest_ads', 'pin_promotion_report') }}"
+    pin_promotion_targeting_report: "{{ source('pinterest_ads', 'pin_promotion_targeting_report') }}"
+    targeting_geo: "{{ source('pinterest_ads', 'targeting_geo') }}"
+    targeting_geo_region: "{{ source('pinterest_ads', 'targeting_geo_region') }}"
+    pinterest__ad_group_report_passthrough_metrics: []
+    pinterest__advertiser_report_passthrough_metrics: []
+    pinterest__campaign_report_passthrough_metrics: []
+    pinterest__keyword_report_passthrough_metrics: []
+    pinterest__pin_promotion_report_passthrough_metrics: []
+    pinterest__pin_promotion_targeting_report_passthrough_metrics: []

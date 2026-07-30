@@ -1,0 +1,36 @@
+name: 'snapchat_ads'
+version: '1.2.0'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+vars:
+  snapchat_ads:
+    creative_history: "{{ source('snapchat_ads', 'creative_history') }}"
+    creative_url_tag_history: "{{ source('snapchat_ads', 'creative_url_tag_history') }}"
+    ad_hourly_report: "{{ source('snapchat_ads', 'ad_hourly_report') }}"
+    ad_account_history: "{{ source('snapchat_ads', 'ad_account_history') }}"
+    ad_history: "{{ source('snapchat_ads', 'ad_history') }}"
+    ad_squad_history: "{{ source('snapchat_ads', 'ad_squad_history') }}"
+    ad_squad_hourly_report: "{{ source('snapchat_ads', 'ad_squad_hourly_report') }}"
+    campaign_history: "{{ source('snapchat_ads', 'campaign_history') }}"
+    campaign_hourly_report: "{{ source('snapchat_ads', 'campaign_hourly_report') }}"
+    campaign_country_daily_report: "{{ source('snapchat_ads', 'campaign_geo_country_daily_report') }}"
+    campaign_region_daily_report: "{{ source('snapchat_ads', 'campaign_geo_region_daily_report') }}"
+
+  snapchat_ads__ad_hourly_passthrough_metrics: []
+  snapchat_ads__ad_squad_hourly_passthrough_metrics: []
+  snapchat_ads__campaign_hourly_report_passthrough_metrics: []
+  snapchat_ads__campaign_daily_country_report_passthrough_metrics: []
+  snapchat_ads__campaign_daily_region_report_passthrough_metrics: []
+  snapchat_ads__conversion_fields: ['conversion_purchases']
+
+models:
+  snapchat_ads:
+    +schema: snapchat_ads
+    +materialized: table
+    intermediate:
+      +materialized: ephemeral
+    staging:
+      +schema: snapchat_ads_source
+      +materialized: table
+      tmp:
+        +materialized: view

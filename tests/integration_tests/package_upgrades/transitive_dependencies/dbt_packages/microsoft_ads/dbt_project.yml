@@ -1,0 +1,36 @@
+name: 'microsoft_ads'
+version: '1.2.0'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+
+vars:
+  microsoft_ads:
+    account_history: "{{ source('microsoft_ads','account_history') }}"
+    account_performance_daily_report: "{{ source('microsoft_ads', 'account_performance_daily_report') }}"
+    ad_group_history: "{{ source('microsoft_ads','ad_group_history') }}"
+    ad_group_performance_daily_report: "{{ source('microsoft_ads', 'ad_group_performance_daily_report') }}"
+    ad_history: "{{ source('microsoft_ads','ad_history') }}"
+    ad_performance_daily_report: "{{ source('microsoft_ads','ad_performance_daily_report') }}"
+    campaign_history: "{{ source('microsoft_ads','campaign_history') }}"
+    campaign_performance_daily_report: "{{ source('microsoft_ads', 'campaign_performance_daily_report') }}"
+    geographic_performance_daily_report: "{{ source('microsoft_ads', 'geographic_performance_daily_report') }}"
+    keyword_history: "{{ source('microsoft_ads','keyword_history') }}"
+    keyword_performance_daily_report: "{{ source('microsoft_ads', 'keyword_performance_daily_report') }}"
+    search_performance_daily_report: "{{ source('microsoft_ads', 'search_query_performance_daily_report') }}"
+    microsoft_ads__account_passthrough_metrics: []
+    microsoft_ads__ad_group_passthrough_metrics: []
+    microsoft_ads__ad_passthrough_metrics: []
+    microsoft_ads__campaign_passthrough_metrics: []
+    microsoft_ads__geographic_passthrough_metrics: []
+    microsoft_ads__keyword_passthrough_metrics: []
+    microsoft_ads__search_passthrough_metrics: []
+
+models:
+  microsoft_ads:
+    +schema: microsoft_ads
+    +materialized: table
+    staging:
+      +schema: microsoft_ads_source
+      +materialized: table
+      tmp:
+        +materialized: view

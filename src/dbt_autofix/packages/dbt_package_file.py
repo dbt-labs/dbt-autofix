@@ -12,6 +12,7 @@ from dbt_fusion_package_tools.upgrade_status import (
 from dbt_fusion_package_tools.version_utils import Matchers
 from rich.console import Console
 
+from dbt_autofix.packages.dbt_package_lock_file import DbtPackageLockFile
 from dbt_autofix.refactors.yml import load_yaml
 
 console = Console()
@@ -115,7 +116,10 @@ class DbtPackageFile:
     yml_dependencies: dict[Any, Any]
     # this is indexed by package id for uniqueness (hopefully)
     package_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
+    transitive_dependencies: dict[str, DbtPackage] = field(default_factory=dict)
     unknown_packages: set[str] = field(default_factory=set)
+    # track if the project has a package-lock.yml so we can determine canonical versions
+    has_lock_file: bool = False
 
     def parse_file_path_to_string(self):
         if not self.file_path:
@@ -154,6 +158,28 @@ class DbtPackageFile:
     def add_version_for_package(self, package_id: str, package_version: DbtPackageVersion, installed=False) -> bool:
         return self.package_dependencies[package_id].add_package_version(package_version, installed=installed)
 
+    def merge_package_lock_versions(self, lock_file: DbtPackageLockFile) -> int:
+        self.has_lock_file = True
+        package_lock_found_in_deps: int = 0
+        for lock_file_package, lock_file_version in lock_file.installed_package_versions.items():
+            lock_package_id: Optional[str] = lock_file_version.package_id
+            if lock_package_id is None or lock_package_id != lock_file_package:
+                lock_package_id = lock_package_id if lock_package_id is not None else lock_file_package
+            if lock_file_package in self.package_dependencies:
+                self.set_installed_version_for_package(lock_package_id, lock_file_version)
+                package_lock_found_in_deps += 1
+            else:
+                self.transitive_dependencies[lock_package_id] = DbtPackage(
+                    package_id=lock_package_id,
+                    package_name=lock_file_version.package_name,
+                    project_config_raw_version_specifier=None,
+                )
+                self.transitive_dependencies[lock_package_id].add_package_version(lock_file_version, installed=True)
+        assert package_lock_found_in_deps + len(self.transitive_dependencies) == len(
+            lock_file.installed_package_versions
+        )
+        return package_lock_found_in_deps
+
     def merge_installed_versions(self, installed_packages: dict[str, DbtPackageVersion]) -> int:
         package_lookup: dict[str, str] = self.get_reverse_lookup_by_package_name()
         installed_count: int = 0
@@ -163,6 +189,10 @@ class DbtPackageFile:
                 self.unknown_packages.add(package)
                 continue
             package_id = package_lookup[package]
+            # skip if we've already determined the version, such as from the package lock
+            if self.package_dependencies[package_id].installed_package_version is not None:
+                installed_count += 1
+                continue
             # kind of hacky - try to correct installed version if package's dbt project yml
             # has an incorrect version
             package_version_range = self.package_dependencies[package_id].project_config_version_range
@@ -221,6 +251,15 @@ class DbtPackageFile:
             fusion_compatibility = self.package_dependencies[package].get_package_fusion_compatibility_state()
             compatibility[fusion_compatibility].add(package)
         return compatibility
+
+    def get_v2_compatible_downloads(self) -> set[str]:
+        """Return packages that have a v2-compatible download available."""
+        packages_with_v2_compatible_downloads: set[str] = set()
+        for package_id, package in self.package_dependencies.items():
+            if len(package.v2_compatible_download_versions) > 0:
+                packages_with_v2_compatible_downloads.add(package_id)
+
+        return packages_with_v2_compatible_downloads
 
 
 def parse_package_dependencies_from_yml(

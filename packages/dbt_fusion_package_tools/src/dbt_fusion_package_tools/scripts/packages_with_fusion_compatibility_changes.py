@@ -21,6 +21,7 @@ def main():
                 "latest_version": package["latest_version"],
                 "oldest_fusion_compatible_version": package["oldest_fusion_compatible_version"],
                 "latest_fusion_compatible_version": package["latest_fusion_compatible_version"],
+                "v2_compatible_download_versions": len(package["v2_compatible_download_versions"]),
             }
         )
     field_names = [field for field in package_summary[0]]

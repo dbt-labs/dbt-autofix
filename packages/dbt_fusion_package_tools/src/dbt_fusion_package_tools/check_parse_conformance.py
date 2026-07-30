@@ -39,7 +39,7 @@ _ERROR_PATH_REGEX = re.compile(r"(?:\.\./)*")
 def construct_download_url_from_latest(
     latest_package_version_download_url: str, target_version_download_url: str
 ) -> str:
-    version_download_tag: str = target_version_download_url.split("/")[-1]
+    version_download_tag: str = target_version_download_url.rsplit("/", maxsplit=1)[-1]
     latest_version_url: list[str] = latest_package_version_download_url.split("/")[:-1]
     latest_version_url.append(version_download_tag)
     return "/".join(latest_version_url)

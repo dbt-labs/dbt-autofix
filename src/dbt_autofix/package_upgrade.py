@@ -22,6 +22,7 @@ from dbt_autofix.packages.dbt_package_file import (
     parse_package_dependencies_from_dependencies_yml,
     parse_package_dependencies_from_packages_yml,
 )
+from dbt_autofix.packages.dbt_package_lock_file import DbtPackageLockFile, load_yaml_from_package_lock_file_path
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
 from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
 
@@ -42,6 +43,8 @@ class PackageVersionUpgradeResult:
     compatible_version: Optional[str] = None
     version_range_config: Optional[str] = None
     upgraded: bool = False
+    package_lock_version_found: bool = False
+    v2_compatible_download_available: bool = False
 
     def package_should_upgrade(self):
         return self.version_reason == PackageVersionUpgradeType.UPGRADE_AVAILABLE
@@ -74,10 +77,20 @@ class PackageVersionUpgradeResult:
             logs.append(
                 f"Compatible version is available ({self.compatible_version}): {self.upgraded_version_compatibility_state.value}"
             )
+        if self.v2_compatible_download_available:
+            logs.append("v2-compatible download available for installed version")
         return logs
 
     def to_dict(self) -> dict:
         ret_dict = {"id": self.id, "version": self.package_final_version(), "log": self.package_upgrade_logs}
+        # output if we determined a canonical installed version from the package lock file
+        if self.package_lock_version_found or self.installed_version != "unknown":
+            ret_dict["original_version"] = self.installed_version
+        else:
+            ret_dict["original_version"] = "unknown"
+        # separately log the upgraded version for convenience
+        if (self.package_should_upgrade() or self.upgraded) and self.upgraded_version:
+            ret_dict["upgraded_version"] = self.upgraded_version
         return ret_dict
 
 
@@ -153,6 +166,19 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
     if not deps_file:
         error_console.log("Project dependencies could not be parsed")
         return
+
+    # check package-lock.yml
+    package_lock_path: Path = root_dir / "package-lock.yml"
+    package_lock_yml: Optional[dict[Any, Any]] = load_yaml_from_package_lock_file_path(package_lock_path)
+    if not package_lock_yml:
+        console.log(
+            f"package-lock.yml not found in {root_dir}. For the most accurate results, please run dbt deps and generate a lock file. Proceeding anyway"
+        )
+    else:
+        package_lock_file: DbtPackageLockFile = DbtPackageLockFile(yml_dependencies=package_lock_yml)
+        if package_lock_file:
+            deps_file.merge_package_lock_versions(package_lock_file)
+
     # check installed packages
     installed_packages: dict[str, DbtPackageVersion] = get_current_installed_package_versions(root_dir)
 
@@ -162,10 +188,30 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
     return deps_file
 
 
-def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersionUpgradeResult]:
+def check_for_package_upgrades(
+    deps_file: DbtPackageFile, prefer_v2_compatible_downloads: bool = False
+) -> list[PackageVersionUpgradeResult]:
+    """Determine if package versions are compatible and identify if upgrades are available.
+
+    This iterates through all the installed packages in the project and checks if the
+    installed package version is compatible with dbt v2. It also checks if the versions
+    have a v2-compatible package download available as an alternative to upgrading the
+    package version. If a version is not compatible, it will try to find a compatible
+    version within the project's defined version range, or else look for the first compatible
+    version about the project's defined version range.
+
+    Args:
+        deps_file (DbtPackageFile): the parsed packages.yml or dependencies.yml
+        prefer_v2_compatible_downloads (bool, optional): CLI option to prioritize v2-compatible downloads over upgrading a package's version. Defaults to False.
+
+    Returns:
+        list[PackageVersionUpgradeResult]: list of package versions with compatibility info
+    """
     # check all packages for upgrades
     # if dry run, write out package upgrades and exit
     package_version_upgrade_results: list[PackageVersionUpgradeResult] = []
+    # flag if we found a package lock file
+    has_package_lock_file: bool = deps_file.has_lock_file
 
     # create a set of all packages in file - packages will be removed once checked
     packages_to_check: set[str] = set([package for package in deps_file.package_dependencies])
@@ -187,10 +233,12 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
     no_versions_compatible = package_fusion_compatibility.get(
         PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE, set()
     )
-    # packages that don't define dbt require version on any versions in package hub
-    missing_compatibility = package_fusion_compatibility.get(
-        PackageFusionCompatibilityState.MISSING_COMPATIBILITY, set()
-    )
+
+    # if a package has v2-compatible downloads, consider that as having compatible versions
+    for package in deps_file.get_v2_compatible_downloads():
+        if package in no_versions_compatible:
+            no_versions_compatible.remove(package)
+            some_versions_compatible.add(package)
 
     # now, the actual work begins
 
@@ -203,9 +251,28 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
         installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[
             package
         ].is_installed_version_fusion_compatible()
+        installed_version_v2_download_available: bool = deps_file.package_dependencies[
+            package
+        ].has_v2_compatible_download_for_installed_version()
 
+        # if v2-compatible downloads requested, remove those first
+        if prefer_v2_compatible_downloads and has_package_lock_file and installed_version_v2_download_available:
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    public_package=True,
+                    installed_version=installed_package_versions[package],
+                    compatible_version=installed_package_versions[package],
+                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_HAS_V2_COMPATIBLE_DOWNLOAD,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.V2_COMPATIBLE_DOWNLOAD,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
+                )
+            )
+            packages_to_check.remove(package)
         # if version is compatible based on version range, include private packages
-        if installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0:
+        elif installed_version_compat == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0:
             package_version_upgrade_results.append(
                 PackageVersionUpgradeResult(
                     id=package,
@@ -216,6 +283,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
                     installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
                 )
             )
             packages_to_check.remove(package)
@@ -230,6 +299,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
                 )
             )
             packages_to_check.remove(package)
@@ -248,49 +319,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
                     installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=None,
-                )
-            )
-            packages_to_check.remove(package)
-        # package has manual override for all versions - don't upgrade
-        elif package in EXPLICIT_ALLOW_ALL_VERSIONS:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    already_compatible=True,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.NO_UPGRADE_REQUIRED,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW,
-                    upgraded_version_compatibility_state=None,
-                )
-            )
-            packages_to_check.remove(package)
-        # all versions have require-dbt-version < 2.0
-        elif package in no_versions_compatible:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
-                    upgraded_version_compatibility_state=None,
-                )
-            )
-            packages_to_check.remove(package)
-        # all versions don't have require-dbt-version defined
-        elif package in missing_compatibility:
-            package_version_upgrade_results.append(
-                PackageVersionUpgradeResult(
-                    id=package,
-                    upgraded=False,
-                    public_package=True,
-                    installed_version=installed_version,
-                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
-                    installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
-                    upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
                 )
             )
             packages_to_check.remove(package)
@@ -301,18 +331,44 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
 
     # otherwise, check individual versions
     for package in deps_file.package_dependencies:
-        if package not in packages_to_check or package not in some_versions_compatible:
+        if package not in packages_to_check:
             continue
         dbt_package = deps_file.package_dependencies[package]
         installed_version: str = deps_file.package_dependencies[package].get_installed_package_version()
         installed_version_compat: PackageVersionFusionCompatibilityState = deps_file.package_dependencies[
             package
         ].is_installed_version_fusion_compatible()
+        installed_version_v2_download_available: bool = deps_file.package_dependencies[
+            package
+        ].has_v2_compatible_download_for_installed_version()
         package_version_range: Optional[VersionRange] = deps_file.package_dependencies[
             package
         ].project_config_version_range
-
         installed_version_spec = dbt_package.installed_package_version
+
+        # If we know the installed version has a v2-compatible download,
+        # use that instead of upgrading
+        if (
+            prefer_v2_compatible_downloads
+            and installed_version_spec is not None
+            and installed_version_v2_download_available
+        ):
+            package_version_upgrade_results.append(
+                PackageVersionUpgradeResult(
+                    id=package,
+                    public_package=True,
+                    installed_version=installed_package_versions[package],
+                    compatible_version=installed_package_versions[package],
+                    version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_HAS_V2_COMPATIBLE_DOWNLOAD,
+                    installed_version_compatibility_state=installed_version_compat,
+                    upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.V2_COMPATIBLE_DOWNLOAD,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
+                )
+            )
+            packages_to_check.remove(package)
+            continue
+
         # in case the user hadn't run dbt deps, estimate version
         if installed_version_spec is None:
             if package_version_range is not None:
@@ -341,6 +397,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
                     if package in EXPLICIT_ALLOW_ALL_VERSIONS
                     else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
                 )
             )
             packages_to_check.remove(package)
@@ -358,6 +416,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
                     if package in EXPLICIT_ALLOW_ALL_VERSIONS
                     else PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
                 )
             )
             packages_to_check.remove(package)
@@ -373,6 +433,8 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION,
                     installed_version_compatibility_state=installed_version_compat,
                     upgraded_version_compatibility_state=PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
                 )
             )
             packages_to_check.remove(package)
@@ -389,8 +451,40 @@ def check_for_package_upgrades(deps_file: DbtPackageFile) -> list[PackageVersion
                     version_reason=PackageVersionUpgradeType.PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY,
                     installed_version_compatibility_state=PackageVersionFusionCompatibilityState.UNKNOWN,
                     upgraded_version_compatibility_state=None,
+                    package_lock_version_found=has_package_lock_file,
+                    v2_compatible_download_available=installed_version_v2_download_available,
                 )
             )
+
+    # if we have derived transitive dependencies from a lock file, can't upgrade those packages
+    # but still display their compatibility information for reference
+    if deps_file.has_lock_file and len(deps_file.transitive_dependencies) > 0:
+        packages_already_checked: set[str] = set([x.id for x in package_version_upgrade_results])
+        for package_id, package in deps_file.transitive_dependencies.items():
+            if package_id not in packages_already_checked:
+                transitive_dependency_version_str: str = package.get_installed_package_version()
+                transitive_dependency_version: Optional[DbtPackageVersion] = package.package_versions.get(
+                    transitive_dependency_version_str
+                )
+                if transitive_dependency_version is not None:
+                    transitive_dependency_compatibility: PackageVersionFusionCompatibilityState = (
+                        transitive_dependency_version.get_fusion_compatibility_state()
+                    )
+                    installed_version_v2_download_available = package.has_v2_compatible_download_for_installed_version()
+                    package_version_upgrade_results.append(
+                        PackageVersionUpgradeResult(
+                            id=package_id,
+                            public_package=True,
+                            installed_version=transitive_dependency_version_str,
+                            version_reason=PackageVersionUpgradeType.TRANSITIVE_DEPENDENCY,
+                            installed_version_compatibility_state=transitive_dependency_compatibility,
+                            upgraded_version_compatibility_state=None,
+                            upgraded=False,
+                            package_lock_version_found=True,
+                            v2_compatible_download_available=installed_version_v2_download_available,
+                        )
+                    )
+
     return package_version_upgrade_results
 
 
@@ -400,7 +494,21 @@ def upgrade_package_versions(
     dry_run: bool = True,
     override_pinned_version: bool = False,
     json_output: bool = False,
+    prefer_v2_compatible_downloads: bool = False,
 ) -> PackageUpgradeResult:
+    """Upgrade incompatible package versions.
+
+    Args:
+        deps_file (DbtPackageFile): the parsed packages.yml or dependencies.yml
+        package_dependencies_with_upgrades (list[PackageVersionUpgradeResult]): result of check_for_package_upgrades
+        dry_run (bool, optional): CLI option that prints output without making changes. Defaults to True.
+        override_pinned_version (bool, optional): CLI option that will upgrade packages beyond the version range specified in the original packages.yml. Defaults to False.
+        json_output (bool, optional): CLI option to print logs output in JSON format. Defaults to False.
+        prefer_v2_compatible_downloads (bool, optional): If a package with an available upgrade also has a v2-compatible download for the currently installed version, use that instead of upgrading the package. Defaults to False.
+
+    Returns:
+        PackageUpgradeResult: final result of package upgrades output from CLI
+    """
     # if package dependencies have upgrades:
     # update dependencies.yml
     # update packages.yml
@@ -452,7 +560,7 @@ def upgrade_package_versions(
 
     package_text_file = DbtPackageTextFile(file_path=deps_file.file_path)
     updated_packages: set[str] = package_text_file.update_config_file(
-        packages_to_update, dry_run=dry_run, print_to_console=True
+        packages_to_update, dry_run=dry_run, print_to_console=(not json_output)
     )
 
     upgraded_package_results: list[PackageVersionUpgradeResult] = []

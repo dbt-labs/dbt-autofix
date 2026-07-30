@@ -4,27 +4,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import requests
-from requests import HTTPError
-
-
-def _http_get_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> Any:
-    try:
-        resp = requests.get(url, headers=headers or {}, timeout=timeout)
-        resp.raise_for_status()
-        # requests already decodes JSON when using .json(), but in case
-        # the content is not JSON, fall back to decoding manually.
-        try:
-            return resp.json()
-        except ValueError:
-            return json.loads(resp.text)
-    except HTTPError:
-        # re-raise HTTP errors to be handled by callers
-        raise
-    except requests.RequestException as exc:
-        # Convert other request exceptions to a RuntimeError for clarity
-        raise RuntimeError(f"Network error when fetching {url}: {exc}")
-
 
 # Example package index path:
 # data/packages/Aaron-Zhou/synapse_statistic/index.json
@@ -97,6 +76,8 @@ def process_json(file_path: str, parsed_json: Any) -> dict[str, Any]:
                 ),
                 "parse_compatible": parsed_json["fusion_compatibility"].get("parse_compatible"),
                 "download_failed": parsed_json["fusion_compatibility"].get("download_failed"),
+                "v2_compatible_download_available": "tarball"
+                in parsed_json["fusion_compatibility"].get("fusion_compatible_download", {}),
             }
             return {
                 "package_id_from_path": package_id,

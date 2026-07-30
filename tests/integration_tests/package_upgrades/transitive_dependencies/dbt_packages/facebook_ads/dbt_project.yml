@@ -1,0 +1,46 @@
+name: 'facebook_ads'
+version: '1.4.2'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+models:
+  facebook_ads:
+    +schema: facebook_ads
+    +materialized: table
+    intermediate:
+      +materialized: view
+    staging:
+      +schema: facebook_ads_source
+      +materialized: table
+      tmp:
+        +materialized: view
+
+vars:
+  facebook_ads:
+    account_history: "{{ source('facebook_ads', 'account_history') }}"
+    ad_history: "{{ source('facebook_ads', 'ad_history') }}"
+    ad_set_history: "{{ source('facebook_ads', 'ad_set_history') }}"
+    basic_ad: "{{ source('facebook_ads', 'basic_ad') }}"
+    basic_ad_actions: "{{ source('facebook_ads', 'basic_ad_actions') }}"
+    basic_ad_action_values: "{{ source('facebook_ads', 'basic_ad_action_values') }}"
+    campaign_history: "{{ source('facebook_ads', 'campaign_history') }}"
+    creative_history: "{{ source('facebook_ads', 'creative_history') }}"
+    url_tag: "{{ source('facebook_ads', 'url_tag') }}"
+    demographics_country: "{{ source('facebook_ads', 'demographics_country') }}"
+    demographics_country_actions: "{{ source('facebook_ads', 'demographics_country_actions') }}"
+    demographics_region: "{{ source('facebook_ads', 'demographics_region') }}"
+    demographics_region_actions: "{{ source('facebook_ads', 'demographics_region_actions') }}"
+
+    facebook_ads__conversion_action_types: # default values
+      - name: onsite_conversion.purchase
+      - name: onsite_conversion.lead_grouped
+      - name: offsite_conversion.fb_pixel_purchase
+      - name: offsite_conversion.fb_pixel_lead
+      - name: offsite_conversion.fb_pixel_custom # same as pattern: offsite_conversion.custom%
+
+  facebook_ads__basic_ad_passthrough_metrics: []
+  facebook_ads__basic_ad_actions_passthrough_metrics: []
+  facebook_ads__basic_ad_action_values_passthrough_metrics: []
+  facebook_ads__demographics_country_passthrough_metrics: []
+  facebook_ads__demographics_country_actions_passthrough_metrics: []
+  facebook_ads__demographics_region_passthrough_metrics: []
+  facebook_ads__demographics_region_actions_passthrough_metrics: []

@@ -1,0 +1,47 @@
+name: 'reddit_ads'
+version: '1.4.0'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+
+vars:
+  reddit_ads:
+    account: "{{ source('reddit_ads', 'account') }}"
+    business_account: "{{ source('reddit_ads','business_account') }}"
+    account_conversions_report: "{{ source('reddit_ads', 'account_conversions_report') }}"
+    account_daily_report: "{{ source('reddit_ads', 'account_report') }}"
+    ad: "{{ source('reddit_ads', 'ad') }}"
+    ad_conversions_report: "{{ source('reddit_ads', 'ad_conversions_report') }}"
+    ad_daily_report: "{{ source('reddit_ads', 'ad_report') }}"
+    ad_group: "{{ source('reddit_ads', 'ad_group') }}"
+    ad_group_conversions_report: "{{ source('reddit_ads', 'ad_group_conversions_report') }}"
+    ad_group_daily_report: "{{ source('reddit_ads', 'ad_group_report') }}"
+    campaign: "{{ source('reddit_ads', 'campaign') }}" 
+    campaign_conversions_report: "{{ source('reddit_ads', 'campaign_conversions_report') }}"
+    campaign_daily_report: "{{ source('reddit_ads', 'campaign_report') }}"
+    campaign_country_conversions_report: "{{ source('reddit_ads', 'campaign_country_conversions_report') }}"
+    campaign_country_daily_report: "{{ source('reddit_ads', 'campaign_country_report') }}"
+    reddit_ads__account_passthrough_metrics: []
+    reddit_ads__account_conversions_passthrough_metrics: []
+    reddit_ads__ad_group_passthrough_metrics: []
+    reddit_ads__ad_group_conversions_passthrough_metrics: []
+    reddit_ads__ad_passthrough_metrics: []
+    reddit_ads__ad_conversions_passthrough_metrics: []
+    reddit_ads__campaign_passthrough_metrics: []
+    reddit_ads__campaign_conversions_passthrough_metrics: []
+    reddit_ads__campaign_country_passthrough_metrics: []
+    reddit_ads__campaign_country_conversions_passthrough_metrics: []
+
+  reddit_ads__conversion_event_types:
+    - 'lead'
+    - 'purchase'
+    - 'custom'
+
+models:
+  reddit_ads:
+    +schema: reddit_ads
+    +materialized: table
+    staging:
+      +schema: reddit_ads_source
+      +materialized: table
+      tmp:
+        +materialized: view

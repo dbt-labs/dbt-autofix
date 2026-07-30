@@ -1,0 +1,31 @@
+name: 'linkedin'
+version: '1.2.0'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+
+vars:
+  linkedin:
+    account_history: "{{ source('linkedin_ads','account_history') }}"
+    ad_analytics_by_campaign: "{{ source('linkedin_ads', 'ad_analytics_by_campaign') }}"
+    ad_analytics_by_creative: "{{ source('linkedin_ads','ad_analytics_by_creative') }}"
+    campaign_group_history: "{{ source('linkedin_ads','campaign_group_history') }}"
+    campaign_history: "{{ source('linkedin_ads','campaign_history') }}"
+    creative_history: "{{ source('linkedin_ads','creative_history') }}"
+    geo: "{{ source('linkedin_ads', 'geo') }}"
+    monthly_ad_analytics_by_member_country: "{{ source('linkedin_ads', 'monthly_ad_analytics_by_member_country') }}"
+    monthly_ad_analytics_by_member_region: "{{ source('linkedin_ads', 'monthly_ad_analytics_by_member_region') }}"
+  linkedin_ads__campaign_passthrough_metrics: []
+  linkedin_ads__creative_passthrough_metrics: []
+  linkedin_ads__monthly_ad_analytics_by_member_country_passthrough_metrics: []
+  linkedin_ads__monthly_ad_analytics_by_member_region_passthrough_metrics: []
+  linkedin_ads__conversion_fields: ['external_website_conversions', 'one_click_leads']
+
+models:
+  linkedin:
+    +materialized: table
+    +schema: linkedin_ads
+    staging:
+      +schema: linkedin_ads_source
+      +materialized: table
+      tmp:
+        +materialized: view

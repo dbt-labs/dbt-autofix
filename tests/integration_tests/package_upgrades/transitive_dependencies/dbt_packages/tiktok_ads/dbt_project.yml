@@ -1,0 +1,29 @@
+name: 'tiktok_ads'
+version: '1.3.0'
+config-version: 2
+require-dbt-version: [">=1.3.0", "<3.0.0"]
+models:
+  tiktok_ads:
+    +schema: tiktok_ads
+    +materialized: table
+    staging:
+      +materialized: table
+      +schema: stg_tiktok_ads
+      tmp:
+        +materialized: view
+vars:
+  tiktok_ads:
+    ad_group_report_hourly: "{{ source('tiktok_ads', 'ad_group_report_hourly') }}"
+    ad_group_history: "{{ source('tiktok_ads', 'ad_group_history') }}"
+    campaign_report_hourly: "{{ source('tiktok_ads', 'campaign_report_hourly') }}"
+    campaign_history: "{{ source('tiktok_ads', 'campaign_history') }}"
+    ad_report_hourly: "{{ source('tiktok_ads', 'ad_report_hourly') }}"
+    ad_history: "{{ source('tiktok_ads', 'ad_history') }}"
+    advertiser: "{{ source('tiktok_ads', 'advertiser') }}"
+    campaign_country_report: "{{ source('tiktok_ads', 'campaign_country_report') }}"
+    location: "{{ source('tiktok_ads', 'location') }}"
+  tiktok_ads__using_location: true
+  tiktok_ads__ad_group_hourly_passthrough_metrics: []
+  tiktok_ads__ad_hourly_passthrough_metrics: []
+  tiktok_ads__campaign_hourly_passthrough_metrics: []
+  tiktok_ads__campaign_country_report_passthrough_metrics: []
