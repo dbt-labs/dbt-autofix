@@ -52,7 +52,7 @@ def test_generate_package_dependencies():
                 str(output.package_dependencies[package].project_config_raw_version_specifier)
                 == "['>=1.0.0', '<2.0.0']"
             )
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
         # packages.yml: [">=1.1.0", "<1.1.2"]
         # package-lock resolves to 1.1.1
@@ -62,14 +62,14 @@ def test_generate_package_dependencies():
                 str(output.package_dependencies[package].project_config_raw_version_specifier)
                 == "['>=1.1.0', '<1.1.2']"
             )
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         # packages.yml: "2.6.0"
         # package-lock resolves to 2.6.0
         elif package == "fivetran/ad_reporting":
             assert output.package_dependencies[package].get_installed_package_version() == "2.6.0"
             assert str(output.package_dependencies[package].project_config_raw_version_specifier) == "2.6.0"
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
         else:
             raise ValueError(f"Unknown package: {package}")
