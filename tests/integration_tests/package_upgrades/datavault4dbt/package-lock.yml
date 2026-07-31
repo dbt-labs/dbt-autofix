@@ -1,0 +1,11 @@
+packages:
+- package: dbt-labs/codegen
+  name: codegen
+  version: 0.14.0
+- package: ScalefreeCOM/datavault4dbt
+  name: datavault4dbt
+  version: 1.15.0
+- package: dbt-labs/dbt_utils
+  name: dbt_utils
+  version: 1.4.1
+sha1_hash: 0f519f04256c63cc7d98fe9d0d049f2c2b2ec281

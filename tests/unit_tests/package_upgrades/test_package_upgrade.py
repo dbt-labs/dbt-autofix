@@ -70,13 +70,13 @@ def test_generate_package_dependencies():
             package
         ].get_package_fusion_compatibility_state()
         if package == "dbt-labs/dbt_utils":
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
         elif package == "dbt-labs/snowplow":
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         elif package == "dbt-labs/logging":
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE
         elif package == "Matts52/dbt_set_similarity":
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
@@ -91,13 +91,13 @@ def test_generate_package_dependencies():
             assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         elif package == "dbt-labs/dbt_project_evaluator":
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
         elif package == "calogica/dbt_date":
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_ALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
         elif package == "brooklyn-data/dbt_artifacts":
-            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.EXPLICIT_DISALLOW
+            assert fusion_compatibility_state == PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
             assert package_fusion_compatibility_state == PackageFusionCompatibilityState.SOME_VERSIONS_COMPATIBLE
 
 

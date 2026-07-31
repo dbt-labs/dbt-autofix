@@ -325,10 +325,6 @@ def check_for_package_upgrades(
             )
             packages_to_check.remove(package)
 
-    # exit if all packages are accounted for (optimistic)
-    if len(packages_to_check) == 0:
-        return package_version_upgrade_results
-
     # otherwise, check individual versions
     for package in deps_file.package_dependencies:
         if package not in packages_to_check:

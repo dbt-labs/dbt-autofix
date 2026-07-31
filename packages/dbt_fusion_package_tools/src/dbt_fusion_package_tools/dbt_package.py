@@ -7,7 +7,6 @@ from dbt_fusion_package_tools.dbt_package_version import (
     DbtPackageVersion,
 )
 from dbt_fusion_package_tools.fusion_version_compatibility_output import FUSION_VERSION_COMPATIBILITY_OUTPUT
-from dbt_fusion_package_tools.manual_overrides import EXPLICIT_ALLOW_ALL_VERSIONS, EXPLICIT_DISALLOW_ALL_VERSIONS
 from dbt_fusion_package_tools.upgrade_status import (
     PackageFusionCompatibilityState,
     PackageVersionFusionCompatibilityState,
@@ -88,6 +87,7 @@ class DbtPackage:
         return True
 
     def __post_init__(self):
+        self.merge_fusion_compatibility_output()
         try:
             if self.project_config_raw_version_specifier is not None:
                 self.project_config_version_range_list = construct_version_list_from_raw(
@@ -101,7 +101,6 @@ class DbtPackage:
         except:
             self.project_config_version_range = None
             error_console.print("exception calculating config version range ")
-        self.merge_fusion_compatibility_output()
 
     def add_package_version(self, new_package_version: DbtPackageVersion, installed=False, latest=False) -> bool:
         new_package_version.package_id = self.package_id
@@ -139,7 +138,13 @@ class DbtPackage:
             return PackageVersionFusionCompatibilityState.UNKNOWN
         else:
             installed_version_string = self.installed_package_version.to_version_string(skip_matcher=True)
-            if installed_version_string not in self.package_versions:
+            if self.installed_package_version in self.fusion_compatible_versions:
+                return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_INCLUDES_2_0
+            elif self.installed_package_version in self.fusion_incompatible_versions:
+                return PackageVersionFusionCompatibilityState.DBT_VERSION_RANGE_EXCLUDES_2_0
+            elif self.installed_package_version in self.unknown_compatibility_versions:
+                return PackageVersionFusionCompatibilityState.NO_DBT_VERSION_RANGE
+            elif installed_version_string not in self.package_versions:
                 return PackageVersionFusionCompatibilityState.UNKNOWN
             else:
                 return self.package_versions[installed_version_string].get_fusion_compatibility_state()
@@ -238,10 +243,6 @@ class DbtPackage:
     def get_package_fusion_compatibility_state(self) -> PackageFusionCompatibilityState:
         if not self.is_public_package():
             return PackageFusionCompatibilityState.UNKNOWN
-        if self.package_id in EXPLICIT_DISALLOW_ALL_VERSIONS:
-            return PackageFusionCompatibilityState.NO_VERSIONS_COMPATIBLE
-        if self.package_id in EXPLICIT_ALLOW_ALL_VERSIONS:
-            return PackageFusionCompatibilityState.ALL_VERSIONS_COMPATIBLE
 
         fusion_compatible_version_count = (
             0 if self.fusion_compatible_versions is None else len(self.fusion_compatible_versions)
