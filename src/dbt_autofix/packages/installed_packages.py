@@ -100,7 +100,9 @@ def load_yaml_from_package_dbt_project_yml_path(package_project_yml_path: Path) 
         return parsed_package_file
 
 
-def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[Any, Any]) -> Optional[DbtPackageVersion]:
+def parse_package_info_from_package_dbt_project_yml(
+    parsed_package_file: dict[Any, Any], package_path: Optional[Path] = None
+) -> Optional[DbtPackageVersion]:
     """Extracts package info from a dict parsed from a package's dbt_project.yml.
 
     Constructs a DbtPackageVersion by extracting required attributes from the dict
@@ -108,12 +110,17 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
 
     Args:
         parsed_package_file (dict[Any, Any]): parsed dbt_project.yml
+        package_path (Optional[Path]): path to the dbt_project.yml; used to infer name if not in YAML
 
     Returns:
         DbtPackageVersion: object representing a single version of a package
     """
     if "name" in parsed_package_file:
         package_name = str(parsed_package_file["name"])
+    # If the package's dbt_project.yml doesn't contain a name, use the
+    # name of the directory that contains the file
+    elif package_path is not None:
+        package_name = package_path.parent.name
     else:
         console.log("Package must contain name")
         return
@@ -138,28 +145,25 @@ def parse_package_info_from_package_dbt_project_yml(parsed_package_file: dict[An
     return installed_package_version
 
 
-def get_current_installed_package_versions(root_dir: Path) -> dict[str, DbtPackageVersion]:
+def get_current_installed_package_versions(installed_package_paths: list[Path]) -> dict[str, DbtPackageVersion]:
     """Extract version metadata for all installed packages in a project.
 
     Finds all installed packages from a project's root directory and
     constructs DbtPackageVersions for each project.
 
     Args:
-        root_dir (Path): the root directory of the project
+        installed_package_paths (list[Path]): a list of directories containing packages
 
     Returns:
         dict[str, DbtPackageVersion]: maps the name from dbt_project.yml to a specific package version
     """
-    installed_package_paths: list[Path] = find_package_paths(root_dir)
+
     installed_package_versions: dict[str, DbtPackageVersion] = {}
-    if len(installed_package_paths) == 0:
-        console.log("No packages installed. Please run dbt deps first")
-        return installed_package_versions
     for package_path in installed_package_paths:
         loaded_yaml: dict[Any, Any] = load_yaml_from_package_dbt_project_yml_path(package_path)
         package_info: Optional[DbtPackageVersion] = parse_package_info_from_package_dbt_project_yml(loaded_yaml)
         if not package_info:
-            console.log("Parsing failed on package")
+            console.log(f"Parsing failed on package in {package_path.parent.name}")
             continue
         package_name = package_info.package_name
         if package_name in installed_package_versions:
