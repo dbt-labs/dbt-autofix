@@ -15,8 +15,16 @@ CONFIG_ALIAS_PATTERN = re.compile(r"{%\s*set\s+\w+\s*=\s*config\s*%}")
 # - Optional whitespace (including multiline)
 # - Optional default parameter
 # - Optional validator parameter
+#
+# The optional `model.` prefix is consumed (and dropped) so `model.config.get(...)`
+# becomes `config.meta_get(...)`. The lookbehind keeps that prefix from matching
+# mid-identifier: without it, `test_model.config.get(...)` matches starting at
+# `model.`, and stripping the match leaves the orphaned `test_` fused onto the
+# replacement -> `test_config.meta_get(...)`, an undefined Jinja variable.
+# Any other receiver (`node.`, `test_model.`, ...) falls outside the match and is
+# preserved, e.g. `node.config.get(...)` -> `node.config.meta_get(...)`.
 CONFIG_ACCESS_PATTERN = re.compile(
-    r"(model.)?config\.(get|require)\s*\("  # config.get( or config.require(
+    r"(?:(?<![\w.])model\.)?config\.(?P<method>get|require)\s*\("  # config.get( or config.require(
     r"(?P<pre_ws>\s*)"  # whitespace before the key
     r"(?P<quote>[\"'])(?P<key>[^\"']+)(?P=quote)"  # quoted key with captured quote style
     r"(?P<rest>.*?)"  # rest of the call including args and whitespace
@@ -74,7 +82,7 @@ def move_custom_config_access_to_meta_sql_improved(
     replacements: List[Tuple[int, int, str, str]] = []
 
     for match in matches:
-        method = match.group(2)  # 'get' or 'require'
+        method = match.group("method")  # 'get' or 'require'
         pre_whitespace = match.group("pre_ws")  # Whitespace before key
         quote_style = match.group("quote")  # Preserve original quote style
         config_key = match.group("key")

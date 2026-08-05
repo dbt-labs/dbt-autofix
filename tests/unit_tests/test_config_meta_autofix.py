@@ -291,3 +291,90 @@ SELECT
     assert result.refactored
     assert result.refactored_content == expected_sql
     assert len(result.deprecation_refactors) == 1
+
+
+def test_prefixed_model_receiver_is_not_mangled():
+    """A receiver ending in `model` must not have its prefix orphaned.
+
+    Regression test: the optional `model.` prefix used to match mid-identifier, so
+    `test_model.config.get(...)` matched starting at `model.`. Dropping that match
+    left the orphaned `test_` fused onto the replacement, producing
+    `test_config.meta_get(...)` -- an undefined Jinja variable that fails at render
+    time. See dbt-labs/fs#12687.
+    """
+    input_sql = """
+SELECT
+    '{{ test_model.config.get('custom_key') }}' as custom
+"""
+
+    expected_sql = """
+SELECT
+    '{{ test_model.config.meta_get('custom_key') }}' as custom
+"""
+
+    result = move_custom_config_access_to_meta_sql_improved(_sql(input_sql), _sql_cfg())
+
+    assert result.refactored
+    assert result.refactored_content == expected_sql
+    assert "test_config" not in result.refactored_content
+    assert len(result.deprecation_refactors) == 1
+
+
+def test_non_model_receiver_is_preserved():
+    """An arbitrary receiver sits outside the match and must survive untouched."""
+    input_sql = """
+SELECT
+    '{{ node.config.get('custom_key', 'false') }}' as custom
+"""
+
+    expected_sql = """
+SELECT
+    '{{ node.config.meta_get('custom_key', 'false') }}' as custom
+"""
+
+    result = move_custom_config_access_to_meta_sql_improved(_sql(input_sql), _sql_cfg())
+
+    assert result.refactored
+    assert result.refactored_content == expected_sql
+    assert len(result.deprecation_refactors) == 1
+
+
+def test_prefixed_model_receiver_with_require():
+    """The same boundary rule applies to `config.require(...)`."""
+    input_sql = "SELECT '{{ this_model.config.require('custom_key') }}' as custom"
+    expected_sql = "SELECT '{{ this_model.config.meta_require('custom_key') }}' as custom"
+
+    result = move_custom_config_access_to_meta_sql_improved(_sql(input_sql), _sql_cfg())
+
+    assert result.refactored
+    assert result.refactored_content == expected_sql
+    assert "this_config" not in result.refactored_content
+
+
+def test_dbt_constraints_style_receivers():
+    """Real-world shape from the dbt_constraints package that triggered dbt-labs/fs#12687.
+
+    Exercises all three receiver forms in one template: a `test_model.` prefix, a bare
+    `node.` receiver, and a plain `model.` prefix that is still stripped as before.
+    """
+    input_sql = """
+{%- if test_model.config.get("dbt_constraints_enabled", "true")|string|lower == "true"
+    or node.config.get("always_create_constraint", "false")|string|lower == "true"
+    or model.config.get("custom_key", "false")|string|lower == "true" -%}
+    {{ return(true) }}
+{%- endif -%}
+"""
+
+    expected_sql = """
+{%- if test_model.config.meta_get("dbt_constraints_enabled", "true")|string|lower == "true"
+    or node.config.meta_get("always_create_constraint", "false")|string|lower == "true"
+    or config.meta_get("custom_key", "false")|string|lower == "true" -%}
+    {{ return(true) }}
+{%- endif -%}
+"""
+
+    result = move_custom_config_access_to_meta_sql_improved(_sql(input_sql), _sql_cfg())
+
+    assert result.refactored
+    assert result.refactored_content == expected_sql
+    assert len(result.deprecation_refactors) == 3
