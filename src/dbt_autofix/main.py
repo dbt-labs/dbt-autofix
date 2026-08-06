@@ -19,7 +19,7 @@ from dbt_autofix.package_upgrade import (
     upgrade_package_versions,
 )
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_autofix.refactor import apply_changesets, changeset_all_files
+from dbt_autofix.refactor import apply_changesets, changeset_all_files, load_dbtignore
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 console = Console()
@@ -41,7 +41,8 @@ def identify_duplicate_keys(
     path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
 ):
     print(f"[green]Identifying duplicates in {path}[/green]\n")
-    project_duplicates, package_duplicates = find_duplicate_keys(path)
+    dbtignore = load_dbtignore(path)
+    project_duplicates, package_duplicates = find_duplicate_keys(path, dbtignore=dbtignore)
     print_duplicate_keys(project_duplicates, package_duplicates)
 
 
