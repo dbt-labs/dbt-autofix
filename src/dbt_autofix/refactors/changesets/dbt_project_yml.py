@@ -11,7 +11,7 @@ from dbt_autofix.refactors.results import (
     YMLContent,
     YMLRuleRefactorResult,
 )
-from dbt_autofix.refactors.yml import DbtYAML, get_dict, load_yaml
+from dbt_autofix.refactors.yml import DbtYAML, copy_key_comment, get_dict, load_yaml
 from dbt_autofix.retrieve_schemas import DbtProjectSpecs, SchemaSpecs
 
 config = """
@@ -163,6 +163,7 @@ def rec_check_yaml_path(
                     log_msg = f"Moved custom config '{k}' to '+meta'"
                     meta = get_dict(yml_dict, "+meta")
                     meta.update({k: v})
+                    copy_key_comment(yml_dict, k, meta)
                     yml_dict["+meta"] = meta
 
                 if log_msg:
@@ -218,6 +219,7 @@ def rec_check_yaml_path(
                                     log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (subkeys shouldn't be +prefixed)"
                                     meta = get_dict(yml_dict, "+meta")
                                     meta[subkey] = subvalue
+                                    copy_key_comment(v, subkey, meta)
                                     yml_dict["+meta"] = meta
                                     del v[subkey]
 
@@ -231,6 +233,7 @@ def rec_check_yaml_path(
                                     log_msg = f"Moved '{subkey}' from '{k}' to '+meta' (not a valid property for {key_without_plus})"
                                     meta = get_dict(yml_dict, "+meta")
                                     meta[subkey] = subvalue
+                                    copy_key_comment(v, subkey, meta)
                                     yml_dict["+meta"] = meta
                                     del v[subkey]
 
@@ -245,6 +248,7 @@ def rec_check_yaml_path(
                     log_msg = f"Moved unrecognized config '{k}' to '+meta'"
                     meta = get_dict(yml_dict, "+meta")
                     meta.update({key_without_plus: v})
+                    copy_key_comment(yml_dict, k, meta, key_without_plus)
                     yml_dict["+meta"] = meta
                     del yml_dict[k]
 
