@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import yaml
 import yamllint.config
@@ -33,12 +33,21 @@ class DuplicateFound:
 def find_duplicate_keys(
     root_dir: Path,
     dry_run: bool = False,
+    excluded_paths: Optional[List[str]] = None,
 ) -> Tuple[List[DuplicateFound], List[DuplicateFound]]:
     """Find duplicate keys in the project and packages."""
     project_duplicates: List[DuplicateFound] = []
     package_duplicates: List[DuplicateFound] = []
 
     yml_files = set(root_dir.glob("**/*.yml")).union(set(root_dir.glob("**/*.yaml")))
+
+    if excluded_paths:
+        excluded_paths = [(root_dir / p).resolve() for p in excluded_paths]
+        yml_files = {
+            f
+            for f in yml_files
+            if not any(f.resolve() == ep or f.resolve().is_relative_to(ep) for ep in excluded_paths)
+        }
     yml_files_target = set((root_dir / "target").glob("**/*.yml")).union(set((root_dir / "target").glob("**/*.yaml")))
 
     packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
