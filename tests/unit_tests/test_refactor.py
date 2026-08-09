@@ -30,6 +30,7 @@ from dbt_autofix.refactors.results import (
     DbtProjectYMLRefactorConfig,
     SQLContent,
     SQLRefactorConfig,
+    SQLRuleRefactorResult,
     YMLContent,
     YMLRefactorConfig,
     YMLRuleRefactorResult,
@@ -76,6 +77,14 @@ def _sql(sql_str: str) -> SQLContent:
 
 def _sql_cfg(schema_specs: SchemaSpecs | None = None, node_type: str = "models") -> SQLRefactorConfig:
     return SQLRefactorConfig(schema_specs=schema_specs or MockSchemaSpecs(), node_type=node_type)
+
+
+def _remove_unmatched_apply_on_fixed(fixed: str) -> SQLRuleRefactorResult:
+    """Run remove_unmatched_endings when original and current SQL are already the fixed text (idempotency re-check)."""
+    return remove_unmatched_endings(
+        SQLContent(original_str=fixed, current_str=fixed, current_file_path=Path("model.sql")),
+        _sql_cfg(),
+    )
 
 
 @pytest.fixture
@@ -309,6 +318,277 @@ class TestUnmatchedEndingsRemoval:
         assert "{% macro my_macro() %}" in result.refactored_content
         assert "{% endmacro %}" in result.refactored_content
         assert len(result.deprecation_refactors) == 0
+
+    def test_matched_macro_with_duplicate_block_opener(self):
+        """Malformed `{% {% macro` is invalid: do not edit; warn and skip further SQL rules."""
+        sql_content = """
+        {% {% macro my_macro(x, y) %}
+          {% set a = 1 %}
+          {{ return(a) }}
+        {% endmacro %}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert "{% {% macro" in result.refactored_content
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+        assert any("duplicate block openers" in w for w in result.refactor_warnings)
+        assert result.deprecation_refactors == []
+
+    def test_duplicate_block_opener_before_if(self):
+        sql_content = """
+        {% {% if true %}
+        select 1
+        {% endif %}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+        assert any("duplicate block openers" in w for w in result.refactor_warnings)
+        assert result.deprecation_refactors == []
+
+    def test_duplicate_block_opener_inside_macro_body(self):
+        """Duplicate `{%` before `set` in the body is invalid: do not collapse."""
+        sql_content = """
+        {% macro my_macro() %}
+          {% {% set a = 1 %}
+          select {{ a }}
+        {% endmacro %}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+        assert any("duplicate block openers" in w for w in result.refactor_warnings)
+        assert result.deprecation_refactors == []
+
+    def test_duplicate_block_opener_inside_if_body(self):
+        """Valid `{% if` then duplicate opener before `set` in the body is invalid Jinja for this tool."""
+        sql_content = """
+        {% if true %}
+          {% {% set a = 1 %}
+          select {{ a }}
+        {% endif %}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+        assert any("duplicate block openers" in w for w in result.refactor_warnings)
+        assert result.deprecation_refactors == []
+
+    def test_trailing_closer_after_endmacro(self):
+        """Stray duplicate `%}` after a valid `{% endmacro %}` is invalid: report and do not edit."""
+        sql_content = """
+        {% macro m() %}
+        select 1
+        {% endmacro %}%}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert "{% endmacro %}%}" in result.refactored_content
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+        assert any("spurious Jinja closers" in w for w in result.refactor_warnings)
+        assert result.deprecation_refactors == []
+
+    def test_trailing_closer_after_endif(self):
+        """Stray duplicate `%}` after a valid `{% endif %}` is invalid: report and do not edit."""
+        sql_content = """
+        {% if true %}
+        select 1
+        {% endif %}%}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert any("spurious Jinja closers" in w for w in result.refactor_warnings)
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+        assert result.deprecation_refactors == []
+
+    def test_macro_with_duplicate_opener_and_trailing_closer(self):
+        """Multiple invalid patterns: one message per duplicate opener and one for stray closer."""
+        sql_content = """
+        {% {% macro m() %}
+        {% if true %}
+          {% {% set x = 1 %}
+        {% endif %}
+        {{ x }}
+        {% endmacro %}%}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+        assert len([w for w in result.refactor_warnings if "duplicate block openers" in w]) == 2
+        assert len([w for w in result.refactor_warnings if "spurious Jinja closers" in w]) == 1
+        assert result.deprecation_refactors == []
+
+    def test_duplicate_opener_and_trailing_closer_build_date_macro(self):
+        """Reproduce duplicate `{%` on the macro line and a stray `%}` after `{% endmacro %}`."""
+        sql_content = r"""
+        {% {% macro build_date_jago_cbas(start_date, end_date, base_table_ingestion_time_column, watermark=1) %}
+          {% set date_selector = "x" %}
+          {{ return(date_selector) }}
+        {% endmacro %}%}
+        """
+        result = remove_unmatched_endings(_sql(sql_content + "\n"), _sql_cfg())
+        assert result.refactored is False
+        assert "{% {% macro" in result.refactored_content
+        assert "{% endmacro %}%}" in result.refactored_content
+        assert any("duplicate block openers" in w for w in result.refactor_warnings)
+        assert any("spurious Jinja closers" in w for w in result.refactor_warnings)
+        assert result.deprecation_refactors == []
+
+    def test_duplicate_opener_unchanged_inside_jinja_comment(self):
+        """Do not touch `{% {{%` that only appears inside `{# ... #}`."""
+        sql_content = """
+        {# note: {% {% macro in comment is invalid but leave it #}
+        select 1
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored is False
+        assert "{% {% macro" in result.refactored_content
+        assert len(result.deprecation_refactors) == 0
+
+    def test_stray_closer_after_endfor(self):
+        sql_content = """
+        {% for x in [1] %}
+          select {{ x }}
+        {% endfor %}%}
+        """
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert any("spurious Jinja closers" in w for w in result.refactor_warnings)
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+
+    def test_duplicate_opener_dbt_test_block(self):
+        sql_content = '{% {% test not_null(column_name="id") %}\nSELECT 1\n{% endtest %}\n'
+        result = remove_unmatched_endings(_sql(sql_content), _sql_cfg())
+        assert result.refactored_content == sql_content
+        assert "{% {% test" in result.refactored_content
+        assert any("duplicate block openers" in w for w in result.refactor_warnings)
+        assert result.refactored is False
+        assert result.skip_remaining_sql_rules is True
+
+    def test_jinja_normalization_idempotent(self):
+        """Invalid Jinja stays unchanged; a second run reports the same warnings."""
+        bad = """
+        {% {% macro t() %}
+        select 1
+        {% endmacro %}%}
+        """
+        r1 = remove_unmatched_endings(_sql(bad), _sql_cfg())
+        r2 = _remove_unmatched_apply_on_fixed(r1.refactored_content)
+        assert r1.refactored is False
+        assert r2.refactored is False
+        assert r2.refactored_content == r1.refactored_content
+        assert r1.refactor_warnings == r2.refactor_warnings
+        assert r1.skip_remaining_sql_rules and r2.skip_remaining_sql_rules
+
+    def test_idempotency_stray_closer_only(self):
+        """Stray-`%}`: still invalid on second pass; same content and warnings."""
+        sql = """
+        {% macro m() %}
+        select 1
+        {% endmacro %}%}
+        """
+        r1 = remove_unmatched_endings(_sql(sql), _sql_cfg())
+        r2 = _remove_unmatched_apply_on_fixed(r1.refactored_content)
+        assert r1.refactored is False
+        assert r2.refactored is False
+        assert r1.refactored_content == r2.refactored_content
+        assert r1.refactor_warnings == r2.refactor_warnings
+
+    def test_idempotency_duplicate_opener_only(self):
+        """Duplicate-`{%` before macro: still invalid; second pass unchanged."""
+        sql = """
+        {% {% macro m() %}
+        select 1
+        {% endmacro %}
+        """
+        r1 = remove_unmatched_endings(_sql(sql), _sql_cfg())
+        r2 = _remove_unmatched_apply_on_fixed(r1.refactored_content)
+        assert r1.refactored is False
+        assert r2.refactored is False
+        assert r1.refactored_content == r2.refactored_content
+        assert r1.refactor_warnings == r2.refactor_warnings
+
+    def test_idempotency_after_unmatched_endmacro_removal(self):
+        """Unmatched-`endmacro` strip: fixed content is idempotent on re-run."""
+        sql = """
+        select 1
+        {% endmacro %}
+        """
+        r1 = remove_unmatched_endings(_sql(sql), _sql_cfg())
+        r2 = _remove_unmatched_apply_on_fixed(r1.refactored_content)
+        assert r1.refactored is True
+        assert r2.refactored is False
+        assert r1.refactored_content == r2.refactored_content
+        assert "Removed unmatched" in r1.deprecation_refactors[0].log
+        assert r2.deprecation_refactors == []
+
+    def test_idempotency_clean_matched_sql_twice(self):
+        """Well-formed macro + endif: no change; repeat pass still no change."""
+        sql = """
+        {% macro k() %}{% if true %} select 1 {% endif %}{% endmacro %}
+        """
+        r1 = remove_unmatched_endings(_sql(sql), _sql_cfg())
+        r2 = _remove_unmatched_apply_on_fixed(r1.refactored_content)
+        assert r1.refactored is False
+        assert r2.refactored is False
+        assert r1.refactored_content == r2.refactored_content
+        assert r1.deprecation_refactors == []
+        assert r2.deprecation_refactors == []
+
+    def test_idempotency_third_consecutive_apply(self):
+        """Third run matches first: invalid Jinja is never auto-fixed here."""
+        bad = """
+        {% {% macro t() %}
+        select 1
+        {% endmacro %}%}
+        """
+        r1 = remove_unmatched_endings(_sql(bad), _sql_cfg())
+        r2 = _remove_unmatched_apply_on_fixed(r1.refactored_content)
+        r3 = _remove_unmatched_apply_on_fixed(r2.refactored_content)
+        assert r1.refactored is False
+        assert r2.refactored is False
+        assert r3.refactored is False
+        assert r1.refactored_content == r2.refactored_content == r3.refactored_content
+        assert r1.refactor_warnings == r2.refactor_warnings == r3.refactor_warnings
+
+    def test_invalid_jinja_warnings_include_near_line(self):
+        r = remove_unmatched_endings(
+            _sql("{% {% macro t() %}\n{% endmacro %}\n"),
+            _sql_cfg(),
+        )
+        assert any("near line" in w for w in r.refactor_warnings)
+        assert "duplicate block openers" in r.refactor_warnings[0]
+        assert r.deprecation_refactors == []
+
+    def test_invalid_jinja_skips_following_sql_rules(self):
+        """When remove_unmatched_endings sets skip_remaining_sql_rules, later rules are not applied."""
+        sql = """{% {% if true %}
+{{ config(materialized="view") }}
+select 1
+{% endif %}
+"""
+        agg = SQLRefactorResult(
+            dry_run=True,
+            file_path=Path("m.sql"),
+            refactored_file_path=Path("m.sql"),
+            refactored_content=sql,
+            original_content=sql,
+            refactors=[],
+        )
+        agg.apply_changeset(remove_unmatched_endings, _sql_cfg())
+        agg.apply_changeset(refactor_custom_configs_to_meta_sql, _sql_cfg())
+        assert len(agg.refactors) == 1
+        assert agg.refactored_content == sql
+        assert agg.refactors[0].skip_remaining_sql_rules is True
+        assert agg.has_warnings
 
     def test_matched_if(self):
         sql_content = """
