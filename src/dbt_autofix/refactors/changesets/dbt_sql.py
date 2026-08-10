@@ -1,3 +1,4 @@
+import ast
 import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple
@@ -291,6 +292,23 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
 
     allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields
 
+    # A snapshot can live under model-paths and declare its materialization in SQL.
+    # Preserve snapshot-owned keys for dynamic materializations too; resolving the
+    # effective materialization would require rendering project configuration.
+    if node_type == "models" and "materialized" in original_sql_configs:
+        try:
+            materialized = ast.literal_eval(original_sql_configs["materialized"])
+        except (ValueError, SyntaxError):
+            materialized = None
+
+        if materialized is None or materialized == "snapshot" or (
+            isinstance(materialized, str) and ("{{" in materialized or "{%" in materialized)
+        ):
+            allowed_config_fields = allowed_config_fields.union(
+                schema_specs.yaml_specs_per_node_type["snapshots"].allowed_config_fields,
+                {"target_schema", "target_database"},
+            )
+
     # Special casing snapshots because target_schema and target_database are renamed by another autofix rule
     if node_type == "snapshots":
         allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
@@ -318,8 +336,6 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
                 existing_meta = refactored_sql_configs["meta"]
                 if isinstance(existing_meta, str):
                     # It's a source code string like "{'key': 'value'}" - parse it
-                    import ast
-
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)
                         meta_dict = {k: meta_transform_value(v) for k, v in parsed_meta.items()}
