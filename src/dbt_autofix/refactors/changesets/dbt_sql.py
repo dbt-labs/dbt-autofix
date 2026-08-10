@@ -301,8 +301,10 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
         except (ValueError, SyntaxError):
             materialized = None
 
-        if materialized is None or materialized == "snapshot" or (
-            isinstance(materialized, str) and ("{{" in materialized or "{%" in materialized)
+        if (
+            materialized is None
+            or materialized == "snapshot"
+            or (isinstance(materialized, str) and ("{{" in materialized or "{%" in materialized))
         ):
             allowed_config_fields = allowed_config_fields.union(
                 schema_specs.yaml_specs_per_node_type["snapshots"].allowed_config_fields,
