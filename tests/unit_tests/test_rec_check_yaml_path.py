@@ -88,6 +88,29 @@ def test_correct_configs_unchanged(models_node_fields, temp_path):
     assert len(logs) == 0
 
 
+def test_adapter_specific_config_unchanged(models_node_fields, temp_path):
+    """INPUT:  +options (dbt-duckdb write options for the external materialization)
+    OUTPUT: Same, no changes
+    WHY:    The Fusion schema only describes core configs, so adapter-specific ones look
+            unrecognized. dbt-duckdb reads this via config.get('options'), so moving it to
+            +meta would silently drop partition_by/overwrite_or_ignore from the COPY TO.
+    """
+    input_dict = {
+        "+materialized": "external",
+        "+options": {"partition_by": "country", "overwrite_or_ignore": 1},
+    }
+
+    expected_output = {
+        "+materialized": "external",
+        "+options": {"partition_by": "country", "overwrite_or_ignore": 1},
+    }
+
+    result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
+
+    assert result == expected_output
+    assert len(logs) == 0
+
+
 # =============================================================================
 # SCENARIO 2: Schema does not support the key - moved to meta
 # =============================================================================

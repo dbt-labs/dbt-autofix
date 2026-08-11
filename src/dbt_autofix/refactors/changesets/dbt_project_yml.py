@@ -4,7 +4,7 @@ from typing import Any, List, Optional
 
 import yamllint.config
 
-from dbt_autofix.refactors.constants import DBT_PROJECT_CONFIG_MISSPELLINGS
+from dbt_autofix.refactors.constants import ADAPTER_SPECIFIC_CONFIGS, DBT_PROJECT_CONFIG_MISSPELLINGS
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     DbtProjectYMLRefactorConfig,
@@ -239,6 +239,11 @@ def rec_check_yaml_path(
                                     else:
                                         refactor_logs.append(log_msg)
                     # Otherwise keep as-is (value is the config value)
+
+                # Adapter-specific config: not in the (core-only) schema, but functional.
+                # Leave it alone - moving it to +meta would silently change behaviour.
+                elif key_without_plus in ADAPTER_SPECIFIC_CONFIGS:
+                    pass
 
                 # Unrecognized config (not in schema), move to +meta
                 else:
