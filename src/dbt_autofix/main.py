@@ -140,6 +140,13 @@ def refactor_yml(
         bool, typer.Option("--all", help="Run all fixes, including those that may require a behavior change")
     ] = False,
     semantic_layer: Annotated[bool, typer.Option("--semantic-layer", help="Run fixes to semantic layer")] = False,
+    skip_rule: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            "--skip-rule",
+            help="Rule to skip, as named in the output (e.g. 'prefix_plus_for_config'). Repeatable.",
+        ),
+    ] = None,
     disable_ssl_verification: Annotated[
         bool, typer.Option("--disable-ssl-verification", help="Disable SSL verification", hidden=True)
     ] = False,
@@ -160,6 +167,7 @@ def refactor_yml(
         behavior_change,
         all,
         semantic_layer,
+        set(skip_rule) if skip_rule else None,
     )
     if dry_run:
         if not json_output:
