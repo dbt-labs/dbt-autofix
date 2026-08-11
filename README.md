@@ -90,6 +90,11 @@ uv tool install --from git+https://github.com/dbt-labs/dbt-autofix.git dbt-autof
   - add `--include-private-packages` to autofix just the _private_ packages (those not on [hub.getdbt.com](https://hub.getdbt.com/)) installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with Fusion.
   - add `--behavior-change` to run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
   - add `--all` to run all of the fixes possible - both fixes that potentially require behavior changes as well as not. Additionally, `--all` will apply fixes to as many files as possible, even if some files are unfixable (e.g. due to invalid yaml syntax).
+  - add `--skip-rule <rule>` to skip an individual rule, using the same name the rule is reported under in the output. Repeatable. Useful when one rule conflicts with your project (e.g. adapter-specific configs that are not in the Fusion schema) and you don't want to give up the other fixes:
+
+```sh
+dbt-autofix deprecations --skip-rule prefix_plus_for_config
+```
 
 Each JSON object will have the following keys:
 
@@ -177,4 +182,7 @@ repos:
       # OR
       - id: dbt-autofix-fix # Specify dbt project path
         args: [--path=jaffle-shop]
+      # OR
+      - id: dbt-autofix-fix # Skip an individual rule
+        args: [--skip-rule=prefix_plus_for_config]
 ```

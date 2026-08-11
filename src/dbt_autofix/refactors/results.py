@@ -2,7 +2,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, Set
 
 from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
@@ -61,6 +61,7 @@ class YMLRefactorConfig:
     schema_specs: SchemaSpecs
     semantic_definitions: Optional[SemanticDefinitions] = None
     project_has_unsafe_table_format: bool = False
+    skip_rules: Set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -68,6 +69,7 @@ class DbtProjectYMLRefactorConfig:
     schema_specs: SchemaSpecs
     root_path: Path
     exclude_dbt_project_keys: bool = False
+    skip_rules: Set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -75,12 +77,14 @@ class SQLRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
     project_has_unsafe_table_format: bool = False
+    skip_rules: Set[str] = field(default_factory=set)
 
 
 @dataclass
 class PythonRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
+    skip_rules: Set[str] = field(default_factory=set)
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +184,8 @@ class YMLRefactorResult:
             current_str=self.refactored_yaml,
         )
         result = func(content, config)
+        if result.rule_name in config.skip_rules:
+            return
         if result.refactored or result.refactor_warnings:
             self.refactors.append(result)
             if result.refactored:
@@ -247,6 +253,8 @@ class SQLRefactorResult:
             current_file_path=self.refactored_file_path,
         )
         result = func(content, config)
+        if result.rule_name in config.skip_rules:
+            return
         self.refactors.append(result)
         if result.refactored:
             self.refactored_content = result.refactored_content
@@ -327,6 +335,8 @@ class PythonRefactorResult:
             current_file_path=self.refactored_file_path,
         )
         result = func(content, config)
+        if result.rule_name in config.skip_rules:
+            return
         self.refactors.append(result)
         if result.refactored:
             self.refactored_content = result.refactored_content
