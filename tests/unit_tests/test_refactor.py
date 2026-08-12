@@ -1019,7 +1019,7 @@ class TestYamlOutput:
         assert "abc: 123" in yaml_str
 
 
-class TestDbtProjectYAMLPusPrefix:
+class TestDbtProjectYAMLPlusPrefix:
     """Tests for YAML output functions"""
 
     def test_check_project(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
@@ -1058,7 +1058,9 @@ class TestDbtProjectYAMLPusPrefix:
         # Test that output_yaml produces valid YAML
 
         test_data = {"models": {"materialized": "table", "grants": {"materialized": "view"}}}
-        expected_data = {"models": {"+materialized": "table", "+grants": {"materialized": "view"}}}
+        # grants is a valid config with a dict value, but we can't prove that
+        # there isn't a folder named grants
+        expected_data = {"models": {"+materialized": "table", "grants": {"materialized": "view"}}}
 
         new_file = temp_project_dir / "models" / "not_grants" / "my_model.sql"
         new_file.parent.mkdir(parents=True, exist_ok=True)
@@ -1068,7 +1070,7 @@ class TestDbtProjectYAMLPusPrefix:
             test_data, temp_project_dir, schema_specs.dbtproject_specs_per_node_type["models"]
         )
         assert expected_data == new_yml
-        assert len(refactor_logs) == 2
+        assert len(refactor_logs) == 1
 
     def test_check_project_custom_config_not_in_meta(self, temp_project_dir: Path, schema_specs: SchemaSpecs):
         test_data = {
