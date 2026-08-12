@@ -145,7 +145,9 @@ def rec_check_yaml_path(
                     yml_dict[new_k] = v
                     log_msg = f"Renamed config '{k}' to '{new_k}' (dbt_project.yml expects the hyphenated hook form)"
                 # Built-in config missing "+"
-                elif k in node_fields.allowed_config_fields_dbt_project:
+                # We cannot add the plus prefix if the value is not scalar in case there is an
+                # overlapping resource path name that we've missed
+                elif k in node_fields.allowed_config_fields_dbt_project and not isinstance(v, dict):
                     new_k = f"+{k}"
                     yml_dict[new_k] = v
                     log_msg = f"Added '+' in front of the nested config '{k}'"
@@ -298,8 +300,10 @@ def changeset_dbt_project_prefix_plus_for_config(
             elif k in node_fields.allowed_config_fields_dbt_project or (
                 k.startswith("+") and k[1:] in node_fields.allowed_config_fields_dbt_project
             ):
-                # Config key is valid - if it doesn't have +, add it
-                if not k.startswith("+"):
+                # Config key is valid - if it doesn't have +, add it if the value is scalar
+                # We cannot add the plus prefix if the value is not scalar in case there is an
+                # overlapping resource path name
+                if not k.startswith("+") and not isinstance(v, dict):
                     all_refactor_logs.append(f"Added '+' in front of top level config '{k}'")
                     new_k = f"+{k}"
                     yml_dict[node_type][new_k] = v
