@@ -1,4 +1,4 @@
-"""Tests for resolve_env_vars"""
+"""Tests for resolve_env_vars."""
 
 import pytest
 
