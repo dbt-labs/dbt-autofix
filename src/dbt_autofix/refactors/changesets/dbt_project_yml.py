@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 
 import yamllint.config
 
+from dbt_autofix.jinja import resolve_env_vars
 from dbt_autofix.refactors.constants import DBT_PROJECT_CONFIG_MISSPELLINGS
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
@@ -147,10 +148,13 @@ def rec_check_yaml_path(
                 # Built-in config missing "+"
                 # We cannot add the plus prefix if the value is not scalar in case there is an
                 # overlapping resource path name that we've missed
-                elif k in node_fields.allowed_config_fields_dbt_project and not isinstance(v, dict):
-                    new_k = f"+{k}"
-                    yml_dict[new_k] = v
-                    log_msg = f"Added '+' in front of the nested config '{k}'"
+                elif k in node_fields.allowed_config_fields_dbt_project:
+                    if not isinstance(v, dict):
+                        new_k = f"+{k}"
+                        yml_dict[new_k] = v
+                        log_msg = f"Added '+' in front of the nested config '{k}'"
+                    # We can't say either way if k is meant to be a resource path or a field, so
+                    # we have to stop recursing here
                 # Check if this is a dict value (logical grouping)
                 # Only recurse if it's NOT a valid config key
                 elif isinstance(v, dict):
@@ -282,11 +286,12 @@ def changeset_dbt_project_prefix_plus_for_config(
     all_refactor_logs: List[str] = []
 
     yml_dict = load_yaml(yml_str)
+    resolved_name = resolve_env_vars(yml_dict.get("name"))
 
     for node_type, node_fields in schema_specs.dbtproject_specs_per_node_type.items():
         for k, v in get_dict(yml_dict, node_type).copy().items():
             # check if this is the project name
-            if k == yml_dict["name"]:
+            if k == resolved_name:
                 # Only recurse if v is a dict (should be project configs)
                 if isinstance(v, dict):
                     new_dict, refactor_logs = rec_check_yaml_path(
