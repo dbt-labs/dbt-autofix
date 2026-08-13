@@ -12,6 +12,8 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_prefix_plus_for_config,
     changeset_dbt_project_remove_deprecated_config,
     changeset_fix_space_after_plus,
+    changeset_iceberg_table_format_project_yml,
+    project_has_unsafe_table_format,
 )
 from dbt_autofix.refactors.changesets.dbt_python import (
     move_custom_config_access_to_meta_python,
@@ -19,6 +21,7 @@ from dbt_autofix.refactors.changesets.dbt_python import (
     rename_python_file_names_with_spaces,
 )
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
+    changeset_iceberg_table_format_yml,
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
     changeset_remove_duplicate_keys,
@@ -40,6 +43,7 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
 )
 from dbt_autofix.refactors.changesets.dbt_sql import (
     refactor_custom_configs_to_meta_sql,
+    refactor_iceberg_table_format_sql,
     refactor_static_analysis_sql,
     remove_unmatched_endings,
     rename_sql_file_names_with_spaces,
@@ -66,6 +70,7 @@ from dbt_autofix.retrieve_schemas import (
 from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 error_console = Console(stderr=True)
+
 
 config = """
 rules:
@@ -96,7 +101,10 @@ def process_yaml_files_except_dbt_project(
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
-    config = YMLRefactorConfig(schema_specs=schema_specs)
+    config = YMLRefactorConfig(
+        schema_specs=schema_specs,
+        project_has_unsafe_table_format=project_has_unsafe_table_format(root_path),
+    )
 
     behavior_change_rules: List[Callable] = [
         changeset_replace_non_alpha_underscores_in_name_values,
@@ -112,6 +120,7 @@ def process_yaml_files_except_dbt_project(
         changeset_owner_properties_yml_str,
         changeset_normalize_static_analysis_yml,
     ]
+    behavior_change_rules.append(changeset_iceberg_table_format_yml)
     all_rules: List[Callable] = [*safe_change_rules, *behavior_change_rules]
     changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
@@ -119,7 +128,11 @@ def process_yaml_files_except_dbt_project(
 
     # Override ordered changesets if semantic definitions are provided
     if semantic_definitions:
-        sl_config = YMLRefactorConfig(schema_specs=schema_specs, semantic_definitions=semantic_definitions)
+        sl_config = YMLRefactorConfig(
+            schema_specs=schema_specs,
+            semantic_definitions=semantic_definitions,
+            project_has_unsafe_table_format=config.project_has_unsafe_table_format,
+        )
         # Certain changesets can only be applied after all the other changesets have been applied to all the files
         ordered_changesets = [
             [
@@ -243,6 +256,7 @@ def process_dbt_project_yml(
         changeset_dbt_project_prefix_plus_for_config,
         changeset_normalize_static_analysis_yml,
     ]
+    behavior_change_rules.append(changeset_iceberg_table_format_project_yml)
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
     changesets: List[Callable] = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
@@ -292,6 +306,7 @@ def process_sql_files(
         refactor_static_analysis_sql,
         move_custom_config_access_to_meta_sql_improved,
     ]
+    behavior_change_rules.append(refactor_iceberg_table_format_sql)
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
     process_sql_file_rules: List[Callable] = (
@@ -304,7 +319,11 @@ def process_sql_files(
             error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
             continue
 
-        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = SQLRefactorConfig(
+            schema_specs=schema_specs,
+            node_type=node_type,
+            project_has_unsafe_table_format=project_has_unsafe_table_format(path),
+        )
 
         sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
@@ -624,6 +643,7 @@ def apply_changesets(
     for yaml_result in yaml_results:
         if yaml_result.refactored:
             yaml_result.update_yaml_file()
+        if yaml_result.refactored or any(r.refactor_warnings for r in yaml_result.refactors):
             yaml_result.print_to_console(json_output)
 
     # Apply SQL changes

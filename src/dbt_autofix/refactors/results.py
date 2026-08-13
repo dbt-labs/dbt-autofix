@@ -60,6 +60,7 @@ class PythonContent:
 class YMLRefactorConfig:
     schema_specs: SchemaSpecs
     semantic_definitions: Optional[SemanticDefinitions] = None
+    project_has_unsafe_table_format: bool = False
 
 
 @dataclass
@@ -73,6 +74,7 @@ class DbtProjectYMLRefactorConfig:
 class SQLRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
+    project_has_unsafe_table_format: bool = False
 
 
 @dataclass
@@ -93,6 +95,7 @@ class YMLRuleRefactorResult:
     refactored_yaml: str
     original_yaml: str
     deprecation_refactors: list[DbtDeprecationRefactor]
+    refactor_warnings: list[str] = field(default_factory=list)
 
     @property
     def refactor_logs(self):
@@ -102,7 +105,8 @@ class YMLRuleRefactorResult:
         ret_dict = {
             "deprecation_refactors": [
                 deprecation_refactor.to_dict() for deprecation_refactor in self.deprecation_refactors
-            ]
+            ],
+            "warnings": self.refactor_warnings,
         }
         return ret_dict
 
@@ -176,9 +180,10 @@ class YMLRefactorResult:
             current_str=self.refactored_yaml,
         )
         result = func(content, config)
-        if result.refactored:
+        if result.refactored or result.refactor_warnings:
             self.refactors.append(result)
-            self.refactored_yaml = result.refactored_yaml
+            if result.refactored:
+                self.refactored_yaml = result.refactored_yaml
 
     def update_yaml_file(self) -> None:
         """Update the YAML file with the refactored content"""
@@ -187,20 +192,24 @@ class YMLRefactorResult:
         Path(self.file_path).write_text(final_yaml)
 
     def print_to_console(self, json_output: bool = True):
-        if not self.refactored:
+        if not self.refactored and not any(r.refactor_warnings for r in self.refactors):
             return
 
         if json_output:
             flattened_refactors = []
+            flattened_warnings = []
             for refactor in self.refactors:
                 if refactor.refactored:
                     flattened_refactors.extend(refactor.to_dict()["deprecation_refactors"])
+                flattened_warnings.extend(refactor.refactor_warnings)
 
             to_print = {
                 "mode": "dry_run" if self.dry_run else "applied",
                 "file_path": str(self.file_path),
                 "refactors": flattened_refactors,
             }
+            if flattened_warnings:
+                to_print["warnings"] = flattened_warnings
             print(json.dumps(to_print))
             return
 
@@ -209,10 +218,12 @@ class YMLRefactorResult:
             style="green",
         )
         for refactor in self.refactors:
-            if refactor.refactored:
+            if refactor.refactored or refactor.refactor_warnings:
                 console.print(f"  {refactor.rule_name}", style="yellow")
                 for log in refactor.refactor_logs:
                     console.print(f"    {log}")
+                for warning in refactor.refactor_warnings:
+                    console.print(f"    WARNING: {warning}", style="yellow")
 
 
 @dataclass

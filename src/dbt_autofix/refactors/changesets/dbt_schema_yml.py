@@ -75,6 +75,54 @@ def changeset_replace_fancy_quotes(content: YMLContent, config: YMLRefactorConfi
     )
 
 
+def changeset_iceberg_table_format_yml(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    """Set Iceberg-only model settings to an explicit Iceberg table format."""
+    yml_str = content.current_str
+    yml_dict = load_yaml(yml_str)
+    logs: List[DbtDeprecationRefactor] = []
+    warnings: List[str] = []
+    changed = False
+
+    for model in [*get_list(yml_dict, "models"), *get_list(yml_dict, "snapshots")]:
+        if not isinstance(model, CommentedMap):
+            continue
+        model_config = model.get("config")
+        locations = [model]
+        if isinstance(model_config, CommentedMap):
+            locations.insert(0, model_config)
+        iceberg_keys = ("external_volume", "base_location_root", "base_location_subpath")
+        if not any(key in location for location in locations for key in iceberg_keys):
+            continue
+        table_format = next(
+            (location.get("table_format") for location in locations if "table_format" in location), None
+        )
+        if table_format is not None:
+            value = str(table_format).lower()
+            if value != "iceberg":
+                warnings.append(
+                    f"Cannot safely autofix Iceberg settings with explicit or dynamic table_format={table_format}"
+                )
+            continue
+        if config.project_has_unsafe_table_format:
+            warnings.append(
+                "Cannot safely autofix Iceberg settings because dbt_project.yml has a non-literal or non-Iceberg table_format"
+            )
+            continue
+        target = model_config if isinstance(model_config, CommentedMap) else model.setdefault("config", CommentedMap())
+        target["table_format"] = "iceberg"
+        changed = True
+        logs.append(DbtDeprecationRefactor("Set table_format=iceberg for Snowflake Iceberg-only model settings"))
+
+    return YMLRuleRefactorResult(
+        rule_name="set_iceberg_table_format_yml",
+        refactored=changed,
+        refactored_yaml=dict_to_yaml_str(yml_dict) if changed else yml_str,
+        original_yaml=yml_str,
+        deprecation_refactors=logs,
+        refactor_warnings=warnings,
+    )
+
+
 def _process_line_fancy_quotes(line: str) -> Tuple[str, bool, List[int]]:
     """Process a single line to handle fancy quotes based on context.
 

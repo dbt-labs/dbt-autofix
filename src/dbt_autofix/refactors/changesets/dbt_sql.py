@@ -483,6 +483,83 @@ def refactor_static_analysis_sql(
     )
 
 
+def refactor_iceberg_table_format_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
+    """Set Snowflake Iceberg model settings to the required explicit table format."""
+    sql_content = content.current_str
+    warnings: List[str] = []
+    refactored_content = sql_content
+    refactored = False
+
+    for start, end, macro_str in reversed(_iter_config_macro_spans(sql_content)):
+        parsed = statically_parse_unrendered_config(macro_str)
+        if not parsed or not any(
+            key in parsed for key in ("external_volume", "base_location_root", "base_location_subpath")
+        ):
+            continue
+        if re.search(r"config\s*\(\s*\{", macro_str) or _contains_dynamic_kwargs(macro_str):
+            warnings.append("Cannot safely autofix config() dictionary or dynamic keyword arguments")
+            continue
+
+        table_format = parsed.get("table_format")
+        try:
+            table_format_value = ast.literal_eval(table_format) if table_format is not None else None
+        except (ValueError, SyntaxError):
+            table_format_value = None
+
+        if isinstance(table_format_value, str):
+            if table_format_value.lower() == "iceberg":
+                continue
+            if table_format_value.lower() == "default":
+                warnings.append("Cannot safely autofix Iceberg settings with explicit table_format=default")
+                continue
+        elif table_format is not None:
+            warnings.append("Cannot safely autofix Iceberg settings with a dynamic table_format")
+            continue
+        elif config.project_has_unsafe_table_format:
+            warnings.append(
+                "Cannot safely autofix Iceberg settings because dbt_project.yml has a non-literal or non-Iceberg table_format"
+            )
+            continue
+
+        refactored_config = dict(parsed)
+        refactored_config["table_format"] = "'iceberg'"
+        source_map = dict(refactored_config)
+        new_config = f"{{{{ config({_serialize_config_macro_call(refactored_config, source_map)}\n) }}}}"
+        refactored_content = refactored_content[:start] + new_config + refactored_content[end:]
+        refactored = True
+
+    return SQLRuleRefactorResult(
+        rule_name="set_iceberg_table_format_sql",
+        refactored=refactored,
+        refactored_content=refactored_content,
+        original_content=sql_content,
+        deprecation_refactors=[
+            DbtDeprecationRefactor(log="Set table_format='iceberg' for Snowflake Iceberg-only model settings")
+        ]
+        if refactored
+        else [],
+        refactor_warnings=warnings,
+    )
+
+
+def _contains_dynamic_kwargs(macro_str: str) -> bool:
+    in_string: Optional[str] = None
+    escaped = False
+    for index, char in enumerate(macro_str):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\" and in_string:
+            escaped = True
+            continue
+        if char in {"'", '"'}:
+            in_string = None if in_string == char else char if in_string is None else in_string
+            continue
+        if not in_string and macro_str[index : index + 2] == "**":
+            return True
+    return False
+
+
 def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[Dict[str, str]] = None) -> str:
     """Serialize a config dictionary back to a config macro call string.
 

@@ -165,11 +165,10 @@ def refactor_yml(
         if not json_output:
             error_console.print("[red]-- Dry run mode, not applying changes --[/red]")
         for changeset in yaml_results:
-            if changeset.refactored:
+            if changeset.refactored or any(r.refactor_warnings for r in changeset.refactors):
                 changeset.print_to_console(json_output)
         for changeset in sql_results:
-            if changeset.refactored:
-                changeset.print_to_console(json_output)
+            changeset.print_to_console(json_output)
         for changeset in python_results:
             if changeset.refactored:
                 changeset.print_to_console(json_output)
