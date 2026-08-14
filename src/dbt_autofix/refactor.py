@@ -87,6 +87,7 @@ def process_yaml_files_except_dbt_project(
     behavior_change: bool = False,
     all: bool = False,
     semantic_definitions: Optional[SemanticDefinitions] = None,
+    project_has_unsafe_table_format: bool = False,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project.
 
@@ -98,12 +99,14 @@ def process_yaml_files_except_dbt_project(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
+        project_has_unsafe_table_format: Whether dbt_project.yml has a non-Iceberg table_format
+            set alongside Iceberg-only model settings, computed once for the whole project
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
     config = YMLRefactorConfig(
         schema_specs=schema_specs,
-        project_has_unsafe_table_format=project_has_unsafe_table_format(root_path),
+        project_has_unsafe_table_format=project_has_unsafe_table_format,
     )
 
     behavior_change_rules: List[Callable] = [
@@ -283,6 +286,7 @@ def process_sql_files(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
+    project_has_unsafe_table_format: bool = False,
 ) -> List[SQLRefactorResult]:
     """Process all SQL files in the given paths for unmatched endings.
 
@@ -293,6 +297,8 @@ def process_sql_files(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior change
         all: Whether to run all fixes, including those that may require a behavior change
+        project_has_unsafe_table_format: Whether dbt_project.yml has a non-Iceberg table_format
+            set alongside Iceberg-only model settings, computed once for the whole project
 
     Returns:
         List of SQLRefactorResult for each processed file
@@ -322,7 +328,7 @@ def process_sql_files(
         config = SQLRefactorConfig(
             schema_specs=schema_specs,
             node_type=node_type,
-            project_has_unsafe_table_format=project_has_unsafe_table_format(path),
+            project_has_unsafe_table_format=project_has_unsafe_table_format,
         )
 
         sql_files = full_path.glob("**/*.sql")
@@ -612,7 +618,13 @@ def changeset_all_files(
     dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages, include_private_packages)
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
-    sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
+    # Computed once for the whole project (rather than per file/path) since dbt_project.yml
+    # was just written above, so this reflects its final on-disk state for this run.
+    unsafe_table_format = project_has_unsafe_table_format(path)
+
+    sql_results = process_sql_files(
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, unsafe_table_format
+    )
     python_results = process_python_files(
         path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
     )
@@ -620,7 +632,7 @@ def changeset_all_files(
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions, unsafe_table_format
     )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results, python_results
