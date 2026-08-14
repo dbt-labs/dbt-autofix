@@ -20,6 +20,7 @@ from dbt_autofix.refactors.results import (
     YMLRefactorConfig,
     YMLRefactorResult,
 )
+from dbt_autofix.refactors.yml import load_yaml
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 SQL_CONFIG = SQLRefactorConfig(cast(SchemaSpecs, None), "model")
@@ -92,11 +93,9 @@ def test_model_level_autofix_respects_project_default():
     assert yaml_result.refactor_warnings
 
 
-def test_project_dynamic_table_format_blocks_model_autofix(tmp_path):
-    (tmp_path / "dbt_project.yml").write_text(
-        "models:\n  project:\n    +table_format: \"{{ env_var('TABLE_FORMAT') }}\"\n"
-    )
-    assert project_has_unsafe_table_format(tmp_path)
+def test_project_dynamic_table_format_blocks_model_autofix():
+    project_yml = load_yaml("models:\n  project:\n    +table_format: \"{{ env_var('TABLE_FORMAT') }}\"\n")
+    assert project_has_unsafe_table_format(project_yml)
 
 
 def test_sql_dynamic_kwargs_detection_ignores_string_contents():
@@ -113,9 +112,12 @@ def test_sql_dynamic_kwargs_are_not_autofixed():
     assert "dynamic keyword" in result.refactor_warnings[0]
 
 
-def test_malformed_project_config_fails_closed(tmp_path):
-    (tmp_path / "dbt_project.yml").write_text("models: [unclosed")
-    assert project_has_unsafe_table_format(tmp_path)
+def test_malformed_project_yaml_raises_so_the_caller_can_fail_closed():
+    # project_has_unsafe_table_format takes an already-parsed dbt_project.yml; a
+    # malformed file fails during that parse, and refactor.py treats the failure
+    # as unsafe (fail closed) rather than silently allowing the autofix.
+    with pytest.raises(Exception):
+        load_yaml("models: [unclosed")
 
 
 def test_snapshot_yaml_adds_iceberg():
@@ -128,9 +130,8 @@ def test_snapshot_yaml_adds_iceberg():
     assert "table_format: iceberg" in result.refactored_yaml
 
 
-def test_empty_project_config_does_not_block_model_autofix(tmp_path):
-    (tmp_path / "dbt_project.yml").write_text("")
-    assert not project_has_unsafe_table_format(tmp_path)
+def test_empty_project_config_does_not_block_model_autofix():
+    assert not project_has_unsafe_table_format(load_yaml(""))
 
 
 def test_yaml_warning_is_reported_without_marking_file_changed():

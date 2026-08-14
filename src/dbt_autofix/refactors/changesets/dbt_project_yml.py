@@ -22,18 +22,58 @@ rules:
 yaml_config = yamllint.config.YamlLintConfig(config)
 
 
-def project_has_unsafe_table_format(path: Path) -> bool:
-    project_file = path / "dbt_project.yml"
-    if not project_file.exists():
+ICEBERG_ONLY_KEYS = {"external_volume", "base_location_root", "base_location_subpath"}
+_NON_INHERITING_DICT_KEYS = {
+    "meta",
+    "grants",
+    "persist_docs",
+    "column_types",
+    "pre-hook",
+    "post-hook",
+    "pre_hook",
+    "post_hook",
+}
+
+
+def _table_format_of(node: dict, inherited_table_format: Optional[str]) -> Optional[Any]:
+    table_key = next((key for key in node if str(key).lstrip("+") == "table_format"), None)
+    return node[table_key] if table_key is not None else inherited_table_format
+
+
+def _iter_iceberg_config_nodes(yml_dict: Any):
+    """Yield every ``models``/``snapshots`` config node that sets Iceberg-only settings.
+
+    Each yielded pair is ``(node, table_format)`` where ``table_format`` is the one
+    the node would inherit from its parent, if any.
+    """
+
+    def visit(node: Any, inherited_table_format: Optional[str] = None):
+        if not isinstance(node, dict):
+            return
+        keys = {str(key).lstrip("+") for key in node}
+        if keys & ICEBERG_ONLY_KEYS:
+            yield node, inherited_table_format
+        effective_table_format = _table_format_of(node, inherited_table_format)
+        for key, value in node.items():
+            if isinstance(value, dict) and not str(key).startswith("+") and str(key) not in _NON_INHERITING_DICT_KEYS:
+                yield from visit(value, effective_table_format)
+
+    for resource_type in ("models", "snapshots"):
+        yield from visit(yml_dict.get(resource_type))
+
+
+def project_has_unsafe_table_format(yml_dict: Any) -> bool:
+    """Whether ``dbt_project.yml`` sets a non-Iceberg table_format anywhere under ``models``/``snapshots``.
+
+    A project-level table_format cascades to every model under it, including
+    models declared entirely outside dbt_project.yml (e.g. in SQL/schema-YAML
+    files) that autofix can't see from here. So this check is deliberately
+    project-wide rather than restricted to nodes that also set Iceberg-only
+    settings: model-level autofixes use it to conservatively skip a file whose
+    effective table_format might be inherited from an incompatible project default.
+    """
+    if not isinstance(yml_dict, dict):
         return False
-    try:
-        project = load_yaml(project_file.read_text())
-    except Exception:
-        return True
-    if project is None:
-        return False
-    if not isinstance(project, dict):
-        return True
 
     def contains_non_iceberg(node: Any) -> bool:
         if not isinstance(node, dict):
@@ -45,7 +85,7 @@ def project_has_unsafe_table_format(path: Path) -> bool:
                 return True
         return False
 
-    return any(contains_non_iceberg(project.get(key, {})) for key in ("models", "snapshots"))
+    return any(contains_non_iceberg(yml_dict.get(key, {})) for key in ("models", "snapshots"))
 
 
 def changeset_iceberg_table_format_project_yml(
@@ -61,48 +101,18 @@ def changeset_iceberg_table_format_project_yml(
     logs: List[DbtDeprecationRefactor] = []
     warnings: List[str] = []
     changed = False
-    iceberg_keys = {"external_volume", "base_location_root", "base_location_subpath"}
 
-    def visit(node: Any, inherited_table_format: Optional[str] = None) -> None:
-        nonlocal changed
-        if not isinstance(node, dict):
-            return
-        keys = {str(key).lstrip("+") for key in node}
-        if keys & iceberg_keys:
-            table_key = next((key for key in node if str(key).lstrip("+") == "table_format"), None)
-            table_format = node[table_key] if table_key is not None else inherited_table_format
-            if table_format is None:
-                node["+table_format"] = "iceberg"
-                changed = True
-                logs.append(
-                    DbtDeprecationRefactor("Set +table_format=iceberg for Snowflake Iceberg-only model settings")
-                )
-            elif str(table_format).lower() != "iceberg":
-                warnings.append(
-                    f"Cannot safely autofix Iceberg settings with explicit or dynamic table_format={table_format}"
-                )
-        table_key = next((key for key in node if str(key).lstrip("+") == "table_format"), None)
-        effective_table_format = str(node[table_key]).lower() if table_key is not None else inherited_table_format
-        for key, value in node.items():
-            if (
-                isinstance(value, dict)
-                and not str(key).startswith("+")
-                and str(key)
-                not in {
-                    "meta",
-                    "grants",
-                    "persist_docs",
-                    "column_types",
-                    "pre-hook",
-                    "post-hook",
-                    "pre_hook",
-                    "post_hook",
-                }
-            ):
-                visit(value, effective_table_format)
+    for node, inherited_table_format in _iter_iceberg_config_nodes(yml_dict):
+        table_format = _table_format_of(node, inherited_table_format)
+        if table_format is None:
+            node["+table_format"] = "iceberg"
+            changed = True
+            logs.append(DbtDeprecationRefactor("Set +table_format=iceberg for Snowflake Iceberg-only model settings"))
+        elif str(table_format).lower() != "iceberg":
+            warnings.append(
+                f"Cannot safely autofix Iceberg settings with explicit or dynamic table_format={table_format}"
+            )
 
-    for resource_type in ("models", "snapshots"):
-        visit(yml_dict.get(resource_type))
     return YMLRuleRefactorResult(
         rule_name="set_iceberg_table_format_project_yml",
         refactored=changed,

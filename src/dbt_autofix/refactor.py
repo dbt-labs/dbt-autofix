@@ -618,9 +618,20 @@ def changeset_all_files(
     dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages, include_private_packages)
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
-    # Computed once for the whole project (rather than per file/path) since dbt_project.yml
-    # was just written above, so this reflects its final on-disk state for this run.
-    unsafe_table_format = project_has_unsafe_table_format(path)
+    # Computed once for the whole project (rather than per file/path). Reuses the
+    # dbt_project.yml content already parsed above instead of re-reading the file,
+    # except in semantic_layer mode, where dbt_project.yml isn't processed above.
+    project_yml_result = next((r for r in dbt_project_yml_results if r.file_path == path / "dbt_project.yml"), None)
+    try:
+        if project_yml_result is not None:
+            project_yml_dict = load_yaml(project_yml_result.refactored_yaml)
+        else:
+            project_file = path / "dbt_project.yml"
+            project_yml_dict = load_yaml(project_file.read_text()) if project_file.exists() else None
+        unsafe_table_format = project_has_unsafe_table_format(project_yml_dict)
+    except Exception:
+        # Fail closed: an unparseable dbt_project.yml means we can't tell whether it's safe.
+        unsafe_table_format = True
 
     sql_results = process_sql_files(
         path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, unsafe_table_format
