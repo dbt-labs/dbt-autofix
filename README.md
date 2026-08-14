@@ -175,6 +175,9 @@ repos:
       - id: dbt-autofix-fix # Pass in multiple args
         args: [--semantic-layer, --include-packages, --behavior-change]
       # OR
+      - id: dbt-autofix-check # Pin Fusion schema version (optional; defaults to latest)
+        args: [--json-schema-version=v2.0.0-preview.208]
+      # OR
       - id: dbt-autofix-fix # Specify dbt project path
         args: [--path=jaffle-shop]
 ```
