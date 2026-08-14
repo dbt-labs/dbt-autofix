@@ -5,6 +5,7 @@ from typing import Any, List, Optional
 import yamllint.config
 
 from dbt_autofix.refactors.constants import DBT_PROJECT_CONFIG_MISSPELLINGS
+from dbt_autofix.refactors.iceberg_table_format import ICEBERG_ONLY_KEYS, classify_iceberg_table_format
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     DbtProjectYMLRefactorConfig,
@@ -22,7 +23,6 @@ rules:
 yaml_config = yamllint.config.YamlLintConfig(config)
 
 
-ICEBERG_ONLY_KEYS = {"external_volume", "base_location_root", "base_location_subpath"}
 _NON_INHERITING_DICT_KEYS = {
     "meta",
     "grants",
@@ -51,7 +51,7 @@ def _iter_iceberg_config_nodes(yml_dict: Any):
         if not isinstance(node, dict):
             return
         keys = {str(key).lstrip("+") for key in node}
-        if keys & ICEBERG_ONLY_KEYS:
+        if keys.intersection(ICEBERG_ONLY_KEYS):
             yield node, inherited_table_format
         effective_table_format = _table_format_of(node, inherited_table_format)
         for key, value in node.items():
@@ -104,14 +104,15 @@ def changeset_iceberg_table_format_project_yml(
 
     for node, inherited_table_format in _iter_iceberg_config_nodes(yml_dict):
         table_format = _table_format_of(node, inherited_table_format)
-        if table_format is None:
+        is_iceberg = table_format is not None and str(table_format).lower() == "iceberg"
+        # dbt_project.yml IS the project config, so it can't be unsafe relative to itself.
+        should_set, warning = classify_iceberg_table_format(table_format, is_iceberg, False)
+        if warning:
+            warnings.append(warning)
+        elif should_set:
             node["+table_format"] = "iceberg"
             changed = True
             logs.append(DbtDeprecationRefactor("Set +table_format=iceberg for Snowflake Iceberg-only model settings"))
-        elif str(table_format).lower() != "iceberg":
-            warnings.append(
-                f"Cannot safely autofix Iceberg settings with explicit or dynamic table_format={table_format}"
-            )
 
     return YMLRuleRefactorResult(
         rule_name="set_iceberg_table_format_project_yml",

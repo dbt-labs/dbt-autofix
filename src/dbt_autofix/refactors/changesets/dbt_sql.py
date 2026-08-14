@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
+from dbt_autofix.refactors.iceberg_table_format import ICEBERG_ONLY_KEYS, classify_iceberg_table_format
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
 from dbt_autofix.refactors.static_analysis import (
     STATIC_ANALYSIS_DEPRECATION,
@@ -492,9 +493,7 @@ def refactor_iceberg_table_format_sql(content: SQLContent, config: SQLRefactorCo
 
     for start, end, macro_str in reversed(_iter_config_macro_spans(sql_content)):
         parsed = statically_parse_unrendered_config(macro_str)
-        if not parsed or not any(
-            key in parsed for key in ("external_volume", "base_location_root", "base_location_subpath")
-        ):
+        if not parsed or not any(key in parsed for key in ICEBERG_ONLY_KEYS):
             continue
         if re.search(r"config\s*\(\s*\{", macro_str) or _contains_dynamic_kwargs(macro_str):
             warnings.append("Cannot safely autofix config() dictionary or dynamic keyword arguments")
@@ -505,20 +504,15 @@ def refactor_iceberg_table_format_sql(content: SQLContent, config: SQLRefactorCo
             table_format_value = ast.literal_eval(table_format) if table_format is not None else None
         except (ValueError, SyntaxError):
             table_format_value = None
+        is_iceberg = isinstance(table_format_value, str) and table_format_value.lower() == "iceberg"
 
-        if isinstance(table_format_value, str):
-            if table_format_value.lower() == "iceberg":
-                continue
-            if table_format_value.lower() == "default":
-                warnings.append("Cannot safely autofix Iceberg settings with explicit table_format=default")
-                continue
-        elif table_format is not None:
-            warnings.append("Cannot safely autofix Iceberg settings with a dynamic table_format")
+        should_set, warning = classify_iceberg_table_format(
+            table_format, is_iceberg, config.project_has_unsafe_table_format
+        )
+        if warning:
+            warnings.append(warning)
             continue
-        elif config.project_has_unsafe_table_format:
-            warnings.append(
-                "Cannot safely autofix Iceberg settings because dbt_project.yml has a non-literal or non-Iceberg table_format"
-            )
+        if not should_set:
             continue
 
         refactored_config = dict(parsed)

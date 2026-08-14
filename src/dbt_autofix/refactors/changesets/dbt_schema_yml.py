@@ -9,6 +9,7 @@ from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
+from dbt_autofix.refactors.iceberg_table_format import ICEBERG_ONLY_KEYS, classify_iceberg_table_format
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
 from dbt_autofix.retrieve_schemas import SchemaSpecs
@@ -90,23 +91,19 @@ def changeset_iceberg_table_format_yml(content: YMLContent, config: YMLRefactorC
         locations = [model]
         if isinstance(model_config, CommentedMap):
             locations.insert(0, model_config)
-        iceberg_keys = ("external_volume", "base_location_root", "base_location_subpath")
-        if not any(key in location for location in locations for key in iceberg_keys):
+        if not any(key in location for location in locations for key in ICEBERG_ONLY_KEYS):
             continue
         table_format = next(
             (location.get("table_format") for location in locations if "table_format" in location), None
         )
-        if table_format is not None:
-            value = str(table_format).lower()
-            if value != "iceberg":
-                warnings.append(
-                    f"Cannot safely autofix Iceberg settings with explicit or dynamic table_format={table_format}"
-                )
+        is_iceberg = table_format is not None and str(table_format).lower() == "iceberg"
+        should_set, warning = classify_iceberg_table_format(
+            table_format, is_iceberg, config.project_has_unsafe_table_format
+        )
+        if warning:
+            warnings.append(warning)
             continue
-        if config.project_has_unsafe_table_format:
-            warnings.append(
-                "Cannot safely autofix Iceberg settings because dbt_project.yml has a non-literal or non-Iceberg table_format"
-            )
+        if not should_set:
             continue
         target = model_config if isinstance(model_config, CommentedMap) else model.setdefault("config", CommentedMap())
         target["table_format"] = "iceberg"
