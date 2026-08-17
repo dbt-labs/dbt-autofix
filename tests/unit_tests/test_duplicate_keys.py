@@ -134,6 +134,55 @@ models:
     assert "description" in yaml_duplicates[0].value
 
 
+def test_find_duplicate_keys_with_exclude(temp_project_dir: Path):
+    # Create a target_foo directory with duplicate YAML
+    target_foo_dir = temp_project_dir / "target_foo"
+    target_foo_dir.mkdir(parents=True, exist_ok=True)
+    target_foo_dir.joinpath("run_results.yml").write_text("""
+version: 2
+
+models:
+  - name: log_model
+    description: "First"
+    description: "Duplicate"
+""")
+
+    project_duplicates, _ = find_duplicate_keys(temp_project_dir, excluded_paths=["target_foo"])
+
+    # logs/ duplicates should be excluded, models/ duplicates should remain
+    log_duplicates = [d for d in project_duplicates if "logs" in str(d.file)]
+    assert len(log_duplicates) == 0
+    assert len(project_duplicates) == 1
+    assert project_duplicates[0].file.name == "schema.yml"
+
+
+def test_find_duplicate_keys_with_exclude_multiple(temp_project_dir: Path):
+    for dirname in ["logs", ".venv"]:
+        d = temp_project_dir / dirname
+        d.mkdir(parents=True, exist_ok=True)
+        d.joinpath("schema.yml").write_text("""
+version: 2
+
+models:
+  - name: m1
+    description: "First"
+    description: "Duplicate"
+""")
+
+    project_duplicates, _ = find_duplicate_keys(temp_project_dir, excluded_paths=["logs", ".venv"])
+
+    excluded = [d for d in project_duplicates if "logs" in str(d.file) or ".venv" in str(d.file)]
+    assert len(excluded) == 0
+    assert len(project_duplicates) == 1
+
+
+def test_find_duplicate_keys_with_exclude_no_match(temp_project_dir: Path):
+    project_duplicates, package_duplicates = find_duplicate_keys(temp_project_dir, excluded_paths=["nonexistent_dir"])
+
+    assert len(project_duplicates) == 1
+    assert len(package_duplicates) == 1
+
+
 def test_duplicate_found_str_representation():
     dup = DuplicateFound(file=Path("test.yml"), line=10, key="test_key", value="duplicate key: test_key")
     assert str(dup) == "test.yml:10 -- duplicate key: test_key"
