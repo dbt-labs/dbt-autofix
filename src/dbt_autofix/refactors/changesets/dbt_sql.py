@@ -550,7 +550,12 @@ def _contains_dynamic_kwargs(macro_str: str) -> bool:
             in_string = None if in_string == char else char if in_string is None else in_string
             continue
         if not in_string and macro_str[index : index + 2] == "**":
-            return True
+            # Distinguish a `**kwargs` spread from the `**` exponentiation operator: a
+            # spread is always preceded by `(` or `,` (ignoring whitespace), whereas
+            # exponentiation is preceded by an operand (digit, identifier, closing bracket/quote).
+            preceding = macro_str[:index].rstrip()
+            if not preceding or preceding[-1] in "(,":
+                return True
     return False
 
 

@@ -81,7 +81,12 @@ def project_has_unsafe_table_format(yml_dict: Any) -> bool:
         for key, value in node.items():
             if str(key).lstrip("+") == "table_format" and str(value).lower() != "iceberg":
                 return True
-            if isinstance(value, dict) and contains_non_iceberg(value):
+            if (
+                isinstance(value, dict)
+                and not str(key).startswith("+")
+                and str(key) not in _NON_INHERITING_DICT_KEYS
+                and contains_non_iceberg(value)
+            ):
                 return True
         return False
 
