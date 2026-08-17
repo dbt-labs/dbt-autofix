@@ -12,6 +12,8 @@ from dbt_autofix.refactors.changesets.dbt_project_yml import (
     changeset_dbt_project_prefix_plus_for_config,
     changeset_dbt_project_remove_deprecated_config,
     changeset_fix_space_after_plus,
+    changeset_iceberg_table_format_project_yml,
+    project_has_unsafe_table_format,
 )
 from dbt_autofix.refactors.changesets.dbt_python import (
     move_custom_config_access_to_meta_python,
@@ -19,6 +21,7 @@ from dbt_autofix.refactors.changesets.dbt_python import (
     rename_python_file_names_with_spaces,
 )
 from dbt_autofix.refactors.changesets.dbt_schema_yml import (
+    changeset_iceberg_table_format_yml,
     changeset_owner_properties_yml_str,
     changeset_refactor_yml_str,
     changeset_remove_duplicate_keys,
@@ -40,6 +43,7 @@ from dbt_autofix.refactors.changesets.dbt_schema_yml_semantic_layer import (
 )
 from dbt_autofix.refactors.changesets.dbt_sql import (
     refactor_custom_configs_to_meta_sql,
+    refactor_iceberg_table_format_sql,
     refactor_static_analysis_sql,
     remove_unmatched_endings,
     rename_sql_file_names_with_spaces,
@@ -67,6 +71,7 @@ from dbt_autofix.semantic_definitions import SemanticDefinitions
 
 error_console = Console(stderr=True)
 
+
 config = """
 rules:
   key-duplicates: enable
@@ -82,6 +87,7 @@ def process_yaml_files_except_dbt_project(
     behavior_change: bool = False,
     all: bool = False,
     semantic_definitions: Optional[SemanticDefinitions] = None,
+    project_has_unsafe_table_format: bool = False,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project.
 
@@ -93,10 +99,15 @@ def process_yaml_files_except_dbt_project(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
+        project_has_unsafe_table_format: Whether dbt_project.yml has a non-Iceberg table_format
+            set alongside Iceberg-only model settings, computed once for the whole project
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
-    config = YMLRefactorConfig(schema_specs=schema_specs)
+    config = YMLRefactorConfig(
+        schema_specs=schema_specs,
+        project_has_unsafe_table_format=project_has_unsafe_table_format,
+    )
 
     behavior_change_rules: List[Callable] = [
         changeset_replace_non_alpha_underscores_in_name_values,
@@ -112,6 +123,7 @@ def process_yaml_files_except_dbt_project(
         changeset_owner_properties_yml_str,
         changeset_normalize_static_analysis_yml,
     ]
+    behavior_change_rules.append(changeset_iceberg_table_format_yml)
     all_rules: List[Callable] = [*safe_change_rules, *behavior_change_rules]
     changesets = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
 
@@ -119,7 +131,11 @@ def process_yaml_files_except_dbt_project(
 
     # Override ordered changesets if semantic definitions are provided
     if semantic_definitions:
-        sl_config = YMLRefactorConfig(schema_specs=schema_specs, semantic_definitions=semantic_definitions)
+        sl_config = YMLRefactorConfig(
+            schema_specs=schema_specs,
+            semantic_definitions=semantic_definitions,
+            project_has_unsafe_table_format=config.project_has_unsafe_table_format,
+        )
         # Certain changesets can only be applied after all the other changesets have been applied to all the files
         ordered_changesets = [
             [
@@ -243,6 +259,7 @@ def process_dbt_project_yml(
         changeset_dbt_project_prefix_plus_for_config,
         changeset_normalize_static_analysis_yml,
     ]
+    behavior_change_rules.append(changeset_iceberg_table_format_project_yml)
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
     changesets: List[Callable] = all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
@@ -269,6 +286,7 @@ def process_sql_files(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
+    project_has_unsafe_table_format: bool = False,
 ) -> List[SQLRefactorResult]:
     """Process all SQL files in the given paths for unmatched endings.
 
@@ -279,6 +297,8 @@ def process_sql_files(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior change
         all: Whether to run all fixes, including those that may require a behavior change
+        project_has_unsafe_table_format: Whether dbt_project.yml has a non-Iceberg table_format
+            set alongside Iceberg-only model settings, computed once for the whole project
 
     Returns:
         List of SQLRefactorResult for each processed file
@@ -292,6 +312,7 @@ def process_sql_files(
         refactor_static_analysis_sql,
         move_custom_config_access_to_meta_sql_improved,
     ]
+    behavior_change_rules.append(refactor_iceberg_table_format_sql)
     all_rules = [*behavior_change_rules, *safe_change_rules]
 
     process_sql_file_rules: List[Callable] = (
@@ -304,7 +325,11 @@ def process_sql_files(
             error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
             continue
 
-        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = SQLRefactorConfig(
+            schema_specs=schema_specs,
+            node_type=node_type,
+            project_has_unsafe_table_format=project_has_unsafe_table_format,
+        )
 
         sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
@@ -593,7 +618,24 @@ def changeset_all_files(
     dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages, include_private_packages)
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
-    sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
+    # Computed once for the whole project (rather than per file/path). Reuses the
+    # dbt_project.yml content already parsed above instead of re-reading the file,
+    # except in semantic_layer mode, where dbt_project.yml isn't processed above.
+    project_yml_result = next((r for r in dbt_project_yml_results if r.file_path == path / "dbt_project.yml"), None)
+    try:
+        if project_yml_result is not None:
+            project_yml_dict = load_yaml(project_yml_result.refactored_yaml)
+        else:
+            project_file = path / "dbt_project.yml"
+            project_yml_dict = load_yaml(project_file.read_text()) if project_file.exists() else None
+        unsafe_table_format = project_has_unsafe_table_format(project_yml_dict)
+    except Exception:
+        # Fail closed: an unparseable dbt_project.yml means we can't tell whether it's safe.
+        unsafe_table_format = True
+
+    sql_results = process_sql_files(
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, unsafe_table_format
+    )
     python_results = process_python_files(
         path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
     )
@@ -601,7 +643,7 @@ def changeset_all_files(
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions, unsafe_table_format
     )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results, python_results
@@ -624,6 +666,7 @@ def apply_changesets(
     for yaml_result in yaml_results:
         if yaml_result.refactored:
             yaml_result.update_yaml_file()
+        if yaml_result.refactored or any(r.refactor_warnings for r in yaml_result.refactors):
             yaml_result.print_to_console(json_output)
 
     # Apply SQL changes

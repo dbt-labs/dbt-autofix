@@ -9,6 +9,7 @@ from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS, COMMON_PROPERTY_MISSPELLINGS
+from dbt_autofix.refactors.iceberg_table_format import ICEBERG_ONLY_KEYS, classify_iceberg_table_format
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, YMLContent, YMLRefactorConfig, YMLRuleRefactorResult
 from dbt_autofix.refactors.yml import DbtYAML, dict_to_yaml_str, get_dict, get_list, load_yaml, yaml_config
 from dbt_autofix.retrieve_schemas import SchemaSpecs
@@ -72,6 +73,50 @@ def changeset_replace_fancy_quotes(content: YMLContent, config: YMLRefactorConfi
         refactored_yaml=refactored_yaml,
         original_yaml=yml_str,
         deprecation_refactors=deprecation_refactors,
+    )
+
+
+def changeset_iceberg_table_format_yml(content: YMLContent, config: YMLRefactorConfig) -> YMLRuleRefactorResult:
+    """Set Iceberg-only model settings to an explicit Iceberg table format."""
+    yml_str = content.current_str
+    yml_dict = load_yaml(yml_str)
+    logs: List[DbtDeprecationRefactor] = []
+    warnings: List[str] = []
+    changed = False
+
+    for model in [*get_list(yml_dict, "models"), *get_list(yml_dict, "snapshots")]:
+        if not isinstance(model, CommentedMap):
+            continue
+        model_config = model.get("config")
+        locations = [model]
+        if isinstance(model_config, CommentedMap):
+            locations.insert(0, model_config)
+        if not any(key in location for location in locations for key in ICEBERG_ONLY_KEYS):
+            continue
+        table_format = next(
+            (location.get("table_format") for location in locations if "table_format" in location), None
+        )
+        is_iceberg = table_format is not None and str(table_format).lower() == "iceberg"
+        should_set, warning = classify_iceberg_table_format(
+            table_format, is_iceberg, config.project_has_unsafe_table_format
+        )
+        if warning:
+            warnings.append(warning)
+            continue
+        if not should_set:
+            continue
+        target = model_config if isinstance(model_config, CommentedMap) else model.setdefault("config", CommentedMap())
+        target["table_format"] = "iceberg"
+        changed = True
+        logs.append(DbtDeprecationRefactor("Set table_format=iceberg for Snowflake Iceberg-only model settings"))
+
+    return YMLRuleRefactorResult(
+        rule_name="set_iceberg_table_format_yml",
+        refactored=changed,
+        refactored_yaml=dict_to_yaml_str(yml_dict) if changed else yml_str,
+        original_yaml=yml_str,
+        deprecation_refactors=logs,
+        refactor_warnings=warnings,
     )
 
 
