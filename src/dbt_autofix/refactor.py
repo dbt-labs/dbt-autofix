@@ -82,6 +82,7 @@ def process_yaml_files_except_dbt_project(
     behavior_change: bool = False,
     all: bool = False,
     semantic_definitions: Optional[SemanticDefinitions] = None,
+    skip_rules: Optional[Set[str]] = None,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project.
 
@@ -93,10 +94,11 @@ def process_yaml_files_except_dbt_project(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
+        skip_rules: Optional set of rule names to skip
     """
     file_name_to_yaml_results: Dict[str, YMLRefactorResult] = {}
 
-    config = YMLRefactorConfig(schema_specs=schema_specs)
+    config = YMLRefactorConfig(schema_specs=schema_specs, skip_rules=skip_rules or set())
 
     behavior_change_rules: List[Callable] = [
         changeset_replace_non_alpha_underscores_in_name_values,
@@ -119,7 +121,11 @@ def process_yaml_files_except_dbt_project(
 
     # Override ordered changesets if semantic definitions are provided
     if semantic_definitions:
-        sl_config = YMLRefactorConfig(schema_specs=schema_specs, semantic_definitions=semantic_definitions)
+        sl_config = YMLRefactorConfig(
+            schema_specs=schema_specs,
+            semantic_definitions=semantic_definitions,
+            skip_rules=skip_rules or set(),
+        )
         # Certain changesets can only be applied after all the other changesets have been applied to all the files
         ordered_changesets = [
             [
@@ -200,6 +206,7 @@ def process_dbt_project_yml(
     exclude_dbt_project_keys: bool = False,
     behavior_change: bool = False,
     all: bool = False,
+    skip_rules: Optional[Set[str]] = None,
 ) -> YMLRefactorResult:
     """Process dbt_project.yml."""
     if not (root_path / "dbt_project.yml").exists():
@@ -231,6 +238,7 @@ def process_dbt_project_yml(
         schema_specs=schema_specs,
         root_path=root_path,
         exclude_dbt_project_keys=exclude_dbt_project_keys,
+        skip_rules=skip_rules or set(),
     )
 
     behavior_change_rules: List[Callable] = [changeset_dbt_project_flip_behavior_flags]
@@ -269,6 +277,7 @@ def process_sql_files(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
+    skip_rules: Optional[Set[str]] = None,
 ) -> List[SQLRefactorResult]:
     """Process all SQL files in the given paths for unmatched endings.
 
@@ -279,6 +288,7 @@ def process_sql_files(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior change
         all: Whether to run all fixes, including those that may require a behavior change
+        skip_rules: Optional set of rule names to skip
 
     Returns:
         List of SQLRefactorResult for each processed file
@@ -304,7 +314,7 @@ def process_sql_files(
             error_console.print(f"Warning: Path {full_path} does not exist", style="yellow")
             continue
 
-        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = SQLRefactorConfig(schema_specs=schema_specs, node_type=node_type, skip_rules=skip_rules or set())
 
         sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
@@ -345,6 +355,7 @@ def process_python_files(
     select: Optional[List[str]] = None,
     behavior_change: bool = False,
     all: bool = False,
+    skip_rules: Optional[Set[str]] = None,
 ) -> List[PythonRefactorResult]:
     """Process all Python model files in the given paths.
 
@@ -359,6 +370,7 @@ def process_python_files(
         select: Optional list of paths to select
         behavior_change: Whether to apply fixes that may lead to behavior change
         all: Whether to run all fixes
+        skip_rules: Optional set of rule names to skip
 
     Returns:
         List of PythonRefactorResult for each processed file
@@ -385,7 +397,7 @@ def process_python_files(
         if not full_path.exists():
             continue
 
-        config = PythonRefactorConfig(schema_specs=schema_specs, node_type=node_type)
+        config = PythonRefactorConfig(schema_specs=schema_specs, node_type=node_type, skip_rules=skip_rules or set())
 
         python_files = full_path.glob("**/*.py")
         for python_file in python_files:
@@ -552,6 +564,7 @@ def changeset_all_files(
     behavior_change: bool = False,
     all: bool = False,
     semantic_layer: bool = False,
+    skip_rules: Optional[Set[str]] = None,
 ) -> Tuple[List[YMLRefactorResult], List[SQLRefactorResult], List[PythonRefactorResult]]:
     """Process all YAML, SQL, and Python files in the project.
 
@@ -566,6 +579,7 @@ def changeset_all_files(
         behavior_change: Whether to apply fixes that may lead to behavior changes
         all: Whether to run all fixes, including those that may require a behavior change
         semantic_layer: Whether to run fixes to semantic layer
+        skip_rules: Optional set of rule names to skip
 
     Returns:
         Tuple containing:
@@ -582,7 +596,13 @@ def changeset_all_files(
     if not semantic_layer:
         for dbt_root_path in dbt_roots_paths:
             result = process_dbt_project_yml(
-                Path(dbt_root_path), schema_specs, dry_run, exclude_dbt_project_keys, behavior_change, all
+                Path(dbt_root_path),
+                schema_specs,
+                dry_run,
+                exclude_dbt_project_keys,
+                behavior_change,
+                all,
+                skip_rules,
             )
             dbt_project_yml_results.append(result)
             # If not dry run, write the changes immediately before reading the file
@@ -593,15 +613,17 @@ def changeset_all_files(
     dbt_paths_to_node_type = get_dbt_files_paths(path, include_packages, include_private_packages)
     dbt_paths = list(dbt_paths_to_node_type.keys())
 
-    sql_results = process_sql_files(path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all)
+    sql_results = process_sql_files(
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, skip_rules
+    )
     python_results = process_python_files(
-        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
+        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, skip_rules
     )
 
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions
+        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions, skip_rules
     )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results, python_results

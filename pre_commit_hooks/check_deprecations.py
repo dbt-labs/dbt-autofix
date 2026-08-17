@@ -92,6 +92,14 @@ def parse_arguments(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Exclude dbt_project.yml keys from refactoring",
     )
     parser.add_argument(
+        "--skip-rule",
+        action="append",
+        default=None,
+        dest="skip_rule",
+        metavar="RULE",
+        help="Rule to skip, as named in the output (e.g. 'prefix_plus_for_config'). Repeatable.",
+    )
+    parser.add_argument(
         "--path",
         "-p",
         type=str,
@@ -136,6 +144,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         behavior_change=args.behavior_change,
         all=args.all,
         semantic_layer=args.semantic_layer,
+        skip_rules=set(args.skip_rule) if args.skip_rule else None,
     )
 
     if args.dry_run:
