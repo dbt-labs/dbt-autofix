@@ -4,7 +4,7 @@ dbt-autofix automatically scans your dbt project for deprecated configurations a
 
 ***NEW in version 0.17.0***: dbt-autofix can now check package dependencies for compatibility with dbt Fusion and dbt 2.0 and automatically upgrade packages to newer compatible versions. See `packages` in the `Usage` section below for more detail.
 
-There will also be cases that dbt-autofix cannot resolve and require manual intervention. For those scenarios, using AI Agents can be helpfiul see the below section on [Using `AGENTS.md`](#using-agentsmd). Even if you don't intend to use LLMs, the [`AGENTS.md`](./AGENTS.md) can be a very helpful guidance for work that may need to be done after autofix has done it's part.
+There will also be cases that dbt-autofix cannot resolve and require manual intervention. For those scenarios, using AI Agents can be helpful see the below section on [Using `AGENTS.md`](#using-agentsmd). Even if you don't intend to use LLMs, the [`AGENTS.md`](./AGENTS.md) can be a very helpful guidance for work that may need to be done after autofix has done it's part.
 
 
 ## Deprecation Coverage - Project Files
