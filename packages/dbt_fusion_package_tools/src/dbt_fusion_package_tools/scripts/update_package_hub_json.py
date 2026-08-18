@@ -17,6 +17,7 @@ from typing_extensions import Annotated
 
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
 from dbt_fusion_package_tools.exceptions import SemverError
+from dbt_fusion_package_tools.scripts.constants import DEFAULT_FUSION_BINARY_PATH, DEFAULT_HUB_PATH, DEFAULT_OUTPUT_PATH
 from dbt_fusion_package_tools.version_utils import VersionSpecifier
 
 console = Console()
@@ -25,9 +26,6 @@ error_console = Console(stderr=True)
 app = typer.Typer()
 
 current_dir = Path.cwd()
-DEFAULT_OUTPUT_PATH = current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
-DEFAULT_HUB_PATH = Path.home() / "workplace" / "hub.getdbt.com"
-DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
 DEFAULT_CONFORMANCE_OUTPUT_FILE = (
     current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output" / "conformance_output.json"
 )
