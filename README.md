@@ -138,6 +138,27 @@ Running with `--dry-run`/`d` will output what changes would have been triggered 
 
 Running with `--behavior-changes` will run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
 
+### `migrate-1x` - deterministic dbt 1.x migrations
+
+`dbt-autofix migrate-1x` applies a set of **deterministic** fixes for changes introduced _between dbt 1.x minor versions_, spanning 1.3 up to the latest dbt 1.x (currently 1.12). Unlike `deprecations`, this command is **not** related to Fusion or the v1.10 deprecations — it runs **only** the 1.x rules below and never fetches the Fusion JSON schema, so it needs no network access. Use it when you are still on dbt 1.x and moving across minor versions.
+
+- add `--path <mypath>` to configure the path of the dbt project (defaults to `.`)
+- add `--dry-run` to preview changes without applying them
+- add `--json` to get resulting data in a JSONL format (same shape as `deprecations`)
+- add `--select <path>` to only select files in a given path
+- add `--from <version>` / `--to <version>` (e.g. `--from 1.5 --to 1.12`) to only run the rules for the minor versions you are migrating across. Defaults are `--from 1.3 --to 1.12` (i.e. the full 1.x range). A rule runs when `from < introduced <= to`.
+
+The following deterministic changes are covered today. Rule coverage runs through 1.8, and that is deliberate rather than a gap: dbt 1.9–1.12 did not introduce further breaking changes that need a deterministic pre-upgrade rewrite. The changes those versions did make surface as **deprecation warnings on 1.10+**, which is what `dbt-autofix deprecations` fix. The `--from`/`--to` range still spans the full 1.x lifecycle, so if a 1.9–1.12 rule is ever identified it is added to the table below with no flag change needed.
+
+| dbt version | Files | Handling |
+| ----------- | ----- | -------- |
+| 1.4 | SQL | Replace `dbt_utils.current_timestamp()` with `dbt.current_timestamp()` (macro moved from dbt-utils to dbt-core) |
+| 1.4 | SQL `config()`, schema YAML `config:`, `dbt_project.yml` | Rename the incremental `predicates` config to `incremental_predicates` |
+| 1.7 | `dbt_project.yml` | Remove `clean-targets` entries that point at a configured source path or outside the project (which now cause `dbt clean` to error) |
+| 1.8 | schema YAML, `dbt_project.yml` | Rename `tests:` to `data_tests:` (skipping any node that already has `data_tests`) |
+
+As with the other commands, calling `migrate-1x` without `--dry-run` should be safe if your dbt code is part of a git repo. Please review the suggested changes before merging.
+
 ### Using `AGENTS.md`
 
 [`AGENTS.md`](./AGENTS.md) is provided as a reference and starting place for those interested in using AI agents in Cursor, Copilot Chat, and Claude Code to try resolving remaining errors after running dbt-autofix. 

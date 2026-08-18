@@ -58,27 +58,31 @@ class PythonContent:
 
 @dataclass
 class YMLRefactorConfig:
-    schema_specs: SchemaSpecs
+    # Optional so the migrate-1x rules can build a config without fetching the Fusion
+    # JSON schema from the CDN. Fusion rules always pass a real SchemaSpecs.
+    schema_specs: Optional[SchemaSpecs] = None
     semantic_definitions: Optional[SemanticDefinitions] = None
 
 
 @dataclass
 class DbtProjectYMLRefactorConfig:
-    schema_specs: SchemaSpecs
-    root_path: Path
+    # schema_specs optional (see YMLRefactorConfig); root_path defaulted so schema_specs can
+    # keep its default without a non-default-after-default ordering error.
+    schema_specs: Optional[SchemaSpecs] = None
+    root_path: Path = Path(".")
     exclude_dbt_project_keys: bool = False
 
 
 @dataclass
 class SQLRefactorConfig:
-    schema_specs: SchemaSpecs
-    node_type: str
+    schema_specs: Optional[SchemaSpecs] = None
+    node_type: str = ""
 
 
 @dataclass
 class PythonRefactorConfig:
-    schema_specs: SchemaSpecs
-    node_type: str
+    schema_specs: Optional[SchemaSpecs] = None
+    node_type: str = ""
 
 
 # ---------------------------------------------------------------------------
