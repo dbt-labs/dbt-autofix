@@ -4,7 +4,7 @@ from pathlib import Path
 
 from ruamel.yaml.comments import CommentedMap
 
-from dbt_autofix.migrate_1x import _active_rules, _version_tuple, migrate_1x_all_files
+from dbt_autofix.migrate_1x import NO_SCHEMA_SPECS, _active_rules, _version_tuple, migrate_1x_all_files
 from dbt_autofix.refactors.changesets.dbt_1x import (
     changeset_1x_clean_targets,
     changeset_1x_rename_predicates_project,
@@ -37,20 +37,22 @@ def _sql(content: str) -> SQLContent:
 
 
 def test_current_timestamp_renamed():
-    result = refactor_1x_current_timestamp(_sql("select {{ dbt_utils.current_timestamp() }}"), SQLRefactorConfig())
+    result = refactor_1x_current_timestamp(
+        _sql("select {{ dbt_utils.current_timestamp() }}"), SQLRefactorConfig(NO_SCHEMA_SPECS, "")
+    )
     assert result.refactored
     assert result.refactored_content == "select {{ dbt.current_timestamp() }}"
 
 
 def test_current_timestamp_in_utc_left_alone():
     src = "select {{ dbt_utils.current_timestamp_in_utc() }}"
-    result = refactor_1x_current_timestamp(_sql(src), SQLRefactorConfig())
+    result = refactor_1x_current_timestamp(_sql(src), SQLRefactorConfig(NO_SCHEMA_SPECS, ""))
     assert not result.refactored
     assert result.refactored_content == src
 
 
 def test_current_timestamp_noop_when_absent():
-    result = refactor_1x_current_timestamp(_sql("select 1"), SQLRefactorConfig())
+    result = refactor_1x_current_timestamp(_sql("select 1"), SQLRefactorConfig(NO_SCHEMA_SPECS, ""))
     assert not result.refactored
 
 
@@ -61,7 +63,7 @@ def test_current_timestamp_noop_when_absent():
 
 def test_predicates_sql_in_config():
     src = "{{ config(materialized='incremental', predicates=['1=1']) }}\nselect 1"
-    result = refactor_1x_rename_predicates_sql(_sql(src), SQLRefactorConfig())
+    result = refactor_1x_rename_predicates_sql(_sql(src), SQLRefactorConfig(NO_SCHEMA_SPECS, ""))
     assert result.refactored
     assert "incremental_predicates=['1=1']" in result.refactored_content
     assert "predicates=['1=1']" not in result.refactored_content.replace("incremental_predicates", "X")
@@ -69,20 +71,20 @@ def test_predicates_sql_in_config():
 
 def test_predicates_sql_already_renamed_is_noop():
     src = "{{ config(incremental_predicates=['1=1']) }}\nselect 1"
-    result = refactor_1x_rename_predicates_sql(_sql(src), SQLRefactorConfig())
+    result = refactor_1x_rename_predicates_sql(_sql(src), SQLRefactorConfig(NO_SCHEMA_SPECS, ""))
     assert not result.refactored
 
 
 def test_predicates_sql_outside_config_untouched():
     # `predicates` appearing outside a config() call must not be renamed.
     src = "select predicates=1 as x"
-    result = refactor_1x_rename_predicates_sql(_sql(src), SQLRefactorConfig())
+    result = refactor_1x_rename_predicates_sql(_sql(src), SQLRefactorConfig(NO_SCHEMA_SPECS, ""))
     assert not result.refactored
 
 
 def test_predicates_yaml_config_block():
     src = "models:\n  - name: m\n    config:\n      predicates: ['x = y']\n"
-    result = changeset_1x_rename_predicates_yml(_yml(src), YMLRefactorConfig())
+    result = changeset_1x_rename_predicates_yml(_yml(src), YMLRefactorConfig(NO_SCHEMA_SPECS))
     assert result.refactored
     assert "incremental_predicates:" in result.refactored_yaml
     assert "predicates:" not in result.refactored_yaml.replace("incremental_predicates:", "X")
@@ -90,7 +92,7 @@ def test_predicates_yaml_config_block():
 
 def test_predicates_project_plus_prefixed():
     src = "models:\n  my_project:\n    incr:\n      +predicates: ['a = b']\n"
-    result = changeset_1x_rename_predicates_project(_yml(src), DbtProjectYMLRefactorConfig(root_path=Path(".")))
+    result = changeset_1x_rename_predicates_project(_yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, Path(".")))
     assert result.refactored
     assert "+incremental_predicates:" in result.refactored_yaml
 
@@ -102,7 +104,7 @@ def test_predicates_project_plus_prefixed():
 
 def test_clean_targets_removes_source_and_outside_paths():
     src = "model-paths: ['models']\nclean-targets:\n  - target\n  - dbt_packages\n  - models\n  - ../outside\n"
-    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(root_path=Path(".")))
+    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, Path(".")))
     assert result.refactored
     assert "target" in result.refactored_yaml
     assert "dbt_packages" in result.refactored_yaml
@@ -112,14 +114,14 @@ def test_clean_targets_removes_source_and_outside_paths():
 
 def test_clean_targets_noop_when_all_safe():
     src = "clean-targets:\n  - target\n  - dbt_packages\n"
-    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(root_path=Path(".")))
+    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, Path(".")))
     assert not result.refactored
 
 
 def test_clean_targets_uses_default_source_paths():
     # No model-paths configured -> default "models" must still be protected/removed.
     src = "clean-targets:\n  - target\n  - models\n"
-    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(root_path=Path(".")))
+    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, Path(".")))
     assert result.refactored
     assert "- models" not in result.refactored_yaml
 
@@ -129,14 +131,14 @@ def test_clean_targets_keeps_absolute_path_inside_project(tmp_path):
     # the project is valid and must NOT be removed just for being absolute.
     inside = tmp_path / "target"
     src = f"clean-targets:\n  - {inside}\n"
-    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(root_path=tmp_path))
+    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, tmp_path))
     assert not result.refactored
 
 
 def test_clean_targets_removes_absolute_path_outside_project(tmp_path):
     outside = tmp_path.parent / "somewhere_else"
     src = f"clean-targets:\n  - target\n  - {outside}\n"
-    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(root_path=tmp_path))
+    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, tmp_path))
     assert result.refactored
     assert str(outside) not in result.refactored_yaml
     assert "target" in result.refactored_yaml
@@ -145,7 +147,7 @@ def test_clean_targets_removes_absolute_path_outside_project(tmp_path):
 def test_clean_targets_removes_absolute_source_path(tmp_path):
     # An absolute path that resolves to a configured source path is still a source path.
     src = f"model-paths: ['models']\nclean-targets:\n  - {tmp_path / 'models'}\n"
-    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(root_path=tmp_path))
+    result = changeset_1x_clean_targets(_yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, tmp_path))
     assert result.refactored
     assert "is a configured source path" in result.deprecation_refactors[0].log
 
@@ -181,7 +183,7 @@ def test_tests_to_data_tests_yaml_nested():
         "models:\n  - name: m\n    tests:\n      - unique\n"
         "    columns:\n      - name: id\n        tests:\n          - not_null\n"
     )
-    result = changeset_1x_tests_to_data_tests_yml(_yml(src), YMLRefactorConfig())
+    result = changeset_1x_tests_to_data_tests_yml(_yml(src), YMLRefactorConfig(NO_SCHEMA_SPECS))
     assert result.refactored
     assert "data_tests:" in result.refactored_yaml
     assert "\n    tests:" not in result.refactored_yaml
@@ -189,14 +191,16 @@ def test_tests_to_data_tests_yaml_nested():
 
 def test_tests_to_data_tests_skips_when_data_tests_present():
     src = "models:\n  - name: m\n    tests:\n      - unique\n    data_tests:\n      - not_null\n"
-    result = changeset_1x_tests_to_data_tests_yml(_yml(src), YMLRefactorConfig())
+    result = changeset_1x_tests_to_data_tests_yml(_yml(src), YMLRefactorConfig(NO_SCHEMA_SPECS))
     # tests + data_tests both present at same level -> do not clobber
     assert not result.refactored
 
 
 def test_tests_to_data_tests_project_top_level():
     src = "tests:\n  +store_failures: true\n"
-    result = changeset_1x_tests_to_data_tests_project(_yml(src), DbtProjectYMLRefactorConfig())
+    result = changeset_1x_tests_to_data_tests_project(
+        _yml(src), DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, Path("."))
+    )
     assert result.refactored
     assert result.refactored_yaml.startswith("data_tests:")
 

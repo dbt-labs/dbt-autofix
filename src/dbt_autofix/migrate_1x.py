@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, cast
 
 from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
@@ -25,8 +25,14 @@ from dbt_autofix.refactors.results import (
     YMLRefactorResult,
 )
 from dbt_autofix.refactors.yml import load_yaml
+from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 error_console = Console(stderr=True)
+
+# The 1.x rules never read the Fusion JSON schema, so there is nothing to fetch from the CDN and
+# nothing to pass here. The shared config dataclasses still require the field, so we hand them a
+# typed None -- the same convention the existing test suite uses for schema-free changesets.
+NO_SCHEMA_SPECS = cast(SchemaSpecs, None)
 
 # Kinds map a rule to the file type it operates on.
 KIND_PROJECT = "project"  # dbt_project.yml only
@@ -90,7 +96,7 @@ def _process_project_yml(root_path: Path, rules: List[Callable], dry_run: bool) 
         original_yaml=yml_str,
         refactors=[],
     )
-    config = DbtProjectYMLRefactorConfig(root_path=root_path)
+    config = DbtProjectYMLRefactorConfig(NO_SCHEMA_SPECS, root_path)
     for func in rules:
         result.apply_changeset(func, config)
     return result
@@ -101,7 +107,7 @@ def _process_yaml_files(
 ) -> List[YMLRefactorResult]:
     results: List[YMLRefactorResult] = []
     seen: set[str] = set()
-    config = YMLRefactorConfig()
+    config = YMLRefactorConfig(NO_SCHEMA_SPECS)
 
     for model_path in model_paths:
         base = (root_path / Path(model_path)).resolve()
@@ -142,7 +148,7 @@ def _process_sql_files(
         full_path = (root_path / sql_path).resolve()
         if not full_path.exists():
             continue
-        config = SQLRefactorConfig(node_type=node_type)
+        config = SQLRefactorConfig(NO_SCHEMA_SPECS, node_type)
         for sql_file in full_path.glob("**/*.sql"):
             if skip_file(full_path, select):
                 continue
