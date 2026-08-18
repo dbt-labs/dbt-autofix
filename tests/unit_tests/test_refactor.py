@@ -2674,6 +2674,74 @@ def test_config_regex(input_str, expected_match):
 class TestRefactorCustomConfigsToMetaSQL:
     """Tests for refactor_custom_configs_to_meta_sql function"""
 
+    def test_snapshot_configs_in_model_path_stay_top_level(self, schema_specs: SchemaSpecs):
+        sql_content = """{{ config(
+    materialized='snapshot',
+    strategy='timestamp',
+    updated_at='updated_at',
+    check_cols=['id'],
+    custom_config='value',
+) }}
+
+select 1 as id
+"""
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+        assert result.refactored
+        assert "materialized='snapshot'" in result.refactored_content
+        assert "strategy='timestamp'" in result.refactored_content
+        assert "updated_at='updated_at'" in result.refactored_content
+        assert "check_cols=['id']" in result.refactored_content
+        assert "meta={'custom_config': 'value'}" in result.refactored_content
+
+    def test_dynamic_materialization_preserves_snapshot_configs(self, schema_specs: SchemaSpecs):
+        sql_content = """{{ config(
+    materialized=var('materialization'),
+    strategy='timestamp',
+    custom_config='value',
+) }}
+
+select 1 as id
+"""
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+        assert result.refactored
+        assert "materialized=var('materialization')" in result.refactored_content
+        assert "strategy='timestamp'" in result.refactored_content
+        assert "meta={'custom_config': 'value'}" in result.refactored_content
+
+    def test_non_snapshot_materialization_moves_snapshot_named_custom_configs(self, schema_specs: SchemaSpecs):
+        sql_content = """{{ config(
+    materialized='table',
+    strategy='not_a_snapshot_strategy',
+) }}
+
+select 1 as id
+"""
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+        assert result.refactored
+        assert "strategy='not_a_snapshot_strategy'" not in result.refactored_content
+        assert "meta={'strategy': 'not_a_snapshot_strategy'}" in result.refactored_content
+
+    def test_quoted_dynamic_materialization_preserves_snapshot_configs(self, schema_specs: SchemaSpecs):
+        sql_content = """{{ config(
+    materialized="{{ var('materialization') }}",
+    strategy='timestamp',
+) }}
+
+select 1 as id
+"""
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+        assert not result.refactored
+        assert result.refactored_content == sql_content
+        assert "strategy='timestamp'" in result.refactored_content
+
     def test_on_error_not_moved_to_meta(self, schema_specs: SchemaSpecs):
         """on_error is a recognized Fusion config key and should NOT be moved to meta"""
         sql_content = """{{

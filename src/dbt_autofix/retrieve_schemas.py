@@ -304,7 +304,7 @@ class SchemaSpecs:
                                         ref_name = option["$ref"].split("/")[-1]
                                         if ref_name in schema.get("definitions", {}):
                                             ref_def = schema["definitions"][ref_name]
-                                            if ref_def.get("type") == "object":
+                                            if isinstance(ref_def, dict) and ref_def.get("type") == "object":
                                                 if "properties" in ref_def:
                                                     # Has specific properties defined
                                                     specific_properties[config_name] = set(ref_def["properties"].keys())

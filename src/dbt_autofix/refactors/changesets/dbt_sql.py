@@ -1,3 +1,4 @@
+import ast
 import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple
@@ -5,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from dbt_autofix.deprecations import DeprecationType
 from dbt_autofix.jinja import statically_parse_unrendered_config
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
+from dbt_autofix.refactors.iceberg_table_format import ICEBERG_ONLY_KEYS, classify_iceberg_table_format
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
 from dbt_autofix.refactors.static_analysis import (
     STATIC_ANALYSIS_DEPRECATION,
@@ -291,6 +293,25 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
 
     allowed_config_fields = schema_specs.yaml_specs_per_node_type[node_type].allowed_config_fields
 
+    # A snapshot can live under model-paths and declare its materialization in SQL.
+    # Preserve snapshot-owned keys for dynamic materializations too; resolving the
+    # effective materialization would require rendering project configuration.
+    if node_type == "models" and "materialized" in original_sql_configs:
+        try:
+            materialized = ast.literal_eval(original_sql_configs["materialized"])
+        except (ValueError, SyntaxError):
+            materialized = None
+
+        if (
+            materialized is None
+            or materialized == "snapshot"
+            or (isinstance(materialized, str) and ("{{" in materialized or "{%" in materialized))
+        ):
+            allowed_config_fields = allowed_config_fields.union(
+                schema_specs.yaml_specs_per_node_type["snapshots"].allowed_config_fields,
+                {"target_schema", "target_database"},
+            )
+
     # Special casing snapshots because target_schema and target_database are renamed by another autofix rule
     if node_type == "snapshots":
         allowed_config_fields = allowed_config_fields.union({"target_schema", "target_database"})
@@ -318,8 +339,6 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
                 existing_meta = refactored_sql_configs["meta"]
                 if isinstance(existing_meta, str):
                     # It's a source code string like "{'key': 'value'}" - parse it
-                    import ast
-
                     try:
                         parsed_meta = ast.literal_eval(existing_meta)
                         meta_dict = {k: meta_transform_value(v) for k, v in parsed_meta.items()}
@@ -463,6 +482,81 @@ def refactor_static_analysis_sql(
         original_content=sql_content,
         deprecation_refactors=deprecation_refactors,
     )
+
+
+def refactor_iceberg_table_format_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
+    """Set Snowflake Iceberg model settings to the required explicit table format."""
+    sql_content = content.current_str
+    warnings: List[str] = []
+    refactored_content = sql_content
+    refactored = False
+
+    for start, end, macro_str in reversed(_iter_config_macro_spans(sql_content)):
+        parsed = statically_parse_unrendered_config(macro_str)
+        if not parsed or not any(key in parsed for key in ICEBERG_ONLY_KEYS):
+            continue
+        if re.search(r"config\s*\(\s*\{", macro_str) or _contains_dynamic_kwargs(macro_str):
+            warnings.append("Cannot safely autofix config() dictionary or dynamic keyword arguments")
+            continue
+
+        table_format = parsed.get("table_format")
+        try:
+            table_format_value = ast.literal_eval(table_format) if table_format is not None else None
+        except (ValueError, SyntaxError):
+            table_format_value = None
+        is_iceberg = isinstance(table_format_value, str) and table_format_value.lower() == "iceberg"
+
+        should_set, warning = classify_iceberg_table_format(
+            table_format, is_iceberg, config.project_has_unsafe_table_format
+        )
+        if warning:
+            warnings.append(warning)
+            continue
+        if not should_set:
+            continue
+
+        refactored_config = dict(parsed)
+        refactored_config["table_format"] = "'iceberg'"
+        source_map = dict(refactored_config)
+        new_config = f"{{{{ config({_serialize_config_macro_call(refactored_config, source_map)}\n) }}}}"
+        refactored_content = refactored_content[:start] + new_config + refactored_content[end:]
+        refactored = True
+
+    return SQLRuleRefactorResult(
+        rule_name="set_iceberg_table_format_sql",
+        refactored=refactored,
+        refactored_content=refactored_content,
+        original_content=sql_content,
+        deprecation_refactors=[
+            DbtDeprecationRefactor(log="Set table_format='iceberg' for Snowflake Iceberg-only model settings")
+        ]
+        if refactored
+        else [],
+        refactor_warnings=warnings,
+    )
+
+
+def _contains_dynamic_kwargs(macro_str: str) -> bool:
+    in_string: Optional[str] = None
+    escaped = False
+    for index, char in enumerate(macro_str):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\" and in_string:
+            escaped = True
+            continue
+        if char in {"'", '"'}:
+            in_string = None if in_string == char else char if in_string is None else in_string
+            continue
+        if not in_string and macro_str[index : index + 2] == "**":
+            # Distinguish a `**kwargs` spread from the `**` exponentiation operator: a
+            # spread is always preceded by `(` or `,` (ignoring whitespace), whereas
+            # exponentiation is preceded by an operand (digit, identifier, closing bracket/quote).
+            preceding = macro_str[:index].rstrip()
+            if not preceding or preceding[-1] in "(,":
+                return True
+    return False
 
 
 def _serialize_config_macro_call(config_dict: dict, config_source_map: Optional[Dict[str, str]] = None) -> str:
