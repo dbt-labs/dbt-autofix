@@ -675,7 +675,15 @@ def changeset_all_files(
         unsafe_table_format = True
 
     sql_results = process_sql_files(
-        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, unsafe_table_format, dbtignore
+        path,
+        dbt_paths_to_node_type,
+        schema_specs,
+        dry_run,
+        select,
+        behavior_change,
+        all,
+        unsafe_table_format,
+        dbtignore,
     )
     python_results = process_python_files(
         path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, dbtignore
@@ -684,7 +692,16 @@ def changeset_all_files(
     # Process YAML files
     semantic_definitions = SemanticDefinitions(path, dbt_paths) if semantic_layer else None
     yaml_results = process_yaml_files_except_dbt_project(
-        path, dbt_paths, schema_specs, dry_run, select, behavior_change, all, semantic_definitions, unsafe_table_format, dbtignore
+        path,
+        dbt_paths,
+        schema_specs,
+        dry_run,
+        select,
+        behavior_change,
+        all,
+        semantic_definitions,
+        unsafe_table_format,
+        dbtignore,
     )
 
     return [*yaml_results, *dbt_project_yml_results], sql_results, python_results
