@@ -11,6 +11,7 @@ from typing_extensions import Annotated
 from dbt_autofix.dbt_api import update_jobs
 from dbt_autofix.duplicate_keys import find_duplicate_keys, print_duplicate_keys
 from dbt_autofix.fields_properties_configs import print_matrix
+from dbt_autofix.migrate_1x import MAX_VERSION, MIN_VERSION, migrate_1x_all_files
 from dbt_autofix.package_upgrade import (
     PackageUpgradeResult,
     PackageVersionUpgradeResult,
@@ -175,6 +176,44 @@ def refactor_yml(
                 changeset.print_to_console(json_output)
     else:
         apply_changesets(yaml_results, sql_results, python_results, json_output)
+
+    if json_output:
+        print(json.dumps({"mode": "complete"}))
+
+
+@app.command(name="migrate-1x")
+def migrate_1x(
+    path: Annotated[
+        Path, typer.Option("--path", "-p", "--project-dir", help="The path to the dbt project")
+    ] = current_dir,
+    dry_run: Annotated[bool, typer.Option("--dry-run", "-d", help="In dry run mode, do not apply changes")] = False,
+    json_output: Annotated[bool, typer.Option("--json", "-j", help="Output in JSON format")] = False,
+    select: Annotated[
+        Optional[List[str]], typer.Option("--select", "-s", help="Select specific paths to refactor")
+    ] = None,
+    from_version: Annotated[
+        str, typer.Option("--from", help="The dbt version you are migrating from (major.minor, e.g. 1.3)")
+    ] = MIN_VERSION,
+    to_version: Annotated[
+        str, typer.Option("--to", help="The dbt version you are migrating to (major.minor, e.g. 1.12)")
+    ] = MAX_VERSION,
+):
+    try:
+        yaml_results, sql_results = migrate_1x_all_files(path, dry_run, select, from_version, to_version)
+    except ValueError as e:
+        raise typer.BadParameter(str(e))
+
+    if dry_run:
+        if not json_output:
+            error_console.print("[red]-- Dry run mode, not applying changes --[/red]")
+        for changeset in yaml_results:
+            if changeset.refactored:
+                changeset.print_to_console(json_output)
+        for changeset in sql_results:
+            if changeset.refactored:
+                changeset.print_to_console(json_output)
+    else:
+        apply_changesets(yaml_results, sql_results, [], json_output)
 
     if json_output:
         print(json.dumps({"mode": "complete"}))

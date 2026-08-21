@@ -1,0 +1,60 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_migrate_1x/dbt_project.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "IncrementalPredicatesRename",
+        "log": "Renamed config '+predicates' to '+incremental_predicates'"
+      },
+      {
+        "deprecation": "CleanTargetsSourcePath",
+        "log": "Removed clean-target 'models' (it is a configured source path)"
+      },
+      {
+        "deprecation": "CleanTargetsSourcePath",
+        "log": "Removed clean-target '../outside' (it points outside the project)"
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Renamed top-level 'tests' config to 'data_tests'"
+      }
+    ]
+  },
+  {
+    "file_path": "project_migrate_1x/models/incr.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "CurrentTimestampMacroMigration",
+        "log": "Replaced 1 call(s) to 'dbt_utils.current_timestamp' with 'dbt.current_timestamp'"
+      },
+      {
+        "deprecation": "IncrementalPredicatesRename",
+        "log": "Renamed config 'predicates' to 'incremental_predicates'"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "file_path": "project_migrate_1x/models/schema.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "IncrementalPredicatesRename",
+        "log": "Renamed config 'predicates' to 'incremental_predicates'"
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Renamed 'tests' to 'data_tests'"
+      },
+      {
+        "deprecation": "TestsConfigDeprecation",
+        "log": "Renamed 'tests' to 'data_tests'"
+      }
+    ]
+  }
+]
