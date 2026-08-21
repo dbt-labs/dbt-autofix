@@ -24,6 +24,9 @@ project_dir_to_behavior_change_mode["project_jinja_templates"] = True
 project_dir_to_semantic_layer_mode = defaultdict(lambda: False)
 project_dir_to_semantic_layer_mode["project_semantic_layer"] = True
 
+project_dir_to_env_vars: defaultdict[str, dict[str, str]] = defaultdict(dict)
+project_dir_to_env_vars["env_var_group"] = {"DBT_PROJECT_NAME": "autofix_group_folder"}
+
 
 def get_project_folders():
     dbt_projects_dir = os.path.join(os.path.dirname(__file__), dbt_projects_dir_name)
@@ -117,9 +120,12 @@ def compare_json_logs(
 
 
 @pytest.mark.parametrize("project_folder", get_project_folders())
-def test_project_refactor(project_folder, request):
+def test_project_refactor(project_folder, request, monkeypatch):
     dbt_projects_dir = os.path.join(os.path.dirname(__file__), dbt_projects_dir_name)
     source_dir = os.path.join(dbt_projects_dir, project_folder)
+
+    for env_name, env_value in project_dir_to_env_vars[project_folder].items():
+        monkeypatch.setenv(env_name, env_value)
 
     # Create a temporary directory for the project
     temp_dir = tempfile.mkdtemp(prefix=f"dbt_autofix_test_{project_folder}_")

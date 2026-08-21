@@ -76,10 +76,6 @@
       },
       {
         "deprecation": "MissingPlusPrefixDeprecation",
-        "log": "Added '+' in front of the nested config 'meta'"
-      },
-      {
-        "deprecation": "MissingPlusPrefixDeprecation",
         "log": "Added '+' in front of top level config 'enabled'"
       },
       {
