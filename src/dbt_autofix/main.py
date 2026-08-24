@@ -19,7 +19,7 @@ from dbt_autofix.package_upgrade import (
     upgrade_package_versions,
 )
 from dbt_autofix.packages.dbt_package_file import DbtPackageFile
-from dbt_autofix.refactor import apply_changesets, changeset_all_files
+from dbt_autofix.refactor import apply_changesets, changeset_all_files, load_dbtignore
 from dbt_autofix.retrieve_schemas import SchemaSpecs
 
 console = Console()
@@ -41,7 +41,8 @@ def identify_duplicate_keys(
     path: Annotated[Path, typer.Option("--path", "-p", help="The path to the dbt project")] = current_dir,
 ):
     print(f"[green]Identifying duplicates in {path}[/green]\n")
-    project_duplicates, package_duplicates = find_duplicate_keys(path)
+    dbtignore = load_dbtignore(path)
+    project_duplicates, package_duplicates = find_duplicate_keys(path, dbtignore=dbtignore)
     print_duplicate_keys(project_duplicates, package_duplicates)
 
 
@@ -97,7 +98,7 @@ def upgrade_packages(
             prefer_v2_compatible_downloads=v2_compatible_downloads,
         )
         packages_upgraded.print_to_console(json_output=json_output)
-    except:
+    except Exception:
         error_console.print("[red]-- Package upgrade failed, please check logs for details --[/red]")
     if json_output:
         print(json.dumps({"mode": "complete"}))
@@ -165,11 +166,10 @@ def refactor_yml(
         if not json_output:
             error_console.print("[red]-- Dry run mode, not applying changes --[/red]")
         for changeset in yaml_results:
-            if changeset.refactored:
+            if changeset.refactored or any(r.refactor_warnings for r in changeset.refactors):
                 changeset.print_to_console(json_output)
         for changeset in sql_results:
-            if changeset.refactored:
-                changeset.print_to_console(json_output)
+            changeset.print_to_console(json_output)
         for changeset in python_results:
             if changeset.refactored:
                 changeset.print_to_console(json_output)

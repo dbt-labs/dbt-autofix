@@ -5,6 +5,7 @@ from typing import Any, List, Optional
 import yamllint.config
 
 from dbt_autofix.refactors.constants import DBT_PROJECT_CONFIG_MISSPELLINGS
+from dbt_autofix.refactors.iceberg_table_format import ICEBERG_ONLY_KEYS, classify_iceberg_table_format
 from dbt_autofix.refactors.results import (
     DbtDeprecationRefactor,
     DbtProjectYMLRefactorConfig,
@@ -20,6 +21,112 @@ rules:
 """
 
 yaml_config = yamllint.config.YamlLintConfig(config)
+
+
+_NON_INHERITING_DICT_KEYS = {
+    "meta",
+    "grants",
+    "persist_docs",
+    "column_types",
+    "pre-hook",
+    "post-hook",
+    "pre_hook",
+    "post_hook",
+}
+
+
+def _table_format_of(node: dict, inherited_table_format: Optional[str]) -> Optional[Any]:
+    table_key = next((key for key in node if str(key).lstrip("+") == "table_format"), None)
+    return node[table_key] if table_key is not None else inherited_table_format
+
+
+def _iter_iceberg_config_nodes(yml_dict: Any):
+    """Yield every ``models``/``snapshots`` config node that sets Iceberg-only settings.
+
+    Each yielded pair is ``(node, table_format)`` where ``table_format`` is the one
+    the node would inherit from its parent, if any.
+    """
+
+    def visit(node: Any, inherited_table_format: Optional[str] = None):
+        if not isinstance(node, dict):
+            return
+        keys = {str(key).lstrip("+") for key in node}
+        if keys.intersection(ICEBERG_ONLY_KEYS):
+            yield node, inherited_table_format
+        effective_table_format = _table_format_of(node, inherited_table_format)
+        for key, value in node.items():
+            if isinstance(value, dict) and not str(key).startswith("+") and str(key) not in _NON_INHERITING_DICT_KEYS:
+                yield from visit(value, effective_table_format)
+
+    for resource_type in ("models", "snapshots"):
+        yield from visit(yml_dict.get(resource_type))
+
+
+def project_has_unsafe_table_format(yml_dict: Any) -> bool:
+    """Whether ``dbt_project.yml`` sets a non-Iceberg table_format anywhere under ``models``/``snapshots``.
+
+    A project-level table_format cascades to every model under it, including
+    models declared entirely outside dbt_project.yml (e.g. in SQL/schema-YAML
+    files) that autofix can't see from here. So this check is deliberately
+    project-wide rather than restricted to nodes that also set Iceberg-only
+    settings: model-level autofixes use it to conservatively skip a file whose
+    effective table_format might be inherited from an incompatible project default.
+    """
+    if not isinstance(yml_dict, dict):
+        return False
+
+    def contains_non_iceberg(node: Any) -> bool:
+        if not isinstance(node, dict):
+            return False
+        for key, value in node.items():
+            if str(key).lstrip("+") == "table_format" and str(value).lower() != "iceberg":
+                return True
+            if (
+                isinstance(value, dict)
+                and not str(key).startswith("+")
+                and str(key) not in _NON_INHERITING_DICT_KEYS
+                and contains_non_iceberg(value)
+            ):
+                return True
+        return False
+
+    return any(contains_non_iceberg(yml_dict.get(key, {})) for key in ("models", "snapshots"))
+
+
+def changeset_iceberg_table_format_project_yml(
+    content: YMLContent, config: DbtProjectYMLRefactorConfig
+) -> YMLRuleRefactorResult:
+    """Set Iceberg-only model configs to an explicit Iceberg table format.
+
+    Model-level files conservatively skip autofix when any project model config
+    has a non-Iceberg format because this changes materialization behavior.
+    """
+    yml_str = content.current_str
+    yml_dict = load_yaml(yml_str)
+    logs: List[DbtDeprecationRefactor] = []
+    warnings: List[str] = []
+    changed = False
+
+    for node, inherited_table_format in _iter_iceberg_config_nodes(yml_dict):
+        table_format = _table_format_of(node, inherited_table_format)
+        is_iceberg = table_format is not None and str(table_format).lower() == "iceberg"
+        # dbt_project.yml IS the project config, so it can't be unsafe relative to itself.
+        should_set, warning = classify_iceberg_table_format(table_format, is_iceberg, False)
+        if warning:
+            warnings.append(warning)
+        elif should_set:
+            node["+table_format"] = "iceberg"
+            changed = True
+            logs.append(DbtDeprecationRefactor("Set +table_format=iceberg for Snowflake Iceberg-only model settings"))
+
+    return YMLRuleRefactorResult(
+        rule_name="set_iceberg_table_format_project_yml",
+        refactored=changed,
+        refactored_yaml=DbtYAML().dump_to_string(yml_dict) if changed else yml_str,
+        original_yaml=yml_str,
+        deprecation_refactors=logs,
+        refactor_warnings=warnings,
+    )
 
 
 def changeset_dbt_project_remove_deprecated_config(

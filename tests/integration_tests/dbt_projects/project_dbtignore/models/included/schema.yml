@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: included_model
+    description: "This model should be refactored"
+    materialized: table
+    columns:
+      - name: id
+        description: "Primary key"

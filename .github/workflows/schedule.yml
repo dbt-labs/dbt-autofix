@@ -8,10 +8,10 @@ jobs:
   nox:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # astral-sh/setup-uv@v5
-      - uses: fjwillemsen/setup-nox2@fc5420448a3f1145b0128f86b1837e82841684a4 # fjwillemsen/setup-nox2@v3.0.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # astral-sh/setup-uv@v10.0.1
+      - uses: fjwillemsen/setup-nox2@da319daa4a57af7b0802d65173dd08b7e902fa08 # fjwillemsen/setup-nox2@v4.0.0
       - run: nox --session check_latest_schema-3.13
       - run: uv sync --all-extras --all-packages --python 3.13
       - run: uv run --python 3.13 pytest

@@ -304,9 +304,7 @@ class SchemaSpecs:
                                         ref_name = option["$ref"].split("/")[-1]
                                         if ref_name in schema.get("definitions", {}):
                                             ref_def = schema["definitions"][ref_name]
-                                            # Boolean subschemas (e.g. AnyValue: true) are valid JSON
-                                            # Schema; skip them the same way we skip boolean
-                                            # definitions at the top of this loop.
+
                                             if isinstance(ref_def, dict) and ref_def.get("type") == "object":
                                                 if "properties" in ref_def:
                                                     # Has specific properties defined
