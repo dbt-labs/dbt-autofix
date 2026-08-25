@@ -52,6 +52,7 @@ from dbt_autofix.refactors.changesets.dbt_sql import (
 from dbt_autofix.refactors.changesets.dbt_sql_improved import (
     move_custom_config_access_to_meta_sql_improved,
 )
+from dbt_autofix.refactors.constants import PROJECT_ROOT_ONLY_YAML_FILENAMES
 from dbt_autofix.refactors.results import (
     DbtProjectYMLRefactorConfig,
     PythonRefactorConfig,
@@ -92,6 +93,9 @@ def process_yaml_files_except_dbt_project(
     dbtignore: Optional[pathspec.PathSpec] = None,
 ) -> List[YMLRefactorResult]:
     """Process all YAML files in the project.
+
+    Project config files (dbt_project.yml and its siblings) are excluded, so only resource
+    properties documents are refactored. See is_project_config_file.
 
     Args:
         path: Project root path
@@ -166,6 +170,9 @@ def process_yaml_files_except_dbt_project(
 
             for yml_file in yaml_files:
                 if skip_file(yml_file, select, dbtignore, root_path):
+                    continue
+
+                if is_project_config_file(yml_file):
                     continue
 
                 if str(yml_file) in file_name_to_yaml_results:
@@ -313,6 +320,20 @@ def skip_file(
             return True
 
     return False
+
+
+def is_project_config_file(yml_file: Path) -> bool:
+    """Whether a YAML file is a dbt project's own config rather than a properties document.
+
+    A reserved filename only counts as project config when it sits next to a dbt_project.yml.
+    Elsewhere (models/packages.yml) it is a properties file that dbt honors, so it must still
+    be processed.
+    """
+    if yml_file.name not in PROJECT_ROOT_ONLY_YAML_FILENAMES:
+        return False
+    # is_file() rather than exists() so a directory named dbt_project.yml does not
+    # suppress a real properties file.
+    return (yml_file.parent / "dbt_project.yml").is_file()
 
 
 def process_sql_files(
