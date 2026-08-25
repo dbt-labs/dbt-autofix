@@ -1,0 +1,7 @@
+version: 2
+
+models:
+  - name: my_model
+    description: "A properties file swept up by model-paths: ['.']"
+    config:
+      materialized: table

@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: my_model
+    description: "Real model properties in a file that happens to be named packages.yml"
+    materialized: table
+    columns:
+      - name: id
+        description: "Primary key"

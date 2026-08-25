@@ -1,0 +1,6 @@
+project_root_model_path:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ":memory:"
