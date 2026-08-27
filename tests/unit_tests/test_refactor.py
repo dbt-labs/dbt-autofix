@@ -3109,3 +3109,64 @@ select 1 as id
         assert "on_column" in result.deprecation_refactors[0].log
         assert "nugget" in result.deprecation_refactors[0].log
         assert "meta" in result.deprecation_refactors[0].log
+
+    @pytest.mark.parametrize(
+        "trigger_config,expected_trigger_log",
+        [
+            # A hook rename collapses the dict into keyword arguments...
+            (
+                '"post-hook": ["select 1"]',
+                "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed.",
+            ),
+            # ...and so does a custom config moving to meta, so the fix is not hook-specific
+            ('"my_custom_thing": "abc"', "Moved custom config ['my_custom_thing'] to 'meta'"),
+        ],
+    )
+    def test_repeated_dict_key_keeps_last_value(
+        self, schema_specs: SchemaSpecs, trigger_config: str, expected_trigger_log: str
+    ):
+        """A repeated key in a config() dict resolves to its last occurrence, as dbt does."""
+        sql_content = (
+            f'{{{{ config({{"materialized": "table", "tags": "mapping_tables", '
+            f'{trigger_config}, "tags": ["weekly"]}}) }}}}\nselect 1 as id\n'
+        )
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+        assert result.refactored
+        assert 'tags=["weekly"]' in result.refactored_content
+        assert "mapping_tables" not in result.refactored_content
+        assert result.refactor_logs == [
+            "Config key 'tags' was defined 2 times in the config() dictionary; "
+            'kept the last value (["weekly"]) and dropped the earlier one ("mapping_tables"), '
+            "which is how dbt resolves a repeated key.",
+            expected_trigger_log,
+        ]
+        # This is autofix preserving dbt's own resolution, not a dbt deprecation
+        assert result.deprecation_refactors[0].deprecation is None
+
+    def test_dict_key_repeated_three_times(self, schema_specs: SchemaSpecs):
+        """More than one dropped value is reported as a list, and the third value survives."""
+        sql_content = (
+            '{{ config({"tags": "one", "tags": "two", "tags": "three", "my_custom_thing": "abc"}) }}\nselect 1 as id\n'
+        )
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+        assert result.refactored
+        assert 'tags="three"' in result.refactored_content
+        assert result.refactor_logs[0] == (
+            "Config key 'tags' was defined 3 times in the config() dictionary; "
+            'kept the last value ("three") and dropped the earlier ones ("one", "two"), '
+            "which is how dbt resolves a repeated key."
+        )
+
+    def test_repeated_dict_key_without_other_trigger_is_left_alone(self, schema_specs: SchemaSpecs):
+        """A duplicate alone is not a reason to rewrite the file, so nothing is reported."""
+        sql_content = '{{ config({"materialized": "table", "tags": "first", "tags": "second"}) }}\nselect 1 as id\n'
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "models"))
+
+        assert not result.refactored
+        assert result.refactored_content == sql_content
+        assert result.refactor_logs == []

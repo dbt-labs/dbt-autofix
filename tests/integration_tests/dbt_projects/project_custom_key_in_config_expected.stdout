@@ -18,6 +18,21 @@
     "warnings": []
   },
   {
+    "file_path": "project_custom_key_in_config/models/duplicate_dict_keys.sql",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": null,
+        "log": "Config key 'tags' was defined 2 times in the config() dictionary; kept the last value ([\"weekly\"]) and dropped the earlier one (\"mapping_tables\"), which is how dbt resolves a repeated key."
+      },
+      {
+        "deprecation": "CustomKeyInConfigDeprecation",
+        "log": "Config 'post-hook' is a common misspelling of 'post_hook', it has been renamed."
+      }
+    ],
+    "warnings": []
+  },
+  {
     "file_path": "project_custom_key_in_config/models/models.yaml",
     "mode": "applied",
     "refactors": [

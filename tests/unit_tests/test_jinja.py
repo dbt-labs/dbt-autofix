@@ -4,6 +4,7 @@ import pytest
 
 from dbt_autofix._jinja_environment import get_jinja_environment
 from dbt_autofix.jinja import (
+    DuplicateConfigKey,
     _SourceCodeExtractor,
     construct_static_kwarg_value,
     statically_parse_unrendered_config,
@@ -99,6 +100,33 @@ from dbt_autofix.jinja import (
             '{{ config(custom_path=target.schema + "/" + var("folder")) }}',
             {"custom_path": 'target.schema + "/" + var("folder")'},
         ),
+        # A repeated dict key resolves to its last occurrence, like Jinja and Python do
+        (
+            '{{ config({"materialized": "table", "tags": "first", "post-hook": ["select 1"], "tags": ["weekly"]}) }}',
+            {"materialized": '"table"', "tags": '["weekly"]', "post-hook": '["select 1"]'},
+        ),
+        # Three occurrences, with the middle one quoted differently, resolve to the third value
+        (
+            '{{ config({"tags": "one", \'tags\': "two", "tags": "three", "post-hook": ["select 1"]}) }}',
+            {"tags": '"three"', "post-hook": '["select 1"]'},
+        ),
+        # Quote style must not decide which occurrence wins: the last one does, whichever style
+        # it uses. Values span lines and the last pair has a trailing comma, so the scan has to
+        # resume past a multi-line value.
+        (
+            '{{ config({\n  "materialized": "table",\n  "tags": "first",\n  \'tags\': [\n    "weekly",\n  ],\n  "post-hook": ["select 1"],\n}) }}',
+            {"materialized": '"table"', "tags": '[\n    "weekly",\n  ]', "post-hook": '["select 1"]'},
+        ),
+        # Repeated key whose values are Jinja expressions keeps the last expression
+        (
+            "{{ config({'materialized': 'table', 'tags': env_var('TAG_A'), 'tags': env_var('TAG_B')}) }}",
+            {"materialized": "'table'", "tags": "env_var('TAG_B')"},
+        ),
+        # A key name appearing inside a value does not shadow the real pair
+        (
+            "{{ config({'sql': \"'tags': 'decoy'\", 'tags': 'real'}) }}",
+            {"sql": "\"'tags': 'decoy'\"", "tags": "'real'"},
+        ),
     ],
 )
 def test_statically_parse_unrendered_config(input_string, expected_output):
@@ -109,8 +137,38 @@ def test_statically_parse_unrendered_config(input_string, expected_output):
     dbt will still evaluate them at runtime because the entire config() block
     is a Jinja expression.
     """
-    result = statically_parse_unrendered_config(input_string)
+    result, _ = statically_parse_unrendered_config(input_string)
     assert result == expected_output
+
+
+def test_statically_parse_unrendered_config_duplicate_keys():
+    """Repeated dict keys are reported alongside the parsed config, in source order."""
+    config, duplicates = statically_parse_unrendered_config(
+        '{{ config({"tags": "one", \'tags\': "two", "tags": "three"}) }}'
+    )
+    assert config == {"tags": '"three"'}
+    assert duplicates == [DuplicateConfigKey(key="tags", kept_value='"three"', dropped_values=['"one"', '"two"'])]
+
+    # A dict literal without repeats reports nothing, and keyword arguments cannot repeat a key
+    # at all, so that path never reports duplicates either
+    _, no_duplicates = statically_parse_unrendered_config('{{ config({"materialized": "table", "tags": ["weekly"]}) }}')
+    assert no_duplicates == []
+    _, kwargs_duplicates = statically_parse_unrendered_config("{{ config(materialized='table', tags=['weekly']) }}")
+    assert kwargs_duplicates == []
+
+
+def test_unresolvable_key_does_not_fabricate_for_following_keys():
+    """A mis-parsed earlier value must not cascade a fabricated value onto later keys.
+
+    The pair with a non-Const key is skipped by the caller loop, so the cursor never advances
+    past its value and the decoy inside it is the earliest match for 'tags'. The keys after it
+    must still resolve rather than falling through to the key-name fallback.
+    """
+    result, _ = statically_parse_unrendered_config(
+        "{{ config({var('k'): \"see 'tags': decoy\", 'tags': 'real', 'post-hook': ['x']}) }}"
+    )
+    assert result is not None
+    assert result["post-hook"] == "['x']"
 
 
 @pytest.mark.parametrize(
@@ -154,7 +212,7 @@ def test_statically_parse_unrendered_config(input_string, expected_output):
 def test_source_code_extractor(source, start_pos, delimiters, expected_output):
     """Test _SourceCodeExtractor.extract_until_delimiter with various inputs."""
     extractor = _SourceCodeExtractor(source)
-    result = extractor.extract_until_delimiter(start_pos, delimiters=delimiters)
+    result, _ = extractor.extract_until_delimiter(start_pos, delimiters=delimiters)
     assert result == expected_output
 
 
@@ -167,7 +225,7 @@ def test_source_code_extractor_multiline():
     extractor = _SourceCodeExtractor(source)
     # Start after "key="
     start = source.index("key='") + 4
-    result = extractor.extract_until_delimiter(start, delimiters=(",", ")"))
+    result, _ = extractor.extract_until_delimiter(start, delimiters=(",", ")"))
     assert "'value'" in result.strip()
 
 
@@ -299,7 +357,7 @@ def test_construct_static_kwarg_value_fallback():
 )
 def test_integration_full_workflow(config_str, expected_keys, expected_values):
     """Integration tests for the full workflow from parsing to extraction."""
-    result = statically_parse_unrendered_config(config_str)
+    result, _ = statically_parse_unrendered_config(config_str)
 
     assert result is not None
     assert set(result.keys()) == expected_keys
@@ -328,7 +386,7 @@ def test_construct_static_kwarg_value_very_long_value():
     config_str = f"{{{{ config(post_hook='{long_sql}') }}}}"
 
     # Step 1: Extract the config
-    result = statically_parse_unrendered_config(config_str)
+    result, _ = statically_parse_unrendered_config(config_str)
 
     assert result is not None
     assert "post_hook" in result
