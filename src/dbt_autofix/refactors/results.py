@@ -75,6 +75,7 @@ class SQLRefactorConfig:
     schema_specs: SchemaSpecs
     node_type: str
     project_has_unsafe_table_format: bool = False
+    resource_rename_map: object = None
 
 
 @dataclass
@@ -259,7 +260,10 @@ class SQLRefactorResult:
         """Update the SQL file with the refactored content"""
         new_file_path = self.refactored_file_path or self.file_path
         if self.file_path != new_file_path:
-            os.rename(self.file_path, self.refactored_file_path)
+            try:
+                os.rename(self.file_path, self.refactored_file_path)
+            except OSError as exc:
+                raise RuntimeError(f"Could not rename {self.file_path} to {self.refactored_file_path}") from exc
 
         Path(new_file_path).write_text(self.refactored_content)
 
@@ -339,7 +343,10 @@ class PythonRefactorResult:
         """Update the Python file with the refactored content"""
         new_file_path = self.refactored_file_path or self.file_path
         if self.file_path != new_file_path:
-            os.rename(self.file_path, self.refactored_file_path)
+            try:
+                os.rename(self.file_path, self.refactored_file_path)
+            except OSError as exc:
+                raise RuntimeError(f"Could not rename {self.file_path} to {self.refactored_file_path}") from exc
 
         Path(new_file_path).write_text(self.refactored_content)
 

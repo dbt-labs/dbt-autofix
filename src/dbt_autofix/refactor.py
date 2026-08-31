@@ -51,6 +51,10 @@ from dbt_autofix.refactors.changesets.dbt_sql import (
 from dbt_autofix.refactors.changesets.dbt_sql_improved import (
     move_custom_config_access_to_meta_sql_improved,
 )
+from dbt_autofix.refactors.changesets.resource_references import (
+    build_resource_rename_map,
+    update_resource_references_sql,
+)
 from dbt_autofix.refactors.results import (
     DbtProjectYMLRefactorConfig,
     PythonRefactorConfig,
@@ -287,6 +291,7 @@ def process_sql_files(
     behavior_change: bool = False,
     all: bool = False,
     project_has_unsafe_table_format: bool = False,
+    resource_rename_map: object = None,
 ) -> List[SQLRefactorResult]:
     """Process all SQL files in the given paths for unmatched endings.
 
@@ -305,7 +310,7 @@ def process_sql_files(
     """
     results: List[SQLRefactorResult] = []
 
-    behavior_change_rules: List[Callable] = [rename_sql_file_names_with_spaces]
+    behavior_change_rules: List[Callable] = [rename_sql_file_names_with_spaces, update_resource_references_sql]
     safe_change_rules: List[Callable] = [
         remove_unmatched_endings,
         refactor_custom_configs_to_meta_sql,
@@ -329,6 +334,7 @@ def process_sql_files(
             schema_specs=schema_specs,
             node_type=node_type,
             project_has_unsafe_table_format=project_has_unsafe_table_format,
+            resource_rename_map=resource_rename_map,
         )
 
         sql_files = full_path.glob("**/*.sql")
@@ -633,8 +639,17 @@ def changeset_all_files(
         # Fail closed: an unparseable dbt_project.yml means we can't tell whether it's safe.
         unsafe_table_format = True
 
+    resource_rename_map = build_resource_rename_map(path) if (behavior_change or all) else None
     sql_results = process_sql_files(
-        path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all, unsafe_table_format
+        path,
+        dbt_paths_to_node_type,
+        schema_specs,
+        dry_run,
+        select,
+        behavior_change,
+        all,
+        unsafe_table_format,
+        resource_rename_map,
     )
     python_results = process_python_files(
         path, dbt_paths_to_node_type, schema_specs, dry_run, select, behavior_change, all
