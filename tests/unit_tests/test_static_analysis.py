@@ -6,6 +6,7 @@ from ruamel.yaml.comments import CommentedMap
 from dbt_autofix.refactors.changesets.dbt_sql import refactor_static_analysis_sql
 from dbt_autofix.refactors.results import SQLContent, YMLContent
 from dbt_autofix.refactors.static_analysis import (
+    STATIC_ANALYSIS_DEPRECATION,
     changeset_normalize_static_analysis_yml,
     normalize_static_analysis_source,
     normalize_static_analysis_value,
@@ -152,3 +153,22 @@ def test_sql_config_already_valid_is_noop():
     content = SQLContent(original_str=sql, current_str=sql, current_file_path=Path("x.sql"))
     result = refactor_static_analysis_sql(content, None)
     assert result.refactored is False
+
+
+def test_sql_config_dict_repeated_key_keeps_last_value():
+    """Normalizing static_analysis collapses the dict, so a repeated key resolves as dbt does."""
+    sql = '{{ config({"materialized": "table", "tags": "first", "tags": "second", "static_analysis": True}) }}\nselect 1 as id\n'
+    content = SQLContent(original_str=sql, current_str=sql, current_file_path=Path("x.sql"))
+    result = refactor_static_analysis_sql(content, None)
+
+    assert result.refactored
+    assert 'tags="second"' in result.refactored_content
+    assert result.refactor_logs == [
+        "Config key 'tags' was defined 2 times in the config() dictionary; "
+        'kept the last value ("second") and dropped the earlier one ("first"), '
+        "which is how dbt resolves a repeated key.",
+        "Converted static_analysis=True to static_analysis='baseline' (static_analysis must be a Fusion enum value)",
+    ]
+    # The duplicate note carries no deprecation; the static_analysis conversion does
+    assert result.deprecation_refactors[0].deprecation is None
+    assert result.deprecation_refactors[1].deprecation == STATIC_ANALYSIS_DEPRECATION

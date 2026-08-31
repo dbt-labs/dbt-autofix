@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
+import pathspec
 import yaml
 import yamllint.config
 import yamllint.linter
@@ -33,6 +34,7 @@ class DuplicateFound:
 def find_duplicate_keys(
     root_dir: Path,
     dry_run: bool = False,
+    dbtignore: Optional[pathspec.PathSpec] = None,
 ) -> Tuple[List[DuplicateFound], List[DuplicateFound]]:
     """Find duplicate keys in the project and packages."""
     project_duplicates: List[DuplicateFound] = []
@@ -40,6 +42,10 @@ def find_duplicate_keys(
 
     yml_files = set(root_dir.glob("**/*.yml")).union(set(root_dir.glob("**/*.yaml")))
     yml_files_target = set((root_dir / "target").glob("**/*.yml")).union(set((root_dir / "target").glob("**/*.yaml")))
+
+    if dbtignore is not None:
+        resolved_root = root_dir.resolve()
+        yml_files = {f for f in yml_files if not dbtignore.match_file(str(f.resolve().relative_to(resolved_root)))}
 
     packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
         "packages-install-path", "dbt_packages"
@@ -59,6 +65,8 @@ def find_duplicate_keys(
 
     # Check project YML files
     for file in yml_files_not_target_or_packages:
+        if not file.is_file():
+            continue
         file_with_duplicate = False
         file_content = file.read_text()
         for p in yamllint.linter.run(file_content, yaml_config):
@@ -79,6 +87,8 @@ def find_duplicate_keys(
 
     # Check package YML files
     for file in yml_files_packages_not_integration_tests:
+        if not file.is_file():
+            continue
         file_content = file.read_text()
         for p in yamllint.linter.run(file_content, yaml_config):
             if p.rule == "key-duplicates":
@@ -103,7 +113,7 @@ def print_duplicate_keys(project_duplicates: List[DuplicateFound], package_dupli
         console.print("\nThere are issues in your project YML files", style="bold red")
         console.print(
             (
-                "Please remove duplicates by hand. dbt's default behavior is to keep the last occurence of a key.\n"
+                "Please remove duplicates by hand. dbt's default behavior is to keep the last occurrence of a key.\n"
                 "If you want to keep the same behaviour remove or comments lines found for the same key and before in the file.\n"
                 "Once you have done all the changes in the files, run the tool again.\n"
             )

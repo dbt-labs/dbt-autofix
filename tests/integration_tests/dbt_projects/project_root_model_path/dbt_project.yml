@@ -1,0 +1,8 @@
+name: "project_root_model_path"
+version: "1.0.0"
+config-version: 2
+profile: "project_root_model_path"
+
+model-paths: ["."]
+flags:
+  require_generic_test_arguments_property: true

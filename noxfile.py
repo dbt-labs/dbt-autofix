@@ -36,7 +36,7 @@ def check_latest_schema(session):
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
 def run_cli_deprecations(session):
-    """Make sure the deperecations CLI runs (but fails)"""
+    """Make sure the deprecations CLI runs (but fails)"""
     session.run_install(
         "uv",
         "sync",

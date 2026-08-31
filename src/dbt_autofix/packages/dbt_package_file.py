@@ -80,7 +80,7 @@ def load_yaml_from_packages_yml(packages_yml_path: Path) -> dict[Any, Any]:
 
     try:
         parsed_package_file = load_yaml(packages_yml_path)
-    except:
+    except Exception:
         console.log(f"Error when parsing package file {packages_yml_path}")
         return {}
     if parsed_package_file == {}:
@@ -99,7 +99,7 @@ def load_yaml_from_dependencies_yml(dependencies_yml_path: Path) -> dict[Any, An
 
     try:
         parsed_package_file = load_yaml(dependencies_yml_path)
-    except:
+    except Exception:
         console.log(f"Error when parsing package file {dependencies_yml_path}")
         return {}
     if parsed_package_file == {}:
@@ -128,7 +128,7 @@ class DbtPackageFile:
         try:
             self.yml_str = self.file_path.read_text()
             console.log(f"parsed yaml string: {self.yml_str}")
-        except:
+        except Exception:
             console.log(f"Error when parsing package file {self.file_path}")
 
     def add_package_dependency(self, package_id: str, package: DbtPackage):

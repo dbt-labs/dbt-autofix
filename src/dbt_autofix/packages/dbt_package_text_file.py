@@ -308,7 +308,7 @@ class DbtPackageTextFile:
                     console.print(line.line, style="green")
                 else:
                     console.print(line.line)
-        else:
+        elif not dry_run:
             lines_written = self.write_output_to_file()
             if lines_written == 0 and print_to_console:
                 console.print(f"Error: No output written to {self.file_path.name}")
