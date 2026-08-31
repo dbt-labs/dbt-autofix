@@ -378,3 +378,25 @@ def test_dbt_constraints_style_receivers():
     assert result.refactored
     assert result.refactored_content == expected_sql
     assert len(result.deprecation_refactors) == 3
+
+
+def test_identifier_ending_in_config_is_not_mangled():
+    """A plain dict variable named `..._config` must not be treated as a receiver.
+
+    Regression test: the bare `config.` alternative had no lookbehind, so it could
+    match mid-identifier at the `config.get(...)` suffix of `model_config.get(...)`,
+    an ordinary dict -- not dbt's `config` object. That rewrote valid code into
+    `model_config.meta_get(...)`, an undefined method that breaks at render time.
+    See dbt-labs/fs#14000.
+    """
+    input_sql = """
+SELECT
+    '{{ model_config.get('source_config', {}) }}' as custom,
+    '{{ test_config.get('other_key', 'x') }}' as other
+"""
+
+    result = move_custom_config_access_to_meta_sql_improved(_sql(input_sql), _sql_cfg())
+
+    assert not result.refactored
+    assert result.refactored_content == input_sql
+    assert "meta_get" not in result.refactored_content
