@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -6,6 +7,44 @@ import jinja2.nodes
 from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
 
 from dbt_autofix._jinja_environment import get_jinja_environment
+
+_HIDDEN_ENV_PREFIXES = ("DBT_ENV_SECRET", "DBT_ENV_PRIVATE")
+
+
+class _UnresolvedEnvVar(Exception):
+    """Raised by env_var when a reference cannot be resolved, to abort the render
+    so resolve_env_vars falls back to the original raw string.
+    """
+
+
+def _env_var(name: str, default: Optional[str] = None) -> str:
+    """env_var callable for the render context. A missing or excluded var with no default
+    raises, which aborts the render so the caller keeps the original raw string.
+    """
+    if name.startswith(_HIDDEN_ENV_PREFIXES):
+        raise _UnresolvedEnvVar(name)
+    if name in os.environ:
+        return os.environ[name]
+    if default is not None:
+        return str(default)
+    raise _UnresolvedEnvVar(name)
+
+
+def resolve_env_vars(raw: Any) -> Any:
+    """Best-effort resolve env_var() calls in a dbt_project.yml value.
+
+    Non-string values and strings without Jinja delimiters are returned
+    unchanged. When a var cannot be resolved, or the template is malformed, the
+    exact original value is returned. For internal decision logic only; the
+    resolved value must not be written back to disk.
+    """
+    if not isinstance(raw, str) or ("{{" not in raw and "{%" not in raw):
+        return raw
+
+    try:
+        return get_jinja_environment().from_string(raw).render(env_var=_env_var)
+    except (_UnresolvedEnvVar, jinja2.TemplateError):
+        return raw
 
 
 @dataclass

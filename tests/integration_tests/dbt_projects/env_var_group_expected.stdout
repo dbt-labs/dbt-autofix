@@ -1,0 +1,15 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "env_var_group/dbt_project.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+      }
+    ]
+  }
+]
