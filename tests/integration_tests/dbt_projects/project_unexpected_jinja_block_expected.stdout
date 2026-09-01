@@ -1,0 +1,16 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_unexpected_jinja_block/macros/build_date_malformed.sql",
+    "mode": "applied",
+    "refactors": [],
+    "remaining_sql_rules_skipped": true,
+    "sql_rules_stopped_after_rule": "remove_unmatched_endings",
+    "warnings": [
+      "Invalid Jinja: duplicate block openers (near line 2). Remove the extra Jinja block start before the macro, if, set, or other block, then re-run. Further SQL refactors for this file are skipped.",
+      "Invalid Jinja: spurious Jinja closers after a well-formed end block (near line 6). Remove the spurious % character(s) and closing brace at the end of that Jinja end tag. Further SQL refactors for this file are skipped."
+    ]
+  }
+]
