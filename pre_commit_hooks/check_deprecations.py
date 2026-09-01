@@ -98,6 +98,12 @@ def parse_arguments(argv: Optional[List[str]] = None) -> argparse.Namespace:
         default=".",
         help="The path to the dbt project",
     )
+    parser.add_argument(
+        "--json-schema-version",
+        type=str,
+        default=None,
+        help="Specific Fusion JSON schema version to use (defaults to latest)",
+    )
 
     return parser.parse_args(argv)
 
@@ -125,7 +131,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not select:
         return 0  # No relevant files to check
 
-    schema_specs = SchemaSpecs(version=None)
+    schema_specs = SchemaSpecs(version=args.json_schema_version)
     yaml_results, sql_results, python_results = changeset_all_files(
         path=path,
         schema_specs=schema_specs,
