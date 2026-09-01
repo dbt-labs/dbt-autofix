@@ -27,16 +27,12 @@ from dbt_fusion_package_tools.check_parse_conformance import (
     download_tarball_and_run_conformance,
 )
 from dbt_fusion_package_tools.compatibility import FusionConformanceResult
+from dbt_fusion_package_tools.scripts.constants import DEFAULT_FUSION_BINARY_PATH, DEFAULT_HUB_PATH, DEFAULT_OUTPUT_PATH
 
 console = Console()
 error_console = Console(stderr=True)
 
 app = typer.Typer()
-
-current_dir = Path.cwd()
-DEFAULT_OUTPUT_PATH = current_dir / "src" / "dbt_fusion_package_tools" / "scripts" / "output"
-DEFAULT_HUB_PATH = Path.home() / "workplace" / "hub.getdbt.com"
-DEFAULT_FUSION_BINARY_PATH = Path.home() / ".local" / "bin" / "dbt"
 
 
 # Example package index path:
