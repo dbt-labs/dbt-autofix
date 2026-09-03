@@ -11,6 +11,7 @@ resolution-markers = [
 members = [
     "dbt-autofix",
     "dbt-fusion-package-tools",
+    "dbt-migrate-1x",
 ]
 
 [[package]]
@@ -335,6 +336,22 @@ requires-dist = [
     { name = "pyyaml", marker = "python_full_version >= '3.13'", specifier = ">=6.0.2" },
     { name = "requests", specifier = "<3.0.0" },
     { name = "rich", specifier = ">=14.0.0" },
+    { name = "typer", specifier = ">=0.16.0" },
+]
+
+[[package]]
+name = "dbt-migrate-1x"
+source = { editable = "packages/dbt_migrate_1x" }
+dependencies = [
+    { name = "dbt-autofix" },
+    { name = "rich" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dbt-autofix", editable = "." },
+    { name = "rich", specifier = ">=13.7.0" },
     { name = "typer", specifier = ">=0.16.0" },
 ]
 
