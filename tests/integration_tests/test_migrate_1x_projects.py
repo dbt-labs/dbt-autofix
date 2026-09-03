@@ -14,8 +14,8 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
+from dbt_migrate_1x.cli import migrate_1x
 
-from dbt_autofix.main import migrate_1x
 from tests.integration_tests.test_full_dbt_projects import compare_dirs, compare_json_logs
 
 dbt_projects_dir_name = "dbt_projects_migrate_1x"

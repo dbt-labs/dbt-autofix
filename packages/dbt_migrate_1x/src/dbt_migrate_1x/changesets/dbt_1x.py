@@ -37,7 +37,6 @@ def _walk_mappings(node: Any) -> Iterator[CommentedMap]:
 
 
 def _config_mappings(node: Any) -> Iterator[CommentedMap]:
-    """Yield every `config:` mapping nested anywhere under `node`."""
     for mapping in _walk_mappings(node):
         cfg = mapping.get("config")
         if isinstance(cfg, dict):

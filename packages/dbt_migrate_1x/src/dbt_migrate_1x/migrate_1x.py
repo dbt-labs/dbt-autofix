@@ -1,4 +1,4 @@
-"""Driver for the deterministic dbt 1.x → 1.x migration (`dbt-autofix migrate-1x`)."""
+"""Driver for the deterministic dbt 1.x → 1.x migration (`dbt-migrate-1x`)."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,15 +8,6 @@ from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.refactor import get_dbt_files_paths, skip_file
-from dbt_autofix.refactors.changesets.dbt_1x import (
-    changeset_1x_clean_targets,
-    changeset_1x_rename_predicates_project,
-    changeset_1x_rename_predicates_yml,
-    changeset_1x_tests_to_data_tests_project,
-    changeset_1x_tests_to_data_tests_yml,
-    refactor_1x_current_timestamp,
-    refactor_1x_rename_predicates_sql,
-)
 from dbt_autofix.refactors.results import (
     DbtProjectYMLRefactorConfig,
     SQLRefactorConfig,
@@ -26,6 +17,15 @@ from dbt_autofix.refactors.results import (
 )
 from dbt_autofix.refactors.yml import load_yaml
 from dbt_autofix.retrieve_schemas import SchemaSpecs
+from dbt_migrate_1x.changesets.dbt_1x import (
+    changeset_1x_clean_targets,
+    changeset_1x_rename_predicates_project,
+    changeset_1x_rename_predicates_yml,
+    changeset_1x_tests_to_data_tests_project,
+    changeset_1x_tests_to_data_tests_yml,
+    refactor_1x_current_timestamp,
+    refactor_1x_rename_predicates_sql,
+)
 
 error_console = Console(stderr=True)
 

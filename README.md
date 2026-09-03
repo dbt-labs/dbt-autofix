@@ -138,9 +138,11 @@ Running with `--dry-run`/`d` will output what changes would have been triggered 
 
 Running with `--behavior-changes` will run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
 
-### `migrate-1x` - deterministic dbt 1.x migrations
+### `dbt-migrate-1x` - deterministic dbt 1.x migrations
 
-`dbt-autofix migrate-1x` applies a set of **deterministic** fixes for changes introduced _between dbt 1.x minor versions_, spanning 1.3 up to the latest dbt 1.x (currently 1.12). Unlike `deprecations`, this command is **not** related to Fusion or the v1.10 deprecations — it runs **only** the 1.x rules below and never fetches the Fusion JSON schema, so it needs no network access. Use it when you are still on dbt 1.x and moving across minor versions.
+`dbt-migrate-1x` applies a set of **deterministic** fixes for changes introduced _between dbt 1.x minor versions_, spanning 1.3 up to the latest dbt 1.x (currently 1.12). Unlike `deprecations`, this is **not** related to Fusion or the v1.10 deprecations — it runs **only** the 1.x rules below and never fetches the Fusion JSON schema, so it needs no network access. Use it when you are still on dbt 1.x and moving across minor versions.
+
+It ships as its own package, [`packages/dbt_migrate_1x`](./packages/dbt_migrate_1x), in this repo's uv workspace, rather than as a `dbt-autofix` subcommand — so it can be run directly, e.g. `uv run dbt-migrate-1x --path <mypath>`.
 
 - add `--path <mypath>` to configure the path of the dbt project (defaults to `.`)
 - add `--dry-run` to preview changes without applying them
@@ -157,7 +159,7 @@ The following deterministic changes are covered today. Rule coverage runs throug
 | 1.7 | `dbt_project.yml` | Remove `clean-targets` entries that point at a configured source path or outside the project (which now cause `dbt clean` to error) |
 | 1.8 | schema YAML, `dbt_project.yml` | Rename `tests:` to `data_tests:` (skipping any node that already has `data_tests`) |
 
-As with the other commands, calling `migrate-1x` without `--dry-run` should be safe if your dbt code is part of a git repo. Please review the suggested changes before merging.
+As with the other commands, calling `dbt-migrate-1x` without `--dry-run` should be safe if your dbt code is part of a git repo. Please review the suggested changes before merging.
 
 ### Using `AGENTS.md`
 

@@ -2,10 +2,7 @@
 
 from pathlib import Path
 
-from ruamel.yaml.comments import CommentedMap
-
-from dbt_autofix.migrate_1x import NO_SCHEMA_SPECS, _active_rules, _version_tuple, migrate_1x_all_files
-from dbt_autofix.refactors.changesets.dbt_1x import (
+from dbt_migrate_1x.changesets.dbt_1x import (
     changeset_1x_clean_targets,
     changeset_1x_rename_predicates_project,
     changeset_1x_rename_predicates_yml,
@@ -14,6 +11,9 @@ from dbt_autofix.refactors.changesets.dbt_1x import (
     refactor_1x_current_timestamp,
     refactor_1x_rename_predicates_sql,
 )
+from dbt_migrate_1x.migrate_1x import NO_SCHEMA_SPECS, _active_rules, _version_tuple, migrate_1x_all_files
+from ruamel.yaml.comments import CommentedMap
+
 from dbt_autofix.refactors.results import (
     DbtProjectYMLRefactorConfig,
     SQLContent,
