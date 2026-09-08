@@ -1,0 +1,41 @@
+from enum import Enum
+
+
+class PackageVersionFusionCompatibilityState(str, Enum):
+    """String enum for dbt v2 compatibility of a specific version of a package."""
+
+    NO_DBT_VERSION_RANGE = "require-dbt-version is not defined"
+    DBT_VERSION_RANGE_EXCLUDES_2_0 = "require-dbt-version excludes version 2.0"
+    DBT_VERSION_RANGE_INCLUDES_2_0 = "require-dbt-version includes version 2.0"
+    EXPLICIT_ALLOW = "Version has been verified by dbt as dbt v2-compatible even though its declared require-dbt-version may not include 2.0"
+    EXPLICIT_DISALLOW = "Version has been verified by dbt as incompatible with dbt v2"
+    V2_COMPATIBLE_DOWNLOAD = "Version is incompatible but has a v2-compatible package download available"
+    UNKNOWN = "Version state unknown"
+
+
+class PackageFusionCompatibilityState(str, Enum):
+    """String enum for dbt v2 compatibility at the package level."""
+
+    ALL_VERSIONS_COMPATIBLE = "All package versions are dbt v2-compatible"
+    SOME_VERSIONS_COMPATIBLE = "A subset of package versions are dbt v2 compatible"
+    NO_VERSIONS_COMPATIBLE = "No versions are dbt v2 compatible"
+    MISSING_COMPATIBILITY = "All package versions are missing require dbt version"
+    UNKNOWN = "Package version state unknown"
+
+
+class PackageVersionUpgradeType(str, Enum):
+    """String enum for package upgrade types"""
+
+    NO_UPGRADE_REQUIRED = "Package is already compatible with dbt v2"
+    UPGRADE_AVAILABLE = "Package has dbt v2-compatible version available"
+    PUBLIC_PACKAGE_MISSING_FUSION_ELIGIBILITY = (
+        "Public package has not defined require-dbt-version so dbt v2 eligibility cannot be determined"
+    )
+    PUBLIC_PACKAGE_NOT_COMPATIBLE_WITH_FUSION = "Public package is not compatible with dbt v2"
+    PUBLIC_PACKAGE_FUSION_COMPATIBLE_VERSION_EXCEEDS_PROJECT_CONFIG = (
+        "Public package has dbt v2-compatible version that is outside the project's requested version range"
+    )
+    PRIVATE_PACKAGE_MISSING_REQUIRE_DBT_VERSION = "Private package requires a compatible require-dbt-version (>=2.0.0, <3.0.0) to be available on dbt v2. https://docs.getdbt.com/reference/project-configs/require-dbt-version"
+    TRANSITIVE_DEPENDENCY = "Package is a transitive dependency of another package in your project"
+    PUBLIC_PACKAGE_HAS_V2_COMPATIBLE_DOWNLOAD = "Installed package version has a v2-compatible download available. Run dbt deps --use-v2-compatible-package-downloads flag"
+    UNKNOWN = "Package's dbt v2 eligibility unknown"

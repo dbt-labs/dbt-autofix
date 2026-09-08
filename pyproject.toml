@@ -14,10 +14,12 @@ cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true 
 [tool.uv.workspace]
 members = [
     "packages/dbt_fusion_package_tools",
+    "packages/dbt_package_tools",
 ]
 
 [tool.uv.sources]
 dbt-fusion-package-tools = { workspace = true }
+dbt-package-tools = { workspace = true }
 
 [project.scripts]
 dbt-autofix = "dbt_autofix.main:app"
@@ -185,6 +187,19 @@ invalid-argument-type = "ignore"
 "tests/unit_tests/test_jinja.py" = ["PLC0415"]
 "tests/unit_tests/test_rec_check_yaml_path.py" = ["D415"]
 "tests/unit_tests/test_refactor.py" = ["D415", "E712"]
+"packages/dbt_package_tools/src/dbt_package_tools/__init__.py" = ["T201"]
+"packages/dbt_package_tools/src/dbt_package_tools/check_parse_conformance.py" = ["D417"]
+"packages/dbt_package_tools/src/dbt_package_tools/dbt_package.py" = ["E722"]
+"packages/dbt_package_tools/src/dbt_package_tools/dbt_package_version.py" = ["E711", "E722", "PLW1641"]
+"packages/dbt_package_tools/src/dbt_package_tools/exceptions.py" = ["D415"]
+"packages/dbt_package_tools/src/dbt_package_tools/package_example.py" = ["T201"]
+"packages/dbt_package_tools/src/dbt_package_tools/scripts/conformance_output.py" = ["PLC0206", "PLR2004"]
+"packages/dbt_package_tools/src/dbt_package_tools/scripts/get_fusion_compatible_versions.py" = ["E711"]
+"packages/dbt_package_tools/src/dbt_package_tools/scripts/get_package_hub_files.py" = ["D205", "D417", "PLR2004"]
+"packages/dbt_package_tools/src/dbt_package_tools/scripts/package_hub_fusion_compatibility.py" = ["D205", "PLR2004"]
+"packages/dbt_package_tools/src/dbt_package_tools/upgrade_status.py" = ["D415"]
+"packages/dbt_package_tools/src/dbt_package_tools/version_utils.py" = ["E721", "E722", "PLR2004", "PLW1641"]
+"packages/dbt_package_tools/src/dbt_package_tools/yaml/loader.py" = ["D205"]
 
 [tool.pytest.ini_options]
 pythonpath = [
