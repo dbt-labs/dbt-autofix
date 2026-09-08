@@ -1,4 +1,4 @@
-"""Runs dbt parse in Fusion to identify parse erors in packages."""
+"""Runs dbt parse in dbt v2 to identify parse erors in packages."""
 
 import json
 import os
@@ -27,7 +27,7 @@ from dbt_fusion_package_tools.yaml.loader import safe_load
 console = Console()
 error_console = Console(stderr=True)
 
-"""Cleans model paths displayed in Fusion error messages.
+"""Cleans model paths displayed in dbt v2 error messages.
 
 Example:
     Original: ../../../../../../private/var/folders/xf/r3bz6sxx0m57976q8nb2d1fh0000gp/T/tmp0bnpllg5/models/examples/basic_example/basic_example_d_site.yml:10:9
@@ -220,7 +220,7 @@ def check_fusion_version(binary_name: str) -> Optional[str]:
             timeout=60,
             text=True,
         )
-        if "dbt-fusion" in version_result.stdout:
+        if "v2" in version_result.stdout:
             return version_result.stdout.split()[-1]
     except Exception as e:
         error_console.log(f"{e}: An unknown error occurred when checking dbt version")
@@ -239,7 +239,7 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
             binary_names_found.add(binary_name)
 
     if len(binary_names_found) == 0:
-        error_console.log("No fusion binaries found on system path, please install first")
+        error_console.log("No dbt v2 binaries found on system path, please install first")
         return None
 
     # now check version returned by each and use first one
@@ -249,8 +249,8 @@ def find_fusion_binary(custom_name: Optional[str] = None) -> Optional[str]:
         if version_result:
             return valid_binary_name
 
-    # if we got to the end, then no fusion version has been found
-    error_console.log(f"Could not find Fusion binary, latest version output is {version_result}")
+    # if we got to the end, then no dbt v2 version has been found
+    error_console.log(f"Could not find dbt v2 binary, latest version output is {version_result}")
     return None
 
 
@@ -296,14 +296,14 @@ def check_fusion_schema_compatibility(
     fusion_binary: Optional[str] = None,
     show_fusion_output=True,
 ) -> Optional[ParseConformanceLogOutput]:
-    """Check if a dbt package is fusion schema compatible by running 'dbtf parse'.
+    """Check if a dbt package is v2 schema compatible by running 'dbt parse'.
 
     Args:
-        fusion_binary_name: name of a valid Fusion binary
+        fusion_binary_name: name of a valid dbt v2 binary
         repo_path: Path to the dbt package repository
 
     Returns:
-        True if fusion compatible (dbtf parse exits with code 0), False otherwise
+        True if dbt v2 compatible (dbt parse exits with code 0), False otherwise
     """
     # Add a test profiles.yml to the current directory
     profiles_path = repo_path / Path("profiles.yml")
@@ -400,9 +400,9 @@ def check_fusion_schema_compatibility(
 
         if show_fusion_output:
             if is_compatible:
-                console.log(f"Package at {repo_path} is fusion schema compatible")
+                console.log(f"Package at {repo_path} is dbt v2 schema compatible")
             else:
-                console.log(f"Package at {repo_path} is not fusion schema compatible")
+                console.log(f"Package at {repo_path} is not dbt v2 schema compatible")
 
         # Clean up deps
         if show_fusion_output:
@@ -429,7 +429,7 @@ def check_fusion_schema_compatibility(
         return parse_output
 
     except Exception as e:
-        error_console.log(f"Error checking fusion compatibility for {repo_path}: {e!s}")
+        error_console.log(f"Error checking dbt v2 compatibility for {repo_path}: {e!s}")
         try:
             os.remove(profiles_path)
         except Exception:

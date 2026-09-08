@@ -2,7 +2,7 @@
 
 ## PROBLEM
 
-Fusion cannot parse (`dbtf parse`) a user project if the project itself is not compatilbe with the authoring layer.
+dbt v2 cannot parse (`dbt parse`) a user project if the project itself is not compatilbe with the authoring layer.
 
 ## SOLUTION
 
@@ -40,7 +40,7 @@ There's often changes to the project that are needed. To learn more about requir
 https://github.com/{package_owner}/{package_name}/releases
 ```
 
-For the the latest Fusion compatible releases of Fivetran packages, the source (`_source`) packages have deprecated and rolled into the main packages.
+For the the latest dbt v2-compatible releases of Fivetran packages, the source (`_source`) packages have deprecated and rolled into the main packages.
 
 The result is that there may be reference in `dbt_project.yml` to `*_source` package models, sources, and variables that have to be adjusted.
 

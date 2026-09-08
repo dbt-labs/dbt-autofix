@@ -1,8 +1,8 @@
 # dbt-autofix
 
-dbt-autofix automatically scans your dbt project for deprecated configurations and updates them to align with the latest best practices. This makes it easier to resolve deprecation warnings introduced in dbt v1.10 as well as prepare for migration to the dbt Fusion engine.
+dbt-autofix automatically scans your dbt project for deprecated configurations and updates them to align with the latest best practices. This makes it easier to resolve deprecation warnings introduced in dbt v1.10 as well as prepare for migration to the dbt v2 engine.
 
-***NEW in version 0.17.0***: dbt-autofix can now check package dependencies for compatibility with dbt Fusion and dbt 2.0 and automatically upgrade packages to newer compatible versions. See `packages` in the `Usage` section below for more detail.
+***NEW in version 0.17.0***: dbt-autofix can now check package dependencies for compatibility with dbt v2 and automatically upgrade packages to newer compatible versions. See `packages` in the `Usage` section below for more detail.
 
 There will also be cases that dbt-autofix cannot resolve and require manual intervention. For those scenarios, using AI Agents can be helpful see the below section on [Using `AGENTS.md`](#using-agentsmd). Even if you don't intend to use LLMs, the [`AGENTS.md`](./AGENTS.md) can be a very helpful guidance for work that may need to be done after autofix has done it's part.
 
@@ -28,7 +28,7 @@ The following deprecations are covered by `dbt-autofix deprecations`:
 | `ResourceNamesWithSpacesDeprecation` | SQL files, Python files, YAML files | Replaces spaces with underscores in resource names, updating .sql filenames as necessary | Full | Yes |  
 | `SourceFreshnessProjectHooksNotRun` | `dbt_project.yml` | Set `source_freshness_run_project_hooks` in `dbt_project.yml` "flags" to true | Full | Yes |
 | `MissingArgumentsPropertyInGenericTestDeprecation` | YAML files | Move any keyword arguments defined as top-level property on generic test to `arguments` property | Full | No |
-| `StaticAnalysisDeprecation` | `dbt_project.yml`, YAML files, SQL files | Convert boolean `static_analysis` values to the Fusion enum (`True`→`baseline`, `False`→`off`) | Full | No |
+| `StaticAnalysisDeprecation` | `dbt_project.yml`, YAML files, SQL files | Convert boolean `static_analysis` values to the dbt v2 enum (`True`→`baseline`, `False`→`off`) | Full | No |
 
 ## Deprecation Coverage - CLI Commands
 
@@ -84,10 +84,10 @@ uv tool install --from git+https://github.com/dbt-labs/dbt-autofix.git dbt-autof
   - add `--path <mypath>` to configure the path of the dbt project (defaults to `.`)
   - add `--dry-run` for running in dry run mode
   - add `--json` to get resulting data in a JSONL format
-  - add `--json-schema-version v2.0.0-beta.4` to get the JSON schema from a specific Fusion release (by default we pick the latest)
+  - add `--json-schema-version v2.0.0-preview.220` to get the JSON schema from a specific dbt v2 release (by default we pick the latest)
   - add `--select <path>` to only select files in a given path (by default the tool will look at all files of the dbt project)
-  - add `--include-packages` to also autofix the packages installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with Fusion.
-  - add `--include-private-packages` to autofix just the _private_ packages (those not on [hub.getdbt.com](https://hub.getdbt.com/)) installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with Fusion.
+  - add `--include-packages` to also autofix the packages installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with dbt v2.
+  - add `--include-private-packages` to autofix just the _private_ packages (those not on [hub.getdbt.com](https://hub.getdbt.com/)) installed. Just note that those fixes will be reverted at the next `dbt deps` and the long term fix will be to update the packages to versions compatible with dbt v2.
   - add `--behavior-change` to run the _subset_ of fixes that would resolve deprecations that require a behavior change. Refer to the coverage tables above to determine which deprecations require behavior changes.
   - add `--all` to run all of the fixes possible - both fixes that potentially require behavior changes as well as not. Additionally, `--all` will apply fixes to as many files as possible, even if some files are unfixable (e.g. due to invalid yaml syntax).
 
@@ -104,7 +104,7 @@ Please review the suggested changes to your dbt project before merging to `main`
 
 ### `packages` - the new one
 
-- `dbt-autofix packages`: scan package dependencies for compatibility with Fusion and dbt 2.0 and modify packages.yml or dependencies.yml to upgrade any incompatible packages to a newer compatible version
+- `dbt-autofix packages`: scan package dependencies for compatibility with dbt v2 and modify packages.yml or dependencies.yml to upgrade any incompatible packages to a newer compatible version
   - add `--force-upgrade` to override the version range currently defined in your project's packages.yml/dependencies.yml
   - add `--path <mypath>` to configure the path of the dbt project (defaults to `.`)
   - add `--dry-run` for running in dry run mode
@@ -118,9 +118,9 @@ Each JSON object will have the following keys:
 - "file_path": the full path of the file modified
 - "upgrades": the list of packages upgraded to newer versions
 - "unchanged": the list of packages not upgraded and the reason for not upgrading, including:
-  - Package is already compatible with Fusion and no update is required
-  - Package is not compatible with Fusion and Package Hub does not have a newer version with Fusion compatibility
-  - Package has not defined Fusion compatibility using `require-dbt-version`
+  - Package is already compatible with dbt v2 and no update is required
+  - Package is not compatible with dbt v2 and Package Hub does not have a newer version with dbt v2 compatibility
+  - Package has not defined dbt v2 compatibility using `require-dbt-version`
 
 Calling `packages` without `--dry-run` should be safe if your dbt code is part of a git repo. 
 
@@ -128,7 +128,7 @@ Please review the suggested changes to your dbt project before merging to `main`
 
 ### `jobs`
 
-`dbt-autofix jobs`: update dbt platform jobs steps to use `-s`/`--select` selectors instead of `-m`/`--models`/`--model` which are deprecated in the Fusion engine
+`dbt-autofix jobs`: update dbt platform jobs steps to use `-s`/`--select` selectors instead of `-m`/`--models`/`--model` which are deprecated in the dbt v2 engine
 
 Run `dbt-autofix jobs --help` to see the required parameters and supported arguments.
 
@@ -149,11 +149,11 @@ Running with `--behavior-changes` will run the _subset_ of fixes that would reso
 
 **Sample prompt:**
 
-Please make my dbt project compatible with Fusion by strictly following the instructions in AGENTS.md. Please read AGENTS.md and dependent resources in full before you start, and take time planning and thinking through steps.
+Please make my dbt project compatible with dbt v2 by strictly following the instructions in AGENTS.md. Please read AGENTS.md and dependent resources in full before you start, and take time planning and thinking through steps.
 
 **Share your manual fixes!**
 
-Have you had to make manual adjustments to get your dbt project working with Fusion? We’d love for you to contribute them back to the community through this agentic workflow!
+Have you had to make manual adjustments to get your dbt project working with dbt v2? We’d love for you to contribute them back to the community through this agentic workflow!
 
 The `/manual_fixes/` folder is a collection of real examples where users have solved compatibility issues manually, and we would love your contribution to it. Your contribution helps improve autofix for everyone and can prevent others from hitting the same issue. 
 
