@@ -216,9 +216,9 @@ class DbtPackageFile:
         ]
 
     def get_installed_version_fusion_compatible(self) -> list[str]:
-        """List packages where the installed version is already compatible with Fusion.
+        """List packages where the installed version is already compatible with dbt v2.
 
-        A version is Fusion compatible if `is_installed_version_fusion_compatible()`
+        A version is dbt v2-compatible if `is_installed_version_fusion_compatible()`
         on the package returns EXPLICIT_ALLOW or DBT_VERSION_RANGE_INCLUDES_2_0.
 
         Returns:
@@ -238,7 +238,7 @@ class DbtPackageFile:
         return package_names
 
     def get_package_fusion_compatibility(self) -> dict[PackageFusionCompatibilityState, set[str]]:
-        """Get Fusion compatibility status for all packages in file.
+        """Get dbt v2 compatibility status for all packages in file.
 
         The package's compatibility state is returned by `get_package_fusion_compatibility_state`.
         All packages in the file will fall into exactly one of the compatibility states.

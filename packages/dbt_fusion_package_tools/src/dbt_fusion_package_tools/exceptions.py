@@ -15,7 +15,7 @@ class VersionsNotCompatibleError(SemverError):
 
 
 class FusionBinaryNotAvailable(Exception):
-    def __init__(self, message="Fusion binary not found on system, please install Fusion first"):
+    def __init__(self, message="dbt v2 binary not found on system, please install dbt v2 first"):
         self.message = message
         super().__init__(self.message)
 
