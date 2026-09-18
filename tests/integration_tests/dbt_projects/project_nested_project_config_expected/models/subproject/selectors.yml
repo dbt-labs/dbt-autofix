@@ -1,0 +1,5 @@
+selectors:
+  - name: nightly
+    definition:
+      method: tag
+      value: nightly

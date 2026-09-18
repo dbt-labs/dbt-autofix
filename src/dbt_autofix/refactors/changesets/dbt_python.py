@@ -18,15 +18,19 @@ from dbt_autofix.refactors.results import (
 )
 
 # Pattern to find dbt.config(...) calls - captures the full call including parentheses
+# The `dbt` receiver must be its own identifier: without the lookbehind, a plain
+# variable ending in `dbt` (e.g. `my_dbt.config(...)`) would match at the `dbt.config(`
+# suffix and get corrupted by the meta-merging rewrite below.
 DBT_CONFIG_CALL_PATTERN = re.compile(
-    r"dbt\.config\s*\(",
+    r"(?<!\w)dbt\.config\s*\(",
     re.MULTILINE,
 )
 
 # Pattern to find dbt.config.get(...) calls
 # Captures: quote style, key name, and optional default value
+# Same identifier-boundary guard as DBT_CONFIG_CALL_PATTERN above.
 DBT_CONFIG_GET_PATTERN = re.compile(
-    r"dbt\.config\.get\s*\(\s*"  # dbt.config.get(
+    r"(?<!\w)dbt\.config\.get\s*\(\s*"  # dbt.config.get(
     r"(?P<quote>[\"'])(?P<key>[^\"']+)(?P=quote)"  # quoted key
     r"(?:\s*,\s*(?P<default>[^)]+))?"  # optional default value
     r"\s*\)",  # closing paren

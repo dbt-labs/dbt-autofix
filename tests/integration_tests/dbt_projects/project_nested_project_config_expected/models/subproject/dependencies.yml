@@ -1,0 +1,5 @@
+packages:
+  - package: calogica/dbt_expectations
+    version: 0.10.1
+projects:
+  - name: some_project

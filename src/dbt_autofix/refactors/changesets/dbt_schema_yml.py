@@ -432,16 +432,36 @@ def changeset_refactor_yml_str(content: YMLContent, config: YMLRefactorConfig) -
     yml_dict = load_yaml(yml_str)
 
     yml_dict_keys = list(yml_dict.keys())
-    for key in yml_dict_keys:
-        if key not in schema_specs.valid_top_level_yaml_fields:
-            refactored = True
-            deprecation_refactors.append(
-                DbtDeprecationRefactor(
-                    log=f"Removed custom top-level key: '{key}'",
-                    deprecation=DeprecationType.CUSTOM_TOP_LEVEL_KEY_DEPRECATION,
-                )
+    custom_keys = [key for key in yml_dict_keys if key not in schema_specs.valid_top_level_yaml_fields]
+
+    if custom_keys and len(custom_keys) == len(yml_dict_keys):
+        # Every top-level key is unrecognized, so this is not a properties document.
+        # Removing them all would empty the file, so leave it alone and say why.
+        # Return here rather than falling through: "columns" and "tables" are node types
+        # without being valid top-level fields, so the loops below would still rewrite a
+        # file whose only key is one of those, contradicting the warning.
+        return YMLRuleRefactorResult(
+            rule_name="restructure_yaml_keys",
+            refactored=False,
+            refactored_yaml=yml_str,
+            original_yaml=yml_str,
+            deprecation_refactors=[],
+            refactor_warnings=[
+                f"Not a dbt properties file - no recognized top-level keys "
+                f"({', '.join(str(key) for key in custom_keys)}). Left unchanged; move it outside "
+                f"your resource paths or add it to .dbtignore."
+            ],
+        )
+
+    for key in custom_keys:
+        refactored = True
+        deprecation_refactors.append(
+            DbtDeprecationRefactor(
+                log=f"Removed custom top-level key: '{key}'",
+                deprecation=DeprecationType.CUSTOM_TOP_LEVEL_KEY_DEPRECATION,
             )
-            yml_dict.pop(key)
+        )
+        yml_dict.pop(key)
 
     for node_type in schema_specs.yaml_specs_per_node_type:
         if node_type in yml_dict:

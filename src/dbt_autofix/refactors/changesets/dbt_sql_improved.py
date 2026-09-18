@@ -9,6 +9,13 @@ from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQ
 SET_CONFIG_PATTERN = re.compile(r"{%\s*set\s+config\s*=")
 CONFIG_ALIAS_PATTERN = re.compile(r"{%\s*set\s+\w+\s*=\s*config\s*%}")
 
+# Identifier-boundary guard shared by every pattern below that matches a bare
+# `config.` receiver: without it, `model_config.get(...)` or `test_config.get(...)`
+# match at the `config.get(...)` suffix and get rewritten, corrupting an unrelated
+# plain dict's `.get()` call. Kept as one constant so the two patterns below can't
+# drift out of sync if this rule needs to change again.
+_CONFIG_BOUNDARY = r"(?<!\w)"
+
 # Pattern to match config.get() and config.require() calls
 # This handles:
 # - Single and double quotes
@@ -21,10 +28,11 @@ CONFIG_ALIAS_PATTERN = re.compile(r"{%\s*set\s+\w+\s*=\s*config\s*%}")
 # mid-identifier: without it, `test_model.config.get(...)` matches starting at
 # `model.`, and stripping the match leaves the orphaned `test_` fused onto the
 # replacement -> `test_config.meta_get(...)`, an undefined Jinja variable.
-# Any other receiver (`node.`, `test_model.`, ...) falls outside the match and is
-# preserved, e.g. `node.config.get(...)` -> `node.config.meta_get(...)`.
+# Any other dotted receiver (`node.`, `test_model.`, ...) falls outside the match and
+# is preserved, e.g. `node.config.get(...)` -> `node.config.meta_get(...)`.
 CONFIG_ACCESS_PATTERN = re.compile(
-    r"(?:(?<![\w.])model\.)?config\.(?P<method>get|require)\s*\("  # config.get( or config.require(
+    r"(?:(?<![\w.])model\.config\.|" + _CONFIG_BOUNDARY + r"config\.)"
+    r"(?P<method>get|require)\s*\("  # config.get( or config.require(
     r"(?P<pre_ws>\s*)"  # whitespace before the key
     r"(?P<quote>[\"'])(?P<key>[^\"']+)(?P=quote)"  # quoted key with captured quote style
     r"(?P<rest>.*?)"  # rest of the call including args and whitespace
@@ -33,9 +41,7 @@ CONFIG_ACCESS_PATTERN = re.compile(
 )
 
 # Pattern to detect chained config access
-CHAINED_ACCESS_PATTERN = re.compile(
-    r"config\.(get|require)\s*\([^)]+\)\s*\."  # config.get(...).
-)
+CHAINED_ACCESS_PATTERN = re.compile(_CONFIG_BOUNDARY + r"config\.(get|require)\s*\([^)]+\)\s*\.")  # config.get(...).
 
 
 def move_custom_config_access_to_meta_sql_improved(

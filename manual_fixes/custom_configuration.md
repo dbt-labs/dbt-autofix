@@ -2,7 +2,7 @@
 
 ## PROBLEM
 
-Any config key that's not a part of the new authoring layer will cause Fusion to fail to parse. This error will show up as "Ignored unexpected key" in the parse logs. Unexpected config key could fall into one of two categories:
+Any config key that's not a part of the new authoring layer will cause dbt v2 to fail to parse. This error will show up as "Ignored unexpected key" in the parse logs. Unexpected config key could fall into one of two categories:
 1. It's a misspelling of a supported config key (see misspelled_config_keys.md)
 2. It's a custom config key (addressed in this file)
 

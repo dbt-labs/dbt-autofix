@@ -1,0 +1,15 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_root_model_path/schema.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "PropertyMovedToConfigDeprecation",
+        "log": "Model 'my_model' - Field 'materialized' moved under config."
+      }
+    ]
+  }
+]

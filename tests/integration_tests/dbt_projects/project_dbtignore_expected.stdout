@@ -1,0 +1,25 @@
+[
+  {
+    "mode": "complete"
+  },
+  {
+    "file_path": "project_dbtignore/dbt_project.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "MissingGenericTestArgumentsPropertyDeprecation",
+        "log": "Set flag 'require_generic_test_arguments_property' to 'True' - This will parse the values defined within the `arguments` property of test definition as the test keyword arguments."
+      }
+    ]
+  },
+  {
+    "file_path": "project_dbtignore/models/included/schema.yml",
+    "mode": "applied",
+    "refactors": [
+      {
+        "deprecation": "PropertyMovedToConfigDeprecation",
+        "log": "Model 'included_model' - Field 'materialized' moved under config."
+      }
+    ]
+  }
+]

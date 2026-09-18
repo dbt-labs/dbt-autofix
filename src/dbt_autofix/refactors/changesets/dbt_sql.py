@@ -4,7 +4,10 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple
 
 from dbt_autofix.deprecations import DeprecationType
-from dbt_autofix.jinja import statically_parse_unrendered_config
+from dbt_autofix.jinja import (
+    DuplicateConfigKey,
+    statically_parse_unrendered_config,
+)
 from dbt_autofix.refactors.constants import COMMON_CONFIG_MISSPELLINGS
 from dbt_autofix.refactors.iceberg_table_format import ICEBERG_ONLY_KEYS, classify_iceberg_table_format
 from dbt_autofix.refactors.results import DbtDeprecationRefactor, SQLContent, SQLRefactorConfig, SQLRuleRefactorResult
@@ -248,6 +251,38 @@ def meta_transform_value(v):
         return repr(v)
 
 
+_DUPLICATE_VALUE_SUMMARY_LIMIT = 60
+
+
+def _summarize_source_value(value: str) -> str:
+    """Collapse a config value's source text to a single short line for logging."""
+    collapsed = " ".join(value.split())
+    if len(collapsed) > _DUPLICATE_VALUE_SUMMARY_LIMIT:
+        return f"{collapsed[:_DUPLICATE_VALUE_SUMMARY_LIMIT]}..."
+    return collapsed
+
+
+def _duplicate_key_refactors(duplicates: List[DuplicateConfigKey]) -> List[DbtDeprecationRefactor]:
+    """Note every config key that was defined more than once in a config() dictionary."""
+    refactors: List[DbtDeprecationRefactor] = []
+    for duplicate in duplicates:
+        dropped_count = len(duplicate.dropped_values)
+        dropped_values = ", ".join(_summarize_source_value(value) for value in duplicate.dropped_values)
+        refactors.append(
+            DbtDeprecationRefactor(
+                log=(
+                    f"Config key '{duplicate.key}' was defined {dropped_count + 1} times in the config() "
+                    f"dictionary; kept the last value ({_summarize_source_value(duplicate.kept_value)}) "
+                    f"and dropped the earlier {'ones' if dropped_count > 1 else 'one'} ({dropped_values}), "
+                    "which is how dbt resolves a repeated key."
+                ),
+                # dbt resolves a repeated dictionary key silently, so there is no deprecation for it
+                deprecation=None,
+            )
+        )
+    return refactors
+
+
 def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactorConfig) -> SQLRuleRefactorResult:
     """Move custom configs to meta in SQL files."""
     sql_content = content.current_str
@@ -259,6 +294,7 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
 
     # Always use static parsing to handle configs with or without Jinja
     config_macro_str = ""
+    duplicate_config_keys: List[DuplicateConfigKey] = []
     config_source_map: Dict[str, str] = {}
     original_sql_configs: Dict[str, Any] = {}
 
@@ -269,7 +305,8 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
 
         if config_macro_str:
             # Use static parsing to get source code (handles Jinja without rendering)
-            original_statically_parsed_config = statically_parse_unrendered_config(config_macro_str) or {}
+            parsed_config, duplicate_config_keys = statically_parse_unrendered_config(config_macro_str)
+            original_statically_parsed_config = parsed_config or {}
 
             if original_statically_parsed_config:
                 # Use parsed config values as both data and source map
@@ -360,6 +397,8 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
     if refactored_sql_configs != original_sql_configs:
         refactored = True
 
+        deprecation_refactors.extend(_duplicate_key_refactors(duplicate_config_keys))
+
         # Generate deprecation refactors
         for renamed_config in renamed_configs:
             deprecation_refactors.append(
@@ -449,7 +488,7 @@ def refactor_static_analysis_sql(
     refactored_content = sql_content
     # Process macros from last to first so earlier spans keep their positions after splicing.
     for start, end, macro_str in reversed(_iter_config_macro_spans(sql_content)):
-        parsed_config = statically_parse_unrendered_config(macro_str)
+        parsed_config, duplicate_config_keys = statically_parse_unrendered_config(macro_str)
         if not parsed_config or STATIC_ANALYSIS_KEY not in parsed_config:
             continue
 
@@ -466,14 +505,16 @@ def refactor_static_analysis_sql(
         new_macro = f"{{{{ config({new_config_str}\n) }}}}"
         refactored_content = refactored_content[:start] + new_macro + refactored_content[end:]
 
-        deprecation_refactors.insert(
-            0,
+        # Spans are walked in reverse, so splice this span's entries as a unit to keep them
+        # in source order and keep the duplicate notes next to their own span.
+        deprecation_refactors[0:0] = [
+            *_duplicate_key_refactors(duplicate_config_keys),
             DbtDeprecationRefactor(
                 log=f"Converted static_analysis={original_source} to static_analysis='{new_enum}' "
                 "(static_analysis must be a Fusion enum value)",
                 deprecation=STATIC_ANALYSIS_DEPRECATION,
             ),
-        )
+        ]
 
     return SQLRuleRefactorResult(
         rule_name="normalize_static_analysis_sql",
@@ -492,7 +533,7 @@ def refactor_iceberg_table_format_sql(content: SQLContent, config: SQLRefactorCo
     refactored = False
 
     for start, end, macro_str in reversed(_iter_config_macro_spans(sql_content)):
-        parsed = statically_parse_unrendered_config(macro_str)
+        parsed, _ = statically_parse_unrendered_config(macro_str)
         if not parsed or not any(key in parsed for key in ICEBERG_ONLY_KEYS):
             continue
         if re.search(r"config\s*\(\s*\{", macro_str) or _contains_dynamic_kwargs(macro_str):

@@ -106,6 +106,23 @@ class TestRefactorCustomConfigsToMetaPython:
         assert result.refactored_content == input_python
         assert len(result.deprecation_refactors) == 0
 
+    def test_identifier_ending_in_dbt_call_is_not_mangled(self):
+        """A plain object named `..._dbt` must not be treated as the dbt context.
+
+        Regression test: DBT_CONFIG_CALL_PATTERN had no identifier-boundary
+        lookbehind, so it could match mid-identifier at the `dbt.config(...)` suffix
+        of `my_dbt.config(...)`. Mirrors dbt-labs/fs#14000.
+        """
+        input_python = """def model(dbt, session):
+    my_dbt.config(random_config="AR")
+    return session.sql("SELECT 1")
+"""
+        result = refactor_custom_configs_to_meta_python(_py(input_python), _py_cfg())
+
+        assert not result.refactored
+        assert result.refactored_content == input_python
+        assert len(result.deprecation_refactors) == 0
+
     def test_integer_config_value(self):
         """Custom config with integer value should be preserved correctly."""
         input_python = """def model(dbt, session):
@@ -376,6 +393,25 @@ class TestMoveCustomConfigAccessToMetaPython:
 
         assert not result.refactored
         assert result.refactored_content == input_python
+
+    def test_identifier_ending_in_dbt_is_not_mangled(self):
+        """A plain object named `..._dbt` must not be treated as the dbt context.
+
+        Regression test: DBT_CONFIG_GET_PATTERN had no identifier-boundary lookbehind,
+        so it could match mid-identifier at the `dbt.config.get(...)` suffix of
+        `my_dbt.config.get(...)`, rewriting valid code into
+        `my_dbt.config.meta_get(...)` -- an undefined method that breaks at runtime.
+        Mirrors dbt-labs/fs#14000, fixed for SQL files in dbt_sql_improved.py.
+        """
+        input_python = """def model(dbt, session):
+    custom = my_dbt.config.get("custom_key")
+    return session.sql("SELECT 1")
+"""
+        result = move_custom_config_access_to_meta_python(_py(input_python), _py_cfg())
+
+        assert not result.refactored
+        assert result.refactored_content == input_python
+        assert "meta_get" not in result.refactored_content
 
     def test_mixed_native_and_custom_config_access(self):
         """Only custom config access should be refactored, native should remain."""

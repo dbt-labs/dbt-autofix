@@ -2,7 +2,7 @@
 
 ## PROBLEM
 
-Some SQL patterns that work in legacy dbt may not be supported by Fusion's static analysis, such as:
+Some SQL patterns that work in dbt v1 may not be supported by dbt v2's static analysis, such as:
 ```sql
 PIVOT(...) FOR column_name IN (ANY)
 ```

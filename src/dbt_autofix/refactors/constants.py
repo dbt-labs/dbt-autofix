@@ -15,3 +15,19 @@ COMMON_CONFIG_MISSPELLINGS = {"post-hook": "post_hook", "pre-hook": "pre_hook"}
 # unknown config and moved to +meta, which silently disables a functional hook. Map it back to the
 # hyphenated form instead.
 DBT_PROJECT_CONFIG_MISSPELLINGS = {"pre_hook": "pre-hook", "post_hook": "post-hook"}
+
+# dbt config files that are only meaningful at a project root, never resource properties.
+# Superset of VALID_PACKAGE_YML_NAMES (dbt_package_file.py), which is the inverse notion -
+# the dependency manifests the packages feature parses - and must not be reused here.
+PROJECT_ROOT_ONLY_YAML_FILENAMES: frozenset[str] = frozenset(
+    {
+        "dbt_project.yml",
+        "dependencies.yml",
+        "packages.yml",
+        "package-lock.yml",
+        "catalogs.yml",
+        "vars.yml",
+        "profiles.yml",
+        "selectors.yml",
+    }
+)

@@ -1,0 +1,7 @@
+name: inner_project
+version: 2.0.0
+config-version: 2
+profile: inner
+model-paths: ["models"]
+vars:
+  important_var: keep_me

@@ -149,16 +149,22 @@ def test_pre_commit_installation_shallow_clone(session):
         )
 
 
+# Workspace packages that dbt-autofix depends on, pinned to the release version at build
+# time by the uv-dynamic-versioning metadata hook in pyproject.toml. Keep in sync with
+# [tool.uv.workspace] members.
+_WORKSPACE_DEPS = ["dbt-fusion-package-tools", "dbt-package-tools"]
+
+
 def _build_and_install_wheels(session):
-    """Build both wheels, install them, verify entry points, and return metadata.
+    """Build all wheels, install them, verify entry points, and return metadata.
 
     Clears dist/, runs `uv build --all`, inspects the dbt-autofix wheel for
     structural correctness (pre_commit_hooks included, metadata present),
-    installs both wheels, and verifies CLI entry points.
+    installs every wheel, and verifies CLI entry points.
 
     Returns:
-        A (version, tools_dep) tuple where version is the wheel's Version string
-        and tools_dep is the Requires-Dist line for dbt-fusion-package-tools.
+        A (version, tools_deps) tuple where version is the wheel's Version string
+        and tools_deps maps each workspace package name to its Requires-Dist line.
     """
     dist = Path("dist")
     if dist.exists():
@@ -167,11 +173,16 @@ def _build_and_install_wheels(session):
     session.run("uv", "build", "--all", external=True)
 
     autofix_wheels = sorted(dist.glob("dbt_autofix-*.whl"))
-    tools_wheels = sorted(dist.glob("dbt_fusion_package_tools-*.whl"))
     assert autofix_wheels, "dbt-autofix wheel not found in dist/"
-    assert tools_wheels, "dbt-fusion-package-tools wheel not found in dist/"
     autofix_whl = autofix_wheels[-1]
-    tools_whl = tools_wheels[-1]
+
+    # Every workspace dep must be installed from dist/ alongside dbt-autofix: a release
+    # build pins them to a version that doesn't exist on PyPI yet.
+    tools_whls = []
+    for name in _WORKSPACE_DEPS:
+        wheels = sorted(dist.glob(f"{name.replace('-', '_')}-*.whl"))
+        assert wheels, f"{name} wheel not found in dist/"
+        tools_whls.append(str(wheels[-1]))
 
     with zipfile.ZipFile(autofix_whl) as zf:
         wheel_files = zf.namelist()
@@ -191,16 +202,19 @@ def _build_and_install_wheels(session):
         assert version, "Version not found in wheel METADATA"
 
         requires_lines = [line for line in metadata.splitlines() if line.startswith("Requires-Dist:")]
-        tools_deps = [line for line in requires_lines if "dbt-fusion-package-tools" in line]
-        assert tools_deps, "dbt-fusion-package-tools not found in wheel METADATA.\nRequires-Dist lines:\n" + "\n".join(
-            requires_lines
-        )
+        tools_deps = {}
+        for name in _WORKSPACE_DEPS:
+            # Match on the requirement name only, so dbt-package-tools doesn't pick up
+            # the dbt-fusion-package-tools line.
+            matches = [line for line in requires_lines if line.split(": ", 1)[1].startswith(name)]
+            assert matches, f"{name} not found in wheel METADATA.\nRequires-Dist lines:\n" + "\n".join(requires_lines)
+            tools_deps[name] = matches[0]
 
-    session.install(str(tools_whl), str(autofix_whl))
+    session.install(*tools_whls, str(autofix_whl))
     session.run("dbt-autofix", "--help")
     session.run("python", "-m", "pre_commit_hooks.check_deprecations", "--help")
 
-    return version, tools_deps[0]
+    return version, tools_deps
 
 
 _SIMULATED_TAG = "v99.99.99"
@@ -213,9 +227,10 @@ def test_wheel_installation(session):
     Builds both wheels from the current (untagged) git state, installs them,
     and verifies that dbt-fusion-package-tools is an unpinned dependency.
     """
-    version, tools_dep = _build_and_install_wheels(session)
-    assert "==" not in tools_dep, f"Dev build: dbt-fusion-package-tools should be unpinned but got: {tools_dep}"
-    session.log(f"version={version}, dev build (unpinned dep)")
+    version, tools_deps = _build_and_install_wheels(session)
+    for name, tools_dep in tools_deps.items():
+        assert "==" not in tools_dep, f"Dev build: {name} should be unpinned but got: {tools_dep}"
+    session.log(f"version={version}, dev build (unpinned deps)")
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"], venv_backend="uv")
@@ -228,11 +243,12 @@ def test_wheel_installation_release(session):
     """
     subprocess.run(["git", "tag", _SIMULATED_TAG], check=True)
     try:
-        version, tools_dep = _build_and_install_wheels(session)
+        version, tools_deps = _build_and_install_wheels(session)
     finally:
         subprocess.run(["git", "tag", "-d", _SIMULATED_TAG], check=True)
-    expected = f"Requires-Dist: dbt-fusion-package-tools=={version}"
-    assert expected in tools_dep, f"Release build: expected '{expected}' but got: {tools_dep}"
+    for name, tools_dep in tools_deps.items():
+        expected = f"Requires-Dist: {name}=={version}"
+        assert expected in tools_dep, f"Release build: expected '{expected}' but got: {tools_dep}"
     session.log(f"version={version}, pin=={version}")
 
 
