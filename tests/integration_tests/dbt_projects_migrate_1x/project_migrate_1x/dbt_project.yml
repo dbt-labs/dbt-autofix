@@ -1,0 +1,16 @@
+name: my_project
+version: "1.0.0"
+profile: my_project
+model-paths: ["models"]
+clean-targets:
+  - target
+  - dbt_packages
+  - models
+  - ../outside
+tests:
+  +store_failures: true
+models:
+  my_project:
+    +materialized: table
+    incr:
+      +predicates: ["a = b"]

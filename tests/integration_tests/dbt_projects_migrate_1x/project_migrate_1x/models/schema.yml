@@ -1,0 +1,11 @@
+version: 2
+models:
+  - name: incr
+    config:
+      predicates: ["x = y"]
+    tests:
+      - unique
+    columns:
+      - name: id
+        tests:
+          - not_null
