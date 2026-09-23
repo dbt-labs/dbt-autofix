@@ -585,17 +585,12 @@ def get_or_create_metric_for_measure(
     if agg_params := artificial_metric.pop("agg_params", None):
         if agg_percentile := agg_params.get("percentile"):
             artificial_metric["percentile"] = agg_percentile
-        # this must EITHER be discrete or approximate, but not both.  If both, we will fail.
-        use_discrete_percentile = agg_params.get("use_discrete_percentile")
-        use_approximate_percentile = agg_params.get("use_approximate_percentile")
-        if use_discrete_percentile and use_approximate_percentile:
-            raise ValueError(
-                f"Both use_discrete_percentile and use_approximate_percentile cannot be true for measure {measure_name}"
-            )
-        if use_discrete_percentile:
+        # discrete/continuous and approximate/exact are independent axes in the new spec:
+        # percentile_type carries discrete vs continuous, use_approximate_percentile is separate.
+        if agg_params.get("use_discrete_percentile"):
             artificial_metric["percentile_type"] = "discrete"
-        if use_approximate_percentile:
-            artificial_metric["percentile_type"] = "approximate"
+        if agg_params.get("use_approximate_percentile"):
+            artificial_metric["use_approximate_percentile"] = True
 
     semantic_definitions.record_artificial_metric(
         measure_name=measure_name,
