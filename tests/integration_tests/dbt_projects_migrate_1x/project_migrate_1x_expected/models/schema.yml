@@ -1,0 +1,11 @@
+version: 2
+models:
+  - name: incr
+    config:
+      incremental_predicates: ["x = y"]
+    data_tests:
+      - unique
+    columns:
+      - name: id
+        data_tests:
+          - not_null
