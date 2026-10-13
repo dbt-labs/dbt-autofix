@@ -24,7 +24,7 @@ from dbt_autofix.packages.dbt_package_file import (
 )
 from dbt_autofix.packages.dbt_package_lock_file import DbtPackageLockFile, load_yaml_from_package_lock_file_path
 from dbt_autofix.packages.dbt_package_text_file import DbtPackageTextFile
-from dbt_autofix.packages.installed_packages import get_current_installed_package_versions
+from dbt_autofix.packages.installed_packages import find_package_paths, get_current_installed_package_versions
 
 console = Console()
 error_console = Console(stderr=True)
@@ -180,10 +180,16 @@ def generate_package_dependencies(root_dir: Path) -> Optional[DbtPackageFile]:
             deps_file.merge_package_lock_versions(package_lock_file)
 
     # check installed packages
-    installed_packages: dict[str, DbtPackageVersion] = get_current_installed_package_versions(root_dir)
+    installed_package_paths: list[Path] = find_package_paths(root_dir)
+    if len(installed_package_paths) == 0:
+        console.log("No packages installed. Please run dbt deps first")
+    else:
+        installed_packages: dict[str, DbtPackageVersion] = get_current_installed_package_versions(
+            installed_package_paths
+        )
 
-    # merge into dependency configs
-    deps_file.merge_installed_versions(installed_packages)
+        # merge into dependency configs
+        deps_file.merge_installed_versions(installed_packages)
 
     return deps_file
 
