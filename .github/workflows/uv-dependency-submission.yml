@@ -27,4 +27,4 @@ jobs:
           persist-credentials: false
 
       - name: Submit dependency snapshot
-        uses: rmuir/uv-dependency-submission@1c48aaac13e566e39fd04269ff1900b86c1105c5 # v1.0.0
+        uses: rmuir/uv-dependency-submission@8c650a3e5e519b93e604e644f7a4a3953144babe # v1.1.1
