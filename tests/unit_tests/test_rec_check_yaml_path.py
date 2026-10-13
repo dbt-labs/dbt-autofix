@@ -679,7 +679,9 @@ def test_user_exact_scenario_from_traceback(models_node_fields, temp_path):
     WHY:    This is the real-world bug that was reported
 
     User had a logical grouping with partition_by (nested dict),
-    cluster_by (list), and tags (list). All should be handled correctly.
+    cluster_by (list), and tags (list). cluster_by and tags should be handled
+    correctly. We cannot prove that partition_by should be plus-prefixed because
+    it could be a resource path.
     """
     input_dict = {
         "example": {
@@ -695,7 +697,7 @@ def test_user_exact_scenario_from_traceback(models_node_fields, temp_path):
 
     expected_output = {
         "example": {
-            "+partition_by": {
+            "partition_by": {
                 "field": "timezone_offset_amt",
                 "data_type": "int64",
                 "range": {"start": -11, "end": 12, "interval": 1},
@@ -708,8 +710,7 @@ def test_user_exact_scenario_from_traceback(models_node_fields, temp_path):
     result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
-    assert len(logs) == 3  # Three configs got + prefix
-    assert any("partition_by" in log for log in logs)
+    assert len(logs) == 2  # Two configs got + prefix
     assert any("cluster_by" in log for log in logs)
     assert any("tags" in log for log in logs)
 
@@ -721,6 +722,8 @@ def test_mixed_config_types_in_logical_grouping(models_node_fields, temp_path):
 
     Note: 'threads' is not a valid config in dbt_project.yml for models,
     so it gets moved to +meta (correct behavior)
+    Also, we can't do this for partition_by because it's a dict, so it's not
+    provably a config over a resource path.
     """
     input_dict = {
         "my_models": {
@@ -735,7 +738,7 @@ def test_mixed_config_types_in_logical_grouping(models_node_fields, temp_path):
     expected_output = {
         "my_models": {
             "+materialized": "table",
-            "+partition_by": {"field": "date", "data_type": "date"},
+            "partition_by": {"field": "date", "data_type": "date"},
             "+cluster_by": ["col1", "col2"],
             "+enabled": True,
             "+meta": {
@@ -747,7 +750,7 @@ def test_mixed_config_types_in_logical_grouping(models_node_fields, temp_path):
     result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
-    assert len(logs) == 5  # 4 configs got + prefix, 1 moved to meta
+    assert len(logs) == 4  # 3 configs got + prefix, 1 moved to meta
 
 
 def test_deeply_nested_with_complex_config_values(models_node_fields, temp_path):
@@ -758,7 +761,7 @@ def test_deeply_nested_with_complex_config_values(models_node_fields, temp_path)
     input_dict = {
         "external_views": {
             "example": {
-                "partition_by": {"field": "date", "data_type": "date", "granularity": "day"},
+                "cluster_by": ["timezone_nm", "zip5_cd", "timezone_offset_adj_amt"],
                 "materialized": "view",
             }
         }
@@ -767,7 +770,7 @@ def test_deeply_nested_with_complex_config_values(models_node_fields, temp_path)
     expected_output = {
         "external_views": {
             "example": {
-                "+partition_by": {"field": "date", "data_type": "date", "granularity": "day"},
+                "+cluster_by": ["timezone_nm", "zip5_cd", "timezone_offset_adj_amt"],
                 "+materialized": "view",
             }
         }
@@ -829,7 +832,7 @@ def test_all_scalar_types_in_one_config(models_node_fields, temp_path):
     OUTPUT: All get + prefix, all value types preserved
     WHY:    Ensure type guard works for all common value types together
 
-    This test focuses on configs with different VALUE types (string, bool, list, dict)
+    This test focuses on configs with different VALUE types (string, bool, list)
     to ensure the type guard preserves all value types correctly.
     """
     input_dict = {
@@ -837,7 +840,6 @@ def test_all_scalar_types_in_one_config(models_node_fields, temp_path):
             "materialized": "table",  # string value
             "enabled": True,  # boolean value
             "tags": ["tag1", "tag2"],  # list value
-            "persist_docs": {"relation": True, "columns": False},  # dict value
         }
     }
 
@@ -846,14 +848,13 @@ def test_all_scalar_types_in_one_config(models_node_fields, temp_path):
             "+materialized": "table",
             "+enabled": True,
             "+tags": ["tag1", "tag2"],
-            "+persist_docs": {"relation": True, "columns": False},
         }
     }
 
     result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
-    assert len(logs) == 4  # All 4 configs got + prefix
+    assert len(logs) == 3  # All 4 configs got + prefix
 
 
 def test_persist_docs_dict_value_not_recursed(models_node_fields, temp_path):
@@ -903,6 +904,8 @@ def test_mixed_valid_configs_with_dict_values(models_node_fields, temp_path):
     WHY:    Comprehensive test for real dbt_project.yml structure
 
     This simulates a real seeds: section from dbt_project.yml
+
+    We must preserve dict values, even though we can't plus-prefix them.
     """
     input_dict = {
         "project": "my_project",  # string config, needs +
@@ -920,17 +923,17 @@ def test_mixed_valid_configs_with_dict_values(models_node_fields, temp_path):
     expected_output = {
         "+project": "my_project",
         "+dataset": "seeds",
-        "+persist_docs": {"relation": True, "columns": True},
-        "+labels": {"application": "analytics", "environment": "prod"},
+        "persist_docs": {"relation": True, "columns": True},
+        "labels": {"application": "analytics", "environment": "prod"},
     }
 
     result, logs = rec_check_yaml_path(input_dict, temp_path, models_node_fields)
 
     assert result == expected_output
-    assert len(logs) == 4  # All 4 configs got + prefix
+    assert len(logs) == 2  # project and dataset got +prefix.
     # Verify no unwanted nesting under +meta
-    assert "+meta" not in result["+persist_docs"]
-    assert "+meta" not in result["+labels"]
+    assert "+meta" not in result["persist_docs"]
+    assert "+meta" not in result["labels"]
 
 
 # =============================================================================

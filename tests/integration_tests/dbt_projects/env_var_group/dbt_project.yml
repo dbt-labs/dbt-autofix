@@ -1,0 +1,10 @@
+name: "{{ env_var('DBT_PROJECT_NAME') }}"
+version: "1.0"
+config-version: 2
+profile: "autofix_group_folder"
+
+models:
+  autofix_group_folder: &project_config
+    group:
+      +schema: "group_folder"
+  autofix_group_folder_qa: *project_config
