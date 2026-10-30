@@ -69,7 +69,7 @@ from dbt_autofix.refactors.results import (
 from dbt_autofix.refactors.static_analysis import (
     changeset_normalize_static_analysis_yml,
 )
-from dbt_autofix.refactors.yml import load_yaml
+from dbt_autofix.refactors.yml import iter_project_yaml_files, load_yaml
 from dbt_autofix.retrieve_schemas import (
     SchemaSpecs,
 )
@@ -162,56 +162,51 @@ def process_yaml_files_except_dbt_project(
             ],
         ]
 
+    # Discovered once: semantic-layer runs walk the files once per changeset group
+    yaml_files = iter_project_yaml_files(root_path, model_paths)
+
     def _apply_changesets(
         file_name_to_yaml_results: Dict[str, YMLRefactorResult],
         changesets: List[Callable],
         cfg: YMLRefactorConfig,
     ) -> None:
-        for model_path in model_paths:
-            yaml_files = set((root_path / Path(model_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(model_path)).resolve().glob("**/*.yaml"))
-            )
+        for yml_file in yaml_files:
+            if skip_file(yml_file, select, dbtignore, root_path):
+                continue
 
-            for yml_file in yaml_files:
-                if skip_file(yml_file, select, dbtignore, root_path):
-                    continue
+            if is_project_config_file(yml_file):
+                continue
 
-                if is_project_config_file(yml_file):
-                    continue
+            if str(yml_file) in file_name_to_yaml_results:
+                yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
+            else:
+                yml_str = yml_file.read_text()
+                # original_parsed is not read by any changeset, so skip parsing the file just to fill it
+                yml_refactor_result = YMLRefactorResult(
+                    dry_run=dry_run,
+                    file_path=yml_file,
+                    original_parsed=None,
+                    refactored_yaml=yml_str,
+                    original_yaml=yml_str,
+                    refactors=[],
+                )
+            # Apply each changeset in sequence
+            try:
+                for changeset_func in changesets:
+                    yml_refactor_result.apply_changeset(changeset_func, cfg)
 
-                if str(yml_file) in file_name_to_yaml_results:
-                    yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
-                else:
-                    yml_str = yml_file.read_text()
-                    try:
-                        original_parsed = load_yaml(yml_str)
-                    except Exception:
-                        original_parsed = CommentedMap()
-                    yml_refactor_result = YMLRefactorResult(
-                        dry_run=dry_run,
-                        file_path=yml_file,
-                        original_parsed=original_parsed,
-                        refactored_yaml=yml_str,
-                        original_yaml=yml_str,
-                        refactors=[],
+                file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
+
+            except Exception as e:
+                if all:
+                    error_console.print(
+                        f"Warning: Could not apply fixes to {yml_file}: {e.__class__.__name__}: {e}", style="yellow"
                     )
-                # Apply each changeset in sequence
-                try:
-                    for changeset_func in changesets:
-                        yml_refactor_result.apply_changeset(changeset_func, cfg)
-
-                    file_name_to_yaml_results[str(yml_file)] = yml_refactor_result
-
-                except Exception as e:
-                    if all:
-                        error_console.print(
-                            f"Warning: Could not apply fixes to {yml_file}: {e.__class__.__name__}: {e}", style="yellow"
-                        )
-                    else:
-                        error_console.print(
-                            f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
-                        )
-                        exit(1)
+                else:
+                    error_console.print(
+                        f"Error processing YAML at path {yml_file}: {e.__class__.__name__}: {e}", style="bold red"
+                    )
+                    exit(1)
 
     for changesets in ordered_changesets:
         _apply_changesets(

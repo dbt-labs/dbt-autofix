@@ -2,22 +2,21 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+from rich.console import Console
 from ruamel.yaml.comments import CommentedMap
 
 from dbt_autofix.jinja import statically_parse_ref
-from dbt_autofix.refactors.yml import get_list, load_yaml
+from dbt_autofix.refactors.yml import get_list, iter_project_yaml_files, load_yaml
+
+error_console = Console(stderr=True)
 
 
 class SemanticDefinitions:
     def __init__(self, root_path: Path, dbt_paths: List[str]):
-        # All semantic models from semantic_models: entries in schema.yml files, keyed by their model key
-        self.semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = self.collect_semantic_models(
-            root_path, dbt_paths
-        )
-        # All model keys from models: entries in schema.yml files
-        self.model_yml_keys: Set[Tuple[str, Optional[str]]] = self.collect_model_yml_keys(root_path, dbt_paths)
-        # All top-level metrics from metrics: entries in schema.yml files
-        self.initial_metrics: Dict[str, CommentedMap] = self.collect_metrics(root_path, dbt_paths)
+        # semantic_models: all semantic_models: entries in schema.yml files, keyed by their model key
+        # model_yml_keys: all model keys from models: entries in schema.yml files
+        # initial_metrics: all top-level metrics from metrics: entries in schema.yml files
+        self.semantic_models, self.model_yml_keys, self.initial_metrics = self.collect_definitions(root_path, dbt_paths)
 
         self.merged_semantic_models: Set[str] = set()
         self._semantic_model_to_dbt_model_name_map: Dict[str, str] = {}
@@ -83,53 +82,51 @@ class SemanticDefinitions:
     def get_model_for_semantic_model(self, semantic_model_name: str) -> str:
         return self._semantic_model_to_dbt_model_name_map[semantic_model_name]
 
-    def collect_semantic_models(
-        self, root_path: Path, dbt_paths: List[str]
-    ) -> Dict[Tuple[str, Optional[str]], CommentedMap]:
+    @staticmethod
+    def collect_definitions(
+        root_path: Path, dbt_paths: List[str]
+    ) -> Tuple[Dict[Tuple[str, Optional[str]], CommentedMap], Set[Tuple[str, Optional[str]]], Dict[str, CommentedMap]]:
+        """Collect semantic models, model keys and metrics, reading and parsing each YAML file once."""
         semantic_models: Dict[Tuple[str, Optional[str]], CommentedMap] = {}
-        for dbt_path in dbt_paths:
-            yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
-            )
-            for yml_file in yaml_files:
-                yml_dict = load_yaml(yml_file)
-                if "semantic_models" in yml_dict:
-                    for semantic_model in yml_dict["semantic_models"]:
-                        ref = statically_parse_ref(semantic_model["model"])
-                        if ref:
-                            semantic_models[(ref.name, ref.version)] = semantic_model
-        return semantic_models
-
-    def collect_model_yml_keys(self, root_path: Path, dbt_paths: List[str]) -> Set[Tuple[str, Optional[str]]]:
         model_keys: Set[Tuple[str, Optional[str]]] = set()
-        for dbt_path in dbt_paths:
-            yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
-            )
-            for yml_file in yaml_files:
-                yml_dict = load_yaml(yml_file)
-                if "models" in yml_dict:
-                    for model in yml_dict["models"]:
-                        if not model.get("versions"):
-                            model_keys.add((model["name"], None))
-                        else:
-                            for version in model["versions"]:
-                                model_keys.add((model["name"], version.get("v")))
-        return model_keys
-
-    def collect_metrics(self, root_path: Path, dbt_paths: List[str]) -> Dict[str, CommentedMap]:
-        """Returns dict of metric_name -> metric"""
         metrics: Dict[str, CommentedMap] = {}
-        for dbt_path in dbt_paths:
-            yaml_files = set((root_path / Path(dbt_path)).resolve().glob("**/*.yml")).union(
-                set((root_path / Path(dbt_path)).resolve().glob("**/*.yaml"))
-            )
-            for yml_file in sorted(yaml_files):
+
+        for yml_file in iter_project_yaml_files(root_path, dbt_paths):
+            try:
                 yml_dict = load_yaml(yml_file)
-                if "metrics" in yml_dict:
-                    for metric in yml_dict["metrics"]:
-                        metrics[metric["name"]] = metric
-        return metrics
+            except Exception as e:
+                error_console.print(
+                    f"Warning: Could not parse {yml_file} for semantic definitions: {e.__class__.__name__}: {e}",
+                    style="yellow",
+                )
+                continue
+            if not isinstance(yml_dict, dict):
+                continue
+
+            for semantic_model in _top_level_nodes(yml_dict, "semantic_models"):
+                ref = statically_parse_ref(semantic_model["model"]) if semantic_model.get("model") else None
+                if ref:
+                    semantic_models[(ref.name, ref.version)] = semantic_model
+
+            for model in _top_level_nodes(yml_dict, "models"):
+                if not model.get("versions"):
+                    model_keys.add((model["name"], None))
+                else:
+                    for version in model["versions"]:
+                        model_keys.add((model["name"], version.get("v")))
+
+            for metric in _top_level_nodes(yml_dict, "metrics"):
+                metrics[metric["name"]] = metric
+
+        return semantic_models, model_keys, metrics
+
+
+def _top_level_nodes(yml_dict: CommentedMap, key: str) -> List[CommentedMap]:
+    """Mapping entries of a top-level list such as `models:`; anything else (null, a scalar, a mapping) yields none."""
+    nodes = yml_dict.get(key)
+    if not isinstance(nodes, list):
+        return []
+    return [node for node in nodes if isinstance(node, dict)]
 
 
 @dataclass

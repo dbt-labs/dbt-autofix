@@ -1,6 +1,6 @@
 import io
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterable, List, Union
 
 import yamllint.config
 from ruamel.yaml import YAML
@@ -49,6 +49,24 @@ def get_list(node: CommentedMap, key: str) -> CommentedSeq:
 
 def get_dict(node: CommentedMap, key: str) -> CommentedMap:
     return node.get(key) or CommentedMap()
+
+
+def iter_project_yaml_files(root_path: Path, dbt_paths: Iterable[str]) -> List[Path]:
+    """Return every .yml/.yaml file under the given dbt paths, each once, in sorted order.
+
+    Paths nested under another given path (e.g. `models` and `models/semantic`) are only walked once.
+    """
+    roots = sorted({(root_path / dbt_path).resolve() for dbt_path in dbt_paths}, key=lambda p: len(p.parts))
+    covering_roots: List[Path] = []
+    for root in roots:
+        if root.is_dir() and not any(root.is_relative_to(parent) for parent in covering_roots):
+            covering_roots.append(root)
+
+    yaml_files = set()
+    for root in covering_roots:
+        yaml_files.update(root.glob("**/*.yml"))
+        yaml_files.update(root.glob("**/*.yaml"))
+    return sorted(yaml_files)
 
 
 def load_yaml(path_or_str: Union[Path, str]) -> CommentedMap:
