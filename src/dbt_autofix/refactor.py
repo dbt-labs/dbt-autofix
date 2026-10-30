@@ -162,6 +162,8 @@ def process_yaml_files_except_dbt_project(
             ],
         ]
 
+    should_skip = make_file_skipper(select, dbtignore, root_path)
+
     def _apply_changesets(
         file_name_to_yaml_results: Dict[str, YMLRefactorResult],
         changesets: List[Callable],
@@ -173,7 +175,7 @@ def process_yaml_files_except_dbt_project(
             )
 
             for yml_file in yaml_files:
-                if skip_file(yml_file, select, dbtignore, root_path):
+                if should_skip(yml_file):
                     continue
 
                 if is_project_config_file(yml_file):
@@ -304,6 +306,38 @@ def load_dbtignore(root_path: Path) -> Optional[pathspec.PathSpec]:
     return spec
 
 
+def make_file_skipper(
+    select: Optional[List[str]] = None,
+    dbtignore: Optional[pathspec.PathSpec] = None,
+    root_path: Optional[Path] = None,
+) -> Callable[[Path], bool]:
+    """Build a predicate that skips files not matching the select filter or ignored by .dbtignore.
+
+    Select paths and the root path are resolved once here instead of once per (file, select path)
+    pair, which made the scan quadratic in the number of selected files.
+    """
+    resolved_select = [Path(select_path).resolve().as_posix() for select_path in select] if select else []
+    resolved_root = root_path.resolve() if dbtignore is not None and root_path is not None else None
+
+    def _skip(file_path: Path) -> bool:
+        if resolved_select:
+            file_path_posix = file_path.as_posix()
+            if not any(select_path in file_path_posix for select_path in resolved_select):
+                return True
+
+        if dbtignore is not None and resolved_root is not None:
+            try:
+                relative = file_path.resolve().relative_to(resolved_root)
+            except ValueError:
+                return False
+            if dbtignore.match_file(str(relative)):
+                return True
+
+        return False
+
+    return _skip
+
+
 def skip_file(
     file_path: Path,
     select: Optional[List[str]] = None,
@@ -311,19 +345,7 @@ def skip_file(
     root_path: Optional[Path] = None,
 ) -> bool:
     """Skip a file if it matches the select filter or is ignored by .dbtignore."""
-    if select:
-        if not any([Path(select_path).resolve().as_posix() in file_path.as_posix() for select_path in select]):
-            return True
-
-    if dbtignore is not None and root_path is not None:
-        try:
-            relative = file_path.resolve().relative_to(root_path.resolve())
-        except ValueError:
-            return False
-        if dbtignore.match_file(str(relative)):
-            return True
-
-    return False
+    return make_file_skipper(select, dbtignore, root_path)(file_path)
 
 
 def is_project_config_file(yml_file: Path) -> bool:
@@ -384,6 +406,8 @@ def process_sql_files(
         all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
     )
 
+    should_skip = make_file_skipper(select, dbtignore, path)
+
     for sql_path, node_type in sql_paths_to_node_type.items():
         full_path = (path / sql_path).resolve()
         if not full_path.exists():
@@ -399,7 +423,7 @@ def process_sql_files(
 
         sql_files = full_path.glob("**/*.sql")
         for sql_file in sql_files:
-            if skip_file(sql_file, select, dbtignore, path):
+            if should_skip(sql_file):
                 continue
 
             try:
@@ -468,6 +492,8 @@ def process_python_files(
         all_rules if all else behavior_change_rules if behavior_change else safe_change_rules
     )
 
+    should_skip = make_file_skipper(select, dbtignore, path)
+
     # Only process model paths (Python models are in model-paths)
     for python_path, node_type in python_paths_to_node_type.items():
         # Python models only exist in model paths
@@ -482,7 +508,7 @@ def process_python_files(
 
         python_files = full_path.glob("**/*.py")
         for python_file in python_files:
-            if skip_file(python_file, select, dbtignore, path):
+            if should_skip(python_file):
                 continue
 
             try:
