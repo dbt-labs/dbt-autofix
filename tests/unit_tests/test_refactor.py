@@ -20,6 +20,7 @@ from dbt_autofix.refactor import (
     changeset_replace_non_alpha_underscores_in_name_values,
     is_project_config_file,
     load_dbtignore,
+    make_file_skipper,
     remove_unmatched_endings,
     skip_file,
 )
@@ -1397,6 +1398,19 @@ class TestSkipFile:
                 dbtignore=dbtignore,
                 root_path=root,
             )
+
+    def test_make_file_skipper_resolves_select_once(self, monkeypatch):
+        """Test that select paths are resolved once per skipper, not once per checked file"""
+        select = ["/path/to/a.sql", "/path/to/b.sql"]
+        should_skip = make_file_skipper(select)
+
+        def fail_resolve(self, strict=False):
+            raise AssertionError("Path.resolve called while checking files")
+
+        monkeypatch.setattr(Path, "resolve", fail_resolve)
+        assert not should_skip(Path("/path/to/a.sql"))
+        assert not should_skip(Path("/path/to/b.sql"))
+        assert should_skip(Path("/path/to/c.sql"))
 
 
 class TestIsProjectConfigFile:
