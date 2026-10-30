@@ -33,7 +33,8 @@ class DbtDeprecationRefactor:
 @dataclass
 class YMLContent:
     original_str: str
-    original_parsed: CommentedMap
+    # Parsed original YAML when the caller already has it; changesets parse current_str themselves
+    original_parsed: Optional[CommentedMap]
     current_str: str
 
 
@@ -165,7 +166,7 @@ class PythonRuleRefactorResult:
 class YMLRefactorResult:
     dry_run: bool
     file_path: Path
-    original_parsed: CommentedMap
+    original_parsed: Optional[CommentedMap]
     refactored_yaml: str
     original_yaml: str
     refactors: list[YMLRuleRefactorResult]

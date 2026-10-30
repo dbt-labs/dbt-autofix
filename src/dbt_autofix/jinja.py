@@ -322,7 +322,7 @@ def statically_parse_ref(expression: str) -> Optional[RefArgs]:
     try:
         statically_parsed = py_extract_from_source(f"{{{{ {expression} }}}}")
     except ExtractionError:
-        pass
+        return None
 
     if statically_parsed.get("refs"):
         raw_ref = list(statically_parsed["refs"])[0]
