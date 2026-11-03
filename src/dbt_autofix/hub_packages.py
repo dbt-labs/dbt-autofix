@@ -37,7 +37,7 @@ def _is_hub_package(package_path: Path) -> bool:
         return False
 
     try:
-        with open(dbt_project_yml, "r") as f:
+        with open(dbt_project_yml, "r", encoding="utf-8") as f:
             package_config = safe_load(f)
 
         package_name = package_config.get("name")

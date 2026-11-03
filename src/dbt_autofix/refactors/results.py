@@ -190,7 +190,7 @@ class YMLRefactorResult:
         """Update the YAML file with the refactored content"""
         # Restore fancy quotes from placeholders before writing
         final_yaml = restore_fancy_quotes(self.refactored_yaml)
-        Path(self.file_path).write_text(final_yaml)
+        Path(self.file_path).write_text(final_yaml, encoding="utf-8")
 
     def print_to_console(self, json_output: bool = True):
         if not self.refactored and not any(r.refactor_warnings for r in self.refactors):
@@ -265,7 +265,7 @@ class SQLRefactorResult:
             except OSError as exc:
                 raise RuntimeError(f"Could not rename {self.file_path} to {self.refactored_file_path}") from exc
 
-        Path(new_file_path).write_text(self.refactored_content)
+        Path(new_file_path).write_text(self.refactored_content, encoding="utf-8")
 
     def print_to_console(self, json_output: bool = True):
         if not self.refactored and not self.has_warnings:
@@ -348,7 +348,7 @@ class PythonRefactorResult:
             except OSError as exc:
                 raise RuntimeError(f"Could not rename {self.file_path} to {self.refactored_file_path}") from exc
 
-        Path(new_file_path).write_text(self.refactored_content)
+        Path(new_file_path).write_text(self.refactored_content, encoding="utf-8")
 
     def print_to_console(self, json_output: bool = True):
         if not self.refactored and not self.has_warnings:

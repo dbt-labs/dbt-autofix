@@ -47,7 +47,7 @@ def find_duplicate_keys(
         resolved_root = root_dir.resolve()
         yml_files = {f for f in yml_files if not dbtignore.match_file(str(f.resolve().relative_to(resolved_root)))}
 
-    packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
+    packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text(encoding="utf-8")).get(
         "packages-install-path", "dbt_packages"
     )
 
@@ -68,7 +68,7 @@ def find_duplicate_keys(
         if not file.is_file():
             continue
         file_with_duplicate = False
-        file_content = file.read_text()
+        file_content = file.read_text(encoding="utf-8")
         for p in yamllint.linter.run(file_content, yaml_config):
             if p.rule == "key-duplicates":
                 file_with_duplicate = True
@@ -89,7 +89,7 @@ def find_duplicate_keys(
     for file in yml_files_packages_not_integration_tests:
         if not file.is_file():
             continue
-        file_content = file.read_text()
+        file_content = file.read_text(encoding="utf-8")
         for p in yamllint.linter.run(file_content, yaml_config):
             if p.rule == "key-duplicates":
                 package_duplicates.append(

@@ -182,7 +182,7 @@ def process_yaml_files_except_dbt_project(
                 if str(yml_file) in file_name_to_yaml_results:
                     yml_refactor_result = file_name_to_yaml_results[str(yml_file)]
                 else:
-                    yml_str = yml_file.read_text()
+                    yml_str = yml_file.read_text(encoding="utf-8")
                     try:
                         original_parsed = load_yaml(yml_str)
                     except Exception:
@@ -243,7 +243,7 @@ def process_dbt_project_yml(
             refactors=[],
         )
 
-    yml_str = (root_path / "dbt_project.yml").read_text()
+    yml_str = (root_path / "dbt_project.yml").read_text(encoding="utf-8")
     try:
         original_parsed = load_yaml(yml_str)
     except Exception:
@@ -297,7 +297,7 @@ def load_dbtignore(root_path: Path) -> Optional[pathspec.PathSpec]:
     if not dbtignore_path.exists():
         return None
 
-    patterns = dbtignore_path.read_text().splitlines()
+    patterns = dbtignore_path.read_text(encoding="utf-8").splitlines()
     spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
     if not spec.patterns:
         return None
@@ -403,7 +403,7 @@ def process_sql_files(
                 continue
 
             try:
-                original_content = sql_file.read_text()
+                original_content = sql_file.read_text(encoding="utf-8")
                 result = SQLRefactorResult(
                     dry_run=dry_run,
                     file_path=sql_file,
@@ -486,7 +486,7 @@ def process_python_files(
                 continue
 
             try:
-                original_content = python_file.read_text()
+                original_content = python_file.read_text(encoding="utf-8")
                 result = PythonRefactorResult(
                     dry_run=dry_run,
                     file_path=python_file,
@@ -531,7 +531,7 @@ def get_dbt_files_paths(
         error_console.print(f"Error: dbt_project.yml not found in {root_path}", style="red")
         return {}
 
-    with open(root_path / "dbt_project.yml", "r") as f:
+    with open(root_path / "dbt_project.yml", "r", encoding="utf-8") as f:
         project_config = safe_load(f)
 
     if project_config is None:
@@ -577,7 +577,7 @@ def get_dbt_files_paths(
 
                     package_dbt_project = package_folder / "dbt_project.yml"
                     if package_dbt_project.exists():
-                        with open(package_dbt_project, "r") as f:
+                        with open(package_dbt_project, "r", encoding="utf-8") as f:
                             package_config = safe_load(f)
 
                         package_model_paths = package_config.get("model-paths", ["models"])
@@ -695,7 +695,7 @@ def changeset_all_files(
             project_yml_dict = load_yaml(project_yml_result.refactored_yaml)
         else:
             project_file = path / "dbt_project.yml"
-            project_yml_dict = load_yaml(project_file.read_text()) if project_file.exists() else None
+            project_yml_dict = load_yaml(project_file.read_text(encoding="utf-8")) if project_file.exists() else None
         unsafe_table_format = project_has_unsafe_table_format(project_yml_dict)
     except Exception:
         # Fail closed: an unparseable dbt_project.yml means we can't tell whether it's safe.

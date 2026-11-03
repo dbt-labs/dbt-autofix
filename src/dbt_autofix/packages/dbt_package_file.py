@@ -126,7 +126,7 @@ class DbtPackageFile:
             console.log("No file path set")
             return
         try:
-            self.yml_str = self.file_path.read_text()
+            self.yml_str = self.file_path.read_text(encoding="utf-8")
             console.log(f"parsed yaml string: {self.yml_str}")
         except Exception:
             console.log(f"Error when parsing package file {self.file_path}")

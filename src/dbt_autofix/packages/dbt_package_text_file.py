@@ -172,7 +172,7 @@ class DbtPackageTextFile:
         self.lines = []
         key_block = DbtPackageTextFileBlock(0)
         try:
-            with open(self.file_path, "r") as file:
+            with open(self.file_path, "r", encoding="utf-8") as file:
                 for line in file:
                     current_line += 1
                     new_line = DbtPackageTextFileLine(line)
@@ -236,7 +236,7 @@ class DbtPackageTextFile:
     def write_output_to_file(self) -> int:
         lines_written: int = 0
         try:
-            with open(self.file_path, "w") as file:
+            with open(self.file_path, "w", encoding="utf-8") as file:
                 for file_line in self.lines:
                     file.write(file_line.line)
                     lines_written += 1

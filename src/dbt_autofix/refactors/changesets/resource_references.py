@@ -18,7 +18,7 @@ def build_resource_rename_map(path: Path) -> ResourceRenameMap:
     rename_map = ResourceRenameMap()
     for file_path in (*path.rglob("*.yml"), *path.rglob("*.yaml")):
         try:
-            parsed = yaml.safe_load(file_path.read_text()) or {}
+            parsed = yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
         except (OSError, yaml.YAMLError):
             continue
         for source in parsed.get("sources", []) or []:

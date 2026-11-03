@@ -1,3 +1,4 @@
+import io
 import tempfile
 from pathlib import Path
 
@@ -2392,6 +2393,28 @@ models:
         result = changeset_replace_fancy_quotes(_yml(input_yaml), _yml_cfg())
         assert result.refactored
         assert result.refactored_yaml == 'desc: "value'
+
+    def test_fancy_quotes_with_non_utf8_locale_encoding(
+        self, temp_project_dir: Path, schema_specs: SchemaSpecs, monkeypatch: pytest.MonkeyPatch
+    ):
+        """Project files are read and written as UTF-8 even when the locale encoding is not UTF-8.
+
+        Simulates Windows, where the default text encoding is usually cp1252.
+        """
+        schema_path = temp_project_dir / "models" / "schema.yml"
+        schema_path.write_text(
+            "version: 2\nmodels:\n  - name: my_model\n    description: \u201cRevenue in \u20ac\u201d\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(io, "text_encoding", lambda encoding, stacklevel=2: encoding or "cp1252")
+
+        yaml_results, _, _ = changeset_all_files(temp_project_dir, schema_specs)
+        schema_result = next(r for r in yaml_results if r.file_path.name == "schema.yml")
+        assert schema_result.refactored
+        schema_result.update_yaml_file()
+
+        refactored_yaml = schema_path.read_text(encoding="utf-8")
+        assert refactored_yaml == 'version: 2\nmodels:\n  - name: my_model\n    description: "Revenue in \u20ac"\n'
 
 
 class TestRemoveDuplicateKeys:
