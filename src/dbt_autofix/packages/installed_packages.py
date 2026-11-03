@@ -53,7 +53,7 @@ def find_package_paths(
     Returns:
         list[Path]: the file path(s) for all dbt_project.yml files for packages
     """
-    packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text()).get(
+    packages_path = yaml.safe_load((root_dir / "dbt_project.yml").read_text(encoding="utf-8")).get(
         "packages-install-path", "dbt_packages"
     )
 

@@ -24,7 +24,7 @@ def load_yaml_from_package_lock_file_path(package_lock_yml_path: Path) -> Option
         console.log("File must be package-lock.yml")
         return
     try:
-        parsed_package_lock_file = yaml.safe_load(package_lock_yml_path.read_text())
+        parsed_package_lock_file = yaml.safe_load(package_lock_yml_path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         console.log(f"File not found at {package_lock_yml_path}")
         return
