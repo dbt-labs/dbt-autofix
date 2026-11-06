@@ -292,6 +292,17 @@ def refactor_custom_configs_to_meta_sql(content: SQLContent, config: SQLRefactor
     deprecation_refactors: List[DbtDeprecationRefactor] = []
     refactor_warnings: list[str] = []
 
+    if node_type not in schema_specs.yaml_specs_per_node_type:
+        # Macros have no config fields of their own to check against: a config() call in
+        # a macro applies to whichever resource calls the macro.
+        return SQLRuleRefactorResult(
+            rule_name="move_custom_configs_to_meta_sql",
+            refactored=False,
+            refactored_content=sql_content,
+            original_content=sql_content,
+            deprecation_refactors=[],
+        )
+
     # Always use static parsing to handle configs with or without Jinja
     config_macro_str = ""
     duplicate_config_keys: List[DuplicateConfigKey] = []
