@@ -2879,6 +2879,25 @@ def test_config_regex(input_str, expected_match):
 class TestRefactorCustomConfigsToMetaSQL:
     """Tests for refactor_custom_configs_to_meta_sql function"""
 
+    def test_config_call_in_macro_is_left_alone(self, schema_specs: SchemaSpecs):
+        sql_content = """{% macro create_raw_model(platform) %}
+{{
+  config(
+    materialized = 'table',
+    alias = 'raw_' + platform,
+    custom_config = 'value',
+  )
+}}
+select 1 as id
+{% endmacro %}
+"""
+
+        result = refactor_custom_configs_to_meta_sql(_sql(sql_content), _sql_cfg(schema_specs, "macros"))
+
+        assert not result.refactored
+        assert result.refactored_content == sql_content
+        assert result.deprecation_refactors == []
+
     def test_snapshot_configs_in_model_path_stay_top_level(self, schema_specs: SchemaSpecs):
         sql_content = """{{ config(
     materialized='snapshot',
